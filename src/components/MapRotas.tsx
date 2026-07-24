@@ -41,7 +41,7 @@ export const MapRotas: React.FC<MapRotasProps> = ({ isDarkTheme }) => {
     contatosSuporte: { nome: string; cargo: string; telefone: string }[];
   }> = {
     'usr-rep-carlos': {
-      nome: 'Carlos Souza', cor: '#3B82F6', cidadeBase: 'Porto Alegre', deslocamentoKms: 145,
+      nome: 'Fausto Fleck', cor: '#3B82F6', cidadeBase: 'Porto Alegre', deslocamentoKms: 145,
       posicaoAtual: { lat: -29.1688, lng: -51.1796, local: 'Sul Alimentos, Caxias' },
       pontosRota: [
         { local: 'Centro Administrativo Carton Pack', cidade: 'Porto Alegre', latLng: [-30.0346, -51.2177], horario: '08:00', objetivo: 'Retirada de amostras físicas', status: 'concluida' },
@@ -50,12 +50,12 @@ export const MapRotas: React.FC<MapRotasProps> = ({ isDarkTheme }) => {
         { local: 'Vinícola Vale do Sol', cidade: 'Bento Gonçalves', latLng: [-29.1706, -51.5204], horario: '16:45', objetivo: 'Relacionamento e pós-venda', status: 'pendente' }
       ],
       contatosSuporte: [
-        { nome: 'Thiago Rocha', cargo: 'Vendedor Interno', telefone: '(51) 99344-1234' },
-        { nome: 'Mariana Costa', cargo: 'Supervisora Comercial', telefone: '(51) 98111-5555' }
+        { nome: 'Diéssica Hartmann', cargo: 'Vendedor Interno', telefone: '(51) 99344-1234' },
+        { nome: 'Thaiane Antunes', cargo: 'Supervisora Comercial', telefone: '(51) 98111-5555' }
       ]
     },
     'usr-rep-juliana': {
-      nome: 'Juliana Pereira', cor: '#A855F7', cidadeBase: 'Novo Hamburgo', deslocamentoKms: 98,
+      nome: 'Ana Paula Nunes', cor: '#A855F7', cidadeBase: 'Novo Hamburgo', deslocamentoKms: 98,
       posicaoAtual: { lat: -29.6483, lng: -51.1742, local: 'Curtume Luz, Estância Velha' },
       pontosRota: [
         { local: 'Centro Operacional', cidade: 'Novo Hamburgo', latLng: [-29.6842, -51.1313], horario: '08:30', objetivo: 'Alinhamento PCP', status: 'concluida' },
@@ -63,10 +63,10 @@ export const MapRotas: React.FC<MapRotasProps> = ({ isDarkTheme }) => {
         { local: 'Curtume Luz', cidade: 'Estância Velha', latLng: [-29.6483, -51.1742], horario: '13:45', objetivo: 'Qualidade / Reclamação Cola', status: 'concluida' },
         { local: 'Componentes Couro Sul', cidade: 'São Leopoldo', latLng: [-29.7592, -51.1472], horario: '16:00', objetivo: 'Apresentação Institucional', status: 'pendente' }
       ],
-      contatosSuporte: [{ nome: 'Thiago Rocha', cargo: 'Vendedor Interno', telefone: '(51) 99344-1234' }]
+      contatosSuporte: [{ nome: 'Diéssica Hartmann', cargo: 'Vendedor Interno', telefone: '(51) 99344-1234' }]
     },
     'usr-rep-marcos': {
-      nome: 'Marcos Vinícius', cor: '#EAB308', cidadeBase: 'Caxias do Sul', deslocamentoKms: 210,
+      nome: 'Felipe Ribeiro', cor: '#EAB308', cidadeBase: 'Caxias do Sul', deslocamentoKms: 210,
       posicaoAtual: { lat: -29.2246, lng: -51.3482, local: 'Laticínios Serra, Farroupilha' },
       pontosRota: [
         { local: 'Filial Carton Pack', cidade: 'Caxias do Sul', latLng: [-29.1688, -51.1796], horario: '07:45', objetivo: 'Coleta de Amostras de Papelão', status: 'concluida' },
@@ -74,17 +74,17 @@ export const MapRotas: React.FC<MapRotasProps> = ({ isDarkTheme }) => {
         { local: 'Laticínios Serra Azul', cidade: 'Farroupilha', latLng: [-29.2246, -51.3482], horario: '14:00', objetivo: 'Briefing técnico de cartucho triplex', status: 'concluida' },
         { local: 'Metalúrgica Metasul', cidade: 'Garibaldi', latLng: [-29.2559, -51.5342], horario: '16:30', objetivo: 'Acompanhamento pós-venda', status: 'pendente' }
       ],
-      contatosSuporte: [{ nome: 'Mariana Costa', cargo: 'Supervisora Comercial', telefone: '(51) 98111-5555' }]
+      contatosSuporte: [{ nome: 'Thaiane Antunes', cargo: 'Supervisora Comercial', telefone: '(51) 98111-5555' }]
     },
     'usr-rep-fernanda': {
-      nome: 'Fernanda Lima', cor: '#F97316', cidadeBase: 'Porto Alegre', deslocamentoKms: 80,
+      nome: 'Witalo Frota', cor: '#F97316', cidadeBase: 'Porto Alegre', deslocamentoKms: 80,
       posicaoAtual: { lat: -30.1136, lng: -51.3253, local: 'Doces Estrela, Guaíba' },
       pontosRota: [
         { local: 'Centro Administrativo Carton Pack', cidade: 'Porto Alegre', latLng: [-30.0346, -51.2177], horario: '09:00', objetivo: 'Retirada de Protótipos', status: 'concluida' },
         { local: 'Doces Estrela e Embalagens', cidade: 'Guaíba', latLng: [-30.1136, -51.3253], horario: '11:15', objetivo: 'Discussão de design de Páscoa', status: 'concluida' },
         { local: 'Plásticos e Papéis Cartonados', cidade: 'Gravataí', latLng: [-29.9430, -50.9934], horario: '14:45', objetivo: 'Apresentação de portfólio', status: 'pendente' }
       ],
-      contatosSuporte: [{ nome: 'Thiago Rocha', cargo: 'Vendedor Interno', telefone: '(51) 99344-1234' }]
+      contatosSuporte: [{ nome: 'Diéssica Hartmann', cargo: 'Vendedor Interno', telefone: '(51) 99344-1234' }]
     }
   };
 

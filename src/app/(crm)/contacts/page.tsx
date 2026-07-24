@@ -67,7 +67,7 @@ const MOCK_CONTACTS: MockContact[] = [
     company: 'J. L. E. TELECOMUNICACOES LTDA', 
     cnpj: '26.469.930/0001-82', 
     curve: 'A', 
-    representative: 'Ermínio', 
+    representative: 'Josimar Soares', 
     lastPurchaseDays: 12, 
     phone: '(51) 8595-1002', 
     city: 'São Leopoldo', 
@@ -99,7 +99,7 @@ const MOCK_CONTACTS: MockContact[] = [
     company: 'Gota Limpa Indústria', 
     cnpj: '12.345.678/0001-90', 
     curve: 'A', 
-    representative: 'Ermínio', 
+    representative: 'Josimar Soares', 
     lastPurchaseDays: 95, 
     phone: '(51) 99999-9999', 
     city: 'Sapiranga', 
@@ -123,11 +123,11 @@ const MOCK_CONTACTS: MockContact[] = [
   },
   { 
     id: '2', 
-    name: 'Ana Lima', 
+    name: 'Diéssica Hartmann', 
     company: 'Natura Cosméticos', 
     cnpj: '98.765.432/0001-10', 
     curve: 'A', 
-    representative: 'Ana Lima', 
+    representative: 'Diéssica Hartmann', 
     lastPurchaseDays: 15, 
     phone: '(11) 98888-8888', 
     city: 'São Paulo', 
@@ -150,11 +150,11 @@ const MOCK_CONTACTS: MockContact[] = [
   },
   { 
     id: '3', 
-    name: 'Carlos Mendes', 
+    name: 'Elci Alcantara', 
     company: 'XP Presentes', 
     cnpj: '11.222.333/0001-44', 
     curve: 'B', 
-    representative: 'Carlos Mendes', 
+    representative: 'Elci Alcantara', 
     lastPurchaseDays: 30, 
     phone: '(21) 97777-7777', 
     city: 'Rio de Janeiro', 
@@ -240,7 +240,7 @@ function ContactDrawer({
 }) {
   const representativesList = representatives.length > 0 
     ? representatives 
-    : ['Ana Lima', 'Ermínio', 'Carlos Mendes']
+    : ['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara']
   const [isOpen, setIsOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'geral' | 'historico'>('geral')
 
@@ -872,7 +872,7 @@ function NewContactModal({
   const [tradeName, setTradeName] = useState('')
   const [cnpj, setCnpj] = useState('')
   const [curve, setCurve] = useState<'A' | 'B' | 'C' | 'D'>('C')
-  const [representative] = useState('Ana Lima') // Default representative set in background
+  const [representative] = useState('Diéssica Hartmann') // Default representative set in background
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [city, setCity] = useState('')
@@ -1401,7 +1401,7 @@ export default function ContactsPage() {
   const [showProspeccaoModal, setShowProspeccaoModal] = useState(false)
 
   // Dynamic representatives list from CRM Users in localStorage + default ones
-  const [representativesList, setRepresentativesList] = useState<string[]>(['Ana Lima', 'Ermínio', 'Carlos Mendes'])
+  const [representativesList, setRepresentativesList] = useState<string[]>(['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara'])
 
   // Load contacts and representatives on mount
   useEffect(() => {
@@ -1454,7 +1454,7 @@ export default function ContactsPage() {
         } catch (e) {}
       }
       const repsFromContacts = Array.from(new Set(contacts.map(c => c.representative)))
-      const combined = Array.from(new Set([...repsFromUsers, ...repsFromContacts, 'Ana Lima', 'Ermínio', 'Carlos Mendes']))
+      const combined = Array.from(new Set([...repsFromUsers, ...repsFromContacts, 'Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara']))
       setRepresentativesList(combined)
     }
   }, [contacts])
@@ -1494,7 +1494,7 @@ export default function ContactsPage() {
       company: data.company || '',
       cnpj: data.cnpj || '',
       curve: data.curve || 'C',
-      representative: data.representative || (representativesList[0] || 'Ana Lima'),
+      representative: data.representative || (representativesList[0] || 'Diéssica Hartmann'),
       phone: data.phone || '',
       email: data.email || '',
       city: data.city || '',
@@ -1781,9 +1781,9 @@ export default function ContactsPage() {
         onClose={() => setShowProspeccaoModal(false)}
         usuarioLogado={{ id: 'admin-1', nome: 'Supervisor Comercial', papel: 'supervisor', ativo: true }}
         usuariosDisponiveis={[
-          { id: 'usr-1', nome: 'Ana Lima', papel: 'vendedor_interno', ativo: true },
-          { id: 'usr-2', nome: 'Ermínio', papel: 'representante', ativo: true },
-          { id: 'usr-3', nome: 'Carlos Mendes', papel: 'representante', ativo: true }
+          { id: 'usr-1', nome: 'Diéssica Hartmann', papel: 'vendedor_interno', ativo: true },
+          { id: 'usr-2', nome: 'Josimar Soares', papel: 'representante', ativo: true },
+          { id: 'usr-3', nome: 'Elci Alcantara', papel: 'representante', ativo: true }
         ]}
         onLeadsImported={() => {
           if (typeof window !== 'undefined') {

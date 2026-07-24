@@ -106,10 +106,10 @@ export const DashboardSupervisao: React.FC<DashboardSupervisaoProps> = ({
   const kpiFaturamentoMes = 612000;
 
   const representantesData = [
-    { id: 'usr-rep-carlos',   nome: 'Carlos Souza',    carteira: 86, visitas: 12, ligacoes: 34, orcamentos: 9,  conversao: 34, cor: '#3B82F6' },
-    { id: 'usr-rep-juliana',  nome: 'Juliana Pereira', carteira: 71, visitas: 9,  ligacoes: 28, orcamentos: 6,  conversao: 41, cor: '#A855F7' },
-    { id: 'usr-rep-marcos',   nome: 'Marcos Vinícius', carteira: 94, visitas: 15, ligacoes: 40, orcamentos: 11, conversao: 27, cor: '#EAB308' },
-    { id: 'usr-rep-fernanda', nome: 'Fernanda Lima',   carteira: 61, visitas: 11, ligacoes: 22, orcamentos: 5,  conversao: 38, cor: '#F97316' },
+    { id: 'usr-rep-carlos',   nome: 'Fausto Fleck',    carteira: 86, visitas: 12, ligacoes: 34, orcamentos: 9,  conversao: 34, cor: '#3B82F6' },
+    { id: 'usr-rep-juliana',  nome: 'Ana Paula Nunes', carteira: 71, visitas: 9,  ligacoes: 28, orcamentos: 6,  conversao: 41, cor: '#A855F7' },
+    { id: 'usr-rep-marcos',   nome: 'Felipe Ribeiro', carteira: 94, visitas: 15, ligacoes: 40, orcamentos: 11, conversao: 27, cor: '#EAB308' },
+    { id: 'usr-rep-fernanda', nome: 'Witalo Frota',   carteira: 61, visitas: 11, ligacoes: 22, orcamentos: 5,  conversao: 38, cor: '#F97316' },
   ];
 
   const kpis = [

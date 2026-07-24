@@ -117,7 +117,7 @@ export const EquipeLeads: React.FC<EquipeLeadsProps> = ({
   // Converter Lead em Cliente
   const handleConverterLead = async (leadId: string) => {
     try {
-      // Usar Carlos Souza como representante padrão para o cliente e Thiago como interno
+      // Usar Fausto Fleck como representante padrão para o cliente e Thiago como interno
       await dbService.prospeccao.convert(leadId, 'usr-rep-carlos', 'usr-vend');
       toastService.success('Lead convertido em Cliente Ativo com sucesso!');
       carregarDados();
