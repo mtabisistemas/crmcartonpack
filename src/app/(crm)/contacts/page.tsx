@@ -814,7 +814,44 @@ function NewContactModal({
       const rawPhone = phoneObj ? `${phoneObj.area}${phoneObj.number}` : ''
       setPhone(formatPhoneBr(rawPhone))
       
-      setEmail(data.emails?.[0]?.address || '')
+      const retrievedEmail = data.emails?.[0]?.address || ''
+      setEmail(retrievedEmail)
+
+      // Direct Website Inference by Corporate Email
+      if (retrievedEmail && retrievedEmail.includes('@')) {
+        const domain = retrievedEmail.split('@')[1]?.toLowerCase().trim()
+        const genericDomains = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'yahoo.com.br', 'bol.com.br', 'uol.com.br', 'terra.com.br', 'ig.com.br', 'icloud.com']
+        if (domain && !genericDomains.includes(domain)) {
+          setWebsite(`https://www.${domain}`)
+        }
+      }
+
+      // Trigger Social Enrichment API
+      try {
+        setLoadingSocial(true)
+        fetch('/api/enrichment/social', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cnpj: clean,
+            companyName: compName,
+            tradeName: data.alias || compName,
+            email: retrievedEmail,
+            city: data.address?.city || '',
+            state: data.address?.state || ''
+          })
+        }).then(r => r.json()).then(socialJson => {
+          if (socialJson.success && socialJson.data) {
+            if (socialJson.data.website) setWebsite(socialJson.data.website)
+            if (socialJson.data.instagram) setInstagram(socialJson.data.instagram)
+            if (socialJson.data.linkedin) setLinkedin(socialJson.data.linkedin)
+            if (socialJson.data.facebook) setFacebook(socialJson.data.facebook)
+          }
+        }).catch(err => console.warn('Social enrichment error:', err))
+          .finally(() => setLoadingSocial(false))
+      } catch (err) {
+        setLoadingSocial(false)
+      }
       setCity(data.address?.city || '')
       setState(data.address?.state || '')
       setCnpj(formatCnpj(clean))
@@ -971,164 +1008,216 @@ function NewContactModal({
         {/* 3-Column Harmonious Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 overflow-y-auto max-h-[calc(96vh-140px)] pr-1">
           
-          {/* COLUMN 1 & 2 (col-span-2): Dados Cadastrais */}
-          <div className="lg:col-span-2 card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2.5">
-            <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Dados Cadastrais & Endereço</h4>
+          {/* COLUMN 1 & 2 (col-span-2): Dados Cadastrais & Atividades Econômicas */}
+          <div className="lg:col-span-2 flex flex-col gap-3">
             
-            {/* Razão Social */}
-            <div className="flex flex-col gap-0.5">
-              <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Razão Social / Empresa *</label>
-              <input 
-                type="text" 
-                required
-                className="bg-transparent border-b border-dashed border-[var(--line)] focus:border-[var(--lime)] font-display text-xs text-[var(--white)] font-bold w-full pb-0.5 focus:outline-none"
-                placeholder="Nome da Empresa"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-              />
-            </div>
-
-            {/* Nome Fantasia + Responsável */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {/* Card 1: Dados Cadastrais & Endereço */}
+            <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2.5">
+              <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Dados Cadastrais & Endereço</h4>
+              
+              {/* Razão Social */}
               <div className="flex flex-col gap-0.5">
-                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Nome Fantasia</label>
-                <input 
-                  type="text" 
-                  className="input text-xs py-1 px-2.5" 
-                  placeholder="Nome Fantasia"
-                  value={tradeName}
-                  onChange={(e) => setTradeName(e.target.value)}
-                />
-              </div>
-
-              <div className="flex flex-col gap-0.5">
-                <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">Responsável (Pessoa Física) *</label>
+                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Razão Social / Empresa *</label>
                 <input 
                   type="text" 
                   required
-                  className="input text-xs py-1 px-2.5 font-bold border-dashed border-[var(--lime)]" 
-                  placeholder="Nome do Contato Principal"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  className="bg-transparent border-b border-dashed border-[var(--line)] focus:border-[var(--lime)] font-display text-xs text-[var(--white)] font-bold w-full pb-0.5 focus:outline-none"
+                  placeholder="Nome da Empresa"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
                 />
+              </div>
+
+              {/* Nome Fantasia + Responsável */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Nome Fantasia</label>
+                  <input 
+                    type="text" 
+                    className="input text-xs py-1 px-2.5" 
+                    placeholder="Nome Fantasia"
+                    value={tradeName}
+                    onChange={(e) => setTradeName(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">Responsável (Pessoa Física) *</label>
+                  <input 
+                    type="text" 
+                    required
+                    className="input text-xs py-1 px-2.5 font-bold border-dashed border-[var(--lime)]" 
+                    placeholder="Nome do Contato Principal"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* CNPJ + Telefone + Email */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNPJ</label>
+                  <input 
+                    type="text" 
+                    className="input text-xs py-1 px-2.5 font-mono" 
+                    placeholder="00.000.000/0001-00"
+                    value={cnpj}
+                    onChange={(e) => setCnpj(formatCnpj(e.target.value))}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
+                  <input 
+                    type="text" 
+                    className="input text-xs py-1 px-2.5" 
+                    placeholder="(00) 00000-0000"
+                    value={phone}
+                    onChange={(e) => setPhone(formatPhoneBr(e.target.value))}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">E-mail</label>
+                  <input 
+                    type="email" 
+                    className="input text-xs py-1 px-2.5" 
+                    placeholder="contato@empresa.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Rua / Número + Bairro */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="sm:col-span-2 flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Rua / Número</label>
+                  <input 
+                    type="text" 
+                    className="input text-xs py-1 px-2.5" 
+                    placeholder="Rua, Número"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Bairro</label>
+                  <input 
+                    type="text" 
+                    className="input text-xs py-1 px-2.5" 
+                    placeholder="Bairro"
+                    value={bairro}
+                    onChange={(e) => setBairro(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* CEP | Cidade | UF | Mapa */}
+              <div className="flex flex-wrap sm:flex-nowrap gap-2.5 items-end">
+                <div className="flex flex-col gap-0.5 shrink-0 w-[100px]">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CEP</label>
+                  <input 
+                    type="text" 
+                    maxLength={9}
+                    className="input text-xs py-1 px-2.5 font-mono" 
+                    placeholder="00000-000"
+                    value={cep}
+                    onChange={(e) => setCep(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-0.5 flex-1 min-w-[120px]">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Cidade</label>
+                  <input 
+                    type="text" 
+                    className="input text-xs py-1 px-2.5" 
+                    placeholder="Cidade"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-0.5 shrink-0 w-[70px]">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">UF</label>
+                  <input 
+                    type="text" 
+                    maxLength={2}
+                    className="input text-xs py-1 px-1.5 uppercase text-center font-bold font-mono w-full"
+                    placeholder="UF"
+                    value={state}
+                    onChange={(e) => setState(e.target.value.toUpperCase())}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-0.5 shrink-0 pb-0.5">
+                  <a
+                    href={(address || city) ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([address, bairro, city, state, cep].filter(Boolean).join(', '))}` : '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Ver endereço no mapa"
+                    className={`flex items-center justify-center p-1.5 rounded-lg border border-[var(--line)] transition-colors ${(address || city) ? 'text-[var(--lime)] hover:bg-[var(--lime)]/10 hover:border-[var(--lime)] cursor-pointer' : 'text-[var(--gray2)] opacity-30 pointer-events-none'}`}
+                  >
+                    <MapPin size={16} />
+                  </a>
+                </div>
               </div>
             </div>
 
-            {/* CNPJ + Telefone + Email */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            {/* Card 2: Atividades Econômicas (posicionado diretamente abaixo de Dados Cadastrais & Endereço) */}
+            <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2">
+              <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Atividades Econômicas</h4>
               <div className="flex flex-col gap-0.5">
-                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNPJ</label>
+                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNAE Principal</label>
                 <input 
                   type="text" 
-                  className="input text-xs py-1 px-2.5 font-mono" 
-                  placeholder="00.000.000/0001-00"
-                  value={cnpj}
-                  onChange={(e) => setCnpj(formatCnpj(e.target.value))}
+                  className="input text-xs py-1 px-2 font-mono" 
+                  placeholder="CNAE e Descrição"
+                  value={mainCnae}
+                  onChange={(e) => setMainCnae(e.target.value)}
                 />
               </div>
 
-              <div className="flex flex-col gap-0.5">
-                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
-                <input 
-                  type="text" 
-                  className="input text-xs py-1 px-2.5" 
-                  placeholder="(00) 00000-0000"
-                  value={phone}
-                  onChange={(e) => setPhone(formatPhoneBr(e.target.value))}
-                />
-              </div>
+              {sideActivities.length > 0 && (
+                <div className="flex flex-col gap-1.5 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowSideActivities(v => !v)}
+                    className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider font-mono transition-colors w-fit"
+                    style={{ color: showSideActivities ? 'var(--lime)' : 'var(--gray)' }}
+                  >
+                    <span
+                      className="inline-block transition-transform duration-200"
+                      style={{ transform: showSideActivities ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                    >▶</span>
+                    {showSideActivities ? 'Ocultar' : 'Ver'} secundárias ({sideActivities.length})
+                  </button>
 
-              <div className="flex flex-col gap-0.5">
-                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">E-mail</label>
-                <input 
-                  type="email" 
-                  className="input text-xs py-1 px-2.5" 
-                  placeholder="contato@empresa.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
+                  {showSideActivities && (
+                    <div className="flex flex-col gap-0 border border-[var(--line)] rounded-lg overflow-y-auto max-h-[90px]">
+                      {sideActivities.map((act, i) => (
+                        <div
+                          key={act.id}
+                          className="flex gap-1.5 px-2 py-1 text-[11px] font-mono leading-tight"
+                          style={{ background: i % 2 === 0 ? 'var(--card2)' : 'transparent' }}
+                        >
+                          <span className="text-[var(--lime)] font-bold shrink-0">{act.id}</span>
+                          <span className="text-[var(--gray)] truncate">{act.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Rua / Número + Bairro */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <div className="sm:col-span-2 flex flex-col gap-0.5">
-                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Rua / Número</label>
-                <input 
-                  type="text" 
-                  className="input text-xs py-1 px-2.5" 
-                  placeholder="Rua, Número"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Bairro</label>
-                <input 
-                  type="text" 
-                  className="input text-xs py-1 px-2.5" 
-                  placeholder="Bairro"
-                  value={bairro}
-                  onChange={(e) => setBairro(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* CEP | Cidade | UF | Mapa */}
-            <div className="flex flex-wrap sm:flex-nowrap gap-2.5 items-end">
-              <div className="flex flex-col gap-0.5 shrink-0 w-[100px]">
-                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CEP</label>
-                <input 
-                  type="text" 
-                  maxLength={9}
-                  className="input text-xs py-1 px-2.5 font-mono" 
-                  placeholder="00000-000"
-                  value={cep}
-                  onChange={(e) => setCep(e.target.value)}
-                />
-              </div>
-
-              <div className="flex flex-col gap-0.5 flex-1 min-w-[120px]">
-                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Cidade</label>
-                <input 
-                  type="text" 
-                  className="input text-xs py-1 px-2.5" 
-                  placeholder="Cidade"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                />
-              </div>
-
-              <div className="flex flex-col gap-0.5 shrink-0 w-[70px]">
-                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">UF</label>
-                <input 
-                  type="text" 
-                  maxLength={2}
-                  className="input text-xs py-1 px-1.5 uppercase text-center font-bold font-mono w-full"
-                  placeholder="UF"
-                  value={state}
-                  onChange={(e) => setState(e.target.value.toUpperCase())}
-                />
-              </div>
-
-              <div className="flex flex-col gap-0.5 shrink-0 pb-0.5">
-                <a
-                  href={(address || city) ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([address, bairro, city, state, cep].filter(Boolean).join(', '))}` : '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Ver endereço no mapa"
-                  className={`flex items-center justify-center p-1.5 rounded-lg border border-[var(--line)] transition-colors ${(address || city) ? 'text-[var(--lime)] hover:bg-[var(--lime)]/10 hover:border-[var(--lime)] cursor-pointer' : 'text-[var(--gray2)] opacity-30 pointer-events-none'}`}
-                >
-                  <MapPin size={16} />
-                </a>
-              </div>
-            </div>
           </div>
 
-          {/* COLUMN 3: Fiscal, Inscrições & Atividades Econômicas */}
+          {/* COLUMN 3: Fiscal & Canais Digitais */}
           <div className="flex flex-col gap-3">
             
-            {/* Regime Tributário & Inscrição */}
+            {/* Card 1: Dados Fiscais & Status */}
             <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2">
               <div className="flex justify-between items-center border-b border-[var(--line)] pb-1">
                 <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] font-mono">Dados Fiscais & Status</h4>
@@ -1198,8 +1287,8 @@ function NewContactModal({
               </div>
             </div>
 
-            {/* Canais Digitais & Redes Sociais */}
-            <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2">
+            {/* Card 2: Canais Digitais & Redes */}
+            <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2 flex-1">
               <div className="flex justify-between items-center border-b border-[var(--line)] pb-1">
                 <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] font-mono flex items-center gap-1.5">
                   <span>Canais Digitais & Redes</span>
@@ -1266,53 +1355,6 @@ function NewContactModal({
                   />
                 </div>
               </div>
-            </div>
-
-            {/* Atividades Econômicas */}
-            <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2 flex-1">
-              <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Atividades Econômicas</h4>
-              <div className="flex flex-col gap-0.5">
-                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNAE Principal</label>
-                <input 
-                  type="text" 
-                  className="input text-xs py-1 px-2 font-mono" 
-                  placeholder="CNAE e Descrição"
-                  value={mainCnae}
-                  onChange={(e) => setMainCnae(e.target.value)}
-                />
-              </div>
-
-              {sideActivities.length > 0 && (
-                <div className="flex flex-col gap-1.5 mt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowSideActivities(v => !v)}
-                    className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider font-mono transition-colors w-fit"
-                    style={{ color: showSideActivities ? 'var(--lime)' : 'var(--gray)' }}
-                  >
-                    <span
-                      className="inline-block transition-transform duration-200"
-                      style={{ transform: showSideActivities ? 'rotate(90deg)' : 'rotate(0deg)' }}
-                    >▶</span>
-                    {showSideActivities ? 'Ocultar' : 'Ver'} secundárias ({sideActivities.length})
-                  </button>
-
-                  {showSideActivities && (
-                    <div className="flex flex-col gap-0 border border-[var(--line)] rounded-lg overflow-y-auto max-h-[90px]">
-                      {sideActivities.map((act, i) => (
-                        <div
-                          key={act.id}
-                          className="flex gap-1.5 px-2 py-1 text-[11px] font-mono leading-tight"
-                          style={{ background: i % 2 === 0 ? 'var(--card2)' : 'transparent' }}
-                        >
-                          <span className="text-[var(--lime)] font-bold shrink-0">{act.id}</span>
-                          <span className="text-[var(--gray)] truncate">{act.text}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
 
           </div>
