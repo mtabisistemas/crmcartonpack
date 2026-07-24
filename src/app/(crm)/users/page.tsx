@@ -84,29 +84,10 @@ export default function UsersPage() {
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
 
   // Load from localStorage
-    useEffect(() => {
+      useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('crm_users')
-      localStorage.removeItem('crm_users_v4')
-      localStorage.removeItem('crm_users_v5_official')
-      localStorage.removeItem('cp_crm_v7_official_users')
-      const saved = localStorage.getItem('cp_crm_v7_official_users')
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved) as TeamUser[]
-          if (parsed.some(u => u.name === 'Diéssica Hartmann' || u.name === 'Josimar Soares' || u.name === 'Elci Alcantara' || u.name === 'Inácio Siqueira' || u.name === 'Thaiane Antunes')) {
-            localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(DEFAULT_USERS))
-            setUsers(DEFAULT_USERS)
-            return
-          }
-          setUsers(parsed)
-          return
-        } catch (e) {
-          console.error(e)
-        }
-      }
-      localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(DEFAULT_USERS))
-      setUsers(DEFAULT_USERS)
+      localStorage.clear();
+      setUsers([]);
     }
   }, [])
 

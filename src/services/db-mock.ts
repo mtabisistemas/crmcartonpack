@@ -33,24 +33,7 @@ const obterDataRelativaApenasData = (diasAtras: number): string => {
 };
 
 // Semente de dados de Usuários Comercial (Exatamente os do PDF + Supervisor e Interno)
-const SEED_USUARIOS: Usuario[] = [
-  { id: 'usr-inacio', nome: 'Inácio Siqueira', papel: 'supervisor', ativo: true },
-  { id: 'usr-pamela', nome: 'Pâmela Siqueira', papel: 'supervisor', ativo: true },
-  { id: 'usr-fausto', nome: 'Fausto Fleck', papel: 'supervisor', ativo: true },
-  { id: 'usr-thaiane', nome: 'Thaiane Antunes', papel: 'supervisor', ativo: true },
-  { id: 'usr-diessica', nome: 'Diéssica Hartmann', papel: 'vendedor_interno', ativo: true },
-  { id: 'usr-josimar', nome: 'Josimar Soares', papel: 'vendedor_interno', ativo: true },
-  { id: 'usr-elci', nome: 'Elci Alcantara', papel: 'vendedor_interno', ativo: true },
-  { id: 'usr-anapaula', nome: 'Ana Paula Nunes', papel: 'vendedor_interno', ativo: true },
-  { id: 'usr-felipe', nome: 'Felipe Ribeiro', papel: 'vendedor_interno', ativo: true },
-  { id: 'usr-witalo', nome: 'Witalo Frota', papel: 'vendedor_interno', ativo: true },
-  { id: 'usr-rep-versapack', nome: 'Versapack Centro de Negocios Ltda', papel: 'representante', ativo: true },
-  { id: 'usr-rep-lenad', nome: 'Lenad Comercio e Representações Ltda', papel: 'representante', ativo: true },
-  { id: 'usr-rep-jmwm', nome: 'J.M.W.M. Representações e Comercio Ltda', papel: 'representante', ativo: true },
-  { id: 'usr-rep-luronzoni', nome: 'Lu Ronzoni Representações Comerciais Ltda', papel: 'representante', ativo: true },
-  { id: 'usr-rep-ipepack', nome: 'Ipe Pack Representações e Embalagens Ltda', papel: 'representante', ativo: true },
-  { id: 'usr-rep-aline', nome: 'Aline Fernande dos Reis', papel: 'representante', ativo: true },
-];
+const SEED_USUARIOS: Usuario[] = [];
 
 // Gerador dinâmico de 312 clientes para bater os números exatos do PDF
 const SEED_CLIENTES = (): Cliente[] => [];
@@ -83,40 +66,11 @@ const SEED_METAS = (): Meta[] => [
 const SEED_PROSPECCAO: Prospeccao[] = [];
 
 export const DBMock = {
-  init() {
+    init() {
     if (typeof window === 'undefined') return;
-    if (!localStorage.getItem('cp_crm_v6_clean_real_data')) {
+    if (!localStorage.getItem('cp_crm_v8_pure_database_clean')) {
       localStorage.clear();
-      localStorage.setItem('cp_crm_v6_clean_real_data', 'true');
-    }
-    if (!localStorage.getItem('cp_crm_v5_official_team_reset')) {
-      localStorage.removeItem('crm_users');
-      localStorage.removeItem('crm_users_v4');
-      localStorage.removeItem('crm_users_v5_official');
-      localStorage.removeItem(KEYS.USUARIOS);
-      localStorage.removeItem(KEYS.CLIENTES);
-      localStorage.removeItem(KEYS.CONTATOS);
-      localStorage.removeItem(KEYS.VISITAS);
-      localStorage.removeItem(KEYS.LIGACOES);
-      localStorage.removeItem(KEYS.ORCAMENTOS);
-      localStorage.removeItem(KEYS.COMPRAS);
-      localStorage.removeItem(KEYS.METAS);
-      localStorage.removeItem(KEYS.PROSPECCAO);
-      localStorage.removeItem(KEYS.USER_LOGADO);
-      localStorage.setItem('cp_crm_v5_official_team_reset', 'true');
-    }
-    if (!localStorage.getItem(KEYS.USUARIOS)) {
-      const listCli = SEED_CLIENTES();
-      localStorage.setItem(KEYS.USUARIOS, JSON.stringify(SEED_USUARIOS));
-      localStorage.setItem(KEYS.CLIENTES, JSON.stringify(listCli));
-      localStorage.setItem(KEYS.CONTATOS, JSON.stringify(SEED_CONTATOS(listCli)));
-      localStorage.setItem(KEYS.VISITAS, JSON.stringify(SEED_VISITAS(listCli)));
-      localStorage.setItem(KEYS.LIGACOES, JSON.stringify(SEED_LIGACOES(listCli)));
-      localStorage.setItem(KEYS.ORCAMENTOS, JSON.stringify(SEED_ORCAMENTOS(listCli)));
-      localStorage.setItem(KEYS.COMPRAS, JSON.stringify(SEED_COMPRAS(listCli)));
-      localStorage.setItem(KEYS.METAS, JSON.stringify(SEED_METAS()));
-      localStorage.setItem(KEYS.PROSPECCAO, JSON.stringify(SEED_PROSPECCAO));
-      localStorage.setItem(KEYS.USER_LOGADO, JSON.stringify(SEED_USUARIOS[1])); // Supervisor Costa de padrão
+      localStorage.setItem('cp_crm_v8_pure_database_clean', 'true');
     }
   },
 
