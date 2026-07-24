@@ -25,6 +25,7 @@ import {
   Globe
 } from 'lucide-react'
 import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString } from '@/lib/utils'
+import { supabase } from '@/services/supabase-client'
 import { ProspeccaoModal } from '@/components/ProspeccaoModal'
 
 export interface MockContact {
@@ -215,6 +216,10 @@ function ContactDrawer({
       setSpecialSituation(contact.specialSituation ?? 'Nenhuma')
       setSpecialSituationDate(contact.specialSituationDate ?? '-')
       setStateRegistration(contact.stateRegistration ?? '')
+      setWebsite(contact.website ?? '')
+      setInstagram(contact.instagram ?? '')
+      setLinkedin(contact.linkedin ?? '')
+      setFacebook(contact.facebook ?? '')
 
       setActivities([
         { id: '1', type: 'nota', content: 'Ficha cadastral criada no CRM Carton Pack.', timestamp: '10/07/2026 09:00' },
@@ -254,6 +259,10 @@ function ContactDrawer({
       bairro,
       cep,
       sideActivities,
+      website,
+      instagram,
+      linkedin,
+      facebook,
       ...cleanOverrides
     })
   }
@@ -327,11 +336,11 @@ function ContactDrawer({
           
           {/* TAB 1: GERAL */}
           {activeTab === 'geral' && (
-            <div className="flex flex-col gap-5 animate-fade-in pb-12">
+            <div className="flex flex-col gap-4 animate-fade-in pb-12">
               
               {/* Seção Destaques no Topo: Curva, Representante e Status */}
-              <div className="grid grid-cols-3 gap-3 p-4 bg-[var(--card2)] border border-[var(--line)] rounded-xl">
-                <div className="flex flex-col gap-1.5">
+              <div className="grid grid-cols-3 gap-3 p-3 bg-[var(--card2)] border border-[var(--line)] rounded-xl">
+                <div className="flex flex-col gap-1">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Curva ABC</label>
                   <select 
                     className="input text-xs py-1 px-2 font-bold text-[var(--lime)] font-mono bg-[var(--charcoal)]"
@@ -349,7 +358,7 @@ function ContactDrawer({
                   </select>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Representante</label>
                   <select 
                     className="input text-xs py-1 px-2 font-bold bg-[var(--charcoal)]"
@@ -366,7 +375,7 @@ function ContactDrawer({
                   </select>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Status Carteira</label>
                   <select 
                     className="input text-xs py-1 px-2 font-bold bg-[var(--charcoal)]"
@@ -391,42 +400,51 @@ function ContactDrawer({
                 </div>
               </div>
               
-              {/* Dashboard 2-Column Split Layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              {/* 3-Column Harmonious Grid Layout (Idêntico ao Cadastro) */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                 
-                {/* LEFT COLUMN (2/3 width): Dados Cadastrais */}
-                <div className="lg:col-span-2 flex flex-col gap-4">
-                  <div className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-3 flex-1">
-                    <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Dados Cadastrais</h4>
+                {/* COLUMN 1 & 2 (col-span-2): Dados Cadastrais & Atividades Econômicas */}
+                <div className="lg:col-span-2 flex flex-col gap-3">
+                  
+                  {/* Card 1: Dados Cadastrais & Endereço */}
+                  <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2.5">
+                    <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Dados Cadastrais & Endereço</h4>
                     
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Razão Social / Empresa</label>
+                    {/* Razão Social */}
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Razão Social / Empresa *</label>
                       <input 
                         type="text" 
-                        className="bg-transparent border-b border-dashed border-[var(--line)] focus:border-[var(--lime)] font-display text-sm text-[var(--white)] font-bold w-full pb-1 focus:outline-none"
+                        required
+                        className="bg-transparent border-b border-dashed border-[var(--line)] focus:border-[var(--lime)] font-display text-xs text-[var(--white)] font-bold w-full pb-0.5 focus:outline-none"
+                        placeholder="Nome da Empresa"
                         value={company}
                         onChange={(e) => setCompany(e.target.value)}
                         onBlur={() => handleSaveGeneral()}
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="flex flex-col gap-1.5">
+                    {/* Nome Fantasia + Responsável */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div className="flex flex-col gap-0.5">
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Nome Fantasia</label>
                         <input 
                           type="text" 
-                          className="input text-xs py-1.5" 
+                          className="input text-xs py-1 px-2.5" 
+                          placeholder="Nome Fantasia"
                           value={tradeName}
                           onChange={(e) => setTradeName(e.target.value)}
                           onBlur={() => handleSaveGeneral()}
                         />
                       </div>
 
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Responsável (Pessoa Física)</label>
+                      <div className="flex flex-col gap-0.5">
+                        <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">Responsável (Pessoa Física) *</label>
                         <input 
                           type="text" 
-                          className="input text-xs py-1.5" 
+                          required
+                          className="input text-xs py-1 px-2.5 font-bold border-dashed border-[var(--lime)]" 
+                          placeholder="Nome do Contato Principal"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           onBlur={() => handleSaveGeneral()}
@@ -434,34 +452,38 @@ function ContactDrawer({
                       </div>
                     </div>
 
-                    <div className="flex flex-col md:flex-row gap-3">
-                      <div className="flex flex-col gap-1.5 md:w-[155px] shrink-0">
+                    {/* CNPJ + Telefone + Email */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <div className="flex flex-col gap-0.5">
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNPJ</label>
                         <input 
                           type="text" 
-                          className="input text-xs py-1.5 font-mono" 
+                          className="input text-xs py-1 px-2.5 font-mono" 
+                          placeholder="00.000.000/0001-00"
                           value={cnpj}
                           onChange={(e) => setCnpj(formatCnpj(e.target.value))}
                           onBlur={() => handleSaveGeneral()}
                         />
                       </div>
 
-                      <div className="flex flex-col gap-1.5 md:w-[135px] shrink-0">
+                      <div className="flex flex-col gap-0.5">
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
                         <input 
                           type="text" 
-                          className="input text-xs py-1.5" 
+                          className="input text-xs py-1 px-2.5" 
+                          placeholder="(00) 00000-0000"
                           value={phone}
                           onChange={(e) => setPhone(formatPhoneBr(e.target.value))}
                           onBlur={() => handleSaveGeneral()}
                         />
                       </div>
 
-                      <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                      <div className="flex flex-col gap-0.5">
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">E-mail</label>
                         <input 
                           type="email" 
-                          className="input text-[8px] py-1.5 tracking-tight" 
+                          className="input text-xs py-1 px-2.5" 
+                          placeholder="contato@empresa.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           onBlur={() => handleSaveGeneral()}
@@ -469,24 +491,25 @@ function ContactDrawer({
                       </div>
                     </div>
 
-                    {/* Linha 1 Endereço: Rua + Bairro */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="col-span-2 flex flex-col gap-1.5">
+                    {/* Rua / Número + Bairro */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <div className="sm:col-span-2 flex flex-col gap-0.5">
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Rua / Número</label>
                         <input 
                           type="text" 
-                          className="input text-xs py-1.5" 
+                          className="input text-xs py-1 px-2.5" 
+                          placeholder="Rua, Número"
                           value={address}
                           onChange={(e) => setAddress(e.target.value)}
                           onBlur={() => handleSaveGeneral()}
                         />
                       </div>
-
-                      <div className="flex flex-col gap-1.5">
+                      <div className="flex flex-col gap-0.5">
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Bairro</label>
                         <input 
                           type="text" 
-                          className="input text-xs py-1.5" 
+                          className="input text-xs py-1 px-2.5" 
+                          placeholder="Bairro"
                           value={bairro}
                           onChange={(e) => setBairro(e.target.value)}
                           onBlur={() => handleSaveGeneral()}
@@ -494,197 +517,296 @@ function ContactDrawer({
                       </div>
                     </div>
 
-                    {/* Linha 2 Endereço: CEP + Cidade + UF + Map Pin */}
-                    <div className="flex gap-3">
-                      <div className="flex flex-col gap-1.5" style={{ width: '110px', flexShrink: 0 }}>
+                    {/* CEP | Cidade | UF | Mapa */}
+                    <div className="flex flex-wrap sm:flex-nowrap gap-2.5 items-end">
+                      <div className="flex flex-col gap-0.5 shrink-0 w-[100px]">
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CEP</label>
                         <input 
                           type="text" 
                           maxLength={9}
-                          className="input text-xs py-1.5 font-mono" 
+                          className="input text-xs py-1 px-2.5 font-mono" 
+                          placeholder="00000-000"
                           value={cep}
                           onChange={(e) => setCep(e.target.value)}
                           onBlur={() => handleSaveGeneral()}
                         />
                       </div>
 
-                      <div className="flex flex-col gap-1.5 flex-1">
+                      <div className="flex flex-col gap-0.5 flex-1 min-w-[120px]">
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Cidade</label>
                         <input 
                           type="text" 
-                          className="input text-xs py-1.5" 
+                          className="input text-xs py-1 px-2.5" 
+                          placeholder="Cidade"
                           value={city}
                           onChange={(e) => setCity(e.target.value)}
                           onBlur={() => handleSaveGeneral()}
                         />
                       </div>
 
-                      <div className="flex flex-col gap-1.5" style={{ width: '88px', flexShrink: 0 }}>
+                      <div className="flex flex-col gap-0.5 shrink-0 w-[70px]">
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">UF</label>
                         <input 
                           type="text" 
                           maxLength={2}
-                          className="input text-xs py-1.5 uppercase text-center font-bold font-mono w-full" 
+                          className="input text-xs py-1 px-1.5 uppercase text-center font-bold font-mono w-full"
+                          placeholder="UF"
                           value={state}
                           onChange={(e) => setState(e.target.value.toUpperCase())}
                           onBlur={() => handleSaveGeneral()}
                         />
                       </div>
 
-                      {/* Map icon */}
-                      <div className="flex flex-col gap-1.5" style={{ flexShrink: 0 }}>
-                        <label className="text-[9px] font-bold text-transparent uppercase font-mono tracking-wider select-none">·</label>
+                      <div className="flex flex-col gap-0.5 shrink-0 pb-0.5">
                         <a
                           href={(address || city) ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([address, bairro, city, state, cep].filter(Boolean).join(', '))}` : '#'}
                           target="_blank"
                           rel="noopener noreferrer"
                           title="Ver endereço no mapa"
-                          className={`flex items-center justify-center py-1.5 px-1 transition-colors ${(address || city) ? 'text-[var(--lime)] hover:opacity-70 cursor-pointer' : 'text-[var(--gray2)] opacity-30 pointer-events-none'}`}
+                          className={`flex items-center justify-center p-1.5 rounded-lg border border-[var(--line)] transition-colors ${(address || city) ? 'text-[var(--lime)] hover:bg-[var(--lime)]/10 hover:border-[var(--lime)] cursor-pointer' : 'text-[var(--gray2)] opacity-30 pointer-events-none'}`}
                         >
-                          <MapPin size={20} />
+                          <MapPin size={16} />
                         </a>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* RIGHT COLUMN (1/3 width): Fisco e Tributário */}
-                <div className="flex flex-col gap-4">
-                  {/* Card 2: Regime Tributário */}
-                  <div className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-3">
-                    <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Regime Tributário</h4>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Regime Tributário</label>
-                      <select 
-                        className="input text-xs py-1.5" 
-                        value={taxRegime} 
-                        onChange={(e) => {
-                          const val = e.target.value as any
-                          setTaxRegime(val)
-                          handleSaveGeneral({ taxRegime: val })
-                        }}
-                      >
-                        <option value="MEI">MEI</option>
-                        <option value="Simples Nacional">Simples Nacional</option>
-                        <option value="Lucro Presumido">Lucro Presumido</option>
-                        <option value="Lucro Real">Lucro Real</option>
-                      </select>
+                  {/* Card 2: Atividades Econômicas */}
+                  <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2">
+                    <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Atividades Econômicas</h4>
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNAE Principal</label>
+                      <input 
+                        type="text" 
+                        className="input text-xs py-1 px-2 font-mono" 
+                        placeholder="CNAE e Descrição"
+                        value={mainCnae}
+                        onChange={(e) => setMainCnae(e.target.value)}
+                        onBlur={() => handleSaveGeneral()}
+                      />
                     </div>
+
+                    {sideActivities.length > 0 && (
+                      <div className="flex flex-col gap-1.5 mt-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowSideActivities(v => !v)}
+                          className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider font-mono transition-colors w-fit"
+                          style={{ color: showSideActivities ? 'var(--lime)' : 'var(--gray)' }}
+                        >
+                          <span
+                            className="inline-block transition-transform duration-200"
+                            style={{ transform: showSideActivities ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                          >▶</span>
+                          {showSideActivities ? 'Ocultar' : 'Ver'} secundárias ({sideActivities.length})
+                        </button>
+
+                        {showSideActivities && (
+                          <div className="flex flex-col gap-0 border border-[var(--line)] rounded-lg overflow-y-auto max-h-[90px]">
+                            {sideActivities.map((act, i) => (
+                              <div
+                                key={act.id || i}
+                                className="flex gap-1.5 px-2 py-1 text-[11px] font-mono leading-tight"
+                                style={{ background: i % 2 === 0 ? 'var(--card2)' : 'transparent' }}
+                              >
+                                <span className="text-[var(--lime)] font-bold shrink-0">{act.id}</span>
+                                <span className="text-[var(--gray)] truncate">{act.text}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Card 3: Inscrições Estaduais e Status */}
-                  <div className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-3 flex-1">
+                </div>
+
+                {/* COLUMN 3: Fiscal & Canais Digitais */}
+                <div className="flex flex-col gap-3">
+                  
+                  {/* Card 1: Dados Fiscais & Status */}
+                  <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2">
                     <div className="flex justify-between items-center border-b border-[var(--line)] pb-1">
-                      <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] font-mono">Inscrições Estaduais e Status</h4>
+                      <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] font-mono">Dados Fiscais & Status</h4>
                       {cnpj && (
                         <a 
                           href={`https://cnpja.com/office/${cnpj.replace(/\D/g, '')}`} 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          title="Ver no CNPJá"
-                          className="text-[9px] font-bold text-[var(--gray2)] hover:text-[var(--lime)] transition-colors p-1"
+                          className="text-[9px] font-bold text-[var(--lime)] hover:text-white uppercase tracking-wider font-mono flex items-center gap-1 transition-colors"
                         >
-                          <ExternalLink size={12} />
+                          <span>CNPJá</span>
+                          <ExternalLink size={10} />
                         </a>
                       )}
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Situação Cadastral</label>
-                      <input 
-                        type="text" 
-                        className="input text-xs py-1.5 font-bold" 
-                        style={{ color: registrationStatus.includes('ATIVA') ? 'var(--green)' : 'var(--white)' }}
-                        value={registrationStatus}
-                        onChange={(e) => setRegistrationStatus(e.target.value)}
-                        onBlur={() => handleSaveGeneral()}
-                      />
+                    <div className="grid grid-cols-5 gap-2">
+                      <div className="col-span-2 flex flex-col gap-0.5">
+                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Regime Tributário</label>
+                        <select 
+                          className="input text-xs py-1 px-2.5" 
+                          value={taxRegime} 
+                          onChange={(e) => {
+                            const val = e.target.value as any
+                            setTaxRegime(val)
+                            handleSaveGeneral({ taxRegime: val })
+                          }}
+                        >
+                          <option value="MEI">MEI</option>
+                          <option value="Simples Nacional">Simples</option>
+                          <option value="Lucro Presumido">Presumido</option>
+                          <option value="Lucro Real">Lucro Real</option>
+                        </select>
+                      </div>
+
+                      <div className="col-span-3 flex flex-col gap-0.5">
+                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Situação Cadastral</label>
+                        <input 
+                          type="text" 
+                          title={registrationStatus}
+                          className="input text-xs py-1 px-2.5 font-bold w-full" 
+                          placeholder="Ex: ATIVA"
+                          style={{ 
+                            color: (registrationStatus.includes('ATIVA') || registrationStatus.includes('Ativa')) ? 'var(--green)' : 'var(--white)' 
+                          }}
+                          value={registrationStatus}
+                          onChange={(e) => setRegistrationStatus(e.target.value)}
+                          onBlur={() => handleSaveGeneral()}
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Inscrição Estadual (IE)</label>
-                      <input 
-                        type="text" 
-                        className="input text-xs py-1.5 font-mono" 
-                        value={stateRegistration}
-                        onChange={(e) => setStateRegistration(e.target.value)}
-                        onBlur={() => handleSaveGeneral()}
-                      />
-                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-0.5">
+                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Inscrição Estadual (IE)</label>
+                        <input 
+                          type="text" 
+                          className="input text-xs py-1 px-2.5 font-mono" 
+                          placeholder="IE"
+                          value={stateRegistration}
+                          onChange={(e) => setStateRegistration(e.target.value)}
+                          onBlur={() => handleSaveGeneral()}
+                        />
+                      </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-col gap-0.5">
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Situação Especial</label>
                         <input 
                           type="text" 
-                          className="input text-[10px] py-1.5 truncate" 
+                          className="input text-xs py-1 px-2.5" 
+                          placeholder="Nenhuma"
                           value={specialSituation}
                           onChange={(e) => setSpecialSituation(e.target.value)}
                           onBlur={() => handleSaveGeneral()}
                         />
                       </div>
+                    </div>
+                  </div>
 
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Data Situação</label>
+                  {/* Card 2: Canais Digitais & Redes */}
+                  <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2.5">
+                    <div className="flex justify-between items-center border-b border-[var(--line)] pb-1">
+                      <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] font-mono">Canais Digitais & Redes</h4>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-0.5">
+                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider flex items-center justify-between">
+                          <span className="flex items-center gap-1">
+                            <Globe size={11} className="text-[var(--lime)]" />
+                            <span>Website</span>
+                          </span>
+                          {website && (
+                            <a href={website.startsWith('http') ? website : `https://${website}`} target="_blank" rel="noopener noreferrer" className="text-[9px] text-[var(--lime)] hover:underline flex items-center gap-0.5">
+                              <span>Abrir</span>
+                              <ExternalLink size={9} />
+                            </a>
+                          )}
+                        </label>
                         <input 
                           type="text" 
-                          className="input text-[10px] py-1.5 text-center font-mono" 
-                          value={specialSituationDate}
-                          onChange={(e) => setSpecialSituationDate(e.target.value)}
+                          className="input text-xs py-1 px-2.5 font-mono" 
+                          placeholder="https://..."
+                          value={website}
+                          onChange={(e) => setWebsite(e.target.value)}
+                          onBlur={() => handleSaveGeneral()}
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-0.5">
+                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider flex items-center justify-between">
+                          <span className="flex items-center gap-1">
+                            <svg className="w-3 h-3 text-[#E1306C] fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                            <span>Instagram</span>
+                          </span>
+                          {instagram && (
+                            <a href={instagram.startsWith('http') ? instagram : `https://instagram.com/${instagram.replace('@','')}`} target="_blank" rel="noopener noreferrer" className="text-[9px] text-[#E1306C] hover:underline flex items-center gap-0.5">
+                              <span>Perfil</span>
+                              <ExternalLink size={9} />
+                            </a>
+                          )}
+                        </label>
+                        <input 
+                          type="text" 
+                          className="input text-xs py-1 px-2.5 font-mono" 
+                          placeholder="@perfil"
+                          value={instagram}
+                          onChange={(e) => setInstagram(e.target.value)}
+                          onBlur={() => handleSaveGeneral()}
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-0.5">
+                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider flex items-center justify-between">
+                          <span className="flex items-center gap-1">
+                            <svg className="w-3 h-3 text-[#0A66C2] fill-current" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                            <span>LinkedIn</span>
+                          </span>
+                          {linkedin && (
+                            <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noopener noreferrer" className="text-[9px] text-[#0A66C2] hover:underline flex items-center gap-0.5">
+                              <span>Perfil</span>
+                              <ExternalLink size={9} />
+                            </a>
+                          )}
+                        </label>
+                        <input 
+                          type="text" 
+                          className="input text-xs py-1 px-2.5 font-mono" 
+                          placeholder="linkedin.com/company/..."
+                          value={linkedin}
+                          onChange={(e) => setLinkedin(e.target.value)}
+                          onBlur={() => handleSaveGeneral()}
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-0.5">
+                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider flex items-center justify-between">
+                          <span className="flex items-center gap-1">
+                            <svg className="w-3 h-3 text-[#1877F2] fill-current" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+                            <span>Facebook</span>
+                          </span>
+                          {facebook && (
+                            <a href={facebook.startsWith('http') ? facebook : `https://${facebook}`} target="_blank" rel="noopener noreferrer" className="text-[9px] text-[#1877F2] hover:underline flex items-center gap-0.5">
+                              <span>Página</span>
+                              <ExternalLink size={9} />
+                            </a>
+                          )}
+                        </label>
+                        <input 
+                          type="text" 
+                          className="input text-xs py-1 px-2.5 font-mono" 
+                          placeholder="facebook.com/..."
+                          value={facebook}
+                          onChange={(e) => setFacebook(e.target.value)}
                           onBlur={() => handleSaveGeneral()}
                         />
                       </div>
                     </div>
                   </div>
+
                 </div>
 
-              </div>
-
-              {/* Card 4: Atividades Econômicas */}
-              <div className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-3">
-                <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Atividades Econômicas</h4>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNAE Principal</label>
-                  <input 
-                    type="text" 
-                    className="input text-xs py-1.5 font-medium" 
-                    value={formatCnaeFullString(mainCnae)}
-                    onChange={(e) => setMainCnae(e.target.value)}
-                    onBlur={() => handleSaveGeneral()}
-                  />
-                </div>
-
-                {sideActivities.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowSideActivities(v => !v)}
-                      className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider font-mono transition-colors w-fit"
-                      style={{ color: showSideActivities ? 'var(--lime)' : 'var(--gray)' }}
-                    >
-                      <span
-                        className="inline-block transition-transform duration-200"
-                        style={{ transform: showSideActivities ? 'rotate(90deg)' : 'rotate(0deg)' }}
-                      >▶</span>
-                      {showSideActivities ? 'Ocultar' : 'Ver'} atividades secundárias ({sideActivities.length})
-                    </button>
-
-                    {showSideActivities && (
-                      <div className="flex flex-col gap-0 border border-[var(--line)] rounded-lg overflow-hidden">
-                        {sideActivities.map((act, i) => (
-                          <div
-                            key={i}
-                            className="flex gap-2 px-3 py-1.5 text-xs font-mono"
-                            style={{ background: i % 2 === 0 ? 'var(--card2)' : 'transparent' }}
-                          >
-                            <span className="text-[var(--lime)] font-bold shrink-0">{formatCnaeCode(act.id)}</span>
-                            <span className="text-[var(--gray)]">{act.text}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
 
             </div>
@@ -1402,33 +1524,77 @@ export default function ContactsPage() {
   // Dynamic representatives list from CRM Users in localStorage + default ones
   const [representativesList, setRepresentativesList] = useState<string[]>(['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara'])
 
-  // Load contacts and representatives on mount
+  // Load contacts and representatives on mount (fetching from Supabase contacts table)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedContacts = localStorage.getItem('crm_contacts')
-      if (savedContacts) {
+    async function loadContacts() {
+      if (supabase) {
         try {
-          setContacts(JSON.parse(savedContacts))
-        } catch (e) {
-          console.error(e)
+          const { data, error } = await supabase.from('contacts').select('*').order('created_at', { ascending: false })
+          if (!error && data && data.length > 0) {
+            const mapped: MockContact[] = data.map((item: any) => ({
+              id: item.id,
+              name: item.name || '',
+              company: item.company || '',
+              cnpj: item.cnpj || '',
+              curve: item.curve || 'C',
+              representative: item.representative || 'Diéssica Hartmann',
+              phone: item.phone || '',
+              email: item.email || '',
+              city: item.city || '',
+              state: item.state || '',
+              status: item.status || 'ativo',
+              lastPurchaseDays: 0,
+              tradeName: item.role || item.company || '',
+              registrationStatus: item.registration_status || 'ATIVA',
+              mainCnae: item.main_cnae || '',
+              address: item.address || '',
+              bairro: item.bairro || '',
+              cep: item.cep || '',
+              sideActivities: item.side_activities ? (typeof item.side_activities === 'string' ? JSON.parse(item.side_activities) : item.side_activities) : [],
+              taxRegime: item.tax_regime || 'Simples Nacional',
+              specialSituation: item.special_situation || 'Nenhuma',
+              specialSituationDate: item.special_situation_date || '-',
+              stateRegistration: item.state_registration || '',
+              website: item.website || '',
+              instagram: item.instagram || '',
+              linkedin: item.linkedin || '',
+              facebook: item.facebook || ''
+            }))
+            setContacts(mapped)
+            return
+          }
+        } catch (err) {
+          console.error('Supabase load error:', err)
         }
       }
 
-      const savedUsers = localStorage.getItem('crm_users')
-      if (savedUsers) {
-        try {
-          const parsed = JSON.parse(savedUsers)
-          const repsFromUsers = parsed
-            .filter((u: any) => u.role === 'representante' && u.status === 'ativo')
-            .map((u: any) => u.name)
-          if (repsFromUsers.length > 0) {
-            setRepresentativesList(repsFromUsers)
+      if (typeof window !== 'undefined') {
+        const savedContacts = localStorage.getItem('crm_contacts')
+        if (savedContacts) {
+          try {
+            setContacts(JSON.parse(savedContacts))
+          } catch (e) {
+            console.error(e)
           }
-        } catch (e) {
-          console.error(e)
+        }
+
+        const savedUsers = localStorage.getItem('crm_users')
+        if (savedUsers) {
+          try {
+            const parsed = JSON.parse(savedUsers)
+            const repsFromUsers = parsed
+              .filter((u: any) => u.role === 'representante' && u.status === 'ativo')
+              .map((u: any) => u.name)
+            if (repsFromUsers.length > 0) {
+              setRepresentativesList(repsFromUsers)
+            }
+          } catch (e) {
+            console.error(e)
+          }
         }
       }
     }
+    loadContacts()
   }, [])
 
   // Persist contacts on change
@@ -1512,11 +1678,50 @@ export default function ContactsPage() {
       taxRegime: data.taxRegime || 'Simples Nacional',
       specialSituation: data.specialSituation || 'Nenhuma',
       specialSituationDate: data.specialSituationDate || '-',
-      stateRegistration: data.stateRegistration || ''
+      stateRegistration: data.stateRegistration || '',
+      website: data.website || '',
+      instagram: data.instagram || '',
+      linkedin: data.linkedin || '',
+      facebook: data.facebook || ''
     }
 
     const updated = [newContact, ...contacts]
     saveContacts(updated)
+
+    // Direct Supabase Contacts Table Sync
+    if (supabase) {
+      supabase.from('contacts').insert([{
+        name: newContact.name,
+        company: newContact.company,
+        role: newContact.tradeName || newContact.company,
+        phone: newContact.phone,
+        email: newContact.email,
+        city: newContact.city,
+        state: newContact.state,
+        status: newContact.status,
+        curve: newContact.curve,
+        representative: newContact.representative,
+        cnpj: newContact.cnpj,
+        address: newContact.address,
+        bairro: newContact.bairro,
+        cep: newContact.cep,
+        tax_regime: newContact.taxRegime,
+        special_situation: newContact.specialSituation,
+        special_situation_date: newContact.specialSituationDate,
+        state_registration: newContact.stateRegistration,
+        registration_status: newContact.registrationStatus,
+        main_cnae: newContact.mainCnae,
+        side_activities: JSON.stringify(newContact.sideActivities || []),
+        website: newContact.website,
+        instagram: newContact.instagram,
+        linkedin: newContact.linkedin,
+        facebook: newContact.facebook
+      }]).then(({ error }) => {
+        if (error) console.error('Error saving contact to Supabase:', error)
+        else console.log('Successfully saved contact to Supabase contacts table!')
+      })
+    }
+
     setShowNewContactModal(false)
   }
 
