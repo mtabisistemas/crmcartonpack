@@ -66,11 +66,11 @@ const SEED_METAS = (): Meta[] => [
 const SEED_PROSPECCAO: Prospeccao[] = [];
 
 export const DBMock = {
-    init() {
+      init() {
     if (typeof window === 'undefined') return;
-    if (!localStorage.getItem('cp_crm_v8_pure_database_clean')) {
+    if (!localStorage.getItem('cp_crm_v10_zero_mock_complete')) {
       localStorage.clear();
-      localStorage.setItem('cp_crm_v8_pure_database_clean', 'true');
+      localStorage.setItem('cp_crm_v10_zero_mock_complete', 'true');
     }
   },
 
