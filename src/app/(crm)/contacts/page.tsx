@@ -1253,7 +1253,7 @@ function NewContactModal({
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Situação Cadastral</label>
                   <input 
                     type="text" 
-                    className="input text-xs py-1 px-2 font-bold" 
+                    className="input text-[10px] py-1 px-1.5 font-bold truncate" 
                     placeholder="Ex: ATIVA"
                     style={{ color: registrationStatus.includes('ATIVA') || registrationStatus.includes('Ativa') ? 'var(--green)' : 'var(--white)' }}
                     value={registrationStatus}
@@ -1287,8 +1287,8 @@ function NewContactModal({
               </div>
             </div>
 
-            {/* Card 2: Canais Digitais & Redes */}
-            <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2 flex-1">
+            {/* Card 2: Canais Digitais & Redes (empilhados verticalmente para ocuparem o espaço) */}
+            <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2 flex-1 justify-between">
               <div className="flex justify-between items-center border-b border-[var(--line)] pb-1">
                 <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] font-mono flex items-center gap-1.5">
                   <span>Canais Digitais & Redes</span>
@@ -1296,7 +1296,7 @@ function NewContactModal({
                 </h4>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex flex-col gap-2">
                 <div className="flex flex-col gap-0.5">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider flex items-center gap-1">
                     <Globe size={11} className="text-[var(--lime)]" />
@@ -1304,7 +1304,7 @@ function NewContactModal({
                   </label>
                   <input 
                     type="text" 
-                    className="input text-xs py-1 px-2 font-mono" 
+                    className="input text-xs py-1 px-2.5 font-mono" 
                     placeholder="https://..."
                     value={website}
                     onChange={(e) => setWebsite(e.target.value)}
@@ -1318,15 +1318,13 @@ function NewContactModal({
                   </label>
                   <input 
                     type="text" 
-                    className="input text-xs py-1 px-2 font-mono" 
+                    className="input text-xs py-1 px-2.5 font-mono" 
                     placeholder="@perfil"
                     value={instagram}
                     onChange={(e) => setInstagram(e.target.value)}
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-2">
                 <div className="flex flex-col gap-0.5">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider flex items-center gap-1">
                     <svg className="w-3 h-3 text-[#0A66C2] fill-current" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
@@ -1334,7 +1332,7 @@ function NewContactModal({
                   </label>
                   <input 
                     type="text" 
-                    className="input text-xs py-1 px-2 font-mono" 
+                    className="input text-xs py-1 px-2.5 font-mono" 
                     placeholder="linkedin.com/company/..."
                     value={linkedin}
                     onChange={(e) => setLinkedin(e.target.value)}
@@ -1348,7 +1346,7 @@ function NewContactModal({
                   </label>
                   <input 
                     type="text" 
-                    className="input text-xs py-1 px-2 font-mono" 
+                    className="input text-xs py-1 px-2.5 font-mono" 
                     placeholder="facebook.com/..."
                     value={facebook}
                     onChange={(e) => setFacebook(e.target.value)}
