@@ -914,14 +914,14 @@ function NewContactModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-      <form onSubmit={handleSubmit} className="bg-[var(--charcoal)] border border-[var(--line)] rounded-2xl w-full max-w-[95vw] xl:max-w-6xl shadow-2xl flex flex-col gap-4 animate-fade-up max-h-[95vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-2 sm:p-4">
+      <form onSubmit={handleSubmit} className="bg-[var(--charcoal)] border border-[var(--line)] rounded-2xl w-full max-w-[95vw] xl:max-w-6xl shadow-2xl flex flex-col gap-2.5 animate-fade-up max-h-[96vh] overflow-hidden p-4 sm:p-5">
         
         {/* Header */}
-        <div className="flex justify-between items-start border-b border-[var(--line)] pb-3 px-6 pt-6 shrink-0">
+        <div className="flex justify-between items-center border-b border-[var(--line)] pb-2.5 px-2 shrink-0">
           <div>
-            <h3 className="font-display text-base text-[var(--white)] font-bold">Cadastrar Novo Cliente</h3>
-            <p className="text-xs text-[var(--gray)] mt-0.5 font-mono">Preenchimento automático inteligente integrado com a API do CNPJá e CNPJ.ws</p>
+            <h3 className="font-display text-sm sm:text-base text-[var(--white)] font-bold">Cadastrar Novo Cliente</h3>
+            <p className="text-[11px] text-[var(--gray)] font-mono">Preenchimento automático inteligente integrado com a API do CNPJá e CNPJ.ws</p>
           </div>
           <button type="button" onClick={onCancel} className="text-gray-400 hover:text-[var(--white)] p-1 rounded-md hover:bg-[var(--line)] transition-colors">
             <X size={18} />
@@ -929,11 +929,11 @@ function NewContactModal({
         </div>
 
         {/* CNPJ Search Bar */}
-        <div className="flex flex-wrap items-center gap-3 bg-[var(--card)] border border-[var(--line)] p-2.5 rounded-xl px-6">
-          <label className="text-[10px] font-mono font-bold text-[var(--lime)] uppercase tracking-wider whitespace-nowrap">Buscar CNPJ:</label>
+        <div className="flex items-center gap-2.5 bg-[var(--card)] border border-[var(--line)] p-2 rounded-xl px-4 shrink-0">
+          <label className="text-[10px] font-mono font-bold text-[var(--lime)] uppercase tracking-wider shrink-0">Buscar CNPJ:</label>
           <input 
             type="text" 
-            className="input font-mono bg-[var(--charcoal)] flex-1 min-w-[140px] text-xs py-1" 
+            className="input font-mono bg-[var(--charcoal)] flex-1 text-xs py-1 px-3" 
             placeholder="Ex: 00.000.000/0001-00"
             value={rawCnpj}
             onChange={(e) => setRawCnpj(formatCnpj(e.target.value))}
@@ -942,200 +942,177 @@ function NewContactModal({
             type="button"
             disabled={loadingCnpj}
             onClick={handleFetchCnpj}
-            className="btn btn-primary py-1 px-3 text-[10px] font-bold uppercase tracking-wider text-[#060606]"
+            className="btn btn-primary py-1 px-3 text-[10px] font-bold uppercase tracking-wider text-[#060606] shrink-0"
           >
             {loadingCnpj ? 'Buscando...' : 'Buscar'}
           </button>
         </div>
-        {cnpjError && <span className="text-[10px] text-[var(--red)] font-semibold px-6">{cnpjError}</span>}
+        {cnpjError && <span className="text-[10px] text-[var(--red)] font-semibold px-2 shrink-0">{cnpjError}</span>}
 
-        {/* Dashboard 2-Column Split Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 border-t border-[var(--line)] pt-4 overflow-y-auto flex-1 px-6 pb-6 pr-5">
+        {/* 3-Column Harmonious Grid Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 overflow-y-auto max-h-[calc(96vh-140px)] pr-1">
           
-          {/* LEFT COLUMN (2/3 width): Cadastral Info */}
-          <div className="lg:col-span-2 flex flex-col gap-4 h-full">
+          {/* COLUMN 1 & 2 (col-span-2): Dados Cadastrais */}
+          <div className="lg:col-span-2 card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2.5">
+            <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Dados Cadastrais & Endereço</h4>
             
-            {/* Card 1: Identificação Geral — flex-1 to match height of Inscrições card */}
-            <div className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-3 flex-1">
-              <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Dados Cadastrais</h4>
-              
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Razão Social / Empresa *</label>
+            {/* Razão Social */}
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Razão Social / Empresa *</label>
+              <input 
+                type="text" 
+                required
+                className="bg-transparent border-b border-dashed border-[var(--line)] focus:border-[var(--lime)] font-display text-xs text-[var(--white)] font-bold w-full pb-0.5 focus:outline-none"
+                placeholder="Nome da Empresa"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+              />
+            </div>
+
+            {/* Nome Fantasia + Responsável */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Nome Fantasia</label>
                 <input 
                   type="text" 
-                  required
-                  className="bg-transparent border-b border-dashed border-[var(--line)] focus:border-[var(--lime)] font-display text-sm text-[var(--white)] font-bold w-full pb-1 focus:outline-none"
-                  placeholder="Nome da Empresa"
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
+                  className="input text-xs py-1 px-2.5" 
+                  placeholder="Nome Fantasia"
+                  value={tradeName}
+                  onChange={(e) => setTradeName(e.target.value)}
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Nome Fantasia</label>
-                  <input 
-                    type="text" 
-                    className="input text-xs py-1.5" 
-                    placeholder="Nome Fantasia"
-                    value={tradeName}
-                    onChange={(e) => setTradeName(e.target.value)}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">Responsável (Pessoa Física) *</label>
-                  <input 
-                    type="text" 
-                    required
-                    className="input text-xs py-1.5 font-bold border-dashed border-[var(--lime)]" 
-                    placeholder="Nome do Contato Principal"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNPJ</label>
-                  <input 
-                    type="text" 
-                    className="input text-xs py-1.5 font-mono" 
-                    placeholder="00.000.000/0001-00"
-                    value={cnpj}
-                    onChange={(e) => setCnpj(formatCnpj(e.target.value))}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
-                  <input 
-                    type="text" 
-                    className="input text-xs py-1.5" 
-                    placeholder="(00) 00000-0000"
-                    value={phone}
-                    onChange={(e) => setPhone(formatPhoneBr(e.target.value))}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">E-mail</label>
-                  <input 
-                    type="email" 
-                    className="input text-xs py-1.5" 
-                    placeholder="contato@empresa.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Linha 1: Rua + Número (2/3) | Bairro (1/3) */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2 flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Rua / Número</label>
-                  <input 
-                    type="text" 
-                    className="input text-xs py-1.5" 
-                    placeholder="Rua, Número"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Bairro</label>
-                  <input 
-                    type="text" 
-                    className="input text-xs py-1.5" 
-                    placeholder="Bairro"
-                    value={bairro}
-                    onChange={(e) => setBairro(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Linha 2: CEP | Cidade | UF | ícone mapa */}
-              <div className="flex gap-3">
-                <div className="flex flex-col gap-1" style={{ width: '110px', flexShrink: 0 }}>
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CEP</label>
-                  <input 
-                    type="text" 
-                    maxLength={9}
-                    className="input text-xs py-1.5 font-mono" 
-                    placeholder="00000-000"
-                    value={cep}
-                    onChange={(e) => setCep(e.target.value)}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1 flex-1">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Cidade</label>
-                  <input 
-                    type="text" 
-                    className="input text-xs py-1.5" 
-                    placeholder="Cidade"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1" style={{ width: '88px', flexShrink: 0 }}>
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">UF</label>
-                  <input 
-                    type="text" 
-                    maxLength={2}
-                    className="input text-xs py-1.5 uppercase text-center font-bold font-mono w-full"
-                    placeholder="UF"
-                    value={state}
-                    onChange={(e) => setState(e.target.value.toUpperCase())}
-                  />
-                </div>
-
-                {/* Map icon — same height structure as other fields */}
-                <div className="flex flex-col gap-1 flex-shrink-0">
-                  <label className="text-[9px] font-bold text-transparent uppercase font-mono tracking-wider select-none">·</label>
-                  <a
-                    href={(address || city) ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([address, bairro, city, state, cep].filter(Boolean).join(', '))}` : '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Ver endereço no mapa"
-                    className={`flex items-center justify-center py-1.5 px-1 transition-colors ${(address || city) ? 'text-[var(--lime)] hover:opacity-70 cursor-pointer' : 'text-[var(--gray2)] opacity-30 pointer-events-none'}`}
-                  >
-                    <MapPin size={20} />
-                  </a>
-                </div>
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">Responsável (Pessoa Física) *</label>
+                <input 
+                  type="text" 
+                  required
+                  className="input text-xs py-1 px-2.5 font-bold border-dashed border-[var(--lime)]" 
+                  placeholder="Nome do Contato Principal"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               </div>
             </div>
 
+            {/* CNPJ + Telefone + Email */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNPJ</label>
+                <input 
+                  type="text" 
+                  className="input text-xs py-1 px-2.5 font-mono" 
+                  placeholder="00.000.000/0001-00"
+                  value={cnpj}
+                  onChange={(e) => setCnpj(formatCnpj(e.target.value))}
+                />
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
+                <input 
+                  type="text" 
+                  className="input text-xs py-1 px-2.5" 
+                  placeholder="(00) 00000-0000"
+                  value={phone}
+                  onChange={(e) => setPhone(formatPhoneBr(e.target.value))}
+                />
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">E-mail</label>
+                <input 
+                  type="email" 
+                  className="input text-xs py-1 px-2.5" 
+                  placeholder="contato@empresa.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Rua / Número + Bairro */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="sm:col-span-2 flex flex-col gap-0.5">
+                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Rua / Número</label>
+                <input 
+                  type="text" 
+                  className="input text-xs py-1 px-2.5" 
+                  placeholder="Rua, Número"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Bairro</label>
+                <input 
+                  type="text" 
+                  className="input text-xs py-1 px-2.5" 
+                  placeholder="Bairro"
+                  value={bairro}
+                  onChange={(e) => setBairro(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* CEP | Cidade | UF | Mapa */}
+            <div className="flex flex-wrap sm:flex-nowrap gap-2.5 items-end">
+              <div className="flex flex-col gap-0.5 shrink-0 w-[100px]">
+                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CEP</label>
+                <input 
+                  type="text" 
+                  maxLength={9}
+                  className="input text-xs py-1 px-2.5 font-mono" 
+                  placeholder="00000-000"
+                  value={cep}
+                  onChange={(e) => setCep(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col gap-0.5 flex-1 min-w-[120px]">
+                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Cidade</label>
+                <input 
+                  type="text" 
+                  className="input text-xs py-1 px-2.5" 
+                  placeholder="Cidade"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col gap-0.5 shrink-0 w-[70px]">
+                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">UF</label>
+                <input 
+                  type="text" 
+                  maxLength={2}
+                  className="input text-xs py-1 px-1.5 uppercase text-center font-bold font-mono w-full"
+                  placeholder="UF"
+                  value={state}
+                  onChange={(e) => setState(e.target.value.toUpperCase())}
+                />
+              </div>
+
+              <div className="flex flex-col gap-0.5 shrink-0 pb-0.5">
+                <a
+                  href={(address || city) ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([address, bairro, city, state, cep].filter(Boolean).join(', '))}` : '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Ver endereço no mapa"
+                  className={`flex items-center justify-center p-1.5 rounded-lg border border-[var(--line)] transition-colors ${(address || city) ? 'text-[var(--lime)] hover:bg-[var(--lime)]/10 hover:border-[var(--lime)] cursor-pointer' : 'text-[var(--gray2)] opacity-30 pointer-events-none'}`}
+                >
+                  <MapPin size={16} />
+                </a>
+              </div>
+            </div>
           </div>
 
-          {/* RIGHT COLUMN — Regime Tributário (top) + Inscrições flex-1 (bottom aligns with Dados Cadastrais) */}
-          <div className="flex flex-col gap-4">
-
-            {/* Card 3: Regime Tributário */}
-            <div className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-3">
-              <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Regime Tributário</h4>
-              
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Regime Tributário</label>
-                <select 
-                  className="input text-xs py-1.5" 
-                  value={taxRegime} 
-                  onChange={(e) => setTaxRegime(e.target.value as any)}
-                >
-                  <option value="MEI">MEI</option>
-                  <option value="Simples Nacional">Simples Nacional</option>
-                  <option value="Lucro Presumido">Lucro Presumido</option>
-                  <option value="Lucro Real">Lucro Real</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Card 4: Inscrições Estaduais e Status — flex-1 to fill remaining height */}
-            <div className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-3 flex-1">
+          {/* COLUMN 3: Fiscal, Inscrições & Atividades Econômicas */}
+          <div className="flex flex-col gap-3">
+            
+            {/* Regime Tributário & Inscrição */}
+            <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2">
               <div className="flex justify-between items-center border-b border-[var(--line)] pb-1">
-                <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] font-mono">Inscrições Estaduais e Status</h4>
+                <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] font-mono">Dados Fiscais & Status</h4>
                 {cnpj && (
                   <a 
                     href={`https://cnpja.com/office/${cnpj.replace(/\D/g, '')}`} 
@@ -1143,111 +1120,117 @@ function NewContactModal({
                     rel="noopener noreferrer" 
                     className="text-[9px] font-bold text-[var(--lime)] hover:text-white uppercase tracking-wider font-mono flex items-center gap-1 transition-colors"
                   >
-                    <span>Ver no CNPJá</span>
+                    <span>CNPJá</span>
                     <ExternalLink size={10} />
                   </a>
                 )}
               </div>
-              
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Situação Cadastral</label>
-                <input 
-                  type="text" 
-                  className="input text-xs py-1.5 font-bold" 
-                  placeholder="Ex: ATIVA"
-                  style={{ color: registrationStatus.includes('ATIVA') || registrationStatus.includes('Ativa') ? 'var(--green)' : 'var(--white)' }}
-                  value={registrationStatus}
-                  onChange={(e) => setRegistrationStatus(e.target.value)}
-                />
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Regime Tributário</label>
+                  <select 
+                    className="input text-xs py-1 px-2" 
+                    value={taxRegime} 
+                    onChange={(e) => setTaxRegime(e.target.value as any)}
+                  >
+                    <option value="MEI">MEI</option>
+                    <option value="Simples Nacional">Simples Nacional</option>
+                    <option value="Lucro Presumido">Lucro Presumido</option>
+                    <option value="Lucro Real">Lucro Real</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Situação Cadastral</label>
+                  <input 
+                    type="text" 
+                    className="input text-xs py-1 px-2 font-bold" 
+                    placeholder="Ex: ATIVA"
+                    style={{ color: registrationStatus.includes('ATIVA') || registrationStatus.includes('Ativa') ? 'var(--green)' : 'var(--white)' }}
+                    value={registrationStatus}
+                    onChange={(e) => setRegistrationStatus(e.target.value)}
+                  />
+                </div>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Inscrição Estadual (IE)</label>
-                <input 
-                  type="text" 
-                  className="input text-xs py-1.5 font-mono" 
-                  placeholder="Preencher manualmente se houver"
-                  value={stateRegistration}
-                  onChange={(e) => setStateRegistration(e.target.value)}
-                />
-              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Inscrição Estadual (IE)</label>
+                  <input 
+                    type="text" 
+                    className="input text-xs py-1 px-2 font-mono" 
+                    placeholder="IE"
+                    value={stateRegistration}
+                    onChange={(e) => setStateRegistration(e.target.value)}
+                  />
+                </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-0.5">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Situação Especial</label>
                   <input 
                     type="text" 
-                    className="input text-xs py-1.5" 
+                    className="input text-xs py-1 px-2" 
                     placeholder="Nenhuma"
                     value={specialSituation}
                     onChange={(e) => setSpecialSituation(e.target.value)}
                   />
                 </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Data Situação</label>
-                  <input 
-                    type="text" 
-                    className="input text-xs py-1.5" 
-                    placeholder="-"
-                    value={specialSituationDate}
-                    onChange={(e) => setSpecialSituationDate(e.target.value)}
-                  />
-                </div>
               </div>
             </div>
 
-          </div>
+            {/* Atividades Econômicas */}
+            <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2 flex-1">
+              <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Atividades Econômicas</h4>
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNAE Principal</label>
+                <input 
+                  type="text" 
+                  className="input text-xs py-1 px-2 font-mono" 
+                  placeholder="CNAE e Descrição"
+                  value={mainCnae}
+                  onChange={(e) => setMainCnae(e.target.value)}
+                />
+              </div>
 
-        </div>
+              {sideActivities.length > 0 && (
+                <div className="flex flex-col gap-1.5 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowSideActivities(v => !v)}
+                    className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider font-mono transition-colors w-fit"
+                    style={{ color: showSideActivities ? 'var(--lime)' : 'var(--gray)' }}
+                  >
+                    <span
+                      className="inline-block transition-transform duration-200"
+                      style={{ transform: showSideActivities ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                    >▶</span>
+                    {showSideActivities ? 'Ocultar' : 'Ver'} secundárias ({sideActivities.length})
+                  </button>
 
-        {/* Atividades Econômicas — full width below the 2-col grid */}
-        <div className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-3">
-          <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Atividades Econômicas</h4>
-          <div className="flex flex-col gap-1">
-            <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNAE Principal</label>
-            <input 
-              type="text" 
-              className="input text-xs py-1.5" 
-              placeholder="CNAE e Descrição"
-              value={mainCnae}
-              onChange={(e) => setMainCnae(e.target.value)}
-            />
-          </div>
-
-          {sideActivities.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => setShowSideActivities(v => !v)}
-                className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider font-mono transition-colors w-fit"
-                style={{ color: showSideActivities ? 'var(--lime)' : 'var(--gray)' }}
-              >
-                <span
-                  className="inline-block transition-transform duration-200"
-                  style={{ transform: showSideActivities ? 'rotate(90deg)' : 'rotate(0deg)' }}
-                >▶</span>
-                {showSideActivities ? 'Ocultar' : 'Ver'} atividades secundárias ({sideActivities.length})
-              </button>
-
-              {showSideActivities && (
-                <div className="flex flex-col gap-0 border border-[var(--line)] rounded-lg overflow-hidden">
-                  {sideActivities.map((act, i) => (
-                    <div
-                      key={act.id}
-                      className="flex gap-2 px-3 py-1.5 text-xs font-mono"
-                      style={{ background: i % 2 === 0 ? 'var(--card2)' : 'transparent' }}
-                    >
-                      <span className="text-[var(--lime)] font-bold shrink-0">{act.id}</span>
-                      <span className="text-[var(--gray)]">{act.text}</span>
+                  {showSideActivities && (
+                    <div className="flex flex-col gap-0 border border-[var(--line)] rounded-lg overflow-y-auto max-h-[90px]">
+                      {sideActivities.map((act, i) => (
+                        <div
+                          key={act.id}
+                          className="flex gap-1.5 px-2 py-1 text-[11px] font-mono leading-tight"
+                          style={{ background: i % 2 === 0 ? 'var(--card2)' : 'transparent' }}
+                        >
+                          <span className="text-[var(--lime)] font-bold shrink-0">{act.id}</span>
+                          <span className="text-[var(--gray)] truncate">{act.text}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
             </div>
-          )}
+
+          </div>
+
         </div>
 
+        {/* Footer Actions */}
         {/* Footer Actions */}
         <div className="flex justify-end gap-3 border-t border-[var(--line)] px-6 py-4 shrink-0">
           <button 
