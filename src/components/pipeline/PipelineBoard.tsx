@@ -25,18 +25,7 @@ import { DealDrawer } from './DealDrawer'
 import { getPipelineDeals, savePipelineDeals } from '@/services/pipeline-service'
 
 // ─── Mock data ────────────────────────────────────────────────
-const MOCK_DEALS: Deal[] = [
-  { id: '1', title: 'Caixa Premium Natura',    contact_id:'c1', stage: 'leads',      position: 0, estimated_value: 40000, stage_entered_at: new Date(Date.now()-2*86400000).toISOString(), created_at: '', updated_at: '', contact: { id:'c1', name:'Diéssica Hartmann', company:'Natura',      created_at:'', updated_at:'' } },
-  { id: '2', title: 'Embalagem XP Presentes',   contact_id:'c2', stage: 'prospect',   position: 0, estimated_value: 12000, stage_entered_at: new Date(Date.now()-5*86400000).toISOString(), created_at: '', updated_at: '', contact: { id:'c2', name:'Elci Alcantara', company:'XP Presentes', created_at:'', updated_at:'' } },
-  { id: '3', title: 'Display Farmácia São J.',  contact_id:'c3', stage: 'prospect',   position: 1, estimated_value: 18000, stage_entered_at: new Date(Date.now()-10*86400000).toISOString(), created_at: '', updated_at: '', contact: { id:'c3', name:'Juliana Paz', company:'Farmácia São J.', created_at:'', updated_at:'' } },
-  { id: '4', title: 'Kit Cosméticos Avon',      contact_id:'c4', stage: 'dinamica',   position: 0, estimated_value: 22000, stage_entered_at: new Date(Date.now()-3*86400000).toISOString(), created_at: '', updated_at: '', contact: { id:'c4', name:'Roberto Alves', company:'Avon',          created_at:'', updated_at:'' } },
-  { id: '5', title: 'Caixa Vinho Gourmet',      contact_id:'c5', stage: 'potencial',  position: 0, estimated_value: 35000, stage_entered_at: new Date(Date.now()-7*86400000).toISOString(), created_at: '', updated_at: '', contact: { id:'c5', name:'Marina Costa', company:'Vinhos do Sul',  created_at:'', updated_at:'' } },
-  { id: '6', title: 'Bandeja Padaria Central',  contact_id:'c6', stage: 'visita',     position: 0, estimated_value: 8000,  stage_entered_at: new Date(Date.now()-1*86400000).toISOString(), created_at: '', updated_at: '', contact: { id:'c6', name:'Paulo Lima', company:'Padaria Central', created_at:'', updated_at:'' } },
-  { id: '7', title: 'Embalagem Cosméticos M.',  contact_id:'c7', stage: 'briefing',   position: 0, estimated_value: 32000, stage_entered_at: new Date(Date.now()-4*86400000).toISOString(), created_at: '', updated_at: '', contact: { id:'c7', name:'Fernanda R.', company:'Cosmética M.',   created_at:'', updated_at:'' } },
-  { id: '8', title: 'Caixa Presente Boticário', contact_id:'c8', stage: 'aprovacao',  position: 0, estimated_value: 48000, stage_entered_at: new Date(Date.now()-6*86400000).toISOString(), created_at: '', updated_at: '', contact: { id:'c8', name:'Gustavo N.', company:'O Boticário',    created_at:'', updated_at:'' } },
-  { id: '9', title: 'Kit Natal Lojas Renner',  contact_id:'c9', stage: 'fechamento', position: 0, final_value: 87500,         stage_entered_at: new Date(Date.now()-1*86400000).toISOString(), created_at: '', updated_at: '', contact: { id:'c9', name:'Renner Compras', company:'Lojas Renner',  created_at:'', updated_at:'' } },
-]
-
+const MOCK_DEALS: Deal[] = []
 // ─── Deal Card ────────────────────────────────────────────────
 function DealCard({ deal, overlay = false, onCardClick }: { deal: Deal; overlay?: boolean; onCardClick?: (deal: Deal) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: deal.id })

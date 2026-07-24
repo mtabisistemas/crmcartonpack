@@ -51,54 +51,11 @@ interface DealMock {
   uf?: string
 }
 
-const MOCK_DEALS: DealMock[] = [
-  { id: '1', title: 'Caixa Premium Natura', representative: 'Diéssica Hartmann', stage: 'leads', value: 15000, curve: 'A', daysInactive: 15, contactName: 'Diéssica Hartmann', phone: '11988888888', latLng: [-30.0346, -51.2177], city: 'Porto Alegre', uf: 'RS' },
-  { id: '2', title: 'Display Gota Limpa', representative: 'Josimar Soares', stage: 'leads', value: 25000, curve: 'A', daysInactive: 95, contactName: 'Alvaro Ferreira', phone: '51999999999', latLng: [-29.834, -51.143], city: 'Sapucaia do Sul', uf: 'RS' },
-  { id: '3', title: 'Embalagem XP Presentes', representative: 'Elci Alcantara', stage: 'prospect', value: 12000, curve: 'B', daysInactive: 30, contactName: 'Elci Alcantara', phone: '21977777777', latLng: [-29.6842, -51.1313], city: 'Novo Hamburgo', uf: 'RS' },
-  { id: '4', title: 'Caixa Vinho Gourmet', representative: 'Marina Costa', stage: 'briefing', value: 32000, curve: 'C', daysInactive: 10, contactName: 'Marina Costa', phone: '54922222222', latLng: [-29.1706, -51.5204], city: 'Bento Gonçalves', uf: 'RS' },
-  { id: '5', title: 'Embalagem Cosméticos M.', representative: 'Fernanda R.', stage: 'briefing', value: 18000, curve: 'C', daysInactive: 120, contactName: 'Fernanda Ramos', phone: '31966666666', latLng: [-29.1688, -51.1796], city: 'Caxias do Sul', uf: 'RS' },
-  { id: '6', title: 'Kit Natal Lojas Renner', representative: 'Renner Compras', stage: 'fechamento', value: 87500, curve: 'A', daysInactive: 5, contactName: 'Renner Compras', phone: '51944444444', latLng: [-30.0277, -51.2287], city: 'Porto Alegre', uf: 'RS' },
-  { id: '7', title: 'Caixa Presente Boticário', representative: 'Gustavo N.', stage: 'aprovacao', value: 48000, curve: 'A', daysInactive: 45, contactName: 'Gustavo Nogueira', phone: '41955555555', latLng: [-29.7592, -51.1472], city: 'São Leopoldo', uf: 'RS' },
-  { id: '8', title: 'Bandeja Padaria Central', representative: 'Josimar Soares', stage: 'perdido', value: 23000, curve: 'D', daysInactive: 110, contactName: 'Paulo Lima', phone: '51933333333', latLng: [-29.9430, -50.9934], city: 'Gravataí', uf: 'RS' },
-]
-
-// Mock monthly & daily sales data for Drilldown Chart
-const MONTHLY_SALES_DATA: { month: string; monthIndex: number; value: number; dealsCount: number; daily: { day: number; value: number }[] }[] = [
-  { month: 'Jan', monthIndex: 1, value: 145000, dealsCount: 12, daily: Array.from({ length: 31 }, (_, i) => ({ day: i + 1, value: (i % 3 === 0 ? 12000 : i % 5 === 0 ? 8500 : 2000) })) },
-  { month: 'Fev', monthIndex: 2, value: 168000, dealsCount: 15, daily: Array.from({ length: 28 }, (_, i) => ({ day: i + 1, value: (i % 2 === 0 ? 9500 : i % 4 === 0 ? 14000 : 1500) })) },
-  { month: 'Mar', monthIndex: 3, value: 210000, dealsCount: 18, daily: Array.from({ length: 31 }, (_, i) => ({ day: i + 1, value: (i % 4 === 0 ? 16000 : i % 3 === 0 ? 11000 : 3000) })) },
-  { month: 'Abr', monthIndex: 4, value: 185000, dealsCount: 14, daily: Array.from({ length: 30 }, (_, i) => ({ day: i + 1, value: (i % 3 === 0 ? 13500 : i % 6 === 0 ? 18000 : 2500) })) },
-  { month: 'Mai', monthIndex: 5, value: 230000, dealsCount: 20, daily: Array.from({ length: 31 }, (_, i) => ({ day: i + 1, value: (i % 2 === 0 ? 14000 : i % 5 === 0 ? 21000 : 4000) })) },
-  { month: 'Jun', monthIndex: 6, value: 195000, dealsCount: 16, daily: Array.from({ length: 30 }, (_, i) => ({ day: i + 1, value: (i % 4 === 0 ? 15000 : i % 3 === 0 ? 9000 : 3500) })) },
-  { month: 'Jul', monthIndex: 7, value: 248000, dealsCount: 22, daily: Array.from({ length: 31 }, (_, i) => ({ day: i + 1, value: (i % 3 === 0 ? 18000 : i % 7 === 0 ? 25000 : 4500) })) },
-  { month: 'Ago', monthIndex: 8, value: 130000, dealsCount: 10, daily: Array.from({ length: 31 }, (_, i) => ({ day: i + 1, value: (i % 5 === 0 ? 11000 : 2000) })) },
-  { month: 'Set', monthIndex: 9, value: 175000, dealsCount: 13, daily: Array.from({ length: 30 }, (_, i) => ({ day: i + 1, value: (i % 4 === 0 ? 14000 : 3000) })) },
-  { month: 'Out', monthIndex: 10, value: 190000, dealsCount: 15, daily: Array.from({ length: 31 }, (_, i) => ({ day: i + 1, value: (i % 3 === 0 ? 13000 : 2500) })) },
-  { month: 'Nov', monthIndex: 11, value: 260000, dealsCount: 24, daily: Array.from({ length: 30 }, (_, i) => ({ day: i + 1, value: (i % 2 === 0 ? 17000 : 5000) })) },
-  { month: 'Dez', monthIndex: 12, value: 290000, dealsCount: 26, daily: Array.from({ length: 31 }, (_, i) => ({ day: i + 1, value: (i % 3 === 0 ? 22000 : 6000) })) },
-]
-
-// Mock Salespeople Performance Indicators
-const TEAM_PERFORMANCE = [
-  { id: 'r1', name: 'Diéssica Hartmann', role: 'Representante', sales: 145000, contactsCount: 48, activeDeals: 6, avatarColor: '#3B82F6' },
-  { id: 'r2', name: 'Josimar Soares', role: 'Representante', sales: 128000, contactsCount: 54, activeDeals: 8, avatarColor: '#A855F7' },
-  { id: 'r3', name: 'Elci Alcantara', role: 'Representante', sales: 98000, contactsCount: 39, activeDeals: 5, avatarColor: '#EAB308' },
-  { id: 'r4', name: 'Witalo Frota', role: 'Representante', sales: 85000, contactsCount: 32, activeDeals: 4, avatarColor: '#F97316' },
-  { id: 'r5', name: 'Inácio Siqueira', role: 'Vendedor Interno', sales: 182000, contactsCount: 72, activeDeals: 11, avatarColor: '#B4D932' },
-]
-
-// Mock Top Clients & Products Indicators
-const TOP_CLIENTS = [
-  { rank: 1, name: 'Natura Cosméticos', value: 175000, type: 'Curva A' },
-  { rank: 2, name: 'Lojas Renner', value: 87500, type: 'Curva A' },
-  { rank: 3, name: 'O Boticário', value: 48000, type: 'Curva A' },
-]
-
-const TOP_PRODUCTS = [
-  { rank: 1, name: 'Caixas Premium personalizadas', value: 145000, quantity: '15.000 un' },
-  { rank: 2, name: 'Cartuchos Duplex simples', value: 82000, quantity: '22.000 un' },
-  { rank: 3, name: 'Displays Microondulado de Chão', value: 68000, quantity: '8.000 un' },
-]
+const MOCK_DEALS: DealMock[] = []
+const MONTHLY_SALES_DATA: any[] = []
+const TEAM_PERFORMANCE: any[] = []
+const TOP_PRODUCTS: any[] = []
+const TOP_CLIENTS: any[] = []
 
 export default function DashboardPage() {
   // Roles and Current User Session
@@ -179,15 +136,8 @@ export default function DashboardPage() {
           console.error(e)
         }
       } else {
-        const fallbackContacts = [
-          { id: '1', name: 'Alvaro Ferreira', company: 'Gota Limpa Indústria', cnpj: '12.345.678/0001-90', curve: 'A', representative: 'Josimar Soares', lastPurchaseDays: 95, phone: '(51) 99999-9999', city: 'Sapiranga', state: 'RS', status: 'inativo', address: 'Av. Industrial, 4500' },
-          { id: '2', name: 'Diéssica Hartmann', company: 'Natura Cosméticos', cnpj: '98.765.432/0001-10', curve: 'A', representative: 'Diéssica Hartmann', lastPurchaseDays: 15, phone: '(11) 98888-8888', city: 'São Paulo', state: 'SP', status: 'ativo', address: 'Av. Paulista, 1000' },
-          { id: '3', name: 'Elci Alcantara', company: 'XP Presentes', cnpj: '45.678.901/0001-22', curve: 'B', representative: 'Elci Alcantara', lastPurchaseDays: 30, phone: '(21) 97777-7777', city: 'Novo Hamburgo', state: 'RS', status: 'ativo', address: 'Rua das Flores, 120' },
-          { id: '4', name: 'Marina Costa', company: 'Vinho Gourmet', cnpj: '33.444.555/0001-66', curve: 'C', representative: 'Diéssica Hartmann', lastPurchaseDays: 10, phone: '(54) 92222-2222', city: 'Bento Gonçalves', state: 'RS', status: 'ativo', address: 'Rua Planalto, 450' },
-          { id: '5', name: 'Fernanda Ramos', company: 'Cosméticos M.', cnpj: '22.333.444/0001-55', curve: 'C', representative: 'Josimar Soares', lastPurchaseDays: 120, phone: '(31) 96666-6666', city: 'Caxias do Sul', state: 'RS', status: 'inativo', address: 'Rua das Empresas, 999' }
-        ]
-        setContacts(fallbackContacts)
-        localStorage.setItem('crm_contacts', JSON.stringify(fallbackContacts))
+        setContacts([])
+        localStorage.setItem('crm_contacts', JSON.stringify([]))
       }
     }
   }, [])
@@ -749,8 +699,8 @@ export default function DashboardPage() {
   }
 
   const maxSalesValue = selectedDrilldownMonth 
-    ? Math.max(...selectedDrilldownMonth.daily.map(d => d.value), 1)
-    : Math.max(...MONTHLY_SALES_DATA.map(m => m.value), 1)
+    ? Math.max(...selectedDrilldownMonth.daily.map((d: any) => d.value), 1)
+    : Math.max(...MONTHLY_SALES_DATA.map((m: any) => m.value), 1)
 
   // ==================== ROLE: REPRESENTANTE (MOBILE PORTAL) ====================
   if (currentUser?.role === 'representante') {
@@ -1385,7 +1335,7 @@ export default function DashboardPage() {
                 })
               ) : (
                 /* DAILY DRILLDOWN VIEW - Rótulos Above Bars */
-                selectedDrilldownMonth.daily.map(d => {
+                selectedDrilldownMonth.daily.map((d: any) => {
                   const heightPct = Math.max(8, Math.min(84, Math.round((d.value / maxSalesValue) * 80)))
                   return (
                     <div 
@@ -1436,7 +1386,7 @@ export default function DashboardPage() {
                         className="w-7 h-7 rounded-lg flex items-center justify-center text-black font-bold text-[10px] shrink-0"
                         style={{ backgroundColor: rep.avatarColor }}
                       >
-                        {rep.name.split(' ').map(p => p[0]).join('')}
+                        {rep.name.split(' ').map((p: any) => p[0]).join('')}
                       </div>
                       <div className="min-w-0">
                         <div className="text-xs font-bold text-[var(--white)] truncate leading-tight">{rep.name}</div>
