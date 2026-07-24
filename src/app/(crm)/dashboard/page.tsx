@@ -598,11 +598,11 @@ export default function DashboardPage() {
   
   const fechamentoValue = filteredDeals
     .filter(d => d.stage === 'fechamento')
-    .reduce((acc, d) => acc + d.value, 0) || 87500
+    .reduce((acc, d) => acc + d.value, 0)
     
   const perdidoValue = filteredDeals
     .filter(d => d.stage === 'perdido')
-    .reduce((acc, d) => acc + d.value, 0) || 23000
+    .reduce((acc, d) => acc + d.value, 0)
 
   // Connected Horizontal Funnel Stages
   const funnelSummary = [
