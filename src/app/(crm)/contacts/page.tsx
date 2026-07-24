@@ -859,7 +859,7 @@ function NewContactModal({
       // Auto-populate expanded API information
       const statusText = data.status?.text || 'Ativa'
       const statusDateFormatted = data.statusDate ? formatDateBr(data.statusDate) : ''
-      setRegistrationStatus(statusDateFormatted ? `${statusText} desde ${statusDateFormatted}` : statusText)
+      setRegistrationStatus(statusDateFormatted ? `${statusText} (${statusDateFormatted})` : statusText)
       
       const mainCnaeId = data.mainActivity?.id
       const mainCnaeDesc = data.mainActivity?.text
@@ -1234,11 +1234,11 @@ function NewContactModal({
                 )}
               </div>
 
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-5 gap-2 items-end">
                 <div className="col-span-2 flex flex-col gap-0.5">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Regime Tributário</label>
                   <select 
-                    className="input text-xs py-1 px-1.5" 
+                    className="input text-xs h-[30px] px-2 flex items-center" 
                     value={taxRegime} 
                     onChange={(e) => setTaxRegime(e.target.value as any)}
                   >
@@ -1254,11 +1254,10 @@ function NewContactModal({
                   <input 
                     type="text" 
                     title={registrationStatus}
-                    className="input py-1 px-1.5 font-bold whitespace-nowrap overflow-hidden text-ellipsis" 
+                    className="input text-[10.5px] h-[30px] px-2 font-bold w-full" 
                     placeholder="Ex: ATIVA"
                     style={{ 
-                      fontSize: registrationStatus.length > 25 ? '7.5px' : registrationStatus.length > 18 ? '8.5px' : registrationStatus.length > 12 ? '9.5px' : '10.5px',
-                      color: registrationStatus.includes('ATIVA') || registrationStatus.includes('Ativa') ? 'var(--green)' : 'var(--white)' 
+                      color: (registrationStatus.includes('ATIVA') || registrationStatus.includes('Ativa')) ? 'var(--green)' : 'var(--white)' 
                     }}
                     value={registrationStatus}
                     onChange={(e) => setRegistrationStatus(e.target.value)}
