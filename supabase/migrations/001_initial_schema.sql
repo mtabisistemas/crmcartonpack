@@ -50,6 +50,10 @@ CREATE TABLE contacts (
   state TEXT,
   source TEXT, -- indicação | google | instagram | feiras | prospecção ativa | outro
   notes TEXT,
+  website TEXT,
+  instagram TEXT,
+  linkedin TEXT,
+  facebook TEXT,
   assigned_to UUID REFERENCES profiles(id),
   created_by UUID REFERENCES profiles(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -140,6 +144,10 @@ CREATE TABLE follow_ups (
   completed_at TIMESTAMPTZ,
   status TEXT NOT NULL DEFAULT 'pendente', -- pendente | enviado | respondido | ignorado
   notes TEXT,
+  website TEXT,
+  instagram TEXT,
+  linkedin TEXT,
+  facebook TEXT,
   assigned_to UUID REFERENCES profiles(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -154,6 +162,10 @@ CREATE TABLE visits (
   scheduled_at TIMESTAMPTZ NOT NULL,
   location TEXT,
   notes TEXT,
+  website TEXT,
+  instagram TEXT,
+  linkedin TEXT,
+  facebook TEXT,
   result TEXT, -- resultado da visita
   materials_sent BOOLEAN DEFAULT FALSE,
   assigned_to UUID REFERENCES profiles(id),
@@ -228,7 +240,11 @@ CREATE TABLE approvals (
   file_urls TEXT[], -- URLs dos arquivos enviados
   sent_at TIMESTAMPTZ,
   approved_at TIMESTAMPTZ,
-  notes TEXT, -- observações do cliente
+  notes TEXT,
+  website TEXT,
+  instagram TEXT,
+  linkedin TEXT,
+  facebook TEXT, -- observações do cliente
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(deal_id, step)
@@ -246,6 +262,10 @@ CREATE TABLE closings (
   signed_at DATE,
   po_number TEXT, -- número do pedido
   notes TEXT,
+  website TEXT,
+  instagram TEXT,
+  linkedin TEXT,
+  facebook TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -261,6 +281,10 @@ CREATE TABLE post_sales (
   reorder_opportunity BOOLEAN DEFAULT FALSE,
   next_contact_date DATE,
   notes TEXT,
+  website TEXT,
+  instagram TEXT,
+  linkedin TEXT,
+  facebook TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

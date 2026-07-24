@@ -58,6 +58,10 @@ export interface Cliente {
   volume_mensal: number;
   principais_produtos: string[];
   potencial_crescimento?: string;
+  website?: string;
+  instagram?: string;
+  linkedin?: string;
+  facebook?: string;
   exigencias_qualidade?: string;
   necessidade_certificacoes?: string;
   potencial_novos_projetos?: string;
