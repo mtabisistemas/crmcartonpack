@@ -53,254 +53,22 @@ const SEED_USUARIOS: Usuario[] = [
 ];
 
 // Gerador dinâmico de 312 clientes para bater os números exatos do PDF
-const SEED_CLIENTES = (): Cliente[] => {
-  const clientes: Cliente[] = [];
-  
-  // Cotas de clientes por representante do PDF (Pág 4):
-  // Carlos: 86 | Juliana: 71 | Marcos: 94 | Fernanda: 61 => Total: 312
-  const reps = [
-    { id: 'usr-rep-carlos', cota: 86 },
-    { id: 'usr-rep-juliana', cota: 71 },
-    { id: 'usr-rep-marcos', cota: 94 },
-    { id: 'usr-rep-fernanda', cota: 61 }
-  ];
-
-  const prefixos = ['Sul', 'Calçados', 'Vinícola', 'Laticínios', 'Móveis', 'Indústria', 'Chocolate', 'Papéis', 'Distribuidora', 'Frigorífico'];
-  const sufixos = ['Alimentos', 'Elegance', 'Vale do Sol', 'Serra Azul', 'do Sul', 'Metalúrgica', 'Gourmet', 'Planalto', 'Estrela', 'Nacional'];
-  const cidades = ['Caxias do Sul', 'Bento Gonçalves', 'Novo Hamburgo', 'Lajeado', 'Porto Alegre', 'Gramado', 'Chapecó', 'Joinville', 'Blumenau'];
-  const segmentos = ['Papel Cartão', 'Micro-ondulado'];
-
-  let globalIdCounter = 1;
-  let semContatoRestante = 23; // Total de 23 sem contato no PDF
-
-  reps.forEach(rep => {
-    for (let i = 0; i < rep.cota; i++) {
-      const id = `cli-${globalIdCounter}`;
-      const pref = prefixos[(globalIdCounter * 3) % prefixos.length];
-      const suf = sufixos[(globalIdCounter * 7) % sufixos.length];
-      const razao_social = `${pref} ${suf} ${globalIdCounter} Ltda`;
-      const cnpj = `${(globalIdCounter + 10).toString().padStart(2, '0')}.${(globalIdCounter + 100).toString().padStart(3, '0')}.${(globalIdCounter + 200).toString().padStart(3, '0')}/0001-${(globalIdCounter % 99).toString().padStart(2, '0')}`;
-      const cidade = cidades[globalIdCounter % cidades.length];
-      const segmento = segmentos[globalIdCounter % segmentos.length];
-      
-      // Mapear exatamente 23 clientes como "Sem Contato" (último contato antigo ou inexistente)
-      let dataUltimoContato: string | null = null;
-      let status_carteira: CarteiraStatus = 'ativo';
-      
-      if (semContatoRestante > 0 && i % 3 === 0) {
-        // Alternar entre Crítico (90 dias) e Atenção (60 dias)
-        const diasAtras = semContatoRestante % 2 === 0 ? 95 : 65;
-        dataUltimoContato = obterDataRelativa(diasAtras);
-        status_carteira = diasAtras === 95 ? 'critico' : 'atencao';
-        semContatoRestante--;
-      } else {
-        dataUltimoContato = obterDataRelativa(globalIdCounter % 20 + 2); // 2 a 22 dias atrás
-        status_carteira = 'ativo';
-      }
-
-      clientes.push({
-        id,
-        razao_social,
-        cnpj,
-        cidade,
-        estado: 'RS',
-        segmento,
-        representante_id: rep.id,
-        vendedor_interno_id: 'usr-diessica',
-        data_ultima_compra: obterDataRelativa(globalIdCounter % 40 + 5),
-        intervalo_medio_compras: 30 + (globalIdCounter % 60),
-        data_ultimo_contato: dataUltimoContato,
-        status_carteira,
-        classificacao_potencial: globalIdCounter % 3 === 0 ? 'A' : globalIdCounter % 3 === 1 ? 'B' : 'C',
-        volume_mensal: 5 + (globalIdCounter % 45),
-        principais_produtos: segmento === 'Papel Cartão' ? ['Caixas Triplex', 'Cartuchos Offset'] : ['Maletas Micro-onduladas', 'Caixas Acopladas'],
-        potencial_crescimento: 'Alto potencial mapeado no CRM',
-        exigencias_qualidade: 'Gramatura rígida, resistência BCT',
-        necessidade_certificacoes: 'FSC requerida',
-        potencial_novos_projetos: 'Embalagem especial de fim de ano'
-      });
-      globalIdCounter++;
-    }
-  });
-
-  return clientes;
-};
+const SEED_CLIENTES = (): Cliente[] => [];
 
 // Contatos fictícios
-const SEED_CONTATOS = (clientes: Cliente[]): ContatoCliente[] => {
-  const contatos: ContatoCliente[] = [];
-  clientes.forEach((c, idx) => {
-    if (idx < 50) { // Cria contatos apenas para os primeiros 50
-      contatos.push({
-        id: `con-${idx + 1}`,
-        cliente_id: c.id,
-        nome: `Contato Comercial ${idx + 1}`,
-        cargo: idx % 2 === 0 ? 'Comprador' : 'Gerente Industrial',
-        telefone: `(51) 98877-${(idx + 1000).toString().padStart(4, '0')}`,
-        email: `contato${idx + 1}@empresa.com.br`
-      });
-    }
-  });
-  return contatos;
-};
+const SEED_CONTATOS = (_cli?: any): ContatoCliente[] => [];
 
 // Roteiro de Visitas (Exatamente 47 visitas distribuídas por representante do PDF)
-const SEED_VISITAS = (clientes: Cliente[]): Visita[] => {
-  const visitas: Visita[] = [];
-  
-  const reps = [
-    { id: 'usr-rep-carlos', cota: 12 },
-    { id: 'usr-rep-juliana', cota: 9 },
-    { id: 'usr-rep-marcos', cota: 15 },
-    { id: 'usr-rep-fernanda', cota: 11 }
-  ];
-
-  let visitId = 1;
-  const objetivos: any[] = ['apresentacao_empresa', 'desenvolvimento_projeto', 'negociacao_comercial', 'pos_venda', 'relacionamento_vinculo', 'qualidade_reclamacao'];
-
-  reps.forEach(rep => {
-    const repClientes = clientes.filter(c => c.representante_id === rep.id);
-    for (let i = 0; i < rep.cota; i++) {
-      const cli = repClientes[i % repClientes.length];
-      visitas.push({
-        id: `vis-${visitId}`,
-        cliente_id: cli.id,
-        contato_id: null,
-        responsavel_id: rep.id,
-        data: obterDataRelativaApenasData(i % 5 + 1), // Visitas na semana atual
-        horario_turno: i % 2 === 0 ? 'Tarde' : 'Manhã',
-        objetivo: objetivos[visitId % objetivos.length],
-        registro_descricao: `Visita realizada para acompanhamento comercial. Mapeamento de novas demandas estruturais.`,
-        fornecedores_concorrentes: 'Klabin, Rigesa',
-        status: i === 0 ? 'agendada' : 'realizada' // Deixa 1 agendada e as outras realizadas
-      });
-      visitId++;
-    }
-  });
-
-  return visitas;
-};
+const SEED_VISITAS = (_cli?: any): Visita[] => [];
 
 // Ligações e Leads (Exatamente 124 ligações distribuídas por representante do PDF)
-const SEED_LIGACOES = (clientes: Cliente[]): Ligacao[] => {
-  const ligacoes: Ligacao[] = [];
-  const reps = [
-    { id: 'usr-rep-carlos', cota: 34 },
-    { id: 'usr-rep-juliana', cota: 28 },
-    { id: 'usr-rep-marcos', cota: 40 },
-    { id: 'usr-rep-fernanda', cota: 22 }
-  ];
-
-  let ligId = 1;
-  const objetivos: any[] = ['negociacao_comercial', 'desenvolvimento_projeto', 'pos_venda', 'relacionamento_vinculo'];
-
-  reps.forEach(rep => {
-    const repClientes = clientes.filter(c => c.representante_id === rep.id);
-    for (let i = 0; i < rep.cota; i++) {
-      const cli = repClientes[i % repClientes.length];
-      ligacoes.push({
-        id: `lig-${ligId}`,
-        cliente_id: cli.id,
-        contato_id: null,
-        responsavel_id: rep.id,
-        data: obterDataRelativaApenasData(i % 5 + 1),
-        horario_turno: i % 2 === 0 ? 'Tarde' : 'Manhã',
-        objetivo: objetivos[ligId % objetivos.length],
-        registro_descricao: `Ligação de follow-up realizada sobre propostas em aberto.`,
-        status: 'realizada'
-      });
-      ligId++;
-    }
-  });
-
-  return ligacoes;
-};
+const SEED_LIGACOES = (_cli?: any): Ligacao[] => [];
 
 // Orçamentos em Aberto (Exatamente 31 abertos distribuídos por representante do PDF)
-const SEED_ORCAMENTOS = (clientes: Cliente[]): Orcamento[] => {
-  const orcamentos: Orcamento[] = [];
-  const reps = [
-    { id: 'usr-rep-carlos', cota: 9 },
-    { id: 'usr-rep-juliana', cota: 6 },
-    { id: 'usr-rep-marcos', cota: 11 },
-    { id: 'usr-rep-fernanda', cota: 5 }
-  ];
-
-  let orcId = 1;
-  const etapas: any[] = ['solicitacao_briefing', 'ficha_tecnica', 'desenvolvimento', 'pcp', 'programacao', 'enviado_representante', 'solicitacao_amostra'];
-
-  reps.forEach(rep => {
-    const repClientes = clientes.filter(c => c.representante_id === rep.id);
-    for (let i = 0; i < rep.cota; i++) {
-      const cli = repClientes[i % repClientes.length];
-      orcamentos.push({
-        id: `orc-${orcId}`,
-        cliente_id: cli.id,
-        responsavel_id: rep.id,
-        etapa_atual: etapas[orcId % etapas.length],
-        probabilidade_fechamento: 5 + (orcId % 5),
-        valor_aprovado: null,
-        data_fechamento: null,
-        motivo_perda: null,
-        justificativa_livre: 'Desenho de faca de corte e viabilidade técnica sob análise.',
-        created_at: obterDataRelativa(orcId % 10 + 2)
-      });
-      orcId++;
-    }
-  });
-
-  // Adicionar alguns orçamentos fechados (aprovados / perdidos) para históricos e taxas de conversão
-  // Carlos: 34% conversão | Juliana: 41% | Marcos: 27% | Fernanda: 38%
-  // Para emular isso, vamos salvar compras diretas que somem R$ 612k.
-
-  return orcamentos;
-};
+const SEED_ORCAMENTOS = (_cli?: any): Orcamento[] => [];
 
 // Faturamento Histórico (Exatamente R$ 612k no mês distribuídos pelos representantes)
-const SEED_COMPRAS = (clientes: Cliente[]): HistoricoCompra[] => {
-  const compras: HistoricoCompra[] = [];
-  
-  // Metas de faturamento por rep:
-  // Carlos: 180k | Juliana: 150k | Marcos: 170k | Fernanda: 112k => Total: 612k
-  const distribuicao = [
-    { repId: 'usr-rep-carlos', valor: 180000, desc: 'Lote de Caixas Acopladas' },
-    { repId: 'usr-rep-juliana', valor: 150000, desc: 'Cartuchos Duplex Verniz UV' },
-    { repId: 'usr-rep-marcos', valor: 170000, desc: 'Maletas de Embarque Kraft' },
-    { repId: 'usr-rep-fernanda', valor: 112000, desc: 'Estojos Triplex Premium' }
-  ];
-
-  let hcId = 1;
-  distribuicao.forEach(dist => {
-    const repClientes = clientes.filter(c => c.representante_id === dist.repId);
-    
-    // Divide o valor em duas grandes compras para ficar realista
-    const valor1 = Math.round(dist.valor * 0.6);
-    const valor2 = dist.valor - valor1;
-
-    const cli1 = repClientes[0 % repClientes.length];
-    const cli2 = repClientes[1 % repClientes.length];
-
-    compras.push({
-      id: `hc-${hcId}`,
-      cliente_id: cli1.id,
-      data_compra: obterDataRelativaApenasData(5),
-      valor: valor1,
-      produtos: `Lote de Embalagens Carton Pack - ${dist.desc}`
-    });
-    hcId++;
-
-    compras.push({
-      id: `hc-${hcId}`,
-      cliente_id: cli2.id,
-      data_compra: obterDataRelativaApenasData(12),
-      valor: valor2,
-      produtos: `Lote Complementar Carton Pack - ${dist.desc}`
-    });
-    hcId++;
-  });
-
-  return compras;
-};
+const SEED_COMPRAS = (_cli?: any): HistoricoCompra[] => [];
 
 // Metas
 const SEED_METAS = (): Meta[] => [
@@ -312,15 +80,15 @@ const SEED_METAS = (): Meta[] => [
 ];
 
 // Leads de Prospecção
-const SEED_PROSPECCAO: Prospeccao[] = [
-  { id: 'pr-1', empresa: 'Laticínios Ritter S.A.', contato: 'Roberto Ritter', telefone: '(51) 3452-1100', email: 'roberto@ritteralimentos.com.br', segmento: 'Papel Cartão', status: 'em_abordagem' },
-  { id: 'pr-2', empresa: 'Calçados Beira Rio', contato: 'Felipe Santos', telefone: '(51) 98111-2233', email: 'felipe.santos@beirario.com.br', segmento: 'Papel Cartão', status: 'frio' },
-  { id: 'pr-3', empresa: 'Cervejaria Dado Bier', contato: 'Eduardo Bier', telefone: '(51) 3388-4422', email: 'eduardo@dadobier.com.br', segmento: 'Micro-ondulado', status: 'frio' }
-];
+const SEED_PROSPECCAO: Prospeccao[] = [];
 
 export const DBMock = {
   init() {
     if (typeof window === 'undefined') return;
+    if (!localStorage.getItem('cp_crm_v6_clean_real_data')) {
+      localStorage.clear();
+      localStorage.setItem('cp_crm_v6_clean_real_data', 'true');
+    }
     if (!localStorage.getItem('cp_crm_v5_official_team_reset')) {
       localStorage.removeItem('crm_users');
       localStorage.removeItem('crm_users_v4');

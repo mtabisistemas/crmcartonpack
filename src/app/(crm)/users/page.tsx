@@ -101,7 +101,7 @@ export default function UsersPage() {
   const saveUsers = (newUsers: TeamUser[]) => {
     setUsers(newUsers)
     if (typeof window !== 'undefined') {
-      localStorage.setItem('crm_users_v5_official', JSON.stringify(newUsers))
+      localStorage.setItem('crm_users_v6_clean_real_data', JSON.stringify(newUsers))
     }
   }
 
