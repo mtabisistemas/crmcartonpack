@@ -1234,11 +1234,11 @@ function NewContactModal({
                 )}
               </div>
 
-              <div className="grid grid-cols-5 gap-2 items-end">
+              <div className="grid grid-cols-5 gap-2">
                 <div className="col-span-2 flex flex-col gap-0.5">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Regime Tributário</label>
                   <select 
-                    className="input text-xs h-[30px] px-2 flex items-center" 
+                    className="input text-xs py-1 px-2.5" 
                     value={taxRegime} 
                     onChange={(e) => setTaxRegime(e.target.value as any)}
                   >
@@ -1254,7 +1254,7 @@ function NewContactModal({
                   <input 
                     type="text" 
                     title={registrationStatus}
-                    className="input text-[10.5px] h-[30px] px-2 font-bold w-full" 
+                    className="input text-xs py-1 px-2.5 font-bold w-full" 
                     placeholder="Ex: ATIVA"
                     style={{ 
                       color: (registrationStatus.includes('ATIVA') || registrationStatus.includes('Ativa')) ? 'var(--green)' : 'var(--white)' 
@@ -1291,7 +1291,7 @@ function NewContactModal({
             </div>
 
             {/* Card 2: Canais Digitais & Redes (empilhados verticalmente para ocuparem o espaço) */}
-            <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2 flex-1 justify-between">
+            <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2.5">
               <div className="flex justify-between items-center border-b border-[var(--line)] pb-1">
                 <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] font-mono flex items-center gap-1.5">
                   <span>Canais Digitais & Redes</span>
