@@ -1234,28 +1234,32 @@ function NewContactModal({
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex flex-col gap-0.5">
+              <div className="grid grid-cols-5 gap-2">
+                <div className="col-span-2 flex flex-col gap-0.5">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Regime Tributário</label>
                   <select 
-                    className="input text-xs py-1 px-2" 
+                    className="input text-xs py-1 px-1.5" 
                     value={taxRegime} 
                     onChange={(e) => setTaxRegime(e.target.value as any)}
                   >
                     <option value="MEI">MEI</option>
-                    <option value="Simples Nacional">Simples Nacional</option>
-                    <option value="Lucro Presumido">Lucro Presumido</option>
+                    <option value="Simples Nacional">Simples</option>
+                    <option value="Lucro Presumido">Presumido</option>
                     <option value="Lucro Real">Lucro Real</option>
                   </select>
                 </div>
 
-                <div className="flex flex-col gap-0.5">
+                <div className="col-span-3 flex flex-col gap-0.5">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Situação Cadastral</label>
                   <input 
                     type="text" 
-                    className="input text-[10px] py-1 px-1.5 font-bold truncate" 
+                    title={registrationStatus}
+                    className="input py-1 px-1.5 font-bold whitespace-nowrap overflow-hidden text-ellipsis" 
                     placeholder="Ex: ATIVA"
-                    style={{ color: registrationStatus.includes('ATIVA') || registrationStatus.includes('Ativa') ? 'var(--green)' : 'var(--white)' }}
+                    style={{ 
+                      fontSize: registrationStatus.length > 25 ? '7.5px' : registrationStatus.length > 18 ? '8.5px' : registrationStatus.length > 12 ? '9.5px' : '10.5px',
+                      color: registrationStatus.includes('ATIVA') || registrationStatus.includes('Ativa') ? 'var(--green)' : 'var(--white)' 
+                    }}
                     value={registrationStatus}
                     onChange={(e) => setRegistrationStatus(e.target.value)}
                   />
