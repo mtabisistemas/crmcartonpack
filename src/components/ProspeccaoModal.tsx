@@ -78,8 +78,11 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     if (!mapInstanceRef.current) {
       const center = getCityCenter(cidade || leads[0]?.cidade, estado || leads[0]?.estado)
       const map = L.map(mapRef.current, { zoomControl: false, attributionControl: false }).setView(center, 13)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19
+      
+      // MAPA SEMPRE NO MODO CLARO ESTILO GOOGLE MAPS (CartoDB Voyager Light)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        subdomains: 'abcd'
       }).addTo(map)
       L.control.zoom({ position: 'bottomright' }).addTo(map)
       mapInstanceRef.current = map
@@ -103,56 +106,65 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
       const lng = center[1] + lngOffset
 
       const isSelected = selectedLeadCnpj === lead.cnpj
-      const labelName = lead.nome_fantasia && lead.nome_fantasia !== 'Não Disponível' ? lead.nome_fantasia : lead.razao_social
-      const shortName = labelName.length > 20 ? labelName.substring(0, 18) + '...' : labelName
 
+      // PIN LIMPO ESTILO GOOGLE MAPS (SEM TEXTO FIXO, APENAS O MARCADOR)
       const customIcon = L.divIcon({
-        className: 'custom-prospeccao-pin',
+        className: 'clean-google-pin',
         html: `
           <div style="
-            background-color: ${isSelected ? '#b4d932' : '#ef4444'};
-            color: ${isSelected ? '#000000' : '#ffffff'};
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-weight: 800;
-            font-size: 11px;
+            width: 28px;
+            height: 28px;
+            background-color: ${isSelected ? '#10b981' : '#ea4335'};
             border: 2px solid #ffffff;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.35);
             display: flex;
             align-items: center;
-            gap: 5px;
-            white-space: nowrap;
+            justify-content: center;
             cursor: pointer;
             transition: all 0.2s ease;
           ">
-            <span>📍</span>
-            <span>${shortName}</span>
+            <div style="width: 9px; height: 9px; background-color: #ffffff; border-radius: 50%;"></div>
           </div>
         `,
-        iconSize: [140, 32],
-        iconAnchor: [70, 16]
+        iconSize: [28, 28],
+        iconAnchor: [14, 28]
       })
 
       const marker = L.marker([lat, lng], { icon: customIcon }).addTo(map)
 
-      const popupContent = `
-        <div style="background:#18181b; color:#ffffff; padding:12px; border-radius:12px; font-family:sans-serif; min-width:220px; border:1px solid #27272a;">
-          <div style="font-size:10px; font-weight:800; color:#b4d932; text-transform:uppercase; margin-bottom:2px;">⭐ empresa ativa no google & rfb</div>
-          <h4 style="font-weight:bold; color:#ffffff; margin:0 0 4px 0; font-size:13px; line-height:1.2;">${lead.razao_social}</h4>
-          <p style="font-size:11px; color:#a1a1aa; margin:0 0 6px 0;">${lead.logradouro || ''} - ${lead.cidade}/${lead.estado}</p>
-          <div style="font-size:10px; color:#71717a; margin-bottom:8px;">CNAE: ${lead.cnae_codigo}</div>
-          <button id="btn-map-details-${idx}" style="background:#b4d932; color:#000000; border:none; padding:6px 12px; border-radius:8px; font-weight:800; font-size:11px; cursor:pointer; width:100%; text-transform:uppercase; letter-spacing:0.5px;">
-            👁️ Ver Ficha Completa
-          </button>
+      const displayName = lead.nome_fantasia && lead.nome_fantasia !== 'Não Disponível' ? lead.nome_fantasia : lead.razao_social
+
+      const tooltipContent = `
+        <div style="background:#ffffff; color:#0f172a; padding:10px 12px; border-radius:10px; font-family:sans-serif; min-width:210px; box-shadow:0 10px 25px rgba(0,0,0,0.25); border:1px solid #e2e8f0;">
+          <div style="font-size:9px; font-weight:800; color:#10b981; text-transform:uppercase; margin-bottom:3px; letter-spacing:0.5px;">⭐ empresa cadastrada no google</div>
+          <h4 style="font-weight:800; color:#0f172a; margin:0 0 3px 0; font-size:13px; line-height:1.2;">${displayName}</h4>
+          <div style="font-size:10px; color:#475569; margin:0 0 4px 0; font-weight:600;">${lead.razao_social}</div>
+          <p style="font-size:11px; color:#64748b; margin:0 0 6px 0; display:flex; align-items:center; gap:4px;">
+            <span>📍</span> <span>${lead.logradouro || ''} - ${lead.cidade}/${lead.estado}</span>
+          </p>
+          <div style="font-size:10px; color:#94a3b8; font-weight:600; padding-top:4px; border-top:1px solid #f1f5f9;">
+            CNAE: ${lead.cnae_codigo} ${lead.cnae_descricao ? `• ${lead.cnae_descricao}` : ''}
+          </div>
         </div>
       `
-      marker.bindPopup(popupContent)
+
+      // EXIBE DADOS APENAS AO PASSAR O MOUSE (HOVER TOOLTIP)
+      marker.bindTooltip(tooltipContent, {
+        direction: 'top',
+        offset: [0, -26],
+        opacity: 1,
+        className: 'google-map-tooltip'
+      })
+
+      marker.on('mouseover', () => {
+        marker.openTooltip()
+      })
+
       marker.on('click', () => {
         onSelectLead(lead)
-        setTimeout(() => {
-          const btn = document.getElementById(`btn-map-details-${idx}`)
-          if (btn) btn.onclick = () => onOpenDetails(lead)
-        }, 120)
+        onOpenDetails(lead)
       })
 
       markersRef.current[lead.cnpj] = { marker, lat, lng }
