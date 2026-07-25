@@ -138,7 +138,7 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
 
       const tooltipContent = `
         <div style="background:#ffffff; color:#0f172a; padding:10px 12px; border-radius:10px; font-family:sans-serif; min-width:210px; box-shadow:0 10px 25px rgba(0,0,0,0.25); border:1px solid #e2e8f0;">
-          <div style="font-size:9px; font-weight:800; color:#10b981; text-transform:uppercase; margin-bottom:3px; letter-spacing:0.5px;">⭐ empresa cadastrada no google</div>
+          <div style="font-size:9px; font-weight:800; color:#10b981; text-transform:uppercase; margin-bottom:3px; letter-spacing:0.5px;">empresa cadastrada no google & rfb</div>
           <h4 style="font-weight:800; color:#0f172a; margin:0 0 3px 0; font-size:13px; line-height:1.2;">${displayName}</h4>
           <div style="font-size:10px; color:#475569; margin:0 0 4px 0; font-weight:600;">${lead.razao_social}</div>
           <p style="font-size:11px; color:#64748b; margin:0 0 6px 0; display:flex; align-items:center; gap:4px;">
@@ -215,6 +215,54 @@ export function ProspeccaoModal({
   const [enrichedData, setEnrichedData] = useState<Record<string, Partial<ProspectLead>>>({})
   // ── Lead Ativo para Ficha Detalhada (Modal de Detalhes) ──
   const [activeLeadDetails, setActiveLeadDetails] = useState<ProspectLead | null>(null)
+  const [isEnrichingActiveLead, setIsEnrichingActiveLead] = useState(false)
+
+  const handleEnrichActiveLead = async (leadToEnrich: ProspectLead) => {
+    if (!leadToEnrich || isEnrichingActiveLead) return
+    setIsEnrichingActiveLead(true)
+    try {
+      const res = await fetch('/api/enrichment/social', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cnpj: leadToEnrich.cnpj,
+          companyName: leadToEnrich.razao_social,
+          tradeName: leadToEnrich.nome_fantasia,
+          email: leadToEnrich.email,
+          phone: leadToEnrich.telefone,
+          city: leadToEnrich.cidade,
+          state: leadToEnrich.estado
+        })
+      })
+      if (res.ok) {
+        const json = await res.json()
+        if (json.success && json.data) {
+          const { website, instagram, linkedin, facebook, phone, email } = json.data
+          const updatedLead = {
+            ...leadToEnrich,
+            site: website || leadToEnrich.site,
+            instagram: instagram || leadToEnrich.instagram,
+            linkedin: linkedin || leadToEnrich.linkedin,
+            facebook: facebook || leadToEnrich.facebook,
+            telefone: phone || leadToEnrich.telefone,
+            email: email || leadToEnrich.email
+          }
+          setActiveLeadDetails(updatedLead)
+          setLeads(prev => prev.map(l => l.cnpj === leadToEnrich.cnpj ? updatedLead : l))
+        }
+      }
+    } catch (e) {
+      console.warn('Auto enrichment error:', e)
+    } finally {
+      setIsEnrichingActiveLead(false)
+    }
+  }
+
+  useEffect(() => {
+    if (activeLeadDetails) {
+      handleEnrichActiveLead(activeLeadDetails)
+    }
+  }, [activeLeadDetails?.cnpj])
   // ── Seleá§á£o e Distribuição ──
   const [selectedCnpjs, setSelectedCnpjs] = useState<string[]>([])
   const [vendedorId, setVendedorId] = useState<string>(usuariosDisponiveis[0]?.id || '')
@@ -675,7 +723,7 @@ export function ProspeccaoModal({
                   }`}
                 >
                   <Map size={14} />
-                  <span>🗺️ Split Google (Lista + Mapa)</span>
+                  <span>Mapa</span>
                 </button>
                 <button
                   type="button"
@@ -687,7 +735,7 @@ export function ProspeccaoModal({
                   }`}
                 >
                   <CheckSquare size={14} />
-                  <span>📋 Tabela Simples</span>
+                  <span>Tabela</span>
                 </button>
               </div>
             </div>
@@ -713,7 +761,7 @@ export function ProspeccaoModal({
                       <div
                         key={lead.cnpj}
                         onClick={() => setActiveLeadMapCnpj(lead.cnpj)}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-3 relative overflow-hidden ${
+                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-2.5 relative shrink-0 min-h-[110px] ${
                           isFocused
                             ? 'bg-[var(--card)] border-[var(--lime)] shadow-lg shadow-[rgba(180,217,50,0.15)] ring-1 ring-[var(--lime)]/50'
                             : isSelected
@@ -731,7 +779,7 @@ export function ProspeccaoModal({
                               {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
                             </button>
                             <span className="text-[10px] font-black uppercase tracking-wider text-[var(--lime)] bg-[var(--lime)]/10 border border-[var(--lime)]/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              ⭐ 4.8 • Google & RFB
+                              Google & RFB
                             </span>
                           </div>
                           <span className="text-[10px] font-mono text-[var(--gray2)]">{lead.cnpj}</span>
