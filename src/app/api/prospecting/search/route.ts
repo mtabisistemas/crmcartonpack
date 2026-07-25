@@ -233,36 +233,58 @@ export async function GET(req: NextRequest) {
   const setor = sp.get('setor') || ''
   const cidade = sp.get('cidade') || ''
   const estado = sp.get('estado') || ''
-  const cnaeParam = sp.get('cnae') || '' // dígitos limpos ex: "4221904"
+  const cnaeParam = sp.get('cnae') || '' // dígitos limpos ex: "2592602"
 
   if (!setor && !cnaeParam && !cidade) {
     return NextResponse.json({ leads: [], error: 'Parâmetros insuficientes' }, { status: 400 })
   }
 
-  // ── 1. Monta múltiplas queries direcionadas a diretórios de CNPJ ──────────────
+  // ── 1. Extrai dígitos de CNAE e palavras-chave puras (sem ruído de parênteses) ─
+  const sectorCnaeDigits = setor.replace(/\D/g, '')
+  const cnaeDigits = cnaeParam.replace(/\D/g, '') || (sectorCnaeDigits.length >= 4 ? sectorCnaeDigits : '')
+
+  const cnaeFmt = cnaeDigits.length >= 7 
+    ? `${cnaeDigits.slice(0, 4)}-${cnaeDigits.slice(4, 5)}/${cnaeDigits.slice(5, 7)}`
+    : (cnaeDigits.length >= 4 ? cnaeDigits.slice(0, 4) : '')
+
+  const stopWords = new Set([
+    'fabricacao', 'fabricac', 'comercio', 'servicos', 'serviços', 'produtos',
+    'exceto', 'outros', 'outras', 'atividades', 'artigos', 'geral', 'varejista',
+    'atacadista', 'especializado', 'padronizados'
+  ])
+
+  const keyWords = setor
+    .replace(/\([A-Z]-\d{4}(?:-\d(?:\/\d{2})?)?\)/gi, '')
+    .replace(/[^\w\s]/gi, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 3 && !/^\d+$/.test(w) && !stopWords.has(norm(w)))
+
+  const keySubject = keyWords.slice(0, 2).join(' ')
   const localidade = [cidade, estado].filter(Boolean).join(' ')
+
+  // ── 2. Monta queries direcionadas e eficientes ─────────────────────────────────
   const queries: string[] = []
 
-  if (setor && localidade) {
-    queries.push(`${setor} ${localidade} CNPJ empresa`)
-    queries.push(`site:cnpj.biz ${setor} ${localidade}`)
-    queries.push(`site:casadosdados.com.br ${setor} ${localidade}`)
-    queries.push(`site:cnpja.com ${setor} ${localidade}`)
-  }
-  if (cnaeParam && localidade) {
-    const cnaeFmt = cnaeParam.length === 7
-      ? `${cnaeParam.slice(0, 4)}-${cnaeParam.slice(4, 5)}/${cnaeParam.slice(5, 7)}`
-      : cnaeParam
-    queries.push(`CNAE ${cnaeFmt} ${localidade} CNPJ`)
-    queries.push(`site:cnpj.biz ${cnaeFmt} ${localidade}`)
+  if (cnaeFmt && localidade) {
+    queries.push(`${cnaeFmt} ${localidade} CNPJ`)
+    queries.push(`site:cnpj.biz ${cnaeFmt} "${cidade}"`)
+    queries.push(`site:casadosdados.com.br ${cnaeFmt} "${cidade}"`)
   }
 
-  // ── 2. Busca paralela em múltiplos motores e diretórios ───────────────────────
+  if (keySubject && localidade) {
+    queries.push(`${keySubject} ${localidade} CNPJ`)
+    queries.push(`site:cnpj.biz "${cidade}" ${keySubject}`)
+    queries.push(`site:casadosdados.com.br "${cidade}" ${keySubject}`)
+  }
+
+  if (localidade) {
+    queries.push(`"${cidade}" ${estado} CNPJ empresa`)
+    queries.push(`site:cnpj.biz "${cidade}" ${estado}`)
+  }
+
+  // ── 3. Busca paralela em múltiplos motores e diretórios ───────────────────────
   const allCnpjSets = await Promise.allSettled(
-    queries.flatMap(q => [
-      searchDuckDuckGo(q),
-      searchBing(q)
-    ])
+    queries.map(q => searchDuckDuckGo(q))
   )
 
   const allCnpjs = new Set<string>()
@@ -272,11 +294,10 @@ export async function GET(req: NextRequest) {
   const cnpjList = [...allCnpjs].slice(0, 35)
 
   if (cnpjList.length === 0) {
-    // Sem CNPJs reais encontrados nas buscas — retorna vazio sem gerar dados falsos
     return NextResponse.json({ leads: [], totalFound: 0, source: 'no_results' })
   }
 
-  // ── 3. Enriquece CNPJs via Receita Federal (paralelamente, 10 por vez) ─────────
+  // ── 4. Enriquece CNPJs via OpenCNPJ (paralelamente, 10 por vez) ───────────────
   const chunks: string[][] = []
   for (let i = 0; i < cnpjList.length; i += 10) {
     chunks.push(cnpjList.slice(i, i + 10))
@@ -285,49 +306,50 @@ export async function GET(req: NextRequest) {
   const enrichedResults: Array<Record<string, string> | null> = []
   for (const chunk of chunks) {
     const batch = await Promise.allSettled(chunk.map(enrichCnpj))
-    batch.forEach((r, idx) => {
+    batch.forEach((r) => {
       enrichedResults.push(r.status === 'fulfilled' ? r.value : null)
     })
   }
 
-  // ── 4. Filtra por cidade/UF, CNAE/setor e situação cadastral ──────────────────
+  // ── 5. Filtra estritamente por cidade/UF, CNAE/setor e situação cadastral ─────
   const leads = []
   for (let i = 0; i < cnpjList.length; i++) {
     const data = enrichedResults[i]
     if (!data || !data.razao_social) continue
 
-    // 1. Filtra apenas empresas ativas (código 2 = ATIVA na RFB)
+    // A. Filtra apenas empresas ativas
     const situacaoRaw = data.situacao_cadastral
     const situacaoStr = situacaoRaw != null ? String(situacaoRaw).toUpperCase() : ''
     if (situacaoStr && !situacaoStr.includes('ATIVA') && situacaoStr !== '2' && !situacaoStr.includes('02')) continue
 
-    // 2. Filtra estritamente por ESTADO (UF) se informado
+    // B. Filtra por ESTADO (UF) se informado
     const ufRaw = (data.uf || '').toString().trim().toUpperCase()
     if (estado && estado.toUpperCase() !== 'TODOS') {
       if (!ufRaw || ufRaw !== estado.toUpperCase()) continue
     }
 
-    // 3. Filtra estritamente por CIDADE se informada
+    // C. Filtra por CIDADE se informada
     const municipioRaw = (data.municipio || '').toString().trim()
     if (cidade) {
-      if (!municipioRaw) continue // Se o município não foi retornado, descarta para evitar contaminação
+      if (!municipioRaw) continue
       const cidadeNorm = norm(cidade)
       const municipioNorm = norm(municipioRaw)
       if (!municipioNorm.includes(cidadeNorm) && !cidadeNorm.includes(municipioNorm)) continue
     }
 
-    // 4. Filtra por CNAE/Setor se informado
+    // D. Filtra por CNAE/Setor se informado (compara 4 primeiros dígitos do grupo CNAE ou palavras-chave)
     const leadCnaeRaw = String(data.cnae_fiscal || '').replace(/\D/g, '')
     const leadCnaeDesc = norm(data.cnae_fiscal_descricao || '')
-    const targetCnaeDigits = cnaeParam.replace(/\D/g, '')
+    const targetCnaeDigits = cnaeDigits
     const targetSetorNorm = norm(setor)
 
     if (targetCnaeDigits.length >= 4) {
-      const targetPrefix = targetCnaeDigits.slice(0, 4)
-      const cnaeMatch = leadCnaeRaw.includes(targetCnaeDigits) || leadCnaeRaw.startsWith(targetPrefix)
+      const targetPrefix4 = targetCnaeDigits.slice(0, 4)
+      const targetPrefix2 = targetCnaeDigits.slice(0, 2)
+      const cnaeMatch = leadCnaeRaw.startsWith(targetPrefix4) || leadCnaeRaw.includes(targetCnaeDigits) || leadCnaeRaw.startsWith(targetPrefix2)
       if (!cnaeMatch) continue
-    } else if (targetSetorNorm) {
-      const tokens = targetSetorNorm.split(/\s+/).filter(t => t.length > 2)
+    } else if (keySubject) {
+      const tokens = norm(keySubject).split(/\s+/).filter(t => t.length > 2)
       const matchesToken = tokens.some(t => leadCnaeDesc.includes(t))
       if (!matchesToken) continue
     }
@@ -335,15 +357,10 @@ export async function GET(req: NextRequest) {
     leads.push(buildLead(cnpjList[i], data))
   }
 
-  if (leads.length === 0) {
-    // Nenhum resultado real válido após filtros — retorna vazio honestamente
-    return NextResponse.json({ leads: [], totalFound: 0, source: 'no_results' })
-  }
-
   return NextResponse.json({
     leads,
     totalFound: leads.length,
-    source: 'live_rfb',
+    source: 'live_rfb_opencnpj',
     queriesUsed: queries.slice(0, 4),
   })
 }
