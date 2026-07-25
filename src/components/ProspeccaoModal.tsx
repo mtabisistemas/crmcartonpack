@@ -770,22 +770,6 @@ export function ProspeccaoModal({
                   <Map size={14} />
                   <span>Mapa</span>
                 </button>
-
-                {viewMode === 'split' && (
-                  <button
-                    type="button"
-                    onClick={() => setIsMapExpanded(v => !v)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
-                      isMapExpanded
-                        ? 'bg-[var(--lime)]/20 text-[var(--lime)] border-[var(--lime)]/50 shadow-md'
-                        : 'text-[var(--gray2)] border-transparent hover:text-white'
-                    }`}
-                    title={isMapExpanded ? 'Restaurar visão dividida' : 'Ampliar mapa mantendo a lista de empresas'}
-                  >
-                    {isMapExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-                    <span>{isMapExpanded ? 'Restaurar' : 'Ampliar Mapa'}</span>
-                  </button>
-                )}
                 <button
                   type="button"
                   onClick={() => setViewMode('list')}
@@ -811,7 +795,8 @@ export function ProspeccaoModal({
             viewMode === 'split' ? (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0 h-full overflow-hidden">
                 {/* Painel da Esquerda (5 cols): Cards em Estilo Google Places */}
-                <div className={`${isMapExpanded ? 'lg:col-span-3' : 'lg:col-span-5'} flex flex-col gap-3 overflow-y-auto pr-1.5 custom-scrollbar h-full transition-all duration-300`}>
+                {!isMapExpanded && (
+                  <div className="lg:col-span-5 flex flex-col gap-3 overflow-y-auto pr-1.5 custom-scrollbar h-full transition-all duration-300">
                   {leads.map((leadRaw, idx) => {
                     const lead = getDisplayLead(leadRaw)
                     const isSelected = selectedCnpjs.includes(lead.cnpj)
@@ -908,9 +893,10 @@ export function ProspeccaoModal({
                     )
                   })}
                 </div>
+                )}
 
-                {/* Painel da Direita (7 cols): Mapa Interativo Leaflet estilo Google Places */}
-                <div className={`${isMapExpanded ? 'lg:col-span-9' : 'lg:col-span-7'} h-full min-h-0 flex flex-col overflow-hidden transition-all duration-300`}>
+                {/* Painel da Direita (12 ou 7 cols): Mapa Interativo Leaflet estilo Google Places */}
+                <div className={`${isMapExpanded ? 'lg:col-span-12' : 'lg:col-span-7'} h-full min-h-0 flex flex-col overflow-hidden transition-all duration-300`}>
                   <LeafletProspectMap
                     leads={leads}
                     selectedLeadCnpj={activeLeadMapCnpj}
