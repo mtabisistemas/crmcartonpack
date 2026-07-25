@@ -140,7 +140,7 @@ export const LISTA_CNAES_OFFICIAL: CnaeOfficial[] = [
   { code: 'J-6190-6/99', fullCode: '6190-6/99', description: 'Outras atividades de telecomunicações não especificadas anteriormente', display: '(J-6190-6/99) Outras atividades de telecomunicações', keywords: ['telecomunicações', 'telecom', 'redes', '6190'] },
 
   // ── TRANSPORTE & LOGÍSTICA (H) ──
-  { code: 'H-4930-2/02', fullCode: '4930-2/02', description: 'Transporte Terrestre', display: '(H-4930-2/02) Transporte Terrestre', keywords: ['transporte', 'transportes', 'terrestre', 'rodoviário', 'caminhão', 'frete', '49'] },
+  { code: 'H-4930-2/02', fullCode: '4930-2/02', description: 'Transporte Rodoviário de Carga', display: '(H-4930-2/02) Transporte Rodoviário de Carga', keywords: ['transporte', 'transportes', 'terrestre', 'rodoviário', 'caminhão', 'frete', '4930', '49'] },
   { code: 'H-5011-4/01', fullCode: '5011-4/01', description: 'Transporte Aquaviário', display: '(H-5011-4/01) Transporte Aquaviário', keywords: ['transporte', 'transportes', 'aquaviário', 'marítimo', 'navegação', 'porto', '50'] },
   { code: 'H-5120-0/00', fullCode: '5120-0/00', description: 'Transporte Aéreo de Carga', display: '(H-5120-0/00) Transporte Aéreo de Carga', keywords: ['transporte', 'transportes', 'aéreo', 'carga', 'aviação', '512'] },
   { code: 'H-5211-7/99', fullCode: '5211-7/99', description: 'Armazenamento e Atividades Auxiliares dos Transportes', display: '(H-5211-7/99) Armazenamento e Atividades Auxiliares dos Transportes', keywords: ['transporte', 'transportes', 'armazenamento', 'logística', 'depósito', 'armazém', '52'] },
@@ -150,12 +150,12 @@ export const LISTA_CNAES_OFFICIAL: CnaeOfficial[] = [
   { code: 'C-1731-1/00', fullCode: '1731-1/00', description: 'Fabricação de Embalagens de Papel', display: '(C-1731-1/00) Fabricação de Embalagens de Papel', keywords: ['embala', 'embalagens', 'papel', 'sacolas', '1731'] },
   { code: 'C-1732-0/00', fullCode: '1732-0/00', description: 'Fabricação de Embalagens de Cartolina e Papel-Cartão', display: '(C-1732-0/00) Fabricação de Embalagens de Cartolina e Papel-Cartão', keywords: ['embala', 'embalagens', 'cartolina', 'papel-cartão', 'cartonagem', '1732'] },
   { code: 'C-2222-6/00', fullCode: '2222-6/00', description: 'Fabricação de Embalagens de Material Plástico', display: '(C-2222-6/00) Fabricação de Embalagens de Material Plástico', keywords: ['embala', 'embalagens', 'plástico', 'filme', 'sacaria', '2222'] },
-  
+
   // ── CALÇADOS & COURO (C-15) ──
   { code: 'C-1531-9/01', fullCode: '1531-9/01', description: 'Fabricação de Calçados de Couro', display: '(C-1531-9/01) Fabricação de Calçados de Couro', keywords: ['calçados', 'calcados', 'couro', 'sapato', '1531'] },
   { code: 'C-1532-7/00', fullCode: '1532-7/00', description: 'Fabricação de Tênis e Calçados Esportivos', display: '(C-1532-7/00) Fabricação de Tênis e Calçados Esportivos', keywords: ['calçados', 'calcados', 'tênis', 'esportivo', '1532'] },
   { code: 'C-1521-1/00', fullCode: '1521-1/00', description: 'Fabricação de Artigos de Couro e Artefatos', display: '(C-1521-1/00) Fabricação de Artigos de Couro e Artefatos', keywords: ['couro', 'artefatos', 'bolsas', 'cintos', '1521'] },
-  
+
   // ── ALIMENTOS & BEBIDAS (C-10 / C-11) ──
   { code: 'C-1012-1/01', fullCode: '1012-1/01', description: 'Abate de Aves e Produtos Alimentícios', display: '(C-1012-1/01) Abate de Aves e Produtos Alimentícios', keywords: ['alimentos', 'aves', 'frigorífico', 'frango', '1012'] },
   { code: 'C-1091-0/01', fullCode: '1091-0/01', description: 'Fabricação de Produtos de Panificação e Alimentos', display: '(C-1091-0/01) Fabricação de Produtos de Panificação e Alimentos', keywords: ['alimentos', 'padaria', 'pão', 'biscoitos', '1091'] },
@@ -175,11 +175,76 @@ export const LISTA_CNAES_OFFICIAL: CnaeOfficial[] = [
   { code: 'C-2599-3/99', fullCode: '2599-3/99', description: 'Fabricação de Produtos de Metal e Usinagem', display: '(C-2599-3/99) Fabricação de Produtos de Metal e Usinagem', keywords: ['metalúrgica', 'metalurgica', 'usinagem', 'peças', '2599'] },
   { code: 'C-2920-4/01', fullCode: '2920-4/01', description: 'Fabricação de Carrocerias para Veículos Automotores e Ônibus', display: '(C-2920-4/01) Fabricação de Carrocerias para Veículos Automotores e Ônibus', keywords: ['automotivo', 'carrocerias', 'ônibus', '2920'] },
 
-  // ── CONSTRUÇÃO, COMÉRCIO & TI (F / G / J / M) ──
-  { code: 'F-4110-7/00', fullCode: '4110-7/00', description: 'Incorporação e Construção Civil', display: '(F-4110-7/00) Incorporação e Construção Civil', keywords: ['construção', 'civil', 'obra', '4110'] },
-  { code: 'G-4692-3/00', fullCode: '4692-3/00', description: 'Comércio Atacadista de Mercadorias em Geral', display: '(G-4692-3/00) Comércio Atacadista de Mercadorias em Geral', keywords: ['atacado', 'distribuição', '4692'] },
-  { code: 'J-6201-5/01', fullCode: '6201-5/01', description: 'Desenvolvimento de Programas de Computador e Tecnologia', display: '(J-6201-5/01) Desenvolvimento de Programas de Computador e Tecnologia', keywords: ['tecnologia', 'TI', 'software', '6201'] },
-  { code: 'M-6911-7/01', fullCode: '6911-7/01', description: 'Serviços Advocatícios e Jurídicos', display: '(M-6911-7/01) Serviços Advocatícios e Jurídicos', keywords: ['advocacia', 'jurídico', 'advogado', '6911'] }
+  // ── COMÉRCIO VAREJISTA (G-47) ──
+  { code: 'G-4744-0/01', fullCode: '4744-0/01', description: 'Comércio Varejista de Ferragens e Ferramentas', display: '(G-4744-0/01) Comércio Varejista de Ferragens e Ferramentas', keywords: ['ferragens', 'ferramentas', 'varejo', 'varejista', '4744'] },
+  { code: 'G-4721-1/02', fullCode: '4721-1/02', description: 'Padaria, Confeitaria com Predominância de Revenda', display: '(G-4721-1/02) Padaria e Confeitaria com Predominância de Revenda', keywords: ['padaria', 'confeitaria', 'pão', 'varejo', '4721'] },
+  { code: 'G-4712-1/00', fullCode: '4712-1/00', description: 'Comércio Varejista de Mercadorias em Geral, com Predominância de Produtos Alimentícios', display: '(G-4712-1/00) Minimercado e Mercearia', keywords: ['minimercado', 'mercearia', 'varejo', 'alimentos', '4712'] },
+  { code: 'G-4771-7/01', fullCode: '4771-7/01', description: 'Comércio Varejista de Produtos Farmacêuticos, sem Manipulação de Fórmulas', display: '(G-4771-7/01) Farmácia e Drogaria', keywords: ['farmácia', 'drogaria', 'farmacia', 'remédios', 'saúde', '4771'] },
+  { code: 'G-4781-4/00', fullCode: '4781-4/00', description: 'Comércio Varejista de Artigos do Vestuário e Acessórios', display: '(G-4781-4/00) Comércio Varejista de Roupas e Acessórios', keywords: ['vestuário', 'roupas', 'moda', 'confecção', 'varejo', '4781'] },
+  { code: 'G-4754-7/01', fullCode: '4754-7/01', description: 'Comércio Varejista de Móveis', display: '(G-4754-7/01) Comércio Varejista de Móveis', keywords: ['móveis', 'moveis', 'marcenaria', 'varejo', '4754'] },
+  { code: 'G-4762-8/00', fullCode: '4762-8/00', description: 'Comércio Varejista de Artigos de Óptica', display: '(G-4762-8/00) Ótica e Artigos de Óptica', keywords: ['ótica', 'otica', 'óculos', 'varejo', '4762'] },
+
+  // ── AGRONEGÓCIO & PRODUÇÃO AGROPECUÁRIA (A-01) ──
+  { code: 'A-0111-3/01', fullCode: '0111-3/01', description: 'Cultivo de Trigo', display: '(A-0111-3/01) Cultivo de Trigo', keywords: ['agronegócio', 'agronegocio', 'agricultura', 'grãos', 'trigo', 'lavoura', '0111'] },
+  { code: 'A-0115-6/00', fullCode: '0115-6/00', description: 'Cultivo de Soja', display: '(A-0115-6/00) Cultivo de Soja', keywords: ['agronegócio', 'agronegocio', 'agricultura', 'soja', 'grãos', 'lavoura', '0115'] },
+  { code: 'A-0151-2/01', fullCode: '0151-2/01', description: 'Criação de Bovinos para Corte', display: '(A-0151-2/01) Pecuária Bovina para Corte', keywords: ['agronegócio', 'agronegocio', 'pecuária', 'pecuaria', 'gado', 'bovinos', 'fazenda', '0151'] },
+  { code: 'A-0161-0/00', fullCode: '0161-0/00', description: 'Atividade de Apoio à Agricultura', display: '(A-0161-0/00) Atividade de Apoio à Agricultura', keywords: ['agronegócio', 'agronegocio', 'agricultura', 'agro', 'insumos', '0161'] },
+  { code: 'G-4612-1/00', fullCode: '4612-1/00', description: 'Representantes Comerciais de Insumos Agropecuários', display: '(G-4612-1/00) Representantes Comerciais de Insumos Agropecuários', keywords: ['agronegócio', 'agronegocio', 'insumos', 'agropecuário', 'sementes', 'fertilizantes', '4612'] },
+  { code: 'G-4632-0/01', fullCode: '4632-0/01', description: 'Comércio Atacadista de Cereais e Grãos', display: '(G-4632-0/01) Comércio Atacadista de Cereais e Grãos', keywords: ['agronegócio', 'agronegocio', 'cereais', 'grãos', 'atacado', '4632'] },
+
+  // ── SAÚDE & CLÍNICAS (Q-86 / Q-87) ──
+  { code: 'Q-8610-1/01', fullCode: '8610-1/01', description: 'Atividades de Atendimento Hospitalar', display: '(Q-8610-1/01) Hospital e Atendimento Hospitalar', keywords: ['saúde', 'saude', 'hospital', 'atendimento', 'internação', '8610'] },
+  { code: 'Q-8630-5/01', fullCode: '8630-5/01', description: 'Atividade Médica Ambulatorial com Recursos para Realização de Procedimentos Cirúrgicos', display: '(Q-8630-5/01) Clínica Médica e Cirúrgica', keywords: ['saúde', 'saude', 'clínica', 'clinica', 'médico', 'cirurgia', '8630'] },
+  { code: 'Q-8640-2/08', fullCode: '8640-2/08', description: 'Serviços de Diagnóstico por Imagem sem Uso de Radiação Ionizante', display: '(Q-8640-2/08) Laboratório e Diagnóstico por Imagem', keywords: ['saúde', 'saude', 'laboratório', 'laboratorio', 'exames', 'diagnóstico', '8640'] },
+  { code: 'Q-8650-0/04', fullCode: '8650-0/04', description: 'Atividades de Fisioterapia', display: '(Q-8650-0/04) Fisioterapia', keywords: ['saúde', 'saude', 'fisioterapia', 'reabilitação', '8650'] },
+  { code: 'Q-8660-7/00', fullCode: '8660-7/00', description: 'Atividades de Apoio à Gestão de Saúde', display: '(Q-8660-7/00) Gestão e Serviços de Saúde', keywords: ['saúde', 'saude', 'gestão', 'plano de saúde', '8660'] },
+
+  // ── EDUCAÇÃO (P-85) ──
+  { code: 'P-8511-2/00', fullCode: '8511-2/00', description: 'Educação Infantil — Creche e Pré-Escola', display: '(P-8511-2/00) Escola de Educação Infantil', keywords: ['educação', 'educacao', 'escola', 'creche', 'ensino', '8511'] },
+  { code: 'P-8512-1/00', fullCode: '8512-1/00', description: 'Educação Pré-Escolar', display: '(P-8512-1/00) Educação Pré-Escolar', keywords: ['educação', 'educacao', 'escola', 'ensino', '8512'] },
+  { code: 'P-8541-4/00', fullCode: '8541-4/00', description: 'Educação Profissional de Nível Técnico', display: '(P-8541-4/00) Escola Técnica e Ensino Profissionalizante', keywords: ['educação', 'educacao', 'escola', 'técnico', 'profissionalizante', 'curso', '8541'] },
+  { code: 'P-8599-6/04', fullCode: '8599-6/04', description: 'Treinamento em Desenvolvimento Profissional e Gerencial', display: '(P-8599-6/04) Treinamento Corporativo e Desenvolvimento Profissional', keywords: ['educação', 'educacao', 'treinamento', 'capacitação', 'curso', '8599'] },
+
+  // ── SERVIÇOS PROFISSIONAIS (M-69 / M-70 / M-74) ──
+  { code: 'M-6911-7/01', fullCode: '6911-7/01', description: 'Serviços Advocatícios e Jurídicos', display: '(M-6911-7/01) Serviços Advocatícios e Jurídicos', keywords: ['advocacia', 'advocaticio', 'jurídico', 'juridico', 'advogado', 'direito', '6911'] },
+  { code: 'M-6920-6/01', fullCode: '6920-6/01', description: 'Atividades de Contabilidade', display: '(M-6920-6/01) Contabilidade e Escritório Contábil', keywords: ['contabilidade', 'contabil', 'contábil', 'auditoria', 'contador', '6920'] },
+  { code: 'M-7020-4/00', fullCode: '7020-4/00', description: 'Atividades de Consultoria em Gestão Empresarial', display: '(M-7020-4/00) Consultoria e Gestão Empresarial', keywords: ['consultoria', 'gestão', 'gestao', 'empresarial', 'managment', '7020'] },
+  { code: 'M-7111-1/00', fullCode: '7111-1/00', description: 'Serviços de Arquitetura', display: '(M-7111-1/00) Arquitetura e Urbanismo', keywords: ['arquitetura', 'urbanismo', 'projeto', 'construção', '7111'] },
+  { code: 'M-7112-0/00', fullCode: '7112-0/00', description: 'Serviços de Engenharia', display: '(M-7112-0/00) Engenharia e Projetos Técnicos', keywords: ['engenharia', 'projetos', 'técnico', 'laudo', '7112'] },
+
+  // ── HOTELARIA & ALIMENTAÇÃO (I-55 / I-56) ──
+  { code: 'I-5510-8/01', fullCode: '5510-8/01', description: 'Hotéis', display: '(I-5510-8/01) Hotel e Hospedagem', keywords: ['hotelaria', 'hotel', 'pousada', 'hospedagem', 'turismo', '5510'] },
+  { code: 'I-5590-6/01', fullCode: '5590-6/01', description: 'Albergues e Pousadas', display: '(I-5590-6/01) Pousada e Albergue', keywords: ['hotelaria', 'pousada', 'hospedagem', 'turismo', '5590'] },
+  { code: 'I-5611-2/01', fullCode: '5611-2/01', description: 'Restaurante e Similares', display: '(I-5611-2/01) Restaurante', keywords: ['restaurante', 'gastronomia', 'alimentação', 'alimentacao', 'refeitório', '5611'] },
+  { code: 'I-5611-2/03', fullCode: '5611-2/03', description: 'Lanchonetes, Casas de Chá, de Sucos e Similares', display: '(I-5611-2/03) Lanchonete e Bar', keywords: ['lanchonete', 'bar', 'café', 'gastronomia', '5611'] },
+
+  // ── PET SHOP & VETERINÁRIA (G-47 / M-75) ──
+  { code: 'G-4789-0/04', fullCode: '4789-0/04', description: 'Comércio Varejista de Animais Vivos e Artigos para Animais de Estimação', display: '(G-4789-0/04) Pet Shop e Loja de Animais', keywords: ['pet shop', 'petshop', 'animais', 'ração', 'veterinária', '4789'] },
+  { code: 'M-7500-1/00', fullCode: '7500-1/00', description: 'Atividades Veterinárias', display: '(M-7500-1/00) Clínica Veterinária', keywords: ['veterinária', 'veterinaria', 'pet', 'animais', '7500'] },
+
+  // ── BELEZA & ESTÉTICA (S-96) ──
+  { code: 'S-9602-5/01', fullCode: '9602-5/01', description: 'Cabeleireiros', display: '(S-9602-5/01) Salão de Beleza e Cabeleireiro', keywords: ['beleza', 'estética', 'estetica', 'cabeleireiro', 'salão', 'salao', '9602'] },
+  { code: 'S-9602-5/02', fullCode: '9602-5/02', description: 'Outras Atividades de Tratamento de Beleza', display: '(S-9602-5/02) Estética e Tratamento de Beleza', keywords: ['beleza', 'estética', 'estetica', 'spa', 'tratamento', '9602'] },
+
+  // ── IMÓVEIS & INCORPORAÇÃO (L-68) ──
+  { code: 'L-6810-2/01', fullCode: '6810-2/01', description: 'Compra e Venda de Imóveis Próprios', display: '(L-6810-2/01) Imobiliária — Compra e Venda de Imóveis', keywords: ['imóveis', 'imoveis', 'imobiliária', 'imobiliaria', 'construção', '6810'] },
+  { code: 'L-6822-6/00', fullCode: '6822-6/00', description: 'Gestão e Administração da Propriedade Imobiliária', display: '(L-6822-6/00) Administração de Imóveis e Condomínios', keywords: ['imóveis', 'imoveis', 'administração', 'condomínio', '6822'] },
+
+  // ── CONSTRUÇÃO CIVIL & REFORMAS (F-41 / F-43) ──
+  { code: 'F-4110-7/00', fullCode: '4110-7/00', description: 'Incorporação e Construção Civil', display: '(F-4110-7/00) Incorporação e Construção Civil', keywords: ['construção', 'civil', 'obra', 'incorporação', '4110'] },
+  { code: 'F-4321-5/00', fullCode: '4321-5/00', description: 'Instalação e Manutenção Elétrica', display: '(F-4321-5/00) Instalação Elétrica e Manutenção', keywords: ['elétrico', 'eletrico', 'instalação', 'manutenção', 'construção', '4321'] },
+  { code: 'F-4330-4/05', fullCode: '4330-4/05', description: 'Aplicação de Revestimentos e Decoração', display: '(F-4330-4/05) Revestimentos, Pintura e Decoração', keywords: ['pintura', 'revestimento', 'decoração', 'reforma', 'construção', '4330'] },
+  { code: 'F-4399-1/03', fullCode: '4399-1/03', description: 'Obras de Alvenaria', display: '(F-4399-1/03) Alvenaria e Obras de Construção', keywords: ['construção', 'alvenaria', 'obra', 'reforma', '4399'] },
+
+  // ── TI & SOFTWARE (J-62) ──
+  { code: 'J-6201-5/01', fullCode: '6201-5/01', description: 'Desenvolvimento de Programas de Computador sob Encomenda', display: '(J-6201-5/01) Desenvolvimento de Software sob Encomenda', keywords: ['tecnologia', 'ti', 'software', 'sistemas', 'desenvolvimento', '6201'] },
+  { code: 'J-6202-3/00', fullCode: '6202-3/00', description: 'Desenvolvimento e Licenciamento de Programas de Computador Customizáveis', display: '(J-6202-3/00) Software Customizável e SaaS', keywords: ['tecnologia', 'ti', 'software', 'saas', 'licenciamento', '6202'] },
+  { code: 'J-6209-1/00', fullCode: '6209-1/00', description: 'Suporte Técnico, Manutenção e Outros Serviços em Tecnologia da Informação', display: '(J-6209-1/00) Suporte Técnico e Manutenção de TI', keywords: ['tecnologia', 'ti', 'suporte', 'manutenção', 'informática', '6209'] },
+
+  // ── COMÉRCIO ATACADISTA (G-46) ──
+  { code: 'G-4692-3/00', fullCode: '4692-3/00', description: 'Comércio Atacadista de Mercadorias em Geral', display: '(G-4692-3/00) Comércio Atacadista de Mercadorias em Geral', keywords: ['atacado', 'distribuição', 'distribuicao', 'atacadista', '4692'] },
+  { code: 'G-4644-3/01', fullCode: '4644-3/01', description: 'Comércio Atacadista de Medicamentos e Drogas de Uso Humano', display: '(G-4644-3/01) Atacado Farmacêutico', keywords: ['farmacêutico', 'atacado', 'medicamentos', 'distribuição', '4644'] },
+  { code: 'G-4634-6/01', fullCode: '4634-6/01', description: 'Comércio Atacadista de Carnes Bovinas e Suínas e Derivados', display: '(G-4634-6/01) Atacado de Carnes e Derivados', keywords: ['alimentos', 'carnes', 'frigorífico', 'atacado', '4634'] }
 ]
 
 // Cache em memória de TODOS os CNAEs do IBGE em tempo real
@@ -402,7 +467,7 @@ export function generateDynamicB2bLeads(opts: {
 
   let sectorName = cleanText || 'Logística, Indústrias & Serviços'
   let cnaeCode = '4930-2/02'
-  let cnaeDesc = cleanText || 'Transporte rodoviário de carga, exceto produtos perigosos'
+  let cnaeDesc = 'Transporte rodoviário de carga, exceto produtos perigosos'
 
   // Formata CNAE com base nos dígitos se houver pelo menos 4 dígitos
   if (cnaeDigits.length >= 4) {
@@ -415,45 +480,246 @@ export function generateDynamicB2bLeads(opts: {
     }
   }
 
-  // Tenta encontrar na lista oficial LISTA_CNAES_OFFICIAL
-  const officialFound = LISTA_CNAES_OFFICIAL.find(s =>
-    (s.fullCode && s.fullCode.replace(/\D/g, '').includes(cnaeDigits)) ||
-    (cnaeDigits.length >= 4 && s.fullCode && s.fullCode.replace(/\D/g, '').startsWith(cnaeDigits.slice(0, 4))) ||
-    normalizeText(s.description) === normCleanText ||
-    normalizeText(s.display) === normCleanText
-  )
+  // ⚠️ FIX CRÍTICO: só usa includes(cnaeDigits) quando cnaeDigits não for vazio.
+  // Se cnaeDigits for '' (busca puramente textual), ''.includes('') é sempre TRUE e retornaria o 1º item da lista.
+  const officialFound = LISTA_CNAES_OFFICIAL.find(s => {
+    if (!s.fullCode) return false
+    const sDigits = s.fullCode.replace(/\D/g, '')
+    // Match por dígitos do CNAE (apenas quando há dígitos na query)
+    if (cnaeDigits.length >= 4) {
+      if (sDigits.startsWith(cnaeDigits.slice(0, 4))) return true
+      if (sDigits === cnaeDigits) return true
+    }
+    // Match por texto: descrição exata ou display exato
+    if (normCleanText && (normalizeText(s.description) === normCleanText || normalizeText(s.display) === normCleanText)) return true
+    // Match por keywords: pelo menos 1 keyword exata incluindo o normCleanText
+    if (normCleanText && s.keywords && s.keywords.some(k => normalizeText(k) === normCleanText || normCleanText === normalizeText(k))) return true
+    // Match por token parcial nas keywords (ex: 'agronegocio' em keywords['agronegócio', 'agricultura'])
+    if (normCleanText && s.keywords && s.keywords.some(k => normalizeText(k).includes(normCleanText) || normCleanText.includes(normalizeText(k)))) return true
+    return false
+  })
   if (officialFound) {
     sectorName = officialFound.description
     cnaeDesc = officialFound.description
     if (officialFound.fullCode) cnaeCode = officialFound.fullCode
   }
 
-  let prefixes = ['TRANS', 'LOG', 'EXPRESS', 'BRASIL', 'GLOBAL', 'NORTE', 'SUL', 'SOLUÇÕES', 'ALFA', 'BETA', 'PRIME', 'INTEGRA']
-  let suffixes = ['LTDA', 'SERVIÇOS LOGÍSTICOS S.A.', 'SOLUÇÕES INTEGRADAS LTDA', 'INDUSTRIA & COMÉRCIO S.A.', 'EXPRESSO & CARGAS LTDA']
-
+  // ── Mapeamento completo Setor → Prefixos/Sufixos temáticos ──────────────────────────────
+  // O normSec combina o texto normalizado + dígitos do CNAE para matching robusto
   const normSec = normCleanText || cnaeDigits
 
-  if (normSec.includes('construcao') || normSec.includes('agua') || normSec.includes('esgoto') || cnaeDigits.startsWith('4222')) {
-    prefixes = ['SANEA', 'INFRA', 'HIDRO', 'CONSTRUTORA', 'ENGENHARIA', 'OBRAS', 'ECO', 'AGUA']
-    suffixes = ['ENGENHARIA & SANEAMENTO LTDA', 'OBRAS DE INFRAESTRUTURA S.A.', 'CONSTRUÇÕES E SANEAR LTDA']
-  } else if (normSec.includes('telecom') || normSec.includes('redes') || cnaeDigits.startsWith('4221') || cnaeDigits.startsWith('6190')) {
-    prefixes = ['TELECOM', 'CONNECT', 'FIBRA', 'NET', 'LINK', 'DIGITAL', 'VOX', 'TEL']
-    suffixes = ['TELECOMUNICAÇÕES & REDES LTDA', 'SERVIÇOS DE TELECOM S.A.', 'CONECTIVIDADE LTDA']
-  } else if (normSec.includes('embala') || normSec.includes('papel') || normSec.includes('caixa') || cnaeDigits.startsWith('173')) {
-    prefixes = ['PACK', 'CARTON', 'BOX', 'EMBALA', 'KRAFT', 'PAPEIS', 'IND']
-    suffixes = ['CARTONAGEM & EMBALAGENS LTDA', 'PACKAGING DO BRASIL S.A.', 'EMBALAGENS ESPECIAIS LTDA']
-  } else if (normSec.includes('calcado') || normSec.includes('couro') || cnaeDigits.startsWith('153')) {
-    prefixes = ['CALÇADOS', 'SHOES', 'COURO', 'VIA', 'STYLE', 'FOOT', 'MARTE']
-    suffixes = ['CALÇADOS & ARTEFATOS LTDA', 'INDÚSTRIA CALÇADISTA S.A.', 'COURO & DESIGN LTDA']
-  } else if (normSec.includes('alimento') || normSec.includes('bebida') || cnaeDigits.startsWith('101') || cnaeDigits.startsWith('109')) {
-    prefixes = ['ALIMENTOS', 'SABOR', 'NUTRI', 'AGRO', 'DOCE', 'FRIGO', 'GUSTO']
-    suffixes = ['ALIMENTOS DO BRASIL LTDA', 'INDÚSTRIA ALIMENTÍCIA S.A.', 'NUTRITION LTDA']
-  } else if (normSec.includes('metal') || normSec.includes('trefila') || normSec.includes('aco') || cnaeDigits.startsWith('241') || cnaeDigits.startsWith('259')) {
-    prefixes = ['METAL', 'AÇO', 'TREFILADOS', 'METASUL', 'FERRO', 'INOX', 'PRECISION', 'TREFILA']
-    suffixes = ['METALÚRGICA & TREFILADOS LTDA', 'PRODUTOS DE METAL S.A.', 'TREFILAÇÃO & USINAGEM LTDA']
-  } else if (normSec.includes('tecnologia') || normSec.includes('software') || cnaeDigits.startsWith('6201')) {
-    prefixes = ['TECH', 'SOFT', 'CLOUD', 'DATA', 'SYSTEMS', 'CYBER', 'DEV']
-    suffixes = ['TECNOLOGIA & SISTEMAS LTDA', 'SOFTWARE HOUSE S.A.', 'SOLUÇÕES DIGITAIS LTDA']
+  type SectorConfig = { prefixes: string[]; suffixes: string[]; cnaeCode?: string; cnaeDesc?: string }
+  const SECTOR_MAP: Array<{ test: (n: string, d: string) => boolean } & SectorConfig> = [
+    // Agronegócio / Agricultura / Pecuária
+    {
+      test: (n, d) => n.includes('agroneg') || n.includes('agricultur') || n.includes('pecuar') || n.includes('agropec') || n === 'agro' || d.startsWith('011') || d.startsWith('012') || d.startsWith('015') || d.startsWith('461') || d.startsWith('463'),
+      prefixes: ['AGRO', 'CAMPO', 'VERDE', 'RURAL', 'TERRA', 'CERRADO', 'FAZENDA', 'COLHEITA', 'PRODUÇÃO', 'NATUREZA'],
+      suffixes: ['AGROPECUÁRIA LTDA', 'AGRONEGÓCIOS S.A.', 'RURAL & FAZENDA LTDA', 'SOLUÇÕES AGRÍCOLAS LTDA', 'INSUMOS DO BRASIL LTDA'],
+      cnaeCode: '0115-6/00', cnaeDesc: 'Cultivo de Soja'
+    },
+    // Advocacia / Jurídico / Direito
+    {
+      test: (n, d) => n.includes('advoca') || n.includes('juridic') || n.includes('direito') || n.includes('advogado') || d.startsWith('6911'),
+      prefixes: ['SILVA', 'COSTA', 'SANTOS', 'OLIVEIRA', 'PEREIRA', 'ALMEIDA', 'LIMA', 'FERREIRA', 'ADVOGADOS', 'ASSESSORIA'],
+      suffixes: ['ADVOGADOS ASSOCIADOS', 'ADVOCACIA & CONSULTORIA LTDA', 'ASSESSORIA JURÍDICA S/S', 'DIREITO & NEGÓCIOS LTDA', 'ESCRITÓRIO DE ADVOCACIA SS'],
+      cnaeCode: '6911-7/01', cnaeDesc: 'Serviços Advocatícios e Jurídicos'
+    },
+    // Contabilidade
+    {
+      test: (n, d) => n.includes('contabil') || n.includes('contabilidade') || n.includes('auditoria') || n.includes('contador') || d.startsWith('6920'),
+      prefixes: ['CONTA', 'FISCAL', 'AUDITORES', 'BALANÇO', 'TRIBUT', 'GESTÃO', 'ASSESSORIA', 'CONTROL'],
+      suffixes: ['CONTABILIDADE LTDA', 'ESCRITÓRIO CONTÁBIL SS', 'ASSESSORIA FISCAL & TRIBUTÁRIA LTDA', 'AUDITORES INDEPENDENTES S/S'],
+      cnaeCode: '6920-6/01', cnaeDesc: 'Atividades de Contabilidade'
+    },
+    // Saúde / Hospital / Clínica / Laboratório
+    {
+      test: (n, d) => n.includes('saude') || n.includes('hospital') || n.includes('clinic') || n.includes('laborator') || n.includes('medic') || n.includes('fisio') || d.startsWith('861') || d.startsWith('862') || d.startsWith('863') || d.startsWith('864') || d.startsWith('865'),
+      prefixes: ['SAÚDE', 'VIDA', 'CLÍNICA', 'HOSPITAL', 'LABORAT', 'DIAGNOS', 'MEDICAL', 'SALUS', 'PREMIER', 'BEM ESTAR'],
+      suffixes: ['CLÍNICA MÉDICA LTDA', 'SAÚDE & QUALIDADE DE VIDA LTDA', 'SERVIÇOS MÉDICOS S/S', 'CENTRO CLÍNICO LTDA', 'DIAGNÓSTICO E SAÚDE LTDA'],
+      cnaeCode: '8630-5/01', cnaeDesc: 'Atividade Médica Ambulatorial com Recursos para Realização de Procedimentos Cirúrgicos'
+    },
+    // Educação / Escola / Curso
+    {
+      test: (n, d) => n.includes('educac') || n.includes('escola') || n.includes('ensino') || n.includes('colegio') || n.includes('curso') || n.includes('treinamento') || d.startsWith('851') || d.startsWith('852') || d.startsWith('853') || d.startsWith('854') || d.startsWith('855') || d.startsWith('859'),
+      prefixes: ['ESCOLA', 'COLÉGIO', 'INSTITUTO', 'CENTRO EDUCACIONAL', 'EDUCAR', 'APREND', 'SABER', 'CONHEC', 'FORMAÇÃO'],
+      suffixes: ['EDUCACIONAL LTDA', 'COLÉGIO E ESCOLA LTDA', 'INSTITUTO DE ENSINO S/S', 'CENTRO DE TREINAMENTO LTDA'],
+      cnaeCode: '8541-4/00', cnaeDesc: 'Educação Profissional de Nível Técnico'
+    },
+    // Construção Civil / Obra / Construtora
+    {
+      test: (n, d) => (n.includes('constru') && !n.includes('agua') && !n.includes('esgoto') && !n.includes('rede')) || n.includes('incorpor') || n.includes('reform') || n.includes('alvenaria') || d.startsWith('411') || d.startsWith('412') || d.startsWith('432') || d.startsWith('433') || d.startsWith('439'),
+      prefixes: ['CONSTRUTORA', 'ENGENHARIA', 'INCORPOR', 'OBRAS', 'REFORMA', 'EDIFICA', 'CONSTRUIR', 'ALICERCE', 'PEDRA', 'ESTRUTURA'],
+      suffixes: ['CONSTRUTORA & INCORPORADORA LTDA', 'ENGENHARIA CIVIL S.A.', 'OBRAS E REFORMAS LTDA', 'INCORPORADORA LTDA'],
+      cnaeCode: '4110-7/00', cnaeDesc: 'Incorporação e Construção Civil'
+    },
+    // Saneamento / Água / Esgoto
+    {
+      test: (n, d) => n.includes('saneamento') || n.includes('agua') || n.includes('esgoto') || d.startsWith('4222'),
+      prefixes: ['SANEA', 'INFRA', 'HIDRO', 'CONSTRUTORA', 'ENGENHARIA', 'OBRAS', 'ECO', 'AGUA'],
+      suffixes: ['ENGENHARIA & SANEAMENTO LTDA', 'OBRAS DE INFRAESTRUTURA S.A.', 'CONSTRUÇÕES E SANEAR LTDA'],
+      cnaeCode: '4222-7/01', cnaeDesc: 'Construção de redes de abastecimento de água, coleta de esgoto e construções correlatas, exceto obras de irrigação'
+    },
+    // Telecomunicações / Telecom / Internet
+    {
+      test: (n, d) => n.includes('telecom') || n.includes('internet') || n.includes('provedor') || n.includes('fibra') || d.startsWith('4221') || d.startsWith('619') || d.startsWith('611'),
+      prefixes: ['TELECOM', 'CONNECT', 'FIBRA', 'NET', 'LINK', 'DIGITAL', 'VOX', 'TEL'],
+      suffixes: ['TELECOMUNICAÇÕES & REDES LTDA', 'SERVIÇOS DE TELECOM S.A.', 'CONECTIVIDADE LTDA'],
+      cnaeCode: '6190-6/01', cnaeDesc: 'Provedores de acesso às redes de comunicações'
+    },
+    // Embalagens / Papel / Cartonagem / Papelão
+    {
+      test: (n, d) => n.includes('embala') || n.includes('papel') || n.includes('caixa') || n.includes('carton') || d.startsWith('173') || d.startsWith('172') || d.startsWith('222'),
+      prefixes: ['PACK', 'CARTON', 'BOX', 'EMBALA', 'KRAFT', 'PAPEIS', 'IND'],
+      suffixes: ['CARTONAGEM & EMBALAGENS LTDA', 'PACKAGING DO BRASIL S.A.', 'EMBALAGENS ESPECIAIS LTDA'],
+      cnaeCode: '1733-8/00', cnaeDesc: 'Fabricação de Chapas e de Embalagens de Papelão Ondulado'
+    },
+    // Calçados / Couro / Sapatos
+    {
+      test: (n, d) => n.includes('calcado') || n.includes('couro') || n.includes('sapato') || n.includes('tenis') || d.startsWith('153') || d.startsWith('152'),
+      prefixes: ['CALÇADOS', 'SHOES', 'COURO', 'VIA', 'STYLE', 'FOOT', 'MARTE'],
+      suffixes: ['CALÇADOS & ARTEFATOS LTDA', 'INDÚSTRIA CALÇADISTA S.A.', 'COURO & DESIGN LTDA'],
+      cnaeCode: '1531-9/01', cnaeDesc: 'Fabricação de Calçados de Couro'
+    },
+    // Alimentos / Frigorífico / Panificação
+    {
+      test: (n, d) => n.includes('alimento') || n.includes('frigori') || n.includes('panificac') || n.includes('confeitari') || d.startsWith('101') || d.startsWith('109'),
+      prefixes: ['ALIMENTOS', 'SABOR', 'NUTRI', 'DOCE', 'FRIGO', 'GUSTO', 'PREMIUM'],
+      suffixes: ['ALIMENTOS DO BRASIL LTDA', 'INDÚSTRIA ALIMENTÍCIA S.A.', 'NUTRITION LTDA'],
+      cnaeCode: '1012-1/01', cnaeDesc: 'Abate de Aves e Produtos Alimentícios'
+    },
+    // Bebidas / Cerveja / Vinho
+    {
+      test: (n, d) => n.includes('bebida') || n.includes('cerveja') || n.includes('vinho') || n.includes('refrigerante') || d.startsWith('111') || d.startsWith('112'),
+      prefixes: ['BEBIDAS', 'BREW', 'CERVEJA', 'VINHO', 'BIER', 'VINTAGE', 'CHOPP'],
+      suffixes: ['BEBIDAS E DISTRIBUIÇÃO LTDA', 'CERVEJARIA S.A.', 'BEBIDAS PREMIUM LTDA'],
+      cnaeCode: '1111-9/01', cnaeDesc: 'Fabricação de Cervejas e Chopes'
+    },
+    // Metalúrgica / Aço / Trefilados / Arames
+    {
+      test: (n, d) => n.includes('metal') || n.includes('trefila') || n.includes('arame') || n.includes('aco') || d.startsWith('241') || d.startsWith('242') || d.startsWith('243') || d.startsWith('259'),
+      prefixes: ['METAL', 'AÇO', 'TREFILADOS', 'METASUL', 'FERRO', 'INOX', 'PRECISION', 'TREFILA'],
+      suffixes: ['METALÚRGICA & TREFILADOS LTDA', 'PRODUTOS DE METAL S.A.', 'TREFILAÇÃO & USINAGEM LTDA'],
+      cnaeCode: '2411-3/00', cnaeDesc: 'Produção de Ferro e Aço e Siderurgia'
+    },
+    // Tecnologia / TI / Software
+    {
+      test: (n, d) => n.includes('tecnologia') || n.includes('software') || n.includes('informatica') || n.includes('sistema') || n === 'ti' || d.startsWith('620') || d.startsWith('621') || d.startsWith('631'),
+      prefixes: ['TECH', 'SOFT', 'CLOUD', 'DATA', 'SYSTEMS', 'CYBER', 'DEV', 'DIGITAL', 'SMART'],
+      suffixes: ['TECNOLOGIA & SISTEMAS LTDA', 'SOFTWARE HOUSE S.A.', 'SOLUÇÕES DIGITAIS LTDA', 'INOVAÇÃO TECH LTDA'],
+      cnaeCode: '6201-5/01', cnaeDesc: 'Desenvolvimento de Programas de Computador sob Encomenda'
+    },
+    // Vestuário / Moda / Confecção / Têxtil
+    {
+      test: (n, d) => n.includes('vestuario') || n.includes('moda') || n.includes('confec') || n.includes('textil') || n.includes('roupa') || d.startsWith('141') || d.startsWith('142') || d.startsWith('161') || d.startsWith('478'),
+      prefixes: ['MODA', 'STYLE', 'FASHION', 'CONFEC', 'VESTE', 'LINHA', 'TREND', 'CLOS'],
+      suffixes: ['CONFECÇÕES LTDA', 'MODA & ESTILO S.A.', 'INDÚSTRIA TÊXTIL LTDA', 'VESTUÁRIO PREMIUM LTDA'],
+      cnaeCode: '4781-4/00', cnaeDesc: 'Comércio Varejista de Artigos do Vestuário e Acessórios'
+    },
+    // Hotelaria / Turismo / Pousada
+    {
+      test: (n, d) => n.includes('hotel') || n.includes('pousada') || n.includes('hosped') || n.includes('hotelari') || n.includes('turismo') || d.startsWith('551') || d.startsWith('559'),
+      prefixes: ['HOTEL', 'POUSADA', 'INN', 'GRAND', 'RESORT', 'PALACE', 'HOSPED', 'TURISMO'],
+      suffixes: ['HOTEL & HOSPEDAGEM LTDA', 'POUSADA & TURISMO LTDA', 'HOTELARIA S.A.'],
+      cnaeCode: '5510-8/01', cnaeDesc: 'Hotéis'
+    },
+    // Restaurante / Gastronomia / Alimentação fora do lar
+    {
+      test: (n, d) => n.includes('restaurante') || n.includes('gastronomia') || n.includes('lanchonete') || n.includes('bar') || n.includes('cafeteria') || d.startsWith('561') || d.startsWith('562'),
+      prefixes: ['SABOR', 'GRILL', 'RESTAU', 'BISTR', 'CHEF', 'MESA', 'ESPAÇO', 'AROMA', 'GOSTO'],
+      suffixes: ['RESTAURANTE LTDA', 'GASTRONOMIA & SABORES LTDA', 'BAR & RESTAURANTE S.A.', 'CULINÁRIA ESPECIAL LTDA'],
+      cnaeCode: '5611-2/01', cnaeDesc: 'Restaurante e Similares'
+    },
+    // Pet Shop / Veterinária
+    {
+      test: (n, d) => n.includes('pet') || n.includes('veterinar') || n.includes('racao') || n.includes('animal') || d.startsWith('478') || d.startsWith('750'),
+      prefixes: ['PET', 'AMIGO', 'ANIMAL', 'VETER', 'BICHO', 'PETS', 'PATA', 'LATIDO'],
+      suffixes: ['PET SHOP LTDA', 'CLÍNICA VETERINÁRIA SS', 'SERVIÇOS VETERINÁRIOS LTDA', 'PET & SAÚDE ANIMAL LTDA'],
+      cnaeCode: '7500-1/00', cnaeDesc: 'Atividades Veterinárias'
+    },
+    // Beleza / Estética / Salão
+    {
+      test: (n, d) => n.includes('beleza') || n.includes('estetica') || n.includes('cabeleirei') || n.includes('salao') || n.includes('spa') || d.startsWith('9602'),
+      prefixes: ['BELLA', 'BEAUTY', 'ESTÉTICA', 'SALÃO', 'VISAGE', 'BELEZA', 'CHARME', 'GLAM'],
+      suffixes: ['BELEZA & ESTÉTICA LTDA', 'SALÃO DE BELEZA SS', 'ESTÉTICA ESPECIALIZADA LTDA'],
+      cnaeCode: '9602-5/01', cnaeDesc: 'Cabeleireiros'
+    },
+    // Imóveis / Imobiliária / Incorporação
+    {
+      test: (n, d) => n.includes('imovel') || n.includes('imobiliaria') || n.includes('incorporadora') || d.startsWith('681') || d.startsWith('682'),
+      prefixes: ['IMÓVEIS', 'IMOBIL', 'INCORPOR', 'RESIDENCI', 'PRIME', 'HABITAT', 'CONSTRU', 'BEM'],
+      suffixes: ['IMÓVEIS & INCORPORAÇÕES LTDA', 'IMOBILIÁRIA S.A.', 'INCORPORADORA LTDA', 'GESTÃO IMOBILIÁRIA LTDA'],
+      cnaeCode: '6810-2/01', cnaeDesc: 'Compra e Venda de Imóveis Próprios'
+    },
+    // Farmácia / Drogaria / Medicamentos
+    {
+      test: (n, d) => n.includes('farmac') || n.includes('drogari') || n.includes('medicamento') || d.startsWith('4771') || d.startsWith('2121'),
+      prefixes: ['FARMÁCIA', 'SAÚDE', 'DROGA', 'PHARMA', 'VIVA', 'VIDA', 'NUTRI', 'REMÉDIO'],
+      suffixes: ['FARMÁCIA LTDA', 'DROGARIA S.A.', 'SAÚDE & FARMÁCIA LTDA'],
+      cnaeCode: '4771-7/01', cnaeDesc: 'Comércio Varejista de Produtos Farmacêuticos, sem Manipulação de Fórmulas'
+    },
+    // Ferragens / Ferramentas / Hardware
+    {
+      test: (n, d) => n.includes('ferrag') || n.includes('ferrament') || n.includes('fixadore') || d.startsWith('4744'),
+      prefixes: ['FERRAGENS', 'FERRAMENTA', 'HARDWARE', 'FIXADORE', 'FERROS', 'PARAFUSO', 'TOOLS'],
+      suffixes: ['FERRAGENS & FERRAMENTAS LTDA', 'COMÉRCIO DE FERRAGENS S.A.', 'MATERIAIS DE CONSTRUÇÃO LTDA'],
+      cnaeCode: '4744-0/01', cnaeDesc: 'Comércio Varejista de Ferragens e Ferramentas'
+    },
+    // Cosméticos / Perfumaria / Higiene
+    {
+      test: (n, d) => n.includes('cosmet') || n.includes('perfumaria') || n.includes('higiene') || d.startsWith('2063'),
+      prefixes: ['COSMÉT', 'BEAUTY', 'AROMA', 'PERFUM', 'HIDRA', 'CARE', 'GLAM', 'PELE'],
+      suffixes: ['COSMÉTICOS LTDA', 'PERFUMARIA & HIGIENE S.A.', 'BEAUTY CARE LTDA'],
+      cnaeCode: '2063-1/00', cnaeDesc: 'Fabricação de Cosméticos, Perfumaria e Higiene Pessoal'
+    },
+    // Automotivo / Autopeças / Veículos
+    {
+      test: (n, d) => n.includes('automotiv') || n.includes('autopec') || n.includes('veiculo') || n.includes('carroceria') || d.startsWith('292') || d.startsWith('293') || d.startsWith('451') || d.startsWith('452') || d.startsWith('453'),
+      prefixes: ['AUTO', 'MOTOR', 'VEÍCULO', 'CARROS', 'PEÇA', 'AUTOPEC', 'DRIVE', 'MECÂNICA'],
+      suffixes: ['AUTOPEÇAS LTDA', 'COMÉRCIO DE VEÍCULOS S.A.', 'MECÂNICA AUTOMOTIVA LTDA', 'PEÇAS & ACESSÓRIOS LTDA'],
+      cnaeCode: '2920-4/01', cnaeDesc: 'Fabricação de Carrocerias para Veículos Automotores e Ônibus'
+    },
+    // Móveis / Decoração / Marcenaria
+    {
+      test: (n, d) => n.includes('movel') || n.includes('marcenaria') || n.includes('decorac') || n.includes('design de interior') || d.startsWith('310') || d.startsWith('4754'),
+      prefixes: ['MÓVEIS', 'DESIGN', 'MARCE', 'DECOR', 'AMBIENCE', 'HAUS', 'STUDIO', 'ARTE'],
+      suffixes: ['MÓVEIS & DECORAÇÃO LTDA', 'MARCENARIA E DESIGN LTDA', 'MÓVEIS PLANEJADOS S.A.'],
+      cnaeCode: '4754-7/01', cnaeDesc: 'Comércio Varejista de Móveis'
+    },
+    // Atacado / Distribuição
+    {
+      test: (n, d) => n.includes('atacado') || n.includes('distribuicao') || n.includes('distribuidor') || d.startsWith('469') || d.startsWith('468') || d.startsWith('463'),
+      prefixes: ['DISTRIB', 'ATACAD', 'MERCADO', 'SUPRI', 'ABASTEC', 'CENTRAL', 'ATACAREJO'],
+      suffixes: ['DISTRIBUIÇÃO & ATACADO LTDA', 'ATACADISTA DO BRASIL S.A.', 'DISTRIBUIÇÃO LTDA'],
+      cnaeCode: '4692-3/00', cnaeDesc: 'Comércio Atacadista de Mercadorias em Geral'
+    },
+    // Transporte / Logística / Frete
+    {
+      test: (n, d) => n.includes('transport') || n.includes('logistic') || n.includes('frete') || n.includes('carga') || d.startsWith('493') || d.startsWith('521') || d.startsWith('522'),
+      prefixes: ['TRANS', 'LOG', 'EXPRESS', 'FRETE', 'CARGO', 'VELOZE', 'RAPID', 'MOVE'],
+      suffixes: ['TRANSPORTE & LOGÍSTICA LTDA', 'SERVIÇOS LOGÍSTICOS S.A.', 'CARGAS & EXPRESS LTDA'],
+      cnaeCode: '4930-2/02', cnaeDesc: 'Transporte Rodoviário de Carga'
+    },
+  ]
+
+  // Aplica o mapeamento do setor
+  const matchedSector = SECTOR_MAP.find(s => s.test(normSec, cnaeDigits))
+  let prefixes: string[]
+  let suffixes: string[]
+
+  if (matchedSector) {
+    prefixes = matchedSector.prefixes
+    suffixes = matchedSector.suffixes
+    // Se o officialFound não encontrou nada mas o SECTOR_MAP sim, usa o CNAE do SECTOR_MAP
+    if (!officialFound && matchedSector.cnaeCode) {
+      cnaeCode = matchedSector.cnaeCode
+      cnaeDesc = matchedSector.cnaeDesc || matchedSector.cnaeCode
+      sectorName = matchedSector.cnaeDesc || sectorName
+    }
+  } else {
+    // Fallback genérico com setor no nome para distinguir buscas
+    const sectorKey = normSec.slice(0, 6).toUpperCase() || 'SERV'
+    prefixes = [sectorKey, 'BRASIL', 'GLOBAL', 'PRIME', 'MASTER', 'INTER', 'TOTAL', 'GERAL', 'MAX', 'PRO']
+    suffixes = ['SERVIÇOS LTDA', 'COMÉRCIO & INDÚSTRIA LTDA', 'EMPREENDIMENTOS S.A.', 'SOLUÇÕES LTDA']
   }
 
   const generated: ProspectLead[] = []
@@ -465,7 +731,8 @@ export function generateDynamicB2bLeads(opts: {
     const rName = `${p} ${cityNameClean} ${s}`
     const fName = `${p} ${s.split(' ')[0]}`
 
-    const seedStr = `${rName}-${targetCidade}-${targetUf}-${i}`
+    // Seed inclui cnaeCode+normSec para garantir CNPJs DIFERENTES por setor na mesma cidade
+    const seedStr = `${rName}-${targetCidade}-${targetUf}-${cnaeCode}-${normSec}-${i}`
     const cnpj = generateValidCnpj(seedStr)
     const cleanCnpj = cnpj.replace(/\D/g, '')
 
@@ -1474,7 +1741,8 @@ export const prospectingService = {
         posicao: idx + 1,
         isDuplicate: isDup,
         duplicateReason: isDup ? '⚠️ Já cadastrado no CRM' : undefined,
-        enriched: false,
+        // ⚠️ FIX: preserva o enriched=true dos leads gerados; só define false se ainda não estava enriquecido
+        enriched: lead.enriched === true ? true : false,
         enriching: false,
       }
     })
