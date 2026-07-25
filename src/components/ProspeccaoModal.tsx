@@ -77,6 +77,9 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
 
     if (!mapInstanceRef.current) {
       const center = getCityCenter(cidade || leads[0]?.cidade, estado || leads[0]?.estado)
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setView(center, 13)
+    }
       const map = L.map(mapRef.current, { zoomControl: false, attributionControl: false }).setView(center, 13)
       
       // MAPA SEMPRE NO MODO CLARO ESTILO GOOGLE MAPS (CartoDB Voyager Light)
@@ -184,7 +187,7 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     }
   }, [selectedLeadCnpj])
 
-  return <div ref={mapRef} className="w-full h-full min-h-[440px] rounded-2xl overflow-hidden shadow-2xl relative border border-[var(--line)]" />
+  return <div ref={mapRef} className="w-full h-full min-h-[340px] flex-1 rounded-xl overflow-hidden shadow-2xl relative border border-[var(--line)]" />
 }
 
 export function ProspeccaoModal({
@@ -689,7 +692,7 @@ export function ProspeccaoModal({
           </div>
         </div>
         {/* ── áREA DE CONTEášDO E RESULTADOS (ROLAGEM COMPLETA HABILITADA SEM CORTES) ── */}
-        <div className="p-5 space-y-4 overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar flex-1">
+        <div className="p-4 space-y-3 flex-1 min-h-0 overflow-hidden flex flex-col">
           {/* CASO 1: NENHUMA PESQUISA FOI FEITA AINDA (MANDATá“RIO) */}
           {!hasSearched && !loading && (
             <div className="py-16 text-center border border-dashed border-[var(--line)] rounded-2xl bg-[var(--black)]/40 p-8 space-y-3 animate-fade-in">
@@ -748,7 +751,7 @@ export function ProspeccaoModal({
             </div>
           ) : hasSearched && leads.length > 0 ? (
             viewMode === 'split' ? (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[58vh]">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0 h-full overflow-hidden">
                 {/* Painel da Esquerda (5 cols): Cards em Estilo Google Places */}
                 <div className="lg:col-span-5 flex flex-col gap-3 overflow-y-auto pr-1.5 custom-scrollbar h-full">
                   {leads.map((leadRaw, idx) => {
@@ -849,7 +852,7 @@ export function ProspeccaoModal({
                 </div>
 
                 {/* Painel da Direita (7 cols): Mapa Interativo Leaflet estilo Google Places */}
-                <div className="lg:col-span-7 h-full min-h-[420px]">
+                <div className="lg:col-span-7 h-full min-h-0 flex flex-col overflow-hidden">
                   <LeafletProspectMap
                     leads={leads}
                     selectedLeadCnpj={activeLeadMapCnpj}
