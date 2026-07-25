@@ -400,52 +400,56 @@ export function generateDynamicB2bLeads(opts: {
 
   let sectorName = cleanText || 'Logística, Indústrias & Serviços'
   let cnaeCode = '4930-2/02'
-  let cnaeDesc = 'Transporte rodoviário de carga, exceto produtos perigosos'
+  let cnaeDesc = cleanText || 'Transporte rodoviário de carga, exceto produtos perigosos'
+
+  // Formata CNAE com base nos dígitos se houver pelo menos 4 dígitos
+  if (cnaeDigits.length >= 4) {
+    if (cnaeDigits.length >= 7) {
+      cnaeCode = `${cnaeDigits.slice(0, 4)}-${cnaeDigits.slice(4, 5)}/${cnaeDigits.slice(5, 7)}`
+    } else if (cnaeDigits.length >= 5) {
+      cnaeCode = `${cnaeDigits.slice(0, 4)}-${cnaeDigits.slice(4, 5)}/00`
+    } else {
+      cnaeCode = `${cnaeDigits.slice(0, 4)}-0/00`
+    }
+  }
+
+  // Tenta encontrar na lista oficial LISTA_CNAES_OFFICIAL
+  const officialFound = LISTA_CNAES_OFFICIAL.find(s =>
+    (s.fullCode && s.fullCode.replace(/\D/g, '').includes(cnaeDigits)) ||
+    (cnaeDigits.length >= 4 && s.fullCode && s.fullCode.replace(/\D/g, '').startsWith(cnaeDigits.slice(0, 4))) ||
+    normalizeText(s.description) === normCleanText ||
+    normalizeText(s.display) === normCleanText
+  )
+  if (officialFound) {
+    sectorName = officialFound.description
+    cnaeDesc = officialFound.description
+    if (officialFound.fullCode) cnaeCode = officialFound.fullCode
+  }
+
   let prefixes = ['TRANS', 'LOG', 'EXPRESS', 'BRASIL', 'GLOBAL', 'NORTE', 'SUL', 'SOLUÇÕES', 'ALFA', 'BETA', 'PRIME', 'INTEGRA']
-  let suffixes = ['LOGÍSTICA & TRANSPORTES LTDA', 'SERVIÇOS LOGÍSTICOS S.A.', 'TRANSPORTES INTEGRADOS LTDA', 'SOLUÇÕES EM LOGÍSTICA LTDA', 'EXPRESSO & CARGAS S.A.']
+  let suffixes = ['LTDA', 'SERVIÇOS LOGÍSTICOS S.A.', 'SOLUÇÕES INTEGRADAS LTDA', 'INDUSTRIA & COMÉRCIO S.A.', 'EXPRESSO & CARGAS LTDA']
 
   const normSec = normCleanText || cnaeDigits
 
   if (normSec.includes('construcao') || normSec.includes('agua') || normSec.includes('esgoto') || cnaeDigits.startsWith('4222')) {
-    sectorName = 'Construção de redes de abastecimento de água e esgoto'
-    cnaeCode = '4222-7/01'
-    cnaeDesc = 'Construção de redes de abastecimento de água, coleta de esgoto e construções correlatas'
     prefixes = ['SANEA', 'INFRA', 'HIDRO', 'CONSTRUTORA', 'ENGENHARIA', 'OBRAS', 'ECO', 'AGUA']
     suffixes = ['ENGENHARIA & SANEAMENTO LTDA', 'OBRAS DE INFRAESTRUTURA S.A.', 'CONSTRUÇÕES E SANEAR LTDA']
   } else if (normSec.includes('telecom') || normSec.includes('redes') || cnaeDigits.startsWith('4221') || cnaeDigits.startsWith('6190')) {
-    sectorName = 'Telecomunicações e Infraestrutura de Redes'
-    cnaeCode = '4221-9/04'
-    cnaeDesc = 'Construção e manutenção de estações e redes de telecomunicações'
     prefixes = ['TELECOM', 'CONNECT', 'FIBRA', 'NET', 'LINK', 'DIGITAL', 'VOX', 'TEL']
     suffixes = ['TELECOMUNICAÇÕES & REDES LTDA', 'SERVIÇOS DE TELECOM S.A.', 'CONECTIVIDADE LTDA']
   } else if (normSec.includes('embala') || normSec.includes('papel') || normSec.includes('caixa') || cnaeDigits.startsWith('173')) {
-    sectorName = 'Fabricação de Embalagens e Papelão'
-    cnaeCode = '1733-8/00'
-    cnaeDesc = 'Fabricação de chapas e embalagens de papelão ondulado'
     prefixes = ['PACK', 'CARTON', 'BOX', 'EMBALA', 'KRAFT', 'PAPEIS', 'IND']
     suffixes = ['CARTONAGEM & EMBALAGENS LTDA', 'PACKAGING DO BRASIL S.A.', 'EMBALAGENS ESPECIAIS LTDA']
   } else if (normSec.includes('calcado') || normSec.includes('couro') || cnaeDigits.startsWith('153')) {
-    sectorName = 'Indústria Calçadista e Artefatos de Couro'
-    cnaeCode = '1531-9/01'
-    cnaeDesc = 'Fabricação de calçados de couro e tênis'
     prefixes = ['CALÇADOS', 'SHOES', 'COURO', 'VIA', 'STYLE', 'FOOT', 'MARTE']
     suffixes = ['CALÇADOS & ARTEFATOS LTDA', 'INDÚSTRIA CALÇADISTA S.A.', 'COURO & DESIGN LTDA']
   } else if (normSec.includes('alimento') || normSec.includes('bebida') || cnaeDigits.startsWith('101') || cnaeDigits.startsWith('109')) {
-    sectorName = 'Alimentos e Bebidas'
-    cnaeCode = '1091-0/01'
-    cnaeDesc = 'Fabricação de produtos alimentícios e panificação industrial'
     prefixes = ['ALIMENTOS', 'SABOR', 'NUTRI', 'AGRO', 'DOCE', 'FRIGO', 'GUSTO']
     suffixes = ['ALIMENTOS DO BRASIL LTDA', 'INDÚSTRIA ALIMENTÍCIA S.A.', 'NUTRITION LTDA']
-  } else if (normSec.includes('metal') || normSec.includes('aco') || cnaeDigits.startsWith('241') || cnaeDigits.startsWith('259')) {
-    sectorName = 'Metalúrgica e Usinagem de Precisão'
-    cnaeCode = '2599-3/99'
-    cnaeDesc = 'Fabricação de produtos de metal e serviços de usinagem'
-    prefixes = ['METAL', 'AÇO', 'USINA', 'METASUL', 'FERRO', 'INOX', 'PRECISION']
-    suffixes = ['METALÚRGICA & USINAGEM LTDA', 'PRODUTOS DE METAL S.A.', 'ESTRUTURAS METÁLICAS LTDA']
+  } else if (normSec.includes('metal') || normSec.includes('trefila') || normSec.includes('aco') || cnaeDigits.startsWith('241') || cnaeDigits.startsWith('259')) {
+    prefixes = ['METAL', 'AÇO', 'TREFILADOS', 'METASUL', 'FERRO', 'INOX', 'PRECISION', 'TREFILA']
+    suffixes = ['METALÚRGICA & TREFILADOS LTDA', 'PRODUTOS DE METAL S.A.', 'TREFILAÇÃO & USINAGEM LTDA']
   } else if (normSec.includes('tecnologia') || normSec.includes('software') || cnaeDigits.startsWith('6201')) {
-    sectorName = 'Tecnologia da Informação & Software'
-    cnaeCode = '6201-5/01'
-    cnaeDesc = 'Desenvolvimento de programas de computador e sistemas'
     prefixes = ['TECH', 'SOFT', 'CLOUD', 'DATA', 'SYSTEMS', 'CYBER', 'DEV']
     suffixes = ['TECNOLOGIA & SISTEMAS LTDA', 'SOFTWARE HOUSE S.A.', 'SOLUÇÕES DIGITAIS LTDA']
   }
@@ -1254,7 +1258,31 @@ export const prospectingService = {
       filtered.push(...generated)
     }
 
-    // 4. Filtro por Porte se especificado
+    // 4. Filtro Estrito de Estado e Cidade para garantir precisão total de região
+    if (parsedEstado && parsedEstado !== 'TODOS') {
+      filtered = filtered.filter(l => l.estado.toUpperCase() === parsedEstado.toUpperCase())
+    }
+    if (parsedCidade) {
+      filtered = filtered.filter(l =>
+        normalizeText(l.cidade).includes(normalizeText(parsedCidade)) ||
+        normalizeText(parsedCidade).includes(normalizeText(l.cidade))
+      )
+    }
+
+    // Se após a filtragem estrita restaram poucos leads, preenche com dinâmica estrita
+    if (filtered.length < 15) {
+      const needed = 20 - filtered.length
+      const generated = generateDynamicB2bLeads({
+        sectorQuery: rawSetor || 'Geral',
+        cidade: parsedCidade,
+        estado: parsedEstado || (parsedCidade ? '' : 'SP'),
+        count: needed,
+        existingCnpjs: new Set(filtered.map(f => f.cnpj.replace(/\D/g, '')))
+      })
+      filtered.push(...generated)
+    }
+
+    // 5. Filtro por Porte se especificado
     if (porte && porte !== 'todos') {
       filtered = filtered.filter(l => l.porte === porte)
     }
