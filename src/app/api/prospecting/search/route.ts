@@ -296,19 +296,16 @@ export async function GET(req: NextRequest) {
   const queries: string[] = []
 
   if (cnaeFmt && localidade) {
-    queries.push(`${cnaeFmt} ${localidade} CNPJ`)
     queries.push(`site:cnpj.biz ${cnaeFmt} "${cidade}"`)
-    queries.push(`site:casadosdados.com.br ${cnaeFmt} "${cidade}"`)
+    queries.push(`${cnaeFmt} ${localidade} CNPJ`)
   }
 
   if (keySubject && localidade) {
-    queries.push(`${keySubject} ${localidade} CNPJ`)
     queries.push(`site:cnpj.biz "${cidade}" ${keySubject}`)
-    queries.push(`site:casadosdados.com.br "${cidade}" ${keySubject}`)
+    queries.push(`${keySubject} ${localidade} CNPJ`)
   }
 
-  if (localidade) {
-    queries.push(`"${cidade}" ${estado} CNPJ empresa`)
+  if (localidade && queries.length === 0) {
     queries.push(`site:cnpj.biz "${cidade}" ${estado}`)
   }
 
@@ -391,9 +388,32 @@ export async function GET(req: NextRequest) {
                         leadAllCnaeDigits.includes(targetPrefix2)
       if (!cnaeMatch) continue
     } else if (keySubject) {
-      const tokens = norm(keySubject).split(/\s+/).filter(t => t.length > 2)
+      const qNorm = norm(keySubject)
+      let sectorMatch = false
+
+      if (/metal|usinagem|solda|trefilad|forjad|fundic/i.test(qNorm)) {
+        if (/(?:24|25|28)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
+      if (/agro|pecuaria|agricol|grao|fazend/i.test(qNorm)) {
+        if (/(?:01|02|03|46|52)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
+      if (/embalag|papelao|caixa|cartolin|plastico/i.test(qNorm)) {
+        if (/(?:17|22|16)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
+      if (/telecom|rede|fibra|internet/i.test(qNorm)) {
+        if (/(?:42|61)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
+      if (/ferrag|ferrament|parafuso/i.test(qNorm)) {
+        if (/(?:47|46|25)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
+      if (/construc|sanean|obra|engenh|poco/i.test(qNorm)) {
+        if (/(?:41|42|43)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
+
+      const tokens = qNorm.split(/\s+/).filter(t => t.length > 2)
       const matchesToken = tokens.some(t => leadAllText.includes(t))
-      if (!matchesToken) continue
+
+      if (!sectorMatch && !matchesToken) continue
     }
 
     leads.push(buildLead(cnpjList[i], data))
