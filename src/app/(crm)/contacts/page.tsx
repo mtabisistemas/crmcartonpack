@@ -31,6 +31,18 @@ import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString } fr
 import { supabase } from '@/services/supabase-client'
 import { ProspeccaoModal } from '@/components/ProspeccaoModal'
 
+const WhatsappIcon = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="currentColor" 
+    className={className}
+  >
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347m-5.421 7.419h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.99c-.002 5.45-4.437 9.888-9.887 9.888m0-18.422A11.332 11.332 0 00.67 11.757c0 2.016.526 3.985 1.524 5.717L.5 23.5l6.195-1.625a11.314 11.314 0 005.352 1.35h.005c6.257 0 11.35-5.093 11.352-11.35 0-3.03-1.18-5.878-3.324-8.024A11.272 11.272 0 0012.051 3.38" />
+  </svg>
+)
+
 export interface MockContact {
   id: string
   name: string
@@ -480,22 +492,7 @@ function ContactDrawer({
                       </div>
 
                       <div className="flex flex-col gap-0.5">
-                        <div className="flex justify-between items-center">
-                          <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
-                          {phone && (
-                            <a 
-                              href={whatsappLink(phone)} 
-                              target="_blank" 
-                              rel="noreferrer"
-                              className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-mono transition-colors cursor-pointer"
-                              title="Chamar no WhatsApp"
-                            >
-                              <MessageSquare size={10} className="text-emerald-400" />
-                              <span>WHATSAPP</span>
-                              <ExternalLink size={8} />
-                            </a>
-                          )}
-                        </div>
+                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
                         <div className="relative flex items-center">
                           <input 
                             type="text" 
@@ -503,17 +500,16 @@ function ContactDrawer({
                             placeholder="(00) 00000-0000"
                             value={phone}
                             onChange={(e) => setPhone(formatPhoneBr(e.target.value))}
-                            
                           />
                           {phone && (
                             <a
                               href={whatsappLink(phone)}
                               target="_blank"
                               rel="noreferrer"
-                              className="absolute right-2 text-emerald-400 hover:text-emerald-300 transition-transform hover:scale-110 cursor-pointer p-0.5"
+                              className="absolute right-2 text-[#25D366] hover:text-[#20ba5a] transition-transform hover:scale-110 cursor-pointer p-0.5"
                               title="Chamar no WhatsApp"
                             >
-                              <MessageSquare size={13} />
+                              <WhatsappIcon size={15} />
                             </a>
                           )}
                         </div>
@@ -1258,22 +1254,7 @@ function NewContactModal({
                 </div>
 
                 <div className="flex flex-col gap-0.5">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
-                    {phone && (
-                      <a 
-                        href={whatsappLink(phone)} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-mono transition-colors cursor-pointer"
-                        title="Chamar no WhatsApp"
-                      >
-                        <MessageSquare size={10} className="text-emerald-400" />
-                        <span>WHATSAPP</span>
-                        <ExternalLink size={8} />
-                      </a>
-                    )}
-                  </div>
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
                   <div className="relative flex items-center">
                     <input 
                       type="text" 
@@ -1287,10 +1268,10 @@ function NewContactModal({
                         href={whatsappLink(phone)}
                         target="_blank"
                         rel="noreferrer"
-                        className="absolute right-2 text-emerald-400 hover:text-emerald-300 transition-transform hover:scale-110 cursor-pointer p-0.5"
+                        className="absolute right-2 text-[#25D366] hover:text-[#20ba5a] transition-transform hover:scale-110 cursor-pointer p-0.5"
                         title="Chamar no WhatsApp"
                       >
-                        <MessageSquare size={13} />
+                        <WhatsappIcon size={15} />
                       </a>
                     )}
                   </div>

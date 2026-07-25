@@ -1120,17 +1120,8 @@ textarea.input { resize: vertical; min-height: 80px; }
   background: rgba(180, 217, 50, 0.03);
 }
 
-/* ── Form Inputs with Icons alignment ── */
-.relative > .input {
-  padding-left: 36px !important;
+/* ── Form Inputs with Left Icons alignment ── */
+.relative.has-left-icon > .input {
+  padding-left: 36px;
 }
 
-.relative > svg.absolute,
-.relative > span.absolute {
-  position: absolute !important;
-  left: 12px !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  margin-top: 0 !important;
-  pointer-events: none;
-}
