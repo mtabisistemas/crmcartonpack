@@ -331,7 +331,7 @@ function ContactDrawer({
               className={"btn btn-primary text-xs py-1.5 px-4 flex items-center gap-2 font-bold shadow-lg transition-all " + (isSaved ? '!bg-emerald-500 !text-black' : '')}
             >
               <Save size={13} />
-              <span>{isSaving ? 'Salvando...' : isSaved ? 'Salvo no Supabase! ✓' : 'Salvar Alterações'}</span>
+              <span>{isSaving ? 'Salvando...' : isSaved ? 'Edição Salva! ✓' : 'Salvar Alterações'}</span>
             </button>
 
             <button onClick={onClose} className="text-gray-400 hover:text-[var(--white)] p-1.5 rounded-lg hover:bg-[var(--line)] transition-colors">
@@ -370,11 +370,7 @@ function ContactDrawer({
                   <select 
                     className="input text-xs py-1 px-2 font-bold text-[var(--lime)] font-mono bg-[var(--charcoal)]"
                     value={curve} 
-                    onChange={(e) => {
-                      const val = e.target.value as any
-                      setCurve(val)
-                      handleSaveGeneral({ curve: val })
-                    }}
+                    onChange={(e) => setCurve(e.target.value as any)}
                   >
                     <option value="A">Curva A</option>
                     <option value="B">Curva B</option>
@@ -388,11 +384,7 @@ function ContactDrawer({
                   <select 
                     className="input text-xs py-1 px-2 font-bold bg-[var(--charcoal)]"
                     value={representative} 
-                    onChange={(e) => {
-                      const val = e.target.value
-                      setRepresentative(val)
-                      handleSaveGeneral({ representative: val })
-                    }}
+                    onChange={(e) => setRepresentative(e.target.value)}
                   >
                     {representativesList.map(rep => (
                       <option key={rep} value={rep}>{rep}</option>
@@ -412,11 +404,7 @@ function ContactDrawer({
                           : 'var(--yellow)' 
                     }}
                     value={status} 
-                    onChange={(e) => {
-                      const val = e.target.value as any
-                      setStatus(val)
-                      handleSaveGeneral({ status: val })
-                    }}
+                    onChange={(e) => setStatus(e.target.value as any)}
                   >
                     <option value="ativo">Ativo</option>
                     <option value="inativo">Inativo</option>
@@ -445,7 +433,7 @@ function ContactDrawer({
                         placeholder="Nome da Empresa"
                         value={company}
                         onChange={(e) => setCompany(e.target.value)}
-                        onBlur={() => handleSaveGeneral()}
+                        
                       />
                     </div>
 
@@ -459,7 +447,7 @@ function ContactDrawer({
                           placeholder="Nome Fantasia"
                           value={tradeName}
                           onChange={(e) => setTradeName(e.target.value)}
-                          onBlur={() => handleSaveGeneral()}
+                          
                         />
                       </div>
 
@@ -472,7 +460,7 @@ function ContactDrawer({
                           placeholder="Nome do Contato Principal"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          onBlur={() => handleSaveGeneral()}
+                          
                         />
                       </div>
                     </div>
@@ -487,7 +475,7 @@ function ContactDrawer({
                           placeholder="00.000.000/0001-00"
                           value={cnpj}
                           onChange={(e) => setCnpj(formatCnpj(e.target.value))}
-                          onBlur={() => handleSaveGeneral()}
+                          
                         />
                       </div>
 
@@ -515,7 +503,7 @@ function ContactDrawer({
                             placeholder="(00) 00000-0000"
                             value={phone}
                             onChange={(e) => setPhone(formatPhoneBr(e.target.value))}
-                            onBlur={() => handleSaveGeneral()}
+                            
                           />
                           {phone && (
                             <a
@@ -553,7 +541,7 @@ function ContactDrawer({
                             placeholder="contato@empresa.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            onBlur={() => handleSaveGeneral()}
+                            
                           />
                           {email && (
                             <button
@@ -579,7 +567,7 @@ function ContactDrawer({
                           placeholder="Rua, Número"
                           value={address}
                           onChange={(e) => setAddress(e.target.value)}
-                          onBlur={() => handleSaveGeneral()}
+                          
                         />
                       </div>
                       <div className="flex flex-col gap-0.5">
@@ -590,7 +578,7 @@ function ContactDrawer({
                           placeholder="Bairro"
                           value={bairro}
                           onChange={(e) => setBairro(e.target.value)}
-                          onBlur={() => handleSaveGeneral()}
+                          
                         />
                       </div>
                     </div>
@@ -606,7 +594,7 @@ function ContactDrawer({
                           placeholder="00000-000"
                           value={cep}
                           onChange={(e) => setCep(e.target.value)}
-                          onBlur={() => handleSaveGeneral()}
+                          
                         />
                       </div>
 
@@ -618,7 +606,7 @@ function ContactDrawer({
                           placeholder="Cidade"
                           value={city}
                           onChange={(e) => setCity(e.target.value)}
-                          onBlur={() => handleSaveGeneral()}
+                          
                         />
                       </div>
 
@@ -631,7 +619,7 @@ function ContactDrawer({
                           placeholder="UF"
                           value={state}
                           onChange={(e) => setState(e.target.value.toUpperCase())}
-                          onBlur={() => handleSaveGeneral()}
+                          
                         />
                       </div>
 
@@ -660,7 +648,7 @@ function ContactDrawer({
                         placeholder="CNAE e Descrição"
                         value={mainCnae}
                         onChange={(e) => setMainCnae(e.target.value)}
-                        onBlur={() => handleSaveGeneral()}
+                        
                       />
                     </div>
 
@@ -750,7 +738,7 @@ function ContactDrawer({
                           }}
                           value={registrationStatus}
                           onChange={(e) => setRegistrationStatus(e.target.value)}
-                          onBlur={() => handleSaveGeneral()}
+                          
                         />
                       </div>
                     </div>
@@ -764,7 +752,7 @@ function ContactDrawer({
                           placeholder="IE"
                           value={stateRegistration}
                           onChange={(e) => setStateRegistration(e.target.value)}
-                          onBlur={() => handleSaveGeneral()}
+                          
                         />
                       </div>
 
@@ -776,7 +764,7 @@ function ContactDrawer({
                           placeholder="Nenhuma"
                           value={specialSituation}
                           onChange={(e) => setSpecialSituation(e.target.value)}
-                          onBlur={() => handleSaveGeneral()}
+                          
                         />
                       </div>
                     </div>
@@ -808,7 +796,7 @@ function ContactDrawer({
                           placeholder="https://..."
                           value={website}
                           onChange={(e) => setWebsite(e.target.value)}
-                          onBlur={() => handleSaveGeneral()}
+                          
                         />
                       </div>
 
@@ -831,7 +819,7 @@ function ContactDrawer({
                           placeholder="@perfil"
                           value={instagram}
                           onChange={(e) => setInstagram(e.target.value)}
-                          onBlur={() => handleSaveGeneral()}
+                          
                         />
                       </div>
 
@@ -854,7 +842,7 @@ function ContactDrawer({
                           placeholder="linkedin.com/company/..."
                           value={linkedin}
                           onChange={(e) => setLinkedin(e.target.value)}
-                          onBlur={() => handleSaveGeneral()}
+                          
                         />
                       </div>
 
@@ -877,7 +865,7 @@ function ContactDrawer({
                           placeholder="facebook.com/..."
                           value={facebook}
                           onChange={(e) => setFacebook(e.target.value)}
-                          onBlur={() => handleSaveGeneral()}
+                          
                         />
                       </div>
                     </div>
