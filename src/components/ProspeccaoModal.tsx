@@ -794,9 +794,7 @@ export function ProspeccaoModal({
                             >
                               {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
                             </button>
-                            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--lime)] bg-[var(--lime)]/10 border border-[var(--lime)]/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              Google & RFB
-                            </span>
+                            
                           </div>
                           <span className="text-[10px] font-mono text-[var(--gray2)]">{lead.cnpj}</span>
                         </div>
