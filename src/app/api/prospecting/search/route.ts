@@ -30,27 +30,68 @@ function extractCnpjs(text: string): string[] {
   return [...cnpjs]
 }
 
-// ─── Enriquece um CNPJ via minhareceita.org (fallback: publica.cnpj.ws) ─────
+// ─── Enriquece um CNPJ via OpenCNPJ (fallbacks: minhareceita.org & publica.cnpj.ws) ─────
 async function enrichCnpj(cnpj: string): Promise<Record<string, string> | null> {
   const clean = cnpj.replace(/\D/g, '')
   if (clean.length !== 14) return null
 
-  // Tenta minhareceita.org primeiro
+  // 1. Tenta OpenCNPJ (api.opencnpj.org) primeiro — oficial, gratuito e sem rate-limit
+  try {
+    const r = await fetch(`https://api.opencnpj.org/${clean}`, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(6000),
+    })
+    if (r.ok) {
+      const d = await r.json()
+      if (d && d.razao_social) {
+        const primaryCnae = d.cnaes?.find((c: any) => c.is_principal) || d.cnaes?.[0] || {}
+        const cnaeCode = primaryCnae.codigo || d.cnae_principal || ''
+        const cnaeDesc = primaryCnae.descricao || ''
+        const phoneObj = d.telefones?.[0]
+        const tel = phoneObj ? `${phoneObj.ddd}${phoneObj.numero}` : ''
+        const log = [d.tipo_logradouro, d.logradouro].filter(Boolean).join(' ')
+
+        return {
+          razao_social: d.razao_social,
+          nome_fantasia: d.nome_fantasia || d.razao_social,
+          municipio: d.municipio || '',
+          uf: d.uf || '',
+          cep: d.cep || '',
+          logradouro: log,
+          numero: d.numero || '',
+          bairro: d.bairro || '',
+          ddd_telefone_1: tel,
+          email: d.email || '',
+          cnae_fiscal: cnaeCode,
+          cnae_fiscal_descricao: cnaeDesc,
+          situacao_cadastral: d.situacao_cadastral || 'ATIVA',
+          data_inicio_atividade: d.data_inicio_atividade || '',
+          natureza_juridica: d.natureza_juridica || '',
+          capital_social: d.capital_social || '0',
+          porte: d.porte_empresa || '',
+          opcao_pelo_simples: d.opcao_simples ? 'true' : 'false',
+          opcao_pelo_mei: d.opcao_mei ? 'true' : 'false',
+        }
+      }
+    }
+  } catch { /* continua para fallbacks */ }
+
+  // 2. Fallback: minhareceita.org
   try {
     const r = await fetch(`https://minhareceita.org/${clean}`, {
       headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(7000),
+      signal: AbortSignal.timeout(6000),
     })
     if (r.ok) {
       const d = await r.json()
       if (d && d.razao_social) return d
     }
-  } catch { /* continua para fallback */ }
+  } catch { /* continua para fallback 3 */ }
 
-  // Fallback: publica.cnpj.ws
+  // 3. Fallback: publica.cnpj.ws
   try {
     const r = await fetch(`https://publica.cnpj.ws/cnpj/${clean}`, {
-      signal: AbortSignal.timeout(7000),
+      signal: AbortSignal.timeout(6000),
     })
     if (r.ok) {
       const d = await r.json()

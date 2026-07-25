@@ -1451,11 +1451,66 @@ async function fetchLiveB2bHarvester(cidade: string, estado: string, queryText: 
   }
 }
 
-// ─── Enriquecimento de Dados Autênticos via API Minha Receita & CNPJ.ws ───
+// ─── Enriquecimento de Dados Autênticos via OpenCNPJ (fallbacks: Minha Receita & CNPJ.ws) ───
 export async function enrichLead(cnpj: string): Promise<Partial<ProspectLead>> {
   const clean = cnpj.replace(/\D/g, '')
   if (!clean || clean.length !== 14) return {}
 
+  // 1. Tenta OpenCNPJ (api.opencnpj.org) primeiro — oficial, completo com QSA/sócios
+  try {
+    const res = await fetch(`https://api.opencnpj.org/${clean}`, {
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(6000)
+    })
+    if (res.ok) {
+      const d = await res.json()
+      if (d && d.razao_social) {
+        const primaryCnae = d.cnaes?.find((c: any) => c.is_principal) || d.cnaes?.[0] || {}
+        const cnaeCode = primaryCnae.codigo ? formatCnaeCode(String(primaryCnae.codigo)) : (d.cnae_principal ? formatCnaeCode(String(d.cnae_principal)) : '')
+        const cnaeDesc = primaryCnae.descricao || ''
+
+        const phoneObj = d.telefones?.[0]
+        const tel = phoneObj ? `(${phoneObj.ddd}) ${phoneObj.numero}` : undefined
+
+        const capFloat = parseFloat(d.capital_social || '0')
+        const capFormated = capFloat ? capFloat.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : undefined
+
+        const endParts = [d.tipo_logradouro, d.logradouro, d.numero, d.complemento, d.bairro].filter(Boolean).join(', ')
+        const cidade = d.municipio ? d.municipio.charAt(0).toUpperCase() + d.municipio.slice(1).toLowerCase() : ''
+
+        let porte: ProspectLead['porte'] = 'Pequena'
+        const pStr = (d.porte_empresa || '').toUpperCase()
+        if (pStr.includes('MEI')) porte = 'MEI'
+        else if (pStr.includes('MICRO') || pStr.includes('PEQUENA') || pStr.includes('ME')) porte = 'Pequena'
+        else if (pStr.includes('MEDIA') || pStr.includes('MÉDIA') || pStr.includes('EPP')) porte = 'Média'
+        else if (pStr.includes('GRANDE')) porte = 'Grande'
+
+        return {
+          razao_social: d.razao_social || '',
+          nome_fantasia: d.nome_fantasia || d.razao_social || 'Não Disponível',
+          cidade,
+          estado: d.uf || '',
+          cep: d.cep ? `${d.cep.slice(0, 5)}-${d.cep.slice(5)}` : undefined,
+          situacao: d.situacao_cadastral ? `${d.situacao_cadastral} na Receita Federal` : 'Ativa na Receita Federal',
+          cnae_codigo: cnaeCode,
+          cnae_descricao: cnaeDesc,
+          logradouro: endParts || undefined,
+          telefone: tel,
+          email: d.email || undefined,
+          data_abertura: d.data_inicio_atividade || 'Não Disponível',
+          natureza_juridica: d.natureza_juridica || 'Sociedade Empresária Limitada',
+          tipo_unidade: d.matriz_filial?.toUpperCase() || 'MATRIZ',
+          opcao_simples: d.opcao_simples ? 'OPTANTE' : 'NAO OPTANTE',
+          opcao_mei: d.opcao_mei ? 'Sim' : 'Não',
+          capital_social: capFormated || 'R$ 100.000,00',
+          porte,
+          enriched: true,
+        }
+      }
+    }
+  } catch { /* continua para fallbacks */ }
+
+  // 2. Fallback: Minha Receita
   try {
     const res = await fetch(`https://minhareceita.org/${clean}`, {
       headers: { 'Accept': 'application/json' },
@@ -1498,7 +1553,7 @@ export async function enrichLead(cnpj: string): Promise<Partial<ProspectLead>> {
       enriched: true,
     }
   } catch {
-    // Fallback CNPJ.ws
+    // 3. Fallback CNPJ.ws
     try {
       const res2 = await fetch(`https://publica.cnpj.ws/cnpj/${clean}`, {
         signal: AbortSignal.timeout(6000)
