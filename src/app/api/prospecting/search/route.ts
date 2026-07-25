@@ -399,8 +399,8 @@ export async function GET(req: NextRequest) {
       if (/metal|usinagem|solda|trefilad|forjad|fundic/i.test(qNorm)) {
         if (/(?:24|25|28)/.test(leadAllCnaeDigits)) sectorMatch = true
       }
-      if (/agro|pecuaria|agricol|grao|fazend/i.test(qNorm)) {
-        if (/(?:01|02|03|46|52)/.test(leadAllCnaeDigits)) sectorMatch = true
+      if (/agro|pecuaria|agricol|grao|fazend|veterinar/i.test(qNorm)) {
+        if (/(?:01|02|03|46|47|52)/.test(leadAllCnaeDigits)) sectorMatch = true
       }
       if (/embalag|papelao|caixa|cartolin|plastico/i.test(qNorm)) {
         if (/(?:17|22|16)/.test(leadAllCnaeDigits)) sectorMatch = true
@@ -416,7 +416,9 @@ export async function GET(req: NextRequest) {
       }
 
       const tokens = qNorm.split(/\s+/).filter(t => t.length > 2)
-      const matchesToken = tokens.some(t => leadAllText.includes(t))
+      const stems = tokens.map(t => t.length > 4 ? t.slice(0, t.length - 2) : t)
+      const matchesToken = tokens.some(t => leadAllText.includes(t)) ||
+                           stems.some(s => leadAllText.includes(s))
 
       if (!sectorMatch && !matchesToken) continue
     }
