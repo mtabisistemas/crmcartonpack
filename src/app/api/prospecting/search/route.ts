@@ -15,12 +15,19 @@ function norm(s: string) {
     .trim()
 }
 
-// ─── Extrai CNPJs únicos de um bloco de HTML/texto ───────────────────────────
+// ─── Extrai CNPJs únicos (formatados ou 14 dígitos sequenciais de URLs) ──────
 function extractCnpjs(text: string): string[] {
-  const regex = /\b(\d{2}[\.\s]?\d{3}[\.\s]?\d{3}[\/\s]?\d{4}[\-\s]?\d{2})\b/g
-  const raw = text.match(regex) || []
-  const clean = raw.map(c => c.replace(/\D/g, '')).filter(c => c.length === 14)
-  return [...new Set(clean)]
+  const cnpjs = new Set<string>()
+  
+  // 1. CNPJs formatados: XX.XXX.XXX/XXXX-XX
+  const formattedMatches = text.match(/\b\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}\b/g) || []
+  formattedMatches.forEach(c => cnpjs.add(c.replace(/\D/g, '')))
+
+  // 2. CNPJs não-formatados de 14 dígitos (presentes em URLs do cnpj.biz, casadosdados, cnpja, etc.)
+  const rawMatches = text.match(/\b\d{14}\b/g) || []
+  rawMatches.forEach(c => cnpjs.add(c))
+
+  return [...cnpjs]
 }
 
 // ─── Enriquece um CNPJ via minhareceita.org (fallback: publica.cnpj.ws) ─────
@@ -48,7 +55,6 @@ async function enrichCnpj(cnpj: string): Promise<Record<string, string> | null> 
     if (r.ok) {
       const d = await r.json()
       if (d && d.razao_social) {
-        // Normaliza para o mesmo formato do minhareceita.org
         return {
           razao_social: d.razao_social,
           nome_fantasia: d.estabelecimento?.nome_fantasia || '',
@@ -192,38 +198,37 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ leads: [], error: 'Parâmetros insuficientes' }, { status: 400 })
   }
 
-  // ── 1. Monta múltiplas queries de busca ──────────────────────────────────────
+  // ── 1. Monta múltiplas queries direcionadas a diretórios de CNPJ ──────────────
   const localidade = [cidade, estado].filter(Boolean).join(' ')
   const queries: string[] = []
 
   if (setor && localidade) {
-    queries.push(`"${setor}" ${localidade} CNPJ empresa`)
-    queries.push(`${setor} ${localidade} CNPJ empresa ativa`)
+    queries.push(`${setor} ${localidade} CNPJ empresa`)
+    queries.push(`site:cnpj.biz ${setor} ${localidade}`)
+    queries.push(`site:casadosdados.com.br ${setor} ${localidade}`)
+    queries.push(`site:cnpja.com ${setor} ${localidade}`)
   }
   if (cnaeParam && localidade) {
     const cnaeFmt = cnaeParam.length === 7
       ? `${cnaeParam.slice(0, 4)}-${cnaeParam.slice(4, 5)}/${cnaeParam.slice(5, 7)}`
       : cnaeParam
-    queries.push(`CNAE ${cnaeFmt} ${localidade} empresa CNPJ`)
-    queries.push(`atividade ${cnaeFmt} empresas ${localidade} receita federal CNPJ`)
-  }
-  if (setor) {
-    queries.push(`${setor} ${localidade} telefone email empresa`)
+    queries.push(`CNAE ${cnaeFmt} ${localidade} CNPJ`)
+    queries.push(`site:cnpj.biz ${cnaeFmt} ${localidade}`)
   }
 
-  // ── 2. Busca paralela em múltiplos motores ────────────────────────────────────
-  const allCnpjSets = await Promise.allSettled([
-    searchDuckDuckGo(queries[0] || ''),
-    searchDuckDuckGo(queries[1] || ''),
-    searchBing(queries[2] || ''),
-    searchBing(queries[3] || ''),
-  ])
+  // ── 2. Busca paralela em múltiplos motores e diretórios ───────────────────────
+  const allCnpjSets = await Promise.allSettled(
+    queries.flatMap(q => [
+      searchDuckDuckGo(q),
+      searchBing(q)
+    ])
+  )
 
   const allCnpjs = new Set<string>()
   for (const r of allCnpjSets) {
     if (r.status === 'fulfilled') r.value.forEach(c => allCnpjs.add(c))
   }
-  const cnpjList = [...allCnpjs].slice(0, 30)
+  const cnpjList = [...allCnpjs].slice(0, 35)
 
   if (cnpjList.length === 0) {
     // Sem CNPJs reais encontrados nas buscas — retorna vazio sem gerar dados falsos
