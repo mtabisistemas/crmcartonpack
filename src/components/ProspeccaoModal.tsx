@@ -215,11 +215,16 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     }
   }, [isMapExpanded])
 
-  if (isMapExpanded) {
-    return (
-      <div className="fixed inset-0 z-[100000] bg-black w-screen h-screen flex flex-col overflow-hidden animate-fade-in">
-        {/* Header Superior Flutuante do Mapa Fullscreen */}
-        <div className="absolute top-4 left-4 z-[100001] bg-[var(--charcoal)]/90 backdrop-blur-md border border-[var(--line)] px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-2xl">
+  return (
+    <div
+      className={isMapExpanded
+        ? 'fixed inset-0 z-[100000] w-screen h-screen bg-[var(--charcoal)] flex flex-col p-0 m-0 border-0 rounded-none overflow-hidden animate-fade-in'
+        : 'w-full h-full min-h-[340px] flex-1 rounded-xl overflow-hidden shadow-2xl relative border border-[var(--line)] group'
+      }
+    >
+      {/* Header Superior Flutuante quando Fullscreen */}
+      {isMapExpanded && (
+        <div className="absolute top-4 left-4 z-[100001] bg-[var(--charcoal)]/90 backdrop-blur-md border border-[var(--line)] px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-2xl pointer-events-auto">
           <div className="w-8 h-8 rounded-xl bg-[var(--lime)]/10 border border-[var(--lime)]/30 flex items-center justify-center text-[var(--lime)]">
             <MapPin size={18} />
           </div>
@@ -232,41 +237,31 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
             </p>
           </div>
         </div>
+      )}
 
-        {/* Botão Minimizar/Voltar Flutuante */}
-        {onToggleExpand && (
-          <div className="absolute top-4 right-4 z-[100001]">
-            <button
-              type="button"
-              onClick={onToggleExpand}
-              className="px-4 py-2.5 rounded-xl bg-black/90 backdrop-blur-md border border-[var(--lime)]/50 text-white font-mono text-xs font-black flex items-center gap-2 shadow-2xl transition-all hover:scale-105 cursor-pointer uppercase tracking-wider hover:bg-[var(--lime)] hover:text-black group"
-              title="Voltar para a visão do modal"
-            >
-              <Minimize2 size={16} className="text-[var(--lime)] group-hover:text-black shrink-0" />
-              <span>MINIMIZAR (VOLTAR AO MODAL)</span>
-            </button>
-          </div>
-        )}
+      {/* Canvas Único e Estável do Leaflet (DOM Element permanece o mesmo) */}
+      <div ref={mapRef} className="w-full h-full flex-1 relative" />
 
-        {/* Canvas do Mapa ocupando 100% da viewport */}
-        <div ref={mapRef} className="w-full h-full flex-1" />
-      </div>
-    )
-  }
-
-  return (
-    <div className="w-full h-full min-h-[340px] flex-1 rounded-xl overflow-hidden shadow-2xl relative border border-[var(--line)] group">
-      <div ref={mapRef} className="w-full h-full" />
+      {/* Botão Flutuante (AMPLIAR MAPA / MINIMIZAR) */}
       {onToggleExpand && (
-        <div className="absolute top-3 right-3 z-[1000]">
+        <div className="absolute top-4 right-4 z-[100001] pointer-events-auto">
           <button
             type="button"
             onClick={onToggleExpand}
-            className="px-3.5 py-2 rounded-xl bg-black/90 backdrop-blur-md border border-[var(--lime)]/50 text-white font-mono text-xs font-black flex items-center gap-2 shadow-2xl transition-all hover:scale-105 cursor-pointer uppercase tracking-wider hover:bg-[var(--lime)] hover:text-black group"
-            title="Ampliar mapa para a tela inteira"
+            className="px-4 py-2.5 rounded-xl bg-black/90 backdrop-blur-md border border-[var(--lime)]/50 text-white font-mono text-xs font-black flex items-center gap-2 shadow-2xl transition-all hover:scale-105 cursor-pointer uppercase tracking-wider hover:bg-[var(--lime)] hover:text-black group"
+            title={isMapExpanded ? 'Voltar para a visão do modal' : 'Ampliar mapa para a tela inteira'}
           >
-            <Maximize2 size={14} className="text-[var(--lime)] group-hover:text-black shrink-0" />
-            <span>AMPLIAR MAPA</span>
+            {isMapExpanded ? (
+              <>
+                <Minimize2 size={16} className="text-[var(--lime)] group-hover:text-black shrink-0" />
+                <span>MINIMIZAR (VOLTAR AO MODAL)</span>
+              </>
+            ) : (
+              <>
+                <Maximize2 size={14} className="text-[var(--lime)] group-hover:text-black shrink-0" />
+                <span>AMPLIAR MAPA</span>
+              </>
+            )}
           </button>
         </div>
       )}
