@@ -1832,25 +1832,27 @@ export default function ContactsPage() {
                   <tr 
                     key={contact.id} 
                     onClick={() => setSelectedContact(contact)}
-                    className="hover:bg-[var(--charcoal)] transition-colors duration-150 cursor-pointer"
+                    className={`hover:bg-[var(--charcoal)] transition-all duration-150 cursor-pointer ${contact.status === 'inativo' ? 'opacity-70 hover:opacity-100' : ''}`}
                   >
                     {/* Cliente Info */}
                     <td className="p-4 pl-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-[var(--line)] flex items-center justify-center text-[var(--white)]">
+                        <div className="w-9 h-9 rounded-lg bg-[var(--line)] flex items-center justify-center text-[var(--white)] shrink-0">
                           <Building2 size={16} />
                         </div>
                         <div>
                           <div className="text-sm font-bold text-[var(--white)] flex items-center gap-2">
-                            {contact.company}
+                            <span>{contact.company}</span>
                             {contact.status === 'inativo' && (
-                              <span className="font-mono text-[9px] bg-[rgba(226,72,61,0.15)] text-[var(--red)] px-2 py-0.5 rounded-full border border-[rgba(226,72,61,0.25)] flex items-center gap-1">
-                                <AlertCircle size={8} /> ALERTA INATIVO
+                              <span className="font-mono text-[10px] text-[var(--gray)] flex items-center gap-1.5 font-normal">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400/80 inline-block" />
+                                Inativo
                               </span>
                             )}
                             {contact.status === 'prospeccao' && (
-                              <span className="font-mono text-[9px] bg-[rgba(240,196,25,0.15)] text-[var(--yellow)] px-2 py-0.5 rounded-full border border-[rgba(240,196,25,0.25)] flex items-center gap-1">
-                                <Clock size={8} /> EM PROSPECÇÃO
+                              <span className="font-mono text-[10px] text-[var(--yellow)] flex items-center gap-1.5 font-normal">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-pulse" />
+                                Prospecção
                               </span>
                             )}
                           </div>
