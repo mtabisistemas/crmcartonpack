@@ -1530,7 +1530,7 @@ export default function ContactsPage() {
       if (supabase) {
         try {
           const { data, error } = await supabase.from('contacts').select('*').order('created_at', { ascending: false })
-          if (!error && data && data.length > 0) {
+          if (!error && data) {
             const mapped: MockContact[] = data.map((item: any) => ({
               id: item.id,
               name: item.name || '',
@@ -1572,10 +1572,15 @@ export default function ContactsPage() {
         const savedContacts = localStorage.getItem('crm_contacts')
         if (savedContacts) {
           try {
-            setContacts(JSON.parse(savedContacts))
+            const parsed = JSON.parse(savedContacts)
+            const clean = parsed.filter((c: any) => !c.company?.toUpperCase().includes('SIQUEIRA'))
+            setContacts(clean)
+            localStorage.setItem('crm_contacts', JSON.stringify(clean))
           } catch (e) {
-            console.error(e)
+            setContacts([])
           }
+        } else {
+          setContacts([])
         }
 
         const savedUsers = localStorage.getItem('crm_users')
