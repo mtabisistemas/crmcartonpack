@@ -295,17 +295,22 @@ export async function GET(req: NextRequest) {
   // ── 2. Monta queries direcionadas e eficientes ─────────────────────────────────
   const queries: string[] = []
 
+  if (keySubject && localidade) {
+    queries.push(`site:cnpja.com "${cidade}" ${keySubject}`)
+    queries.push(`site:cnpj.biz "${cidade}" ${keySubject}`)
+    queries.push(`site:casadosdados.com.br "${cidade}" ${keySubject}`)
+    queries.push(`${keySubject} "${cidade}" ${estado} CNPJ`)
+    queries.push(`produtos ${keySubject} "${cidade}" CNPJ`)
+  }
+
   if (cnaeFmt && localidade) {
+    queries.push(`site:cnpja.com ${cnaeFmt} "${cidade}"`)
     queries.push(`site:cnpj.biz ${cnaeFmt} "${cidade}"`)
     queries.push(`${cnaeFmt} ${localidade} CNPJ`)
   }
 
-  if (keySubject && localidade) {
-    queries.push(`site:cnpj.biz "${cidade}" ${keySubject}`)
-    queries.push(`${keySubject} ${localidade} CNPJ`)
-  }
-
   if (localidade && queries.length === 0) {
+    queries.push(`site:cnpja.com "${cidade}" ${estado}`)
     queries.push(`site:cnpj.biz "${cidade}" ${estado}`)
   }
 
