@@ -48,6 +48,9 @@ export interface ProspectLead {
   youtube?: string
   facebook?: string
   linkedin?: string
+  bairro?: string
+  qsa?: Array<{ nome_socio?: string; qualificacao_socio?: string }>
+  cnaes_secundarios?: Array<{ codigo: string; descricao: string }>
 }
 
 export interface SearchLeadsParams {

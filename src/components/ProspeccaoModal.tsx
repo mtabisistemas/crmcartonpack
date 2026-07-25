@@ -5,7 +5,7 @@ import {
   ChevronLeft, ChevronRight, AlertTriangle, CheckCircle, Sparkles,
   Users, Loader2, Circle, GitFork, Info, Eye, ExternalLink,
   Mail, Phone, Globe, Video, Share2, MessageCircle,
-  TrendingUp, Users2, DollarSign, Activity, Award, Camera
+  TrendingUp, Users2, DollarSign, Activity, Award, Camera, Check, Copy
 } from 'lucide-react'
 import {
   prospectingService, enrichLead, SETORES_CNAE, LISTA_CNAES_OFFICIAL, REGIOES_SUGERIDAS,
@@ -715,6 +715,23 @@ export function ProspeccaoModal({
 
 
 
+const WhatsappIcon = ({ size = 15, className = "" }: { size?: number; className?: string }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
+    <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" />
+  </svg>
+)
+
 interface LeadDetailModalProps {
   lead: ProspectLead
   usuariosDisponiveis: Usuario[]
@@ -726,6 +743,28 @@ function LeadDetailModal({ lead, usuariosDisponiveis, onClose, onLeadsImported }
   const [encaminharVendedor, setEncaminharVendedor] = useState(usuariosDisponiveis[0]?.id || '')
   const [encaminhando, setEncaminhando] = useState(false)
   const [encaminhadoOk, setEncaminhadoOk] = useState(false)
+  const [copiedEmail, setCopiedEmail] = useState(false)
+  const [showSideActivities, setShowSideActivities] = useState(false)
+
+  // Extrai nome do sócio (QSA) se não houver contato_nome direto
+  const responsavelNome = lead.contato_nome && lead.contato_nome !== 'Não Disponível'
+    ? lead.contato_nome
+    : (lead.qsa && lead.qsa[0] ? lead.qsa[0].nome_socio : 'Não Disponível')
+
+  // WhatsApp link helper
+  const whatsappLink = (phoneStr?: string) => {
+    const digits = (phoneStr || '').replace(/\D/g, '')
+    if (!digits) return '#'
+    const full = digits.length <= 11 ? `55${digits}` : digits
+    return `https://wa.me/${full}`
+  }
+
+  const handleCopyEmail = (emailStr: string) => {
+    if (!emailStr) return
+    navigator.clipboard.writeText(emailStr)
+    setCopiedEmail(true)
+    setTimeout(() => setCopiedEmail(false), 2000)
+  }
 
   const handleEncaminhar = async () => {
     if (!encaminharVendedor) return
@@ -772,15 +811,17 @@ function LeadDetailModal({ lead, usuariosDisponiveis, onClose, onLeadsImported }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[100000] flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in">
-      <div className="w-full max-w-5xl bg-[var(--charcoal)] border border-[var(--line)] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-[var(--white)] my-auto" style={{ width: '960px', maxWidth: '95vw' }}>
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[100000] flex items-center justify-center p-2 sm:p-4 animate-fade-in">
+      <div className="bg-[var(--charcoal)] border border-[var(--line)] rounded-2xl w-full max-w-[95vw] xl:max-w-6xl shadow-2xl flex flex-col gap-2.5 max-h-[96vh] overflow-hidden p-4 sm:p-5 text-[var(--white)] my-auto">
 
         {/* Header */}
-        <div className="p-6 border-b border-[var(--line)] flex justify-between items-start bg-[var(--card)]">
+        <div className="flex justify-between items-center border-b border-[var(--line)] pb-2.5 px-2 shrink-0">
           <div>
-            <h2 className="font-display text-lg text-[var(--white)]">{lead.razao_social}</h2>
+            <h3 className="font-display text-sm sm:text-base text-[var(--white)] font-bold">{lead.razao_social}</h3>
+            <p className="text-[11px] text-[var(--gray)] font-mono">Ficha Técnica e Cadastral Enriquecida do Lead Prospectado</p>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-[var(--white)] p-1 rounded-md hover:bg-[var(--line)] transition-colors cursor-pointer"
           >
@@ -788,287 +829,221 @@ function LeadDetailModal({ lead, usuariosDisponiveis, onClose, onLeadsImported }
           </button>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
-          <div className="flex flex-col gap-5 animate-fade-in pb-4">
+        {/* 3-Column Harmonious Grid Layout - 100% IDÊNTICO À FICHA DO CLIENTE */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 overflow-y-auto max-h-[calc(96vh-140px)] pr-1">
 
-            {/* Dashboard 2-Column Split Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* COLUMN 1 & 2 (col-span-2): Dados Cadastrais & Atividades Econômicas */}
+          <div className="lg:col-span-2 flex flex-col gap-3">
 
-              {/* LEFT COLUMN (2/3): Dados Cadastrais */}
-              <div className="lg:col-span-2 flex flex-col gap-4">
-                <div className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-3 flex-1">
-                  <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Dados Cadastrais</h4>
+            {/* Card 1: Dados Cadastrais & Endereço */}
+            <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2.5">
+              <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Dados Cadastrais & Endereço</h4>
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Razão Social / Empresa</label>
-                    <input
-                      type="text"
-                      readOnly
-                      className="bg-transparent border-b border-dashed border-[var(--line)] font-display text-sm text-[var(--white)] font-bold w-full pb-1 outline-none"
-                      value={lead.razao_social}
-                    />
-                  </div>
+              {/* Razão Social */}
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Razão Social / Empresa *</label>
+                <input
+                  type="text"
+                  readOnly
+                  className="bg-transparent border-b border-dashed border-[var(--line)] font-display text-xs text-[var(--white)] font-bold w-full pb-0.5 outline-none"
+                  value={lead.razao_social}
+                />
+              </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Nome Fantasia</label>
-                      <input
-                        type="text"
-                        readOnly
-                        className="input text-xs py-1.5"
-                        value={lead.nome_fantasia || 'Não Disponível'}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Responsável (Pessoa Física)</label>
-                      <input
-                        type="text"
-                        readOnly
-                        className="input text-xs py-1.5"
-                        value={lead.contato_nome || 'Não Disponível'}
-                      />
-                    </div>
-                  </div>
+              {/* Nome Fantasia + Responsável */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Nome Fantasia</label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-2.5"
+                    value={lead.nome_fantasia || 'Não Disponível'}
+                  />
+                </div>
 
-                  <div className="flex flex-col md:flex-row gap-3">
-                    <div className="flex flex-col gap-1.5 md:w-[155px] shrink-0">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNPJ</label>
-                      <input
-                        type="text"
-                        readOnly
-                        className="input text-xs py-1.5 font-mono"
-                        value={lead.cnpj}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5 md:w-[135px] shrink-0">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
-                      <input
-                        type="text"
-                        readOnly
-                        className="input text-xs py-1.5"
-                        value={lead.telefone || 'Não Informado'}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">E-mail</label>
-                      <input
-                        type="text"
-                        readOnly
-                        className="input text-xs py-1.5 tracking-tight"
-                        value={lead.email || 'Não Informado'}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Rua + Bairro */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="col-span-2 flex flex-col gap-1.5">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Rua / Número</label>
-                      <input
-                        type="text"
-                        readOnly
-                        className="input text-xs py-1.5"
-                        value={lead.logradouro || 'Não Informado'}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Bairro</label>
-                      <input
-                        type="text"
-                        readOnly
-                        className="input text-xs py-1.5"
-                        value={'-'}
-                      />
-                    </div>
-                  </div>
-
-                  {/* CEP + Cidade + UF + Mapa */}
-                  <div className="flex gap-3">
-                    <div className="flex flex-col gap-1.5" style={{ width: '110px', flexShrink: 0 }}>
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CEP</label>
-                      <input
-                        type="text"
-                        readOnly
-                        className="input text-xs py-1.5 font-mono"
-                        value={lead.cep || '-'}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5 flex-1">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Cidade</label>
-                      <input
-                        type="text"
-                        readOnly
-                        className="input text-xs py-1.5"
-                        value={lead.cidade}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5" style={{ width: '88px', flexShrink: 0 }}>
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">UF</label>
-                      <input
-                        type="text"
-                        readOnly
-                        className="input text-xs py-1.5 uppercase text-center font-bold font-mono w-full"
-                        value={lead.estado}
-                      />
-                    </div>
-                    {/* Map icon */}
-                    <div className="flex flex-col gap-1.5" style={{ flexShrink: 0 }}>
-                      <label className="text-[9px] font-bold text-transparent uppercase font-mono tracking-wider select-none">·</label>
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([lead.logradouro, lead.cidade, lead.estado, lead.cep].filter(Boolean).join(', '))}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title="Ver endereço no mapa"
-                        className="flex items-center justify-center py-1.5 px-1 transition-colors text-[var(--lime)] hover:opacity-70 cursor-pointer"
-                      >
-                        <MapPin size={20} />
-                      </a>
-                    </div>
-                  </div>
-
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">Responsável (Pessoa Física) *</label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-2.5 font-bold border-dashed border-[var(--lime)]"
+                    value={responsavelNome || 'Não Disponível'}
+                  />
                 </div>
               </div>
 
-              {/* RIGHT COLUMN (1/3): Inscrições e Status */}
-              <div className="flex flex-col gap-4">
+              {/* CNPJ + Telefone + Email */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNPJ</label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-2.5 font-mono"
+                    value={lead.cnpj}
+                  />
+                </div>
 
-                {/* Card: Regime Tributário */}
-                <div className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-3">
-                  <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Regime Tributário</h4>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Opção pelo Simples</label>
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
+                  <div className="relative flex items-center">
                     <input
                       type="text"
                       readOnly
-                      className="input text-xs py-1.5"
-                      value={lead.opcao_simples || 'NAO OPTANTE'}
+                      className="input text-xs py-1 px-2.5 pr-8 w-full"
+                      value={lead.telefone || 'Não Informado'}
                     />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Opção MEI</label>
-                      <input type="text" readOnly className="input text-xs py-1.5" value={lead.opcao_mei || 'Não'} />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Porte</label>
-                      <input type="text" readOnly className="input text-xs py-1.5" value={lead.porte || 'Pequena'} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Card: Inscrições Estaduais e Status */}
-                <div className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-3 flex-1">
-                  <div className="flex justify-between items-center border-b border-[var(--line)] pb-1">
-                    <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] font-mono">Inscrições Estaduais e Status</h4>
-                    {lead.cnpj && (
+                    {lead.telefone && (
                       <a
-                        href={`https://cnpja.com/office/${lead.cnpj.replace(/\D/g, '')}`}
+                        href={whatsappLink(lead.telefone)}
                         target="_blank"
-                        rel="noopener noreferrer"
-                        title="Ver no CNPJá"
-                        className="text-[9px] font-bold text-[var(--gray2)] hover:text-[var(--lime)] transition-colors p-1"
+                        rel="noreferrer"
+                        className="absolute right-2 text-emerald-400 hover:text-emerald-300 transition-transform hover:scale-110 cursor-pointer p-0.5"
+                        title="Chamar no WhatsApp"
                       >
-                        <ExternalLink size={12} />
+                        <WhatsappIcon size={15} />
                       </a>
                     )}
                   </div>
+                </div>
 
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Situação Cadastral</label>
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">E-mail</label>
+                    {lead.email && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopyEmail(lead.email || '')}
+                        className="text-[9px] font-bold text-[var(--lime)] hover:text-white flex items-center gap-1 font-mono transition-colors cursor-pointer"
+                        title="Copiar E-mail"
+                      >
+                        {copiedEmail ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                        <span>{copiedEmail ? 'COPIADO!' : 'COPIAR'}</span>
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative flex items-center">
                     <input
                       type="text"
                       readOnly
-                      className="input text-xs py-1.5 font-bold"
-                      style={{ color: 'var(--green)' }}
-                      value={lead.situacao || 'ATIVA na Receita Federal'}
+                      className="input text-xs py-1 px-2.5 w-full"
+                      value={lead.email || 'Não Informado'}
                     />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Capital Social</label>
-                    <input
-                      type="text"
-                      readOnly
-                      className="input text-xs py-1.5 font-mono"
-                      value={lead.capital_social || 'Não Disponível'}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Data Abertura</label>
-                      <input
-                        type="text"
-                        readOnly
-                        className="input text-[10px] py-1.5 font-mono"
-                        value={lead.data_abertura || '-'}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Natureza Jurídica</label>
-                      <input
-                        type="text"
-                        readOnly
-                        className="input text-[10px] py-1.5 truncate"
-                        value={lead.natureza_juridica ? lead.natureza_juridica.replace('Sociedade ', 'Soc. ') : 'Ltda.'}
-                      />
-                    </div>
                   </div>
                 </div>
               </div>
 
-            </div>
+              {/* Rua / Número + Bairro */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="sm:col-span-2 flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Rua / Número</label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-2.5"
+                    value={lead.logradouro || 'Não Informado'}
+                  />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Bairro</label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-2.5"
+                    value={lead.bairro || '-'}
+                  />
+                </div>
+              </div>
 
-            {/* Card: Canais Digitais & Redes */}
-            <div className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-3">
-              <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Canais Digitais & Redes</h4>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Website</label>
-                  <input type="text" readOnly className="input text-xs py-1.5" value={lead.site ? `https://${lead.site.replace(/^https?:\/\//, '')}` : 'Não informado'} />
+              {/* CEP | Cidade | UF | Mapa */}
+              <div className="flex flex-wrap sm:flex-nowrap gap-2.5 items-end">
+                <div className="flex flex-col gap-0.5 shrink-0 w-[100px]">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CEP</label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-2.5 font-mono"
+                    value={lead.cep || '-'}
+                  />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Instagram</label>
-                  <input type="text" readOnly className="input text-xs py-1.5" value={'Não informado'} />
+
+                <div className="flex flex-col gap-0.5 flex-1 min-w-[120px]">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Cidade</label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-2.5"
+                    value={lead.cidade}
+                  />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">LinkedIn</label>
-                  <input type="text" readOnly className="input text-xs py-1.5" value={'Não informado'} />
+
+                <div className="flex flex-col gap-0.5 shrink-0 w-[70px]">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">UF</label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-1.5 uppercase text-center font-bold font-mono w-full"
+                    value={lead.estado}
+                  />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Facebook</label>
-                  <input type="text" readOnly className="input text-xs py-1.5" value={'Não informado'} />
+
+                <div className="flex flex-col gap-0.5 shrink-0 pb-0.5">
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([lead.logradouro, lead.bairro, lead.cidade, lead.estado, lead.cep].filter(Boolean).join(', '))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Ver endereço no mapa"
+                    className="flex items-center justify-center p-1.5 rounded-lg border border-[var(--line)] text-[var(--lime)] hover:bg-[var(--lime)]/10 hover:border-[var(--lime)] cursor-pointer transition-colors"
+                  >
+                    <MapPin size={16} />
+                  </a>
                 </div>
               </div>
             </div>
 
-            {/* Card: Atividades Econômicas */}
-            <div className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-3">
+            {/* Card 2: Atividades Econômicas */}
+            <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2">
               <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Atividades Econômicas</h4>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-0.5">
                 <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNAE Principal</label>
                 <input
                   type="text"
                   readOnly
-                  className="input text-xs py-1.5 font-medium"
+                  className="input text-xs py-1 px-2 font-mono"
                   value={lead.cnae_codigo
-                    ? `${formatCnaeCode(lead.cnae_codigo)} — ${lead.cnae_descricao || lead.setor}`
+                    ? `${formatCnaeCode(lead.cnae_codigo)} - ${lead.cnae_descricao || lead.setor}`
                     : lead.setor || 'Não Informado'}
                 />
               </div>
-              {(lead.faixa_funcionarios || lead.faturamento_estimado) && (
-                <div className="grid grid-cols-2 gap-3 mt-1">
-                  {lead.faixa_funcionarios && (
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Funcionários Estimados</label>
-                      <input type="text" readOnly className="input text-xs py-1.5" value={lead.faixa_funcionarios} />
-                    </div>
-                  )}
-                  {lead.faturamento_estimado && (
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Faturamento Estimado</label>
-                      <input type="text" readOnly className="input text-xs py-1.5 font-bold font-mono" style={{ color: 'var(--green)' }} value={lead.faturamento_estimado} />
+
+              {lead.cnaes_secundarios && lead.cnaes_secundarios.length > 0 && (
+                <div className="flex flex-col gap-1.5 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowSideActivities(v => !v)}
+                    className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider font-mono transition-colors w-fit cursor-pointer"
+                    style={{ color: showSideActivities ? 'var(--lime)' : 'var(--gray)' }}
+                  >
+                    <span
+                      className="inline-block transition-transform duration-200"
+                      style={{ transform: showSideActivities ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                    >▶</span>
+                    {showSideActivities ? 'Ocultar' : 'Ver'} secundárias ({lead.cnaes_secundarios.length})
+                  </button>
+
+                  {showSideActivities && (
+                    <div className="flex flex-col gap-0 border border-[var(--line)] rounded-lg overflow-y-auto max-h-[120px]">
+                      {lead.cnaes_secundarios.map((act, i) => (
+                        <div
+                          key={i}
+                          className="flex gap-1.5 px-2 py-1 text-[11px] font-mono leading-tight"
+                          style={{ background: i % 2 === 0 ? 'var(--card2)' : 'transparent' }}
+                        >
+                          <span className="text-[var(--lime)] font-bold shrink-0">{act.codigo}</span>
+                          <span className="text-[var(--gray)] truncate">{act.descricao}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -1076,15 +1051,147 @@ function LeadDetailModal({ lead, usuariosDisponiveis, onClose, onLeadsImported }
             </div>
 
           </div>
+
+          {/* COLUMN 3: Fiscal & Canais Digitais */}
+          <div className="flex flex-col gap-3">
+
+            {/* Card 1: Dados Fiscais & Status */}
+            <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2">
+              <div className="flex justify-between items-center border-b border-[var(--line)] pb-1">
+                <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] font-mono">Dados Fiscais & Status</h4>
+                {lead.cnpj && (
+                  <a
+                    href={`https://cnpja.com/office/${lead.cnpj.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[9px] font-bold text-[var(--lime)] hover:text-white uppercase tracking-wider font-mono flex items-center gap-1 transition-colors"
+                  >
+                    <span>CNPJá</span>
+                    <ExternalLink size={10} />
+                  </a>
+                )}
+              </div>
+
+              <div className="grid grid-cols-5 gap-2">
+                <div className="col-span-2 flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Regime Tributário</label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-2.5 font-mono"
+                    value={lead.opcao_simples === 'OPTANTE' ? 'Simples' : (lead.opcao_mei === 'Sim' ? 'MEI' : 'Presumido')}
+                  />
+                </div>
+
+                <div className="col-span-3 flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Situação Cadastral</label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-2.5 font-bold w-full"
+                    style={{
+                      color: (lead.situacao || '').toLowerCase().includes('ativa') ? 'var(--green)' : 'var(--white)'
+                    }}
+                    value={lead.situacao || 'Ativa na Receita Federal'}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Inscrição Estadual (IE)</label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-2 font-mono"
+                    value={'IE'}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Situação Especial</label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-2"
+                    value={lead.situacao_especial || 'Nenhuma'}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Canais Digitais & Redes */}
+            <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2.5">
+              <div className="flex justify-between items-center border-b border-[var(--line)] pb-1">
+                <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] font-mono">Canais Digitais & Redes</h4>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider flex items-center gap-1">
+                    <Globe size={11} className="text-[var(--lime)]" />
+                    <span>Website</span>
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-2.5 font-mono"
+                    value={lead.site ? `https://${lead.site.replace(/^https?:\/\//, '')}` : 'Não informado'}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider flex items-center gap-1">
+                    <svg className="w-3 h-3 text-[#E1306C] fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                    <span>Instagram</span>
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-2.5 font-mono"
+                    value={lead.instagram || 'Não informado'}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider flex items-center gap-1">
+                    <svg className="w-3 h-3 text-[#0A66C2] fill-current" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                    <span>LinkedIn</span>
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-2.5 font-mono"
+                    value={lead.linkedin || 'Não informado'}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider flex items-center gap-1">
+                    <svg className="w-3 h-3 text-[#1877F2] fill-current" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+                    <span>Facebook</span>
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input text-xs py-1 px-2.5 font-mono"
+                    value={lead.facebook || 'Não informado'}
+                  />
+                </div>
+              </div>
+            </div>
+
+          </div>
+
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-[var(--line)] bg-[var(--card)] flex justify-between items-center gap-3">
+        <div className="p-3 border-t border-[var(--line)] bg-[var(--card)] flex justify-between items-center gap-3 shrink-0 rounded-b-2xl">
           <button
             onClick={onClose}
-            className="btn btn-secondary text-xs"
+            className="btn btn-secondary text-xs py-2 px-4 cursor-pointer"
           >
-            Fechar Ficha
+            FECHAR FICHA
           </button>
 
           <div className="flex items-center gap-3">
@@ -1101,7 +1208,7 @@ function LeadDetailModal({ lead, usuariosDisponiveis, onClose, onLeadsImported }
             <button
               onClick={handleEncaminhar}
               disabled={encaminhando || encaminhadoOk || !encaminharVendedor}
-              className="btn btn-primary text-xs flex items-center gap-2 min-w-[200px] justify-center"
+              className="btn btn-primary text-xs py-2 px-5 font-bold uppercase tracking-wider text-black flex items-center gap-2 rounded-xl shadow-lg shadow-[rgba(180,217,50,0.15)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed min-w-[220px] justify-center"
             >
               {encaminhadoOk ? (
                 <>
@@ -1116,7 +1223,7 @@ function LeadDetailModal({ lead, usuariosDisponiveis, onClose, onLeadsImported }
               ) : (
                 <>
                   <UserPlus size={14} />
-                  <span>Encaminhar para Atendimento</span>
+                  <span>ENCAMINHAR PARA ATENDIMENTO</span>
                 </>
               )}
             </button>

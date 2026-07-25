@@ -31,7 +31,7 @@ function extractCnpjs(text: string): string[] {
 }
 
 // ─── Enriquece um CNPJ via OpenCNPJ (fallbacks: minhareceita.org & publica.cnpj.ws) ─────
-async function enrichCnpj(cnpj: string): Promise<Record<string, string> | null> {
+async function enrichCnpj(cnpj: string): Promise<Record<string, any> | null> {
   const clean = cnpj.replace(/\D/g, '')
   if (clean.length !== 14) return null
 
@@ -58,9 +58,28 @@ async function enrichCnpj(cnpj: string): Promise<Record<string, string> | null> 
           ? d.cnaes.map((c: any) => String(c.codigo || '').replace(/\D/g, '')).join(' ')
           : cnaeCode
 
+        const qsaArr = Array.isArray(d.qsa)
+          ? d.qsa.map((s: any) => ({
+              nome_socio: s.nome_socio || s.nome || '',
+              qualificacao_socio: s.qualificacao_socio || s.qualificacao || ''
+            }))
+          : (Array.isArray(d.socios) ? d.socios.map((s: any) => ({ nome_socio: s.nome || '', qualificacao_socio: s.qualificacao || '' })) : [])
+
+        const firstSocio = qsaArr[0]?.nome_socio || ''
+
+        const secCnaes = Array.isArray(d.cnaes)
+          ? d.cnaes
+              .filter((c: any) => !c.is_principal)
+              .map((c: any) => ({
+                codigo: c.codigo ? (String(c.codigo).length === 7 ? `${String(c.codigo).slice(0, 4)}-${String(c.codigo).slice(4, 5)}/${String(c.codigo).slice(5, 7)}` : String(c.codigo)) : '',
+                descricao: c.descricao || ''
+              }))
+          : []
+
         return {
           razao_social: d.razao_social,
           nome_fantasia: d.nome_fantasia || d.razao_social,
+          contato_nome: firstSocio || 'Não Disponível',
           municipio: d.municipio || '',
           uf: d.uf || '',
           cep: d.cep || '',
@@ -80,6 +99,8 @@ async function enrichCnpj(cnpj: string): Promise<Record<string, string> | null> 
           porte: d.porte_empresa || '',
           opcao_pelo_simples: d.opcao_simples ? 'true' : 'false',
           opcao_pelo_mei: d.opcao_mei ? 'true' : 'false',
+          qsa: qsaArr,
+          cnaes_secundarios: secCnaes,
         }
       }
     }
@@ -93,7 +114,23 @@ async function enrichCnpj(cnpj: string): Promise<Record<string, string> | null> 
     })
     if (r.ok) {
       const d = await r.json()
-      if (d && d.razao_social) return d
+      if (d && d.razao_social) {
+        const qsaArr = Array.isArray(d.qsa)
+          ? d.qsa.map((s: any) => ({ nome_socio: s.nome_socio_razao_social || s.nome_socio || s.nome || '', qualificacao_socio: s.qualificacao_socio || '' }))
+          : []
+        const secCnaes = Array.isArray(d.cnaes_secundarios)
+          ? d.cnaes_secundarios.map((c: any) => ({
+              codigo: c.codigo ? (String(c.codigo).length === 7 ? `${String(c.codigo).slice(0, 4)}-${String(c.codigo).slice(4, 5)}/${String(c.codigo).slice(5, 7)}` : String(c.codigo)) : '',
+              descricao: c.descricao || ''
+            }))
+          : []
+        return {
+          ...d,
+          contato_nome: qsaArr[0]?.nome_socio || 'Não Disponível',
+          qsa: qsaArr,
+          cnaes_secundarios: secCnaes,
+        }
+      }
     }
   } catch { /* continua para fallback 3 */ }
 
@@ -105,9 +142,19 @@ async function enrichCnpj(cnpj: string): Promise<Record<string, string> | null> 
     if (r.ok) {
       const d = await r.json()
       if (d && d.razao_social) {
+        const qsaArr = Array.isArray(d.socios)
+          ? d.socios.map((s: any) => ({ nome_socio: s.nome || '', qualificacao_socio: s.qualificacao?.descricao || '' }))
+          : []
+        const secCnaes = Array.isArray(d.estabelecimento?.atividades_secundarias)
+          ? d.estabelecimento.atividades_secundarias.map((c: any) => ({
+              codigo: c.subclasse ? `${String(c.subclasse).slice(0, 4)}-${String(c.subclasse).slice(4, 5)}/${String(c.subclasse).slice(5, 7)}` : '',
+              descricao: c.descricao || ''
+            }))
+          : []
         return {
           razao_social: d.razao_social,
           nome_fantasia: d.estabelecimento?.nome_fantasia || '',
+          contato_nome: qsaArr[0]?.nome_socio || 'Não Disponível',
           municipio: d.estabelecimento?.cidade?.nome || '',
           uf: d.estabelecimento?.estado?.sigla || '',
           cep: d.estabelecimento?.cep || '',
@@ -127,6 +174,8 @@ async function enrichCnpj(cnpj: string): Promise<Record<string, string> | null> 
           porte: d.porte?.descricao || '',
           opcao_pelo_simples: d.simples?.optante ? 'true' : 'false',
           opcao_pelo_mei: d.simples?.mei ? 'true' : 'false',
+          qsa: qsaArr,
+          cnaes_secundarios: secCnaes,
         }
       }
     }
@@ -199,7 +248,7 @@ async function searchBing(query: string): Promise<string[]> {
 }
 
 // ─── Monta lead formatado a partir dos dados da RFB ─────────────────────────
-function buildLead(cnpj: string, d: Record<string, string>) {
+function buildLead(cnpj: string, d: Record<string, any>) {
   const cnpjFormatted = cnpj.replace(
     /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,
     '$1.$2.$3/$4-$5'
@@ -222,7 +271,7 @@ function buildLead(cnpj: string, d: Record<string, string>) {
   else if (porteStr.includes('GRANDE')) porte = 'Grande'
   else if (porteStr.includes('MEDIA') || porteStr.includes('MÉDIA')) porte = 'Média'
 
-  const endParts = [d.logradouro, d.numero, d.bairro].filter(Boolean).join(', ')
+  const streetNumber = [d.logradouro, d.numero].filter(Boolean).join(', ')
   const cidade = d.municipio
     ? d.municipio.charAt(0).toUpperCase() + d.municipio.slice(1).toLowerCase()
     : ''
@@ -235,13 +284,15 @@ function buildLead(cnpj: string, d: Record<string, string>) {
     cnpj: cnpjFormatted,
     razao_social: d.razao_social || '',
     nome_fantasia: d.nome_fantasia || d.razao_social || '',
+    contato_nome: d.contato_nome || (d.qsa && d.qsa[0] ? d.qsa[0].nome_socio : 'Não Disponível'),
     cnae_codigo: cnaeFmt,
     cnae_descricao: d.cnae_fiscal_descricao || '',
     setor: d.cnae_fiscal_descricao || '',
     cidade,
     estado: d.uf || '',
     cep: d.cep ? `${d.cep.slice(0, 5)}-${d.cep.slice(5)}` : '',
-    logradouro: endParts || '',
+    logradouro: streetNumber || d.logradouro || '',
+    bairro: d.bairro || '',
     porte,
     telefone: tel,
     email: d.email || '',
@@ -253,6 +304,9 @@ function buildLead(cnpj: string, d: Record<string, string>) {
     capital_social: capFormatted,
     opcao_simples: (String(d.opcao_pelo_simples) === 'true' || String(d.opcao_pelo_simples) === 'S') ? 'OPTANTE' : 'NAO OPTANTE',
     opcao_mei: (String(d.opcao_pelo_mei) === 'true' || String(d.opcao_pelo_mei) === 'S') ? 'Sim' : 'Não',
+    site: d.site || '',
+    qsa: d.qsa || [],
+    cnaes_secundarios: d.cnaes_secundarios || [],
     enriched: true,
   }
 }
