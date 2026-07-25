@@ -294,17 +294,43 @@ export async function GET(req: NextRequest) {
   const ufNorm = norm(estado).toUpperCase()
   const locNorm = [cityNorm, ufNorm].filter(Boolean).join(' ')
 
+  // Gera variações morfológicas (singular, plural, adjetivo, feminino/masculino) para as palavras-chave
+  const wordVariations: string[] = []
+  keyWords.forEach(w => {
+    const nw = norm(w)
+    wordVariations.push(nw)
+    wordVariations.push(nw + 's')
+    if (nw.endsWith('ia')) {
+      wordVariations.push(nw.replace(/ia$/, 'ica'))
+      wordVariations.push(nw.replace(/ia$/, 'ico'))
+      wordVariations.push(nw.replace(/ia$/, 'icos'))
+    }
+    if (nw.endsWith('ica')) {
+      wordVariations.push(nw.replace(/ica$/, 'ia'))
+      wordVariations.push(nw.replace(/ica$/, 'ico'))
+      wordVariations.push(nw.replace(/ica$/, 'icos'))
+    }
+    if (nw.endsWith('o')) {
+      wordVariations.push(nw + 's')
+      wordVariations.push(nw.replace(/o$/, 'a'))
+      wordVariations.push(nw.replace(/o$/, 'as'))
+    }
+  })
+
+  const uniqueVariations = [...new Set(wordVariations.filter(v => v.length >= 4))]
+
   // ── 2. Monta queries direcionadas e eficientes ─────────────────────────────────
   const queries: string[] = []
 
-  if (keySubject && cityNorm) {
-    const keyNorm = norm(keySubject)
-    queries.push(`${keyNorm} ${locNorm} CNPJ`)
-    queries.push(`produtos ${keyNorm}s ${locNorm} CNPJ`)
-    queries.push(`comercio ${keyNorm} ${locNorm} CNPJ`)
-    queries.push(`site:cnpja.com ${cityNorm} ${keyNorm}`)
-    queries.push(`site:cnpj.biz ${cityNorm} ${keyNorm}`)
-    queries.push(`site:casadosdados.com.br ${cityNorm} ${keyNorm}`)
+  if (uniqueVariations.length > 0 && cityNorm) {
+    uniqueVariations.slice(0, 4).forEach(v => {
+      queries.push(`${v} ${locNorm} CNPJ`)
+      queries.push(`site:cnpj.biz ${cityNorm} ${v}`)
+      queries.push(`site:cnpja.com ${cityNorm} ${v}`)
+    })
+    if (keySubject) {
+      queries.push(`site:casadosdados.com.br ${cityNorm} ${norm(keySubject)}`)
+    }
   }
 
   if (cnaeFmt && cityNorm) {
