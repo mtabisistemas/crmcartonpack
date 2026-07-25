@@ -135,6 +135,27 @@ async function enrichCnpj(cnpj: string): Promise<Record<string, string> | null> 
   return null
 }
 
+// ─── Busca CNPJs no Yahoo Search (resiliente em IPs serverless Vercel) ───────
+async function searchYahoo(query: string): Promise<string[]> {
+  try {
+    const url = `https://search.yahoo.com/search?p=${encodeURIComponent(query)}`
+    const r = await fetch(url, {
+      headers: {
+        Accept: 'text/html,application/xhtml+xml',
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept-Language': 'pt-BR,pt;q=0.9',
+      },
+      signal: AbortSignal.timeout(9000),
+    })
+    if (!r.ok) return []
+    const html = await r.text()
+    return extractCnpjs(html)
+  } catch {
+    return []
+  }
+}
+
 // ─── Busca CNPJs no DuckDuckGo (server-side, sem CORS) ───────────────────────
 async function searchDuckDuckGo(query: string): Promise<string[]> {
   try {
@@ -291,9 +312,13 @@ export async function GET(req: NextRequest) {
     queries.push(`site:cnpj.biz "${cidade}" ${estado}`)
   }
 
-  // ── 3. Busca paralela em múltiplos motores e diretórios ───────────────────────
+  // ── 3. Busca paralela em múltiplos motores (Yahoo, DuckDuckGo, Bing) ───────────
   const allCnpjSets = await Promise.allSettled(
-    queries.map(q => searchDuckDuckGo(q))
+    queries.flatMap(q => [
+      searchYahoo(q),
+      searchDuckDuckGo(q),
+      searchBing(q)
+    ])
   )
 
   const allCnpjs = new Set<string>()
