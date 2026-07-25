@@ -226,14 +226,8 @@ export async function GET(req: NextRequest) {
   const cnpjList = [...allCnpjs].slice(0, 30)
 
   if (cnpjList.length === 0) {
-    const generated = generateDynamicB2bLeads({
-      sectorQuery: setor || 'Geral',
-      cidade: cidade,
-      estado: estado || (cidade ? '' : 'SP'),
-      count: 20,
-      existingCnpjs: new Set()
-    })
-    return NextResponse.json({ leads: generated, totalFound: generated.length, source: 'dynamic_b2b_engine' })
+    // Sem CNPJs reais encontrados nas buscas — retorna vazio sem gerar dados falsos
+    return NextResponse.json({ leads: [], totalFound: 0, source: 'no_results' })
   }
 
   // ── 3. Enriquece CNPJs via Receita Federal (paralelamente, 10 por vez) ─────────
@@ -296,14 +290,8 @@ export async function GET(req: NextRequest) {
   }
 
   if (leads.length === 0) {
-    const generated = generateDynamicB2bLeads({
-      sectorQuery: setor || 'Geral',
-      cidade: cidade,
-      estado: estado || (cidade ? '' : 'SP'),
-      count: 20,
-      existingCnpjs: new Set()
-    })
-    return NextResponse.json({ leads: generated, totalFound: generated.length, source: 'dynamic_b2b_engine' })
+    // Nenhum resultado real válido após filtros — retorna vazio honestamente
+    return NextResponse.json({ leads: [], totalFound: 0, source: 'no_results' })
   }
 
   return NextResponse.json({

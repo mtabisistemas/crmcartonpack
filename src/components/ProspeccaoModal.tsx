@@ -619,9 +619,18 @@ export function ProspeccaoModal({
               </table>
             </div>
           ) : hasSearched ? (
-            <div className="py-14 text-center text-xs text-[var(--gray2)] font-mono space-y-2">
-              <Building2 size={32} className="mx-auto text-[var(--gray)] mb-3" />
-              <div>Nenhuma empresa encontrada para os filtros aplicados.</div>
+            <div className="py-10 text-center space-y-3">
+              <Building2 size={36} className="mx-auto text-[var(--gray)] mb-2" />
+              <div className="text-sm font-semibold text-slate-300">Nenhuma empresa encontrada</div>
+              <div className="text-xs text-[var(--gray2)] max-w-md mx-auto leading-relaxed">
+                A busca por <span className="text-white font-bold">{setorTexto || 'este setor'}</span>{regiaoTexto ? <> em <span className="text-white font-bold">{regiaoTexto}</span></> : ''} não retornou empresas reais cadastradas na Receita Federal para esses filtros.
+              </div>
+              <div className="text-[11px] text-[var(--gray2)] max-w-sm mx-auto space-y-1 pt-1">
+                <div>💡 <strong>Dicas para ampliar a busca:</strong></div>
+                <div>• Tente buscar por um CNAE mais amplo (ex: só os primeiros 4 dígitos)</div>
+                <div>• Selecione o estado inteiro em vez de uma cidade específica</div>
+                <div>• Use uma palavra-chave diferente para o setor</div>
+              </div>
             </div>
           ) : null}
           {/* Paginaá§á£o */}

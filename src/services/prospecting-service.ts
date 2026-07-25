@@ -1703,29 +1703,11 @@ export const prospectingService = {
       })
     }
 
-    // 5. Fallback Dinâmico Universal Estrito: Se restaram menos de 20 leads que cumprem 100% da região e CNAE, preenche com empresas dinâmicas da mesma cidade/UF e CNAE
-    if (filtered.length < 20) {
-      const needed = 25 - filtered.length
-      const generated = generateDynamicB2bLeads({
-        sectorQuery: rawSetor || 'Geral',
-        cidade: parsedCidade,
-        estado: parsedEstado || (parsedCidade ? '' : 'SP'),
-        count: needed,
-        existingCnpjs: new Set(filtered.map(f => f.cnpj.replace(/\D/g, '')))
-      })
-      filtered.push(...generated)
-    }
+    // NOTA: Removido o fallback de geração de leads sintéticos (generateDynamicB2bLeads).
+    // Dados sintéticos com CNPJs calculados por hash coincidiam com CNPJs reais de empresas
+    // em outros estados/setores, gerando resultados completamente falsos e enganosos.
+    // Agora o sistema retorna APENAS dados reais do CATALOG_REAL + busca live via DuckDuckGo/Bing.
 
-    // Garante que absolutamente NENHUM lead de outro estado ou outra cidade passe no resultado final
-    if (parsedEstado && parsedEstado !== 'TODOS') {
-      filtered = filtered.filter(l => l.estado.toUpperCase() === parsedEstado.toUpperCase())
-    }
-    if (parsedCidade) {
-      filtered = filtered.filter(l =>
-        normalizeText(l.cidade).includes(normalizeText(parsedCidade)) ||
-        normalizeText(parsedCidade).includes(normalizeText(l.cidade))
-      )
-    }
 
     // 6. Filtro por Porte se especificado
     if (porte && porte !== 'todos') {
