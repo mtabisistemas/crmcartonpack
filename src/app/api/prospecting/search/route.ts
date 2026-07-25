@@ -23,7 +23,14 @@ function extractCnpjs(text: string): string[] {
   const formattedMatches = text.match(/\b\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}\b/g) || []
   formattedMatches.forEach(c => cnpjs.add(c.replace(/\D/g, '')))
 
-  // 2. CNPJs não-formatados de 14 dígitos (presentes em URLs do cnpj.biz, casadosdados, cnpja, etc.)
+  // 2. CNPJs de 14 dígitos (em URLs ou texto: office/07906793000151, biz/07906793000151, etc.)
+  const rawUrlMatches = text.match(/(?:office\/|cnpj\/|biz\/|empresa\/|solucao\/|\D)(\d{14})(?:\D|$)/g) || []
+  rawUrlMatches.forEach(m => {
+    const digits = m.replace(/\D/g, '')
+    if (digits.length === 14) cnpjs.add(digits)
+  })
+
+  // 3. CNPJs não-formatados de 14 dígitos limpos
   const rawMatches = text.match(/\b\d{14}\b/g) || []
   rawMatches.forEach(c => cnpjs.add(c))
 
@@ -399,8 +406,8 @@ export async function GET(req: NextRequest) {
   if (uniqueVariations.length > 0 && cityNorm) {
     uniqueVariations.forEach(v => {
       queries.push(`${v} ${locNorm} CNPJ`)
+      queries.push(`site:cnpja.com/office/ ${cityNorm} ${v}`)
       queries.push(`site:cnpj.biz ${cityNorm} ${v}`)
-      queries.push(`site:cnpja.com ${cityNorm} ${v}`)
     })
     if (keySubject) {
       queries.push(`site:casadosdados.com.br ${cityNorm} ${norm(keySubject)}`)
@@ -432,7 +439,7 @@ export async function GET(req: NextRequest) {
   for (const r of allCnpjSets) {
     if (r.status === 'fulfilled') r.value.forEach(c => allCnpjs.add(c))
   }
-  const cnpjList = [...allCnpjs].slice(0, 35)
+  const cnpjList = [...allCnpjs].slice(0, 50)
 
   if (cnpjList.length === 0) {
     return NextResponse.json({ leads: [], totalFound: 0, source: 'no_results' })
