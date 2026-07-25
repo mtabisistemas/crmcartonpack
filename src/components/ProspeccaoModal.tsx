@@ -99,10 +99,10 @@ export function ProspeccaoModal({
       setResult(data)
       setLeads(data.leads)
       setCurrentPage(p)
-      // Disparar enriquecimento autáªntico em background via Minha Receita API
+      // Disparar enriquecimento autêntico em background apenas se não estiver enriquecido
       data.leads
         .filter(l => !l.isDuplicate && !l.enriched)
-        .forEach(lead => enrichLeadInBackground(lead.cnpj))
+        .forEach(lead => enrichLeadInBackground(lead.cnpj, lead.estado, lead.cidade, lead.cnae_codigo))
     } catch (e) {
       console.error(e)
       toastService.error('Erro ao buscar leads.')
@@ -110,14 +110,24 @@ export function ProspeccaoModal({
       setLoading(false)
     }
   }, [setorTexto, regiaoTexto, porte])
-  const enrichLeadInBackground = useCallback(async (cnpj: string) => {
+
+  const enrichLeadInBackground = useCallback(async (cnpj: string, targetUf?: string, targetCity?: string, targetCnae?: string) => {
     setEnrichingIds(prev => new Set(prev).add(cnpj))
     const data = await enrichLead(cnpj)
     setEnrichingIds(prev => { const s = new Set(prev); s.delete(cnpj); return s })
     if (data && Object.keys(data).length > 0) {
+      // Valida estritamente se o retorno da Receita Federal condiz com a região/CNAE do lead
+      if (targetUf && data.estado && data.estado.toUpperCase() !== targetUf.toUpperCase()) return
+      if (targetCity && data.cidade && !normalizeText(data.cidade).includes(normalizeText(targetCity)) && !normalizeText(targetCity).includes(normalizeText(data.cidade))) return
+      
+      const targetDigits = (targetCnae || '').replace(/\D/g, '')
+      const extraDigits = (data.cnae_codigo || '').replace(/\D/g, '')
+      if (targetDigits.length >= 4 && extraDigits.length >= 4 && !extraDigits.startsWith(targetDigits.slice(0, 4)) && !targetDigits.startsWith(extraDigits.slice(0, 4))) return
+
       setEnrichedData(prev => ({ ...prev, [cnpj]: data }))
     }
   }, [])
+
   useEffect(() => {
     if (isOpen) {
       // RESET COMPLETO AO ABRIR: Nenhuma pesquisa prévia
@@ -131,10 +141,14 @@ export function ProspeccaoModal({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])
+
   if (!isOpen) return null
-  // Mesclar dados enriquecidos
+
+  // Mesclar dados enriquecidos com trava de segurança de região/CNAE
   const getDisplayLead = (lead: ProspectLead): ProspectLead => {
     const extra = enrichedData[lead.cnpj] || {}
+    if (extra.estado && lead.estado && extra.estado.toUpperCase() !== lead.estado.toUpperCase()) return lead
+    if (extra.cidade && lead.cidade && !normalizeText(extra.cidade).includes(normalizeText(lead.cidade)) && !normalizeText(lead.cidade).includes(normalizeText(extra.cidade))) return lead
     return { ...lead, ...extra }
   }
   const toggleSelect = (cnpj: string, isDup?: boolean) => {
