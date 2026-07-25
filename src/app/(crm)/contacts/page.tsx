@@ -23,6 +23,8 @@ import {
   Clock,
   UserPlus,
   Save,
+  Copy,
+  Check,
   Globe
 } from 'lucide-react'
 import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString } from '@/lib/utils'
@@ -169,6 +171,8 @@ function ContactDrawer({
   // History states
   const [isSaving, setIsSaving] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
+  const [copiedEmail, setCopiedEmail] = useState(false)
+  const handleCopyEmail = (str: string) => { if (!str) return; navigator.clipboard.writeText(str); setCopiedEmail(true); setTimeout(() => setCopiedEmail(false), 2000); }
   const [activities, setActivities] = useState<Activity[]>([])
   const [newNote, setNewNote] = useState('')
   const [activityType, setActivityType] = useState<Activity['type']>('nota')
@@ -488,27 +492,80 @@ function ContactDrawer({
                       </div>
 
                       <div className="flex flex-col gap-0.5">
-                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
-                        <input 
-                          type="text" 
-                          className="input text-xs py-1 px-2.5" 
-                          placeholder="(00) 00000-0000"
-                          value={phone}
-                          onChange={(e) => setPhone(formatPhoneBr(e.target.value))}
-                          onBlur={() => handleSaveGeneral()}
-                        />
+                        <div className="flex justify-between items-center">
+                          <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
+                          {phone && (
+                            <a 
+                              href={whatsappLink(phone)} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-mono transition-colors cursor-pointer"
+                              title="Chamar no WhatsApp"
+                            >
+                              <MessageSquare size={10} className="text-emerald-400" />
+                              <span>WHATSAPP</span>
+                              <ExternalLink size={8} />
+                            </a>
+                          )}
+                        </div>
+                        <div className="relative flex items-center">
+                          <input 
+                            type="text" 
+                            className="input text-xs py-1 px-2.5 pr-8 w-full" 
+                            placeholder="(00) 00000-0000"
+                            value={phone}
+                            onChange={(e) => setPhone(formatPhoneBr(e.target.value))}
+                            onBlur={() => handleSaveGeneral()}
+                          />
+                          {phone && (
+                            <a
+                              href={whatsappLink(phone)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="absolute right-2 text-emerald-400 hover:text-emerald-300 transition-transform hover:scale-110 cursor-pointer p-0.5"
+                              title="Chamar no WhatsApp"
+                            >
+                              <MessageSquare size={13} />
+                            </a>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex flex-col gap-0.5">
-                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">E-mail</label>
-                        <input 
-                          type="email" 
-                          className="input text-xs py-1 px-2.5" 
-                          placeholder="contato@empresa.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          onBlur={() => handleSaveGeneral()}
-                        />
+                        <div className="flex justify-between items-center">
+                          <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">E-mail</label>
+                          {email && (
+                            <button 
+                              type="button" 
+                              onClick={() => handleCopyEmail(email)} 
+                              className="text-[9px] font-bold text-[var(--lime)] hover:text-white flex items-center gap-1 font-mono transition-colors cursor-pointer"
+                              title="Copiar E-mail"
+                            >
+                              {copiedEmail ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                              <span>{copiedEmail ? 'COPIADO!' : 'COPIAR'}</span>
+                            </button>
+                          )}
+                        </div>
+                        <div className="relative flex items-center">
+                          <input 
+                            type="email" 
+                            className="input text-xs py-1 px-2.5 pr-8 w-full" 
+                            placeholder="contato@empresa.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            onBlur={() => handleSaveGeneral()}
+                          />
+                          {email && (
+                            <button
+                              type="button"
+                              onClick={() => handleCopyEmail(email)}
+                              className="absolute right-2 text-[var(--gray2)] hover:text-[var(--lime)] transition-colors cursor-pointer p-0.5"
+                              title="Copiar E-mail"
+                            >
+                              {copiedEmail ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -900,6 +957,8 @@ function NewContactModal({
   onCancel: () => void 
 }) {
   const [rawCnpj, setRawCnpj] = useState('')
+  const [modalCopiedEmail, setModalCopiedEmail] = useState(false)
+  const handleModalCopyEmail = (str: string) => { if (!str) return; navigator.clipboard.writeText(str); setModalCopiedEmail(true); setTimeout(() => setModalCopiedEmail(false), 2000); }
   const [loadingCnpj, setLoadingCnpj] = useState(false)
   const [cnpjError, setCnpjError] = useState('')
 
@@ -1211,25 +1270,78 @@ function NewContactModal({
                 </div>
 
                 <div className="flex flex-col gap-0.5">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
-                  <input 
-                    type="text" 
-                    className="input text-xs py-1 px-2.5" 
-                    placeholder="(00) 00000-0000"
-                    value={phone}
-                    onChange={(e) => setPhone(formatPhoneBr(e.target.value))}
-                  />
+                  <div className="flex justify-between items-center">
+                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
+                    {phone && (
+                      <a 
+                        href={whatsappLink(phone)} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-mono transition-colors cursor-pointer"
+                        title="Chamar no WhatsApp"
+                      >
+                        <MessageSquare size={10} className="text-emerald-400" />
+                        <span>WHATSAPP</span>
+                        <ExternalLink size={8} />
+                      </a>
+                    )}
+                  </div>
+                  <div className="relative flex items-center">
+                    <input 
+                      type="text" 
+                      className="input text-xs py-1 px-2.5 pr-8 w-full" 
+                      placeholder="(00) 00000-0000"
+                      value={phone}
+                      onChange={(e) => setPhone(formatPhoneBr(e.target.value))}
+                    />
+                    {phone && (
+                      <a
+                        href={whatsappLink(phone)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute right-2 text-emerald-400 hover:text-emerald-300 transition-transform hover:scale-110 cursor-pointer p-0.5"
+                        title="Chamar no WhatsApp"
+                      >
+                        <MessageSquare size={13} />
+                      </a>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-0.5">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">E-mail</label>
-                  <input 
-                    type="email" 
-                    className="input text-xs py-1 px-2.5" 
-                    placeholder="contato@empresa.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
+                  <div className="flex justify-between items-center">
+                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">E-mail</label>
+                    {email && (
+                      <button 
+                        type="button" 
+                        onClick={() => handleModalCopyEmail(email)} 
+                        className="text-[9px] font-bold text-[var(--lime)] hover:text-white flex items-center gap-1 font-mono transition-colors cursor-pointer"
+                        title="Copiar E-mail"
+                      >
+                        {modalCopiedEmail ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                        <span>{modalCopiedEmail ? 'COPIADO!' : 'COPIAR'}</span>
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative flex items-center">
+                    <input 
+                      type="email" 
+                      className="input text-xs py-1 px-2.5 pr-8 w-full" 
+                      placeholder="contato@empresa.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                    {email && (
+                      <button
+                        type="button"
+                        onClick={() => handleModalCopyEmail(email)}
+                        className="absolute right-2 text-[var(--gray2)] hover:text-[var(--lime)] transition-colors cursor-pointer p-0.5"
+                        title="Copiar E-mail"
+                      >
+                        {modalCopiedEmail ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
