@@ -148,9 +148,7 @@ function ContactDrawer({
   onUpdateContact: (contact: MockContact) => void
   representatives?: string[]
 }) {
-  const representativesList = representatives.length > 0 
-    ? representatives 
-    : ['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara']
+  const representativesList = representatives
   const [isOpen, setIsOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'geral' | 'historico'>('geral')
 
@@ -946,7 +944,7 @@ function NewContactModal({
   const [tradeName, setTradeName] = useState('')
   const [cnpj, setCnpj] = useState('')
   const [curve, setCurve] = useState<'A' | 'B' | 'C' | 'D'>('C')
-  const [representative] = useState('Diéssica Hartmann') // Default representative set in background
+  const [representative, setRepresentative] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [city, setCity] = useState('')
@@ -1607,8 +1605,8 @@ export default function ContactsPage() {
   const [showNewContactModal, setShowNewContactModal] = useState(false)
   const [showProspeccaoModal, setShowProspeccaoModal] = useState(false)
 
-  // Dynamic representatives list from CRM Users in localStorage + default ones
-  const [representativesList, setRepresentativesList] = useState<string[]>(['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara'])
+  // Dynamic representatives list from CRM Users in localStorage
+  const [representativesList, setRepresentativesList] = useState<string[]>([])
 
   // Load contacts and representatives on mount (fetching from Supabase contacts table)
   useEffect(() => {
@@ -1623,7 +1621,7 @@ export default function ContactsPage() {
               company: item.company || '',
               cnpj: item.cnpj || '',
               curve: item.curve || 'C',
-              representative: item.representative || 'Diéssica Hartmann',
+              representative: (item.representative && !['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara'].includes(item.representative)) ? item.representative : '',
               phone: item.phone || '',
               email: item.email || '',
               city: item.city || '',
@@ -1709,8 +1707,8 @@ export default function ContactsPage() {
             .map((u: any) => u.name)
         } catch (e) {}
       }
-      const repsFromContacts = Array.from(new Set(contacts.map(c => c.representative)))
-      const combined = Array.from(new Set([...repsFromUsers, ...repsFromContacts, 'Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara']))
+      const repsFromContacts = Array.from(new Set(contacts.map(c => c.representative).filter(r => r && !['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara'].includes(r))))
+      const combined = Array.from(new Set([...repsFromUsers, ...repsFromContacts].filter(Boolean)))
       setRepresentativesList(combined)
     }
   }, [contacts])
@@ -1792,7 +1790,7 @@ export default function ContactsPage() {
       company: data.company || '',
       cnpj: data.cnpj || '',
       curve: data.curve || 'C',
-      representative: data.representative || (representativesList[0] || 'Diéssica Hartmann'),
+      representative: data.representative || (representativesList[0] || ''),
       phone: data.phone || '',
       email: data.email || '',
       city: data.city || '',
@@ -2017,7 +2015,7 @@ export default function ContactsPage() {
                     <td className="p-4 text-xs font-semibold text-[var(--white)]">
                       <div className="flex items-center gap-2">
                         <User size={12} className="text-[var(--gray)]" />
-                        {contact.representative}
+                        {contact.representative && !['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara'].includes(contact.representative) ? contact.representative : <span className="text-[var(--gray2)] font-normal italic">Sem representante</span>}
                       </div>
                     </td>
 
@@ -2119,11 +2117,7 @@ export default function ContactsPage() {
         isOpen={showProspeccaoModal}
         onClose={() => setShowProspeccaoModal(false)}
         usuarioLogado={{ id: 'admin-1', nome: 'Supervisor Comercial', papel: 'supervisor', ativo: true }}
-        usuariosDisponiveis={[
-          { id: 'usr-1', nome: 'Diéssica Hartmann', papel: 'vendedor_interno', ativo: true },
-          { id: 'usr-2', nome: 'Josimar Soares', papel: 'representante', ativo: true },
-          { id: 'usr-3', nome: 'Elci Alcantara', papel: 'representante', ativo: true }
-        ]}
+        usuariosDisponiveis={representativesList.map((r, i) => ({ id: `usr-${i}`, nome: r, papel: 'representante', ativo: true }))}
         onLeadsImported={() => {
           if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('crm_contacts')

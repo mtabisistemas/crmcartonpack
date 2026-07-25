@@ -33,13 +33,7 @@ interface TeamUser {
   isEmailConfirmed?: boolean
 }
 
-const DEFAULT_USERS: TeamUser[] = [
-  { id: '1', name: 'Diéssica Hartmann', email: 'ana.lima@cartonpack.com', role: 'representante', status: 'ativo', phone: '(11) 98888-8888', createdAt: '10/05/2026', isFirstAccess: false, isEmailConfirmed: true, password: '123' },
-  { id: '2', name: 'Josimar Soares', email: 'erminio@cartonpack.com', role: 'representante', status: 'ativo', phone: '(51) 99999-9999', createdAt: '12/05/2026', isFirstAccess: false, isEmailConfirmed: true, password: '123' },
-  { id: '3', name: 'Elci Alcantara', email: 'carlos.mendes@cartonpack.com', role: 'representante', status: 'ativo', phone: '(21) 97777-7777', createdAt: '15/05/2026', isFirstAccess: false, isEmailConfirmed: true, password: '123' },
-  { id: '4', name: 'Inácio Siqueira', email: 'julio.admin@cartonpack.com', role: 'admin', status: 'ativo', phone: '(51) 98888-7777', createdAt: '01/05/2026', isFirstAccess: false, isEmailConfirmed: true, password: '123' },
-  { id: '5', name: 'Thaiane Antunes', email: 'mariana.fin@cartonpack.com', role: 'financeiro', status: 'ativo', phone: '(51) 96666-5555', createdAt: '20/05/2026', isFirstAccess: false, isEmailConfirmed: true, password: '123' },
-]
+const DEFAULT_USERS: TeamUser[] = []
 
 function formatPhoneBr(v: string) {
   const clean = v.replace(/\D/g, '')
