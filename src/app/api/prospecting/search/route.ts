@@ -15,6 +15,8 @@ function norm(s: string) {
     .trim()
 }
 
+const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyBwzTDAmOpm8Dql2ecj_nQrUoTr9f-ywcg'
+
 // ─── Extrai CNPJs únicos (formatados ou 14 dígitos sequenciais de URLs) ──────
 function extractCnpjs(text: string): string[] {
   const cnpjs = new Set<string>()
