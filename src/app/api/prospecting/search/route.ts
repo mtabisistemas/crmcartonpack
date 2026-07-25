@@ -348,12 +348,24 @@ export async function GET(req: NextRequest) {
   const ufNorm = norm(estado).toUpperCase()
   const locNorm = [cityNorm, ufNorm].filter(Boolean).join(' ')
 
-  // Gera variações morfológicas (singular, plural, adjetivo, feminino/masculino) para as palavras-chave
+  // Gera variações morfológicas e radicais B2B para as palavras-chave
+  function getB2bStems(word: string): string[] {
+    const nw = norm(word)
+    if (nw.length < 4) return [nw]
+    const stems = new Set<string>([nw])
+    const root = nw
+      .replace(/(?:icas|icos|ica|ico|ias|ia|aria|ario|arios|arias)$/i, '')
+      .replace(/(?:es|s|o|a)$/i, '')
+    if (root.length >= 3) stems.add(root)
+    return [...stems]
+  }
+
   const wordVariations: string[] = []
   keyWords.forEach(w => {
     const nw = norm(w)
     wordVariations.push(nw)
     wordVariations.push(nw + 's')
+    getB2bStems(nw).forEach(s => wordVariations.push(s))
     if (nw.endsWith('ia')) {
       wordVariations.push(nw.replace(/ia$/, 'ica'))
       wordVariations.push(nw.replace(/ia$/, 'ico'))
@@ -364,26 +376,35 @@ export async function GET(req: NextRequest) {
       wordVariations.push(nw.replace(/ica$/, 'ico'))
       wordVariations.push(nw.replace(/ica$/, 'icos'))
     }
-    if (nw.endsWith('o')) {
-      wordVariations.push(nw + 's')
-      wordVariations.push(nw.replace(/o$/, 'a'))
-      wordVariations.push(nw.replace(/o$/, 'as'))
+    if (nw.includes('siderur') || nw.includes('aco')) {
+      wordVariations.push('aco')
+      wordVariations.push('acos')
+      wordVariations.push('siderurgicos')
+    }
+    if (nw.includes('metal')) {
+      wordVariations.push('metais')
+      wordVariations.push('usinagem')
+    }
+    if (nw.includes('agro')) {
+      wordVariations.push('agronegocio')
+      wordVariations.push('agricola')
     }
   })
 
-  const uniqueVariations = [...new Set(wordVariations.filter(v => v.length >= 4))]
+  const uniqueVariations = [...new Set(wordVariations.filter(v => v.length >= 3))]
 
-  // ── 2. Monta queries direcionadas e eficientes ─────────────────────────────────
+  // ── 2. Monta queries direcionadas e eficientes sem truncamento ─────────────────
   const queries: string[] = []
 
   if (uniqueVariations.length > 0 && cityNorm) {
-    uniqueVariations.slice(0, 4).forEach(v => {
+    uniqueVariations.forEach(v => {
       queries.push(`${v} ${locNorm} CNPJ`)
       queries.push(`site:cnpj.biz ${cityNorm} ${v}`)
       queries.push(`site:cnpja.com ${cityNorm} ${v}`)
     })
     if (keySubject) {
       queries.push(`site:casadosdados.com.br ${cityNorm} ${norm(keySubject)}`)
+      queries.push(`site:transparencia.cc ${cityNorm} ${norm(keySubject)}`)
     }
   }
 
@@ -480,14 +501,14 @@ export async function GET(req: NextRequest) {
       const qNorm = norm(keySubject)
       let sectorMatch = false
 
-      if (/metal|usinagem|solda|trefilad|forjad|fundic/i.test(qNorm)) {
-        if (/(?:24|25|28)/.test(leadAllCnaeDigits)) sectorMatch = true
+      if (/siderur|metal|aco|ferro|usinagem|solda|trefilad|forjad|fundic/i.test(qNorm)) {
+        if (/(?:24|25|28|46)/.test(leadAllCnaeDigits)) sectorMatch = true
       }
       if (/agro|pecuaria|agricol|grao|fazend|veterinar/i.test(qNorm)) {
         if (/(?:01|02|03|46|47|52)/.test(leadAllCnaeDigits)) sectorMatch = true
       }
       if (/embalag|papelao|caixa|cartolin|plastico/i.test(qNorm)) {
-        if (/(?:17|22|16)/.test(leadAllCnaeDigits)) sectorMatch = true
+        if (/(?:17|22|16|46)/.test(leadAllCnaeDigits)) sectorMatch = true
       }
       if (/telecom|rede|fibra|internet/i.test(qNorm)) {
         if (/(?:42|61)/.test(leadAllCnaeDigits)) sectorMatch = true
@@ -498,11 +519,21 @@ export async function GET(req: NextRequest) {
       if (/construc|sanean|obra|engenh|poco/i.test(qNorm)) {
         if (/(?:41|42|43)/.test(leadAllCnaeDigits)) sectorMatch = true
       }
+      if (/transp|logist|carga|fret/i.test(qNorm)) {
+        if (/(?:49|50|51|52)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
+      if (/quimic|farmac|cosmet|tint/i.test(qNorm)) {
+        if (/(?:20|21|46)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
+      if (/aliment|bebid|laticin|frigorif/i.test(qNorm)) {
+        if (/(?:10|11|46|47)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
 
       const tokens = qNorm.split(/\s+/).filter(t => t.length > 2)
-      const stems = tokens.map(t => t.length > 4 ? t.slice(0, t.length - 2) : t)
+      const userStems = tokens.flatMap(t => getB2bStems(t))
       const matchesToken = tokens.some(t => leadAllText.includes(t)) ||
-                           stems.some(s => leadAllText.includes(s))
+                           userStems.some(s => leadAllText.includes(s)) ||
+                           (qNorm.includes('siderur') && leadAllText.includes('aco'))
 
       if (!sectorMatch && !matchesToken) continue
     }
