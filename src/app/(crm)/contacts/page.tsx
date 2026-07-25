@@ -31,22 +31,20 @@ import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString } fr
 import { supabase } from '@/services/supabase-client'
 import { ProspeccaoModal } from '@/components/ProspeccaoModal'
 
-const WhatsappIcon = ({ size = 18, className = "" }: { size?: number; className?: string }) => (
+const WhatsappIcon = ({ size = 15, className = "" }: { size?: number; className?: string }) => (
   <svg 
     width={size} 
     height={size} 
     viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
     className={className}
-    style={{ display: 'block' }}
   >
-    <path 
-      fill="#25D366" 
-      d="M12.011 2c-5.506 0-9.989 4.478-9.99 9.984 0 1.758.459 3.474 1.33 4.982L2 22l5.133-1.343c1.458.796 3.1 1.215 4.873 1.216h.005c5.505 0 9.987-4.478 9.988-9.984 0-2.667-1.038-5.175-2.925-7.063C17.186 2.938 14.678 2 12.011 2z" 
-    />
-    <path 
-      fill="#FFFFFF" 
-      d="M17.847 16.166c-.247.694-1.434 1.328-2.005 1.413-.512.076-1.16.108-1.872-.118-.431-.137-.985-.32-1.694-.626-2.981-1.287-4.927-4.289-5.076-4.487-.148-.198-1.213-1.611-1.213-3.074 0-1.463.768-2.181 1.04-2.479.272-.298.594-.372.792-.372.198 0 .396.002.57.01.182.009.427-.069.669.51.247.595.841 2.058.916 2.206.075.149.124.323.025.521-.099.199-.149.323-.3.495-.148.174-.312.388-.446.521-.148.148-.303.309-.13.606.173.298.77 1.271 1.653 2.059 1.135 1.012 2.093 1.325 2.39 1.475.297.148.471.124.644-.075.173-.198.743-.867.94-1.164.199-.297.397-.248.67-.149.272.1.1.733.967 2.03.967.297.149.496.223.57.347.075.124.075.719-.173 1.414z" 
-    />
+    <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
+    <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" />
   </svg>
 )
 
@@ -513,10 +511,10 @@ function ContactDrawer({
                               href={whatsappLink(phone)}
                               target="_blank"
                               rel="noreferrer"
-                              className="absolute right-2.5 transition-transform hover:scale-110 cursor-pointer"
+                              className="absolute right-2 text-emerald-400 hover:text-emerald-300 transition-transform hover:scale-110 cursor-pointer p-0.5"
                               title="Chamar no WhatsApp"
                             >
-                              <WhatsappIcon size={18} />
+                              <WhatsappIcon size={15} />
                             </a>
                           )}
                         </div>
@@ -1264,10 +1262,10 @@ function NewContactModal({
                         href={whatsappLink(phone)}
                         target="_blank"
                         rel="noreferrer"
-                        className="absolute right-2.5 transition-transform hover:scale-110 cursor-pointer"
+                        className="absolute right-2 text-emerald-400 hover:text-emerald-300 transition-transform hover:scale-110 cursor-pointer p-0.5"
                         title="Chamar no WhatsApp"
                       >
-                        <WhatsappIcon size={18} />
+                        <WhatsappIcon size={15} />
                       </a>
                     )}
                   </div>
