@@ -169,6 +169,8 @@ export const LISTA_CNAES_OFFICIAL: CnaeOfficial[] = [
   { code: 'C-2031-2/00', fullCode: '2031-2/00', description: 'Fabricação de Resinas Termoplásticas e Plásticos', display: '(C-2031-2/00) Fabricação de Resinas Termoplásticas e Plásticos', keywords: ['química', 'plásticos', 'resinas', '2031'] },
 
   // ── METALÚRGICA & AUTOMOTIVO (C-24 / C-25 / C-29) ──
+  { code: 'C-2424-5/01', fullCode: '2424-5/01', description: 'Produção de Arames de Aço', display: '(C-2424-5/01) Produção de arames de aço', keywords: ['arames', 'arame', 'aço', 'trefilados', 'metalúrgica', '2424'] },
+  { code: 'C-2592-6/01', fullCode: '2592-6/01', description: 'Fabricação de Produtos de Trefilados de Metal, Exceto Padronizados', display: '(C-2592-6/01) Fabricação de produtos de trefilados de metal', keywords: ['trefilados', 'arames', 'arame', 'metal', 'produtos', '2592'] },
   { code: 'C-2411-3/00', fullCode: '2411-3/00', description: 'Produção de Ferro e Aço e Siderurgia', display: '(C-2411-3/00) Produção de Ferro e Aço e Siderurgia', keywords: ['metalúrgica', 'metalurgica', 'aço', 'ferro', '2411'] },
   { code: 'C-2599-3/99', fullCode: '2599-3/99', description: 'Fabricação de Produtos de Metal e Usinagem', display: '(C-2599-3/99) Fabricação de Produtos de Metal e Usinagem', keywords: ['metalúrgica', 'metalurgica', 'usinagem', 'peças', '2599'] },
   { code: 'C-2920-4/01', fullCode: '2920-4/01', description: 'Fabricação de Carrocerias para Veículos Automotores e Ônibus', display: '(C-2920-4/01) Fabricação de Carrocerias para Veículos Automotores e Ônibus', keywords: ['automotivo', 'carrocerias', 'ônibus', '2920'] },
@@ -1088,14 +1090,28 @@ export const prospectingService = {
     const qNorm = normalizeText(query)
     if (!qNorm) return LISTA_CNAES_OFFICIAL
 
-    const all = await fetchAllIbgeCnaes()
-    return all.filter(c =>
+    const localMatches = LISTA_CNAES_OFFICIAL.filter(c =>
       normalizeText(c.display).includes(qNorm) ||
       normalizeText(c.code).includes(qNorm) ||
       normalizeText(c.fullCode).includes(qNorm) ||
       normalizeText(c.description).includes(qNorm) ||
-      c.keywords.some(k => normalizeText(k).includes(qNorm))
+      (c.keywords && c.keywords.some(k => normalizeText(k).includes(qNorm)))
     )
+
+    if (localMatches.length > 0) return localMatches
+
+    try {
+      const all = await fetchAllIbgeCnaes()
+      return all.filter(c =>
+        normalizeText(c.display).includes(qNorm) ||
+        normalizeText(c.code).includes(qNorm) ||
+        normalizeText(c.fullCode).includes(qNorm) ||
+        normalizeText(c.description).includes(qNorm) ||
+        (c.keywords && c.keywords.some(k => normalizeText(k).includes(qNorm)))
+      )
+    } catch {
+      return localMatches
+    }
   },
 
   async searchRegioes(query: string): Promise<RegiaoOption[]> {
