@@ -22,6 +22,7 @@ import {
   ExternalLink,
   Clock,
   UserPlus,
+  Save,
   Globe
 } from 'lucide-react'
 import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString } from '@/lib/utils'
@@ -166,6 +167,8 @@ function ContactDrawer({
   const [loadingSocial, setLoadingSocial] = useState(false)
 
   // History states
+  const [isSaving, setIsSaving] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
   const [activities, setActivities] = useState<Activity[]>([])
   const [newNote, setNewNote] = useState('')
   const [activityType, setActivityType] = useState<Activity['type']>('nota')
@@ -232,11 +235,12 @@ function ContactDrawer({
 
   if (!contact) return null
 
-  const handleSaveGeneral = (overrides?: Partial<MockContact> | React.FocusEvent) => {
+  const handleSaveGeneral = async (overrides?: Partial<MockContact> | React.FocusEvent) => {
+    setIsSaving(true)
     const cleanOverrides = overrides && !(overrides as any).nativeEvent 
       ? (overrides as Partial<MockContact>) 
       : {}
-    onUpdateContact({
+    await onUpdateContact({
       ...contact,
       name,
       company,
@@ -265,6 +269,9 @@ function ContactDrawer({
       facebook,
       ...cleanOverrides
     })
+    setIsSaving(false)
+    setIsSaved(true)
+    setTimeout(() => setIsSaved(false), 2500)
   }
 
   const handleAddActivity = (e: React.FormEvent) => {
@@ -306,13 +313,27 @@ function ContactDrawer({
       {/* Drawer Body */}
       <div className={`drawer-sheet ${isOpen ? 'translate-x-0' : 'translate-x-full'}`} style={{ width: '960px', maxWidth: '95vw' }}>
         {/* Header */}
-        <div className="p-6 border-b border-[var(--line)] flex justify-between items-start bg-[var(--card)]">
+        <div className="p-4 px-6 border-b border-[var(--line)] flex justify-between items-center bg-[var(--card)]">
           <div>
-            <h2 className="font-display text-lg text-[var(--white)]">{company}</h2>
+            <h2 className="font-display text-base text-[var(--white)] font-bold">{company}</h2>
+            <span className="text-xs text-[var(--gray)] font-mono">{cnpj}</span>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-[var(--white)] p-1 rounded-md hover:bg-[var(--line)] transition-colors">
-            <X size={18} />
-          </button>
+
+          <div className="flex items-center gap-3">
+            <button 
+              type="button" 
+              onClick={() => handleSaveGeneral()}
+              disabled={isSaving}
+              className={"btn btn-primary text-xs py-1.5 px-4 flex items-center gap-2 font-bold shadow-lg transition-all " + (isSaved ? '!bg-emerald-500 !text-black' : '')}
+            >
+              <Save size={13} />
+              <span>{isSaving ? 'Salvando...' : isSaved ? 'Salvo no Supabase! ✓' : 'Salvar Alterações'}</span>
+            </button>
+
+            <button onClick={onClose} className="text-gray-400 hover:text-[var(--white)] p-1.5 rounded-lg hover:bg-[var(--line)] transition-colors">
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -1651,10 +1672,52 @@ export default function ContactsPage() {
     }
   }
 
-  const handleUpdateContact = (updatedContact: MockContact) => {
+  const handleUpdateContact = async (updatedContact: MockContact) => {
     const updated = contacts.map(c => c.id === updatedContact.id ? updatedContact : c)
     saveContacts(updated)
     setSelectedContact(updatedContact)
+
+    if (supabase) {
+      try {
+        const payload = {
+          name: updatedContact.name,
+          company: updatedContact.company,
+          role: updatedContact.tradeName || updatedContact.company,
+          phone: updatedContact.phone,
+          email: updatedContact.email,
+          city: updatedContact.city,
+          state: updatedContact.state,
+          status: updatedContact.status,
+          curve: updatedContact.curve,
+          representative: updatedContact.representative,
+          cnpj: updatedContact.cnpj,
+          address: updatedContact.address,
+          bairro: updatedContact.bairro,
+          cep: updatedContact.cep,
+          tax_regime: updatedContact.taxRegime,
+          special_situation: updatedContact.specialSituation,
+          special_situation_date: updatedContact.specialSituationDate,
+          state_registration: updatedContact.stateRegistration,
+          registration_status: updatedContact.registrationStatus,
+          main_cnae: updatedContact.mainCnae,
+          side_activities: JSON.stringify(updatedContact.sideActivities || []),
+          website: updatedContact.website,
+          instagram: updatedContact.instagram,
+          linkedin: updatedContact.linkedin,
+          facebook: updatedContact.facebook,
+          updated_at: new Date().toISOString()
+        }
+
+        if (updatedContact.id && !updatedContact.id.startsWith('c-')) {
+          await supabase.from('contacts').update(payload).eq('id', updatedContact.id)
+        } else if (updatedContact.cnpj) {
+          await supabase.from('contacts').update(payload).eq('cnpj', updatedContact.cnpj)
+        }
+        console.log('Successfully updated contact in Supabase!')
+      } catch (err) {
+        console.error('Error updating contact in Supabase:', err)
+      }
+    }
   }
 
   const handleConfirmNewContact = (data: Partial<MockContact>) => {
@@ -1832,7 +1895,7 @@ export default function ContactsPage() {
                   <tr 
                     key={contact.id} 
                     onClick={() => setSelectedContact(contact)}
-                    className={`hover:bg-[var(--charcoal)] transition-all duration-150 cursor-pointer ${contact.status === 'inativo' ? 'opacity-70 hover:opacity-100' : ''}`}
+                    className={`transition-all duration-150 cursor-pointer ${contact.status === 'inativo' ? 'bg-[rgba(226,72,61,0.08)] hover:bg-[rgba(226,72,61,0.15)] border-l-4 border-l-[var(--red)]' : 'hover:bg-[var(--charcoal)]'}`}
                   >
                     {/* Cliente Info */}
                     <td className="p-4 pl-6">
