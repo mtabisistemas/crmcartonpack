@@ -16,6 +16,20 @@ function norm(s: string) {
 }
 
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyBwzTDAmOpm8Dql2ecj_nQrUoTr9f-ywcg'
+const PYTHON_SCRAPER_URL = process.env.GOOGLE_MAPS_SCRAPER_URL || ''
+
+async function fetchPythonScraperLeads(query: string): Promise<any[]> {
+  if (!PYTHON_SCRAPER_URL) return []
+  try {
+    const url = `${PYTHON_SCRAPER_URL}?q=${encodeURIComponent(query)}`
+    const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.results || []
+  } catch {
+    return []
+  }
+}
 
 // ─── Extrai CNPJs únicos (formatados ou 14 dígitos sequenciais de URLs) ──────
 function extractCnpjs(text: string): string[] {
