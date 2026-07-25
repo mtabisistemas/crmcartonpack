@@ -156,7 +156,6 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
 
       const tooltipContent = `
         <div style="background:#ffffff; color:#0f172a; padding:10px 12px; border-radius:10px; font-family:sans-serif; min-width:210px; box-shadow:0 10px 25px rgba(0,0,0,0.25); border:1px solid #e2e8f0;">
-          <div style="font-size:9px; font-weight:800; color:#10b981; text-transform:uppercase; margin-bottom:3px; letter-spacing:0.5px;">empresa cadastrada no google & rfb</div>
           <h4 style="font-weight:800; color:#0f172a; margin:0 0 3px 0; font-size:13px; line-height:1.2;">${displayName}</h4>
           <div style="font-size:10px; color:#475569; margin:0 0 4px 0; font-weight:600;">${lead.razao_social}</div>
           <p style="font-size:11px; color:#64748b; margin:0 0 6px 0; display:flex; align-items:center; gap:4px;">
