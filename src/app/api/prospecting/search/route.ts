@@ -250,27 +250,46 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  // ── 4. Filtra por cidade/UF e situação cadastral ──────────────────────────────
+  // ── 4. Filtra por cidade/UF, CNAE/setor e situação cadastral ──────────────────
   const leads = []
   for (let i = 0; i < cnpjList.length; i++) {
     const data = enrichedResults[i]
     if (!data || !data.razao_social) continue
 
-    // Filtra apenas empresas ativas (código 2 = ATIVA na RFB)
+    // 1. Filtra apenas empresas ativas (código 2 = ATIVA na RFB)
     const situacaoRaw = data.situacao_cadastral
     const situacaoStr = situacaoRaw != null ? String(situacaoRaw).toUpperCase() : ''
-    if (situacaoStr && situacaoStr.length > 0 && !situacaoStr.includes('ATIVA') && situacaoStr !== '2' && !situacaoStr.includes('02')) continue
+    if (situacaoStr && !situacaoStr.includes('ATIVA') && situacaoStr !== '2' && !situacaoStr.includes('02')) continue
 
-    // Filtra por estado
-    const ufRaw = data.uf != null ? String(data.uf) : ''
-    if (estado && ufRaw && ufRaw.toUpperCase() !== estado.toUpperCase()) continue
+    // 2. Filtra estritamente por ESTADO (UF) se informado
+    const ufRaw = (data.uf || '').toString().trim().toUpperCase()
+    if (estado && estado.toUpperCase() !== 'TODOS') {
+      if (!ufRaw || ufRaw !== estado.toUpperCase()) continue
+    }
 
-    // Filtra por cidade (flexível — não bloqueia se cidade não disponível no retorno)
-    const municipioRaw = data.municipio != null ? String(data.municipio) : ''
-    if (cidade && municipioRaw) {
+    // 3. Filtra estritamente por CIDADE se informada
+    const municipioRaw = (data.municipio || '').toString().trim()
+    if (cidade) {
+      if (!municipioRaw) continue // Se o município não foi retornado, descarta para evitar contaminação
       const cidadeNorm = norm(cidade)
       const municipioNorm = norm(municipioRaw)
       if (!municipioNorm.includes(cidadeNorm) && !cidadeNorm.includes(municipioNorm)) continue
+    }
+
+    // 4. Filtra por CNAE/Setor se informado
+    const leadCnaeRaw = String(data.cnae_fiscal || '').replace(/\D/g, '')
+    const leadCnaeDesc = norm(data.cnae_fiscal_descricao || '')
+    const targetCnaeDigits = cnaeParam.replace(/\D/g, '')
+    const targetSetorNorm = norm(setor)
+
+    if (targetCnaeDigits.length >= 4) {
+      const targetPrefix = targetCnaeDigits.slice(0, 4)
+      const cnaeMatch = leadCnaeRaw.includes(targetCnaeDigits) || leadCnaeRaw.startsWith(targetPrefix)
+      if (!cnaeMatch) continue
+    } else if (targetSetorNorm) {
+      const tokens = targetSetorNorm.split(/\s+/).filter(t => t.length > 2)
+      const matchesToken = tokens.some(t => leadCnaeDesc.includes(t))
+      if (!matchesToken) continue
     }
 
     leads.push(buildLead(cnpjList[i], data))

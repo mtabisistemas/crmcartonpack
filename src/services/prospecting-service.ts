@@ -1199,35 +1199,7 @@ export const prospectingService = {
       return true
     })
 
-    // FALLBACK REGIONAL 1: Se o filtro por cidade específica não retornar resultados, busca empresas do mesmo ESTADO para o mesmo CNAE/Setor
-    if (filtered.length === 0 && parsedEstado && (normCleanText || cnaeDigits)) {
-      const stateFallback = CATALOG_REAL.filter(lead => {
-        if (lead.estado.toUpperCase() !== parsedEstado.toUpperCase()) return false
-
-        const leadCnaeDigits = lead.cnae_codigo.replace(/\D/g, '')
-        const haystack = normalizeText([
-          lead.setor, lead.cnae_codigo, lead.cnae_descricao,
-          lead.razao_social, lead.nome_fantasia || ''
-        ].join(' '))
-
-        let cnaeMatch = false
-        if (cnaeDigits.length >= 4) {
-          cnaeMatch = leadCnaeDigits.includes(cnaeDigits) ||
-                     leadCnaeDigits.startsWith(cnaePrefix4)
-        }
-        const exactMatch = normCleanText ? haystack.includes(normCleanText) : false
-        const matchedTokens = tokens.filter(token => haystack.includes(token))
-        const tokenMatch = tokens.length > 0 && (matchedTokens.length / tokens.length >= 0.35 || matchedTokens.length >= 2)
-
-        return cnaeMatch || exactMatch || tokenMatch
-      })
-
-      if (stateFallback.length > 0) {
-        filtered = stateFallback
-      }
-    }
-
-    // 2. Se a busca local retornou 0 ou poucas empresas, dispara o Harvester Dinâmico Online
+    // 2. Se a busca local retornou poucas empresas, dispara o Harvester Dinâmico Online
     if (filtered.length < limit && (parsedCidade || parsedEstado || rawSetor)) {
       try {
         const liveLeads = await fetchLiveB2bHarvester(parsedCidade, parsedEstado, rawSetor)
@@ -1245,7 +1217,26 @@ export const prospectingService = {
       }
     }
 
-    // 3. Fallback Dinâmico Universal: Garante resultado para QUALQUER cidade, estado ou setor do Brasil
+    // 3. Filtro Estrito de Estado e Cidade para garantir precisão 100% da região buscada
+    if (parsedEstado && parsedEstado !== 'TODOS') {
+      filtered = filtered.filter(l => l.estado.toUpperCase() === parsedEstado.toUpperCase())
+    }
+    if (parsedCidade) {
+      filtered = filtered.filter(l =>
+        normalizeText(l.cidade).includes(normalizeText(parsedCidade)) ||
+        normalizeText(parsedCidade).includes(normalizeText(l.cidade))
+      )
+    }
+
+    // 4. Filtro Estrito de CNAE/Setor
+    if (cnaeDigits.length >= 4) {
+      filtered = filtered.filter(l => {
+        const leadCnaeDigits = l.cnae_codigo.replace(/\D/g, '')
+        return leadCnaeDigits.includes(cnaeDigits) || leadCnaeDigits.startsWith(cnaePrefix4)
+      })
+    }
+
+    // 5. Fallback Dinâmico Universal Estrito: Se restaram menos de 20 leads que cumprem 100% da região e CNAE, preenche com empresas dinâmicas da mesma cidade/UF e CNAE
     if (filtered.length < 20) {
       const needed = 25 - filtered.length
       const generated = generateDynamicB2bLeads({
@@ -1258,7 +1249,7 @@ export const prospectingService = {
       filtered.push(...generated)
     }
 
-    // 4. Filtro Estrito de Estado e Cidade para garantir precisão total de região
+    // Garante que absolutamente NENHUM lead de outro estado ou outra cidade passe no resultado final
     if (parsedEstado && parsedEstado !== 'TODOS') {
       filtered = filtered.filter(l => l.estado.toUpperCase() === parsedEstado.toUpperCase())
     }
@@ -1269,20 +1260,7 @@ export const prospectingService = {
       )
     }
 
-    // Se após a filtragem estrita restaram poucos leads, preenche com dinâmica estrita
-    if (filtered.length < 15) {
-      const needed = 20 - filtered.length
-      const generated = generateDynamicB2bLeads({
-        sectorQuery: rawSetor || 'Geral',
-        cidade: parsedCidade,
-        estado: parsedEstado || (parsedCidade ? '' : 'SP'),
-        count: needed,
-        existingCnpjs: new Set(filtered.map(f => f.cnpj.replace(/\D/g, '')))
-      })
-      filtered.push(...generated)
-    }
-
-    // 5. Filtro por Porte se especificado
+    // 6. Filtro por Porte se especificado
     if (porte && porte !== 'todos') {
       filtered = filtered.filter(l => l.porte === porte)
     }
