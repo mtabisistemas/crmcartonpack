@@ -904,8 +904,26 @@ export async function enrichLead(cnpj: string): Promise<Partial<ProspectLead>> {
         const capFloat = parseFloat(d.capital_social || '0')
         const capFormated = capFloat ? capFloat.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : undefined
 
-        const endParts = [d.tipo_logradouro, d.logradouro, d.numero, d.complemento, d.bairro].filter(Boolean).join(', ')
+        const streetNumber = [d.tipo_logradouro, d.logradouro, d.numero, d.complemento].filter(Boolean).join(', ')
         const cidade = d.municipio ? d.municipio.charAt(0).toUpperCase() + d.municipio.slice(1).toLowerCase() : ''
+
+        const qsaArr = Array.isArray(d.qsa)
+          ? d.qsa.map((s: any) => ({
+              nome_socio: s.nome_socio || s.nome || '',
+              qualificacao_socio: s.qualificacao_socio || s.qualificacao || ''
+            }))
+          : (Array.isArray(d.socios) ? d.socios.map((s: any) => ({ nome_socio: s.nome || '', qualificacao_socio: s.qualificacao || '' })) : [])
+
+        const firstSocio = qsaArr[0]?.nome_socio || ''
+
+        const secCnaes = Array.isArray(d.cnaes)
+          ? d.cnaes
+              .filter((c: any) => !c.is_principal)
+              .map((c: any) => ({
+                codigo: c.codigo ? formatCnaeCode(String(c.codigo)) : '',
+                descricao: c.descricao || ''
+              }))
+          : []
 
         let porte: ProspectLead['porte'] = 'Pequena'
         const pStr = (d.porte_empresa || '').toUpperCase()
@@ -917,13 +935,15 @@ export async function enrichLead(cnpj: string): Promise<Partial<ProspectLead>> {
         return {
           razao_social: d.razao_social || '',
           nome_fantasia: d.nome_fantasia || d.razao_social || 'Não Disponível',
+          contato_nome: firstSocio || 'Não Disponível',
           cidade,
           estado: d.uf || '',
           cep: d.cep ? `${d.cep.slice(0, 5)}-${d.cep.slice(5)}` : undefined,
           situacao: d.situacao_cadastral ? `${d.situacao_cadastral} na Receita Federal` : 'Ativa na Receita Federal',
           cnae_codigo: cnaeCode,
           cnae_descricao: cnaeDesc,
-          logradouro: endParts || undefined,
+          logradouro: streetNumber || d.logradouro || undefined,
+          bairro: d.bairro || undefined,
           telefone: tel,
           email: d.email || undefined,
           data_abertura: d.data_inicio_atividade || 'Não Disponível',
@@ -933,6 +953,8 @@ export async function enrichLead(cnpj: string): Promise<Partial<ProspectLead>> {
           opcao_mei: d.opcao_mei ? 'Sim' : 'Não',
           capital_social: capFormated || 'R$ 100.000,00',
           porte,
+          qsa: qsaArr,
+          cnaes_secundarios: secCnaes,
           enriched: true,
         }
       }
@@ -958,18 +980,31 @@ export async function enrichLead(cnpj: string): Promise<Partial<ProspectLead>> {
     const capFloat = parseFloat(d.capital_social || '0')
     const capFormated = capFloat ? capFloat.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : undefined
 
-    const endParts = [d.logradouro, d.numero, d.complemento, d.bairro].filter(Boolean).join(', ')
+    const streetNumber = [d.logradouro, d.numero, d.complemento].filter(Boolean).join(', ')
+
+    const qsaArr = Array.isArray(d.qsa)
+      ? d.qsa.map((s: any) => ({ nome_socio: s.nome_socio_razao_social || s.nome_socio || s.nome || '', qualificacao_socio: s.qualificacao_socio || '' }))
+      : []
+
+    const secCnaes = Array.isArray(d.cnaes_secundarios)
+      ? d.cnaes_secundarios.map((c: any) => ({
+          codigo: c.codigo ? formatCnaeCode(String(c.codigo)) : '',
+          descricao: c.descricao || ''
+        }))
+      : []
 
     return {
       razao_social: d.razao_social || '',
       nome_fantasia: d.nome_fantasia || d.razao_social || 'Não Disponível',
+      contato_nome: qsaArr[0]?.nome_socio || 'Não Disponível',
       cidade: d.municipio ? d.municipio.charAt(0).toUpperCase() + d.municipio.slice(1).toLowerCase() : '',
       estado: d.uf || '',
       cep: d.cep ? `${d.cep.slice(0, 5)}-${d.cep.slice(5)}` : '',
       situacao: d.situacao_cadastral ? `${d.situacao_cadastral} na Receita Federal` : 'ATIVA',
       cnae_codigo: d.cnae_fiscal ? formatCnaeCode(String(d.cnae_fiscal)) : '',
       cnae_descricao: d.cnae_fiscal_descricao || '',
-      logradouro: endParts || undefined,
+      logradouro: streetNumber || d.logradouro || undefined,
+      bairro: d.bairro || undefined,
       telefone: d.ddd_telefone_1 ? `(${d.ddd_telefone_1.slice(0,2)}) ${d.ddd_telefone_1.slice(2)}` : undefined,
       email: d.email || undefined,
       data_abertura: d.data_inicio_atividade || 'Não Disponível',
@@ -979,6 +1014,8 @@ export async function enrichLead(cnpj: string): Promise<Partial<ProspectLead>> {
       opcao_mei: d.opcao_pelo_mei ? 'Sim' : 'Não',
       capital_social: capFormated || 'R$ 100.000,00',
       porte: porte || 'Pequena',
+      qsa: qsaArr,
+      cnaes_secundarios: secCnaes,
       enriched: true,
     }
   } catch {
