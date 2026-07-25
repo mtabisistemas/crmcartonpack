@@ -5,7 +5,7 @@ import {
   ChevronLeft, ChevronRight, AlertTriangle, CheckCircle, Sparkles,
   Users, Loader2, Circle, GitFork, Info, Eye, ExternalLink,
   Mail, Phone, Globe, Video, Share2, MessageCircle,
-  TrendingUp, Users2, DollarSign, Activity, Award, Camera, Check, Copy
+  TrendingUp, Users2, DollarSign, Activity, Award, Camera, Check, Copy, Maximize2, Minimize2
 } from 'lucide-react'
 import {
   prospectingService, enrichLead, SETORES_CNAE, LISTA_CNAES_OFFICIAL, REGIOES_SUGERIDAS,
@@ -56,9 +56,11 @@ interface LeafletProspectMapProps {
   onOpenDetails: (lead: ProspectLead) => void
   cidade: string
   estado: string
+  isMapExpanded?: boolean
+  onToggleExpand?: () => void
 }
 
-function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetails, cidade, estado }: LeafletProspectMapProps) {
+function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetails, cidade, estado, isMapExpanded, onToggleExpand }: LeafletProspectMapProps) {
   const mapRef = React.useRef<HTMLDivElement>(null)
   const mapInstanceRef = React.useRef<any>(null)
   const markersRef = React.useRef<Record<string, any>>({})
@@ -200,7 +202,33 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     }
   }, [selectedLeadCnpj])
 
-  return <div ref={mapRef} className="w-full h-full min-h-[340px] flex-1 rounded-xl overflow-hidden shadow-2xl relative border border-[var(--line)]" />
+  return (
+    <div className="w-full h-full min-h-[340px] flex-1 rounded-xl overflow-hidden shadow-2xl relative border border-[var(--line)] group">
+      <div ref={mapRef} className="w-full h-full" />
+      {onToggleExpand && (
+        <div className="absolute top-3 right-3 z-[1000]">
+          <button
+            type="button"
+            onClick={onToggleExpand}
+            className="px-3 py-1.5 rounded-xl bg-[var(--card)]/90 backdrop-blur-md border border-[var(--line)] text-white hover:text-[var(--lime)] hover:border-[var(--lime)]/50 font-mono text-xs font-bold flex items-center gap-1.5 shadow-xl transition-all hover:scale-105 cursor-pointer"
+            title={isMapExpanded ? 'Restaurar visão dividida' : 'Ampliar mapa mantendo a lista'}
+          >
+            {isMapExpanded ? (
+              <>
+                <Minimize2 size={13} className="text-[var(--lime)]" />
+                <span>Restaurar Visão</span>
+              </>
+            ) : (
+              <>
+                <Maximize2 size={13} className="text-[var(--lime)]" />
+                <span>Ampliar Mapa</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function ProspeccaoModal({
@@ -231,6 +259,7 @@ export function ProspeccaoModal({
   const [enrichedData, setEnrichedData] = useState<Record<string, Partial<ProspectLead>>>({})
   // ── Lead Ativo para Ficha Detalhada (Modal de Detalhes) ──
   const [activeLeadDetails, setActiveLeadDetails] = useState<ProspectLead | null>(null)
+  const [isMapExpanded, setIsMapExpanded] = useState(false)
   const [isEnrichingActiveLead, setIsEnrichingActiveLead] = useState(false)
 
   const handleEnrichActiveLead = async (leadToEnrich: ProspectLead) => {
