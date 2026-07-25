@@ -51,6 +51,13 @@ async function enrichCnpj(cnpj: string): Promise<Record<string, string> | null> 
         const tel = phoneObj ? `${phoneObj.ddd}${phoneObj.numero}` : ''
         const log = [d.tipo_logradouro, d.logradouro].filter(Boolean).join(' ')
 
+        const allCnaesText = Array.isArray(d.cnaes)
+          ? d.cnaes.map((c: any) => `${c.codigo} ${c.descricao}`).join(' ')
+          : ''
+        const allCnaeDigits = Array.isArray(d.cnaes)
+          ? d.cnaes.map((c: any) => String(c.codigo || '').replace(/\D/g, '')).join(' ')
+          : cnaeCode
+
         return {
           razao_social: d.razao_social,
           nome_fantasia: d.nome_fantasia || d.razao_social,
@@ -64,6 +71,8 @@ async function enrichCnpj(cnpj: string): Promise<Record<string, string> | null> 
           email: d.email || '',
           cnae_fiscal: cnaeCode,
           cnae_fiscal_descricao: cnaeDesc,
+          all_cnaes_text: allCnaesText,
+          all_cnae_digits: allCnaeDigits,
           situacao_cadastral: d.situacao_cadastral || 'ATIVA',
           data_inicio_atividade: d.data_inicio_atividade || '',
           natureza_juridica: d.natureza_juridica || '',
@@ -337,20 +346,28 @@ export async function GET(req: NextRequest) {
       if (!municipioNorm.includes(cidadeNorm) && !cidadeNorm.includes(municipioNorm)) continue
     }
 
-    // D. Filtra por CNAE/Setor se informado (compara 4 primeiros dígitos do grupo CNAE ou palavras-chave)
+    // D. Filtra por CNAE/Setor se informado (compara CNAEs primário e secundários ou palavras-chave)
     const leadCnaeRaw = String(data.cnae_fiscal || '').replace(/\D/g, '')
-    const leadCnaeDesc = norm(data.cnae_fiscal_descricao || '')
+    const leadAllCnaeDigits = String(data.all_cnae_digits || leadCnaeRaw)
+    const leadAllText = norm([
+      data.razao_social,
+      data.nome_fantasia,
+      data.cnae_fiscal_descricao,
+      data.all_cnaes_text
+    ].filter(Boolean).join(' '))
+
     const targetCnaeDigits = cnaeDigits
-    const targetSetorNorm = norm(setor)
 
     if (targetCnaeDigits.length >= 4) {
       const targetPrefix4 = targetCnaeDigits.slice(0, 4)
       const targetPrefix2 = targetCnaeDigits.slice(0, 2)
-      const cnaeMatch = leadCnaeRaw.startsWith(targetPrefix4) || leadCnaeRaw.includes(targetCnaeDigits) || leadCnaeRaw.startsWith(targetPrefix2)
+      const cnaeMatch = leadAllCnaeDigits.includes(targetPrefix4) ||
+                        leadAllCnaeDigits.includes(targetCnaeDigits) ||
+                        leadAllCnaeDigits.includes(targetPrefix2)
       if (!cnaeMatch) continue
     } else if (keySubject) {
       const tokens = norm(keySubject).split(/\s+/).filter(t => t.length > 2)
-      const matchesToken = tokens.some(t => leadCnaeDesc.includes(t))
+      const matchesToken = tokens.some(t => leadAllText.includes(t))
       if (!matchesToken) continue
     }
 
