@@ -36,10 +36,11 @@ const WhatsappIcon = ({ size = 14, className = "" }: { size?: number; className?
     width={size} 
     height={size} 
     viewBox="0 0 24 24" 
-    fill="currentColor" 
+    fill="currentColor"
     className={className}
+    style={{ display: 'inline-block', verticalAlign: 'middle' }}
   >
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347m-5.421 7.419h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.99c-.002 5.45-4.437 9.888-9.887 9.888m0-18.422A11.332 11.332 0 00.67 11.757c0 2.016.526 3.985 1.524 5.717L.5 23.5l6.195-1.625a11.314 11.314 0 005.352 1.35h.005c6.257 0 11.35-5.093 11.352-11.35 0-3.03-1.18-5.878-3.324-8.024A11.272 11.272 0 0012.051 3.38" />
+    <path d="M12.011 2c-5.506 0-9.989 4.478-9.99 9.984 0 1.758.459 3.474 1.33 4.982L2 22l5.133-1.343c1.458.796 3.1 1.215 4.873 1.216h.005c5.505 0 9.987-4.478 9.988-9.984 0-2.667-1.038-5.175-2.925-7.063C17.186 2.938 14.678 2 12.011 2zm5.836 14.166c-.247.694-1.434 1.328-2.005 1.413-.512.076-1.16.108-1.872-.118-.431-.137-.985-.32-1.694-.626-2.981-1.287-4.927-4.289-5.076-4.487-.148-.198-1.213-1.611-1.213-3.074 0-1.463.768-2.181 1.04-2.479.272-.298.594-.372.792-.372.198 0 .396.002.57.01.182.009.427-.069.669.51.247.595.841 2.058.916 2.206.075.149.124.323.025.521-.099.199-.149.323-.3.495-.148.174-.312.388-.446.521-.148.148-.303.309-.13.606.173.298.77 1.271 1.653 2.059 1.135 1.012 2.093 1.325 2.39 1.475.297.148.471.124.644-.075.173-.198.743-.867.94-1.164.199-.297.397-.248.67-.149.272.1.1.733.967 2.03.967.297.149.496.223.57.347.075.124.075.719-.173 1.414z" />
   </svg>
 )
 
@@ -506,10 +507,10 @@ function ContactDrawer({
                               href={whatsappLink(phone)}
                               target="_blank"
                               rel="noreferrer"
-                              className="absolute right-2 text-[#25D366] hover:text-[#20ba5a] transition-transform hover:scale-110 cursor-pointer p-0.5"
+                              className="absolute right-1.5 p-1 rounded bg-[#25D366]/15 hover:bg-[#25D366]/30 text-[#25D366] transition-all hover:scale-105 cursor-pointer flex items-center justify-center"
                               title="Chamar no WhatsApp"
                             >
-                              <WhatsappIcon size={15} />
+                              <WhatsappIcon size={14} />
                             </a>
                           )}
                         </div>
@@ -533,22 +534,11 @@ function ContactDrawer({
                         <div className="relative flex items-center">
                           <input 
                             type="email" 
-                            className="input text-xs py-1 px-2.5 pr-8 w-full" 
+                            className="input text-xs py-1 px-2.5 w-full" 
                             placeholder="contato@empresa.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            
                           />
-                          {email && (
-                            <button
-                              type="button"
-                              onClick={() => handleCopyEmail(email)}
-                              className="absolute right-2 text-[var(--gray2)] hover:text-[var(--lime)] transition-colors cursor-pointer p-0.5"
-                              title="Copiar E-mail"
-                            >
-                              {copiedEmail ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-                            </button>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -1268,10 +1258,10 @@ function NewContactModal({
                         href={whatsappLink(phone)}
                         target="_blank"
                         rel="noreferrer"
-                        className="absolute right-2 text-[#25D366] hover:text-[#20ba5a] transition-transform hover:scale-110 cursor-pointer p-0.5"
+                        className="absolute right-1.5 p-1 rounded bg-[#25D366]/15 hover:bg-[#25D366]/30 text-[#25D366] transition-all hover:scale-105 cursor-pointer flex items-center justify-center"
                         title="Chamar no WhatsApp"
                       >
-                        <WhatsappIcon size={15} />
+                        <WhatsappIcon size={14} />
                       </a>
                     )}
                   </div>
@@ -1295,21 +1285,11 @@ function NewContactModal({
                   <div className="relative flex items-center">
                     <input 
                       type="email" 
-                      className="input text-xs py-1 px-2.5 pr-8 w-full" 
+                      className="input text-xs py-1 px-2.5 w-full" 
                       placeholder="contato@empresa.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
-                    {email && (
-                      <button
-                        type="button"
-                        onClick={() => handleModalCopyEmail(email)}
-                        className="absolute right-2 text-[var(--gray2)] hover:text-[var(--lime)] transition-colors cursor-pointer p-0.5"
-                        title="Copiar E-mail"
-                      >
-                        {modalCopiedEmail ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-                      </button>
-                    )}
                   </div>
                 </div>
               </div>
