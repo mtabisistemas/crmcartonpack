@@ -283,11 +283,11 @@ export default function UsersPage() {
       {/* Filters Bar */}
       <div className="card p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Search */}
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-3 text-[var(--gray)]" />
+        <div className="relative flex items-center">
+          <Search size={14} className="absolute left-3 text-[var(--gray2)] pointer-events-none" />
           <input
             type="text"
-            className="input w-full pl-9"
+            className="input w-full !pl-9"
             placeholder="Buscar por nome, email ou telefone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -477,12 +477,12 @@ export default function UsersPage() {
               {/* Name */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Nome Completo *</label>
-                <div className="relative">
-                  <User size={13} className="absolute left-3 top-3 text-[var(--gray)]" />
+                <div className="relative flex items-center">
+                  <User size={13} className="absolute left-3 text-[var(--gray2)] pointer-events-none" />
                   <input
                     type="text"
                     required
-                    className="input w-full pl-9"
+                    className="input w-full !pl-9"
                     placeholder="Ex: Roberto Carlos"
                     value={name}
                     onChange={(e) => {
@@ -514,12 +514,12 @@ export default function UsersPage() {
               {role !== 'representante' && (
                 <div className="flex flex-col gap-1.5 animate-fade-in">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">E-mail Comercial *</label>
-                  <div className="relative">
-                    <Mail size={13} className="absolute left-3 top-3 text-[var(--gray)]" />
+                  <div className="relative flex items-center">
+                    <Mail size={13} className="absolute left-3 text-[var(--gray2)] pointer-events-none" />
                     <input
                       type="email"
                       required
-                      className="input w-full pl-9 font-mono text-xs"
+                      className="input w-full !pl-9 font-mono text-xs"
                       placeholder="Ex: roberto.carlos@cartonpack.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -567,11 +567,11 @@ export default function UsersPage() {
               {/* Phone */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">WhatsApp / Telefone</label>
-                <div className="relative">
-                  <Phone size={13} className="absolute left-3 top-3 text-[var(--gray)]" />
+                <div className="relative flex items-center">
+                  <Phone size={13} className="absolute left-3 text-[var(--gray2)] pointer-events-none" />
                   <input
                     type="text"
-                    className="input w-full pl-9 font-mono text-xs"
+                    className="input w-full !pl-9 font-mono text-xs"
                     placeholder="(11) 98888-8888"
                     value={phone}
                     onChange={(e) => setPhone(formatPhoneBr(e.target.value))}

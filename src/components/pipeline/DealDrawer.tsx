@@ -267,11 +267,11 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="label">Valor Estimado</label>
-                    <div className="relative">
-                      <DollarSign size={14} className="absolute left-3 top-3.5 text-gray-500" />
+                    <div className="relative flex items-center">
+                      <DollarSign size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                       <input 
                         type="number" 
-                        className="input pl-8" 
+                        className="input w-full !pl-9" 
                         value={estimatedValue || ''} 
                         onChange={(e) => setEstimatedValue(Number(e.target.value) || undefined)}
                         onBlur={handleSaveGeneral}
@@ -305,11 +305,11 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
 
                 <div className="flex flex-col gap-1.5">
                   <label className="label">Nome do Contato</label>
-                  <div className="relative">
-                    <User size={14} className="absolute left-3 top-3.5 text-gray-500" />
+                  <div className="relative flex items-center">
+                    <User size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                     <input 
                       type="text" 
-                      className="input pl-8" 
+                      className="input w-full !pl-9" 
                       value={contactName} 
                       onChange={(e) => setContactName(e.target.value)}
                       onBlur={handleSaveGeneral}
@@ -319,11 +319,11 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
 
                 <div className="flex flex-col gap-1.5">
                   <label className="label">Empresa</label>
-                  <div className="relative">
-                    <Building size={14} className="absolute left-3 top-3.5 text-gray-500" />
+                  <div className="relative flex items-center">
+                    <Building size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                     <input 
                       type="text" 
-                      className="input pl-8" 
+                      className="input w-full !pl-9" 
                       value={contactCompany} 
                       onChange={(e) => setContactCompany(e.target.value)}
                       onBlur={handleSaveGeneral}
@@ -352,11 +352,11 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
 
                   <div className="flex flex-col gap-1.5">
                     <label className="label">Telefone (WhatsApp)</label>
-                    <div className="relative">
-                      <Phone size={14} className="absolute left-3 top-3.5 text-gray-500" />
+                    <div className="relative flex items-center">
+                      <Phone size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                       <input 
                         type="text" 
-                        className="input pl-8" 
+                        className="input w-full !pl-9" 
                         value={contactPhone} 
                         onChange={(e) => setContactPhone(e.target.value)}
                         onBlur={handleSaveGeneral}
@@ -367,11 +367,11 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
 
                 <div className="flex flex-col gap-1.5">
                   <label className="label">Email</label>
-                  <div className="relative">
-                    <Mail size={14} className="absolute left-3 top-3.5 text-gray-500" />
+                  <div className="relative flex items-center">
+                    <Mail size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                     <input 
                       type="email" 
-                      className="input pl-8" 
+                      className="input w-full !pl-9" 
                       value={contactEmail} 
                       onChange={(e) => setContactEmail(e.target.value)}
                       onBlur={handleSaveGeneral}
