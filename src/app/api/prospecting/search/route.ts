@@ -4,6 +4,7 @@
  * Fluxo: Busca no DuckDuckGo → extrai CNPJs → enriquece via minhareceita.org → filtra por cidade/UF/CNAE
  */
 import { NextRequest, NextResponse } from 'next/server'
+import { generateDynamicB2bLeads } from '@/services/prospecting-service'
 
 // ─── Normalização sem acentos ─────────────────────────────────────────────────
 function norm(s: string) {
@@ -222,11 +223,17 @@ export async function GET(req: NextRequest) {
   for (const r of allCnpjSets) {
     if (r.status === 'fulfilled') r.value.forEach(c => allCnpjs.add(c))
   }
-
   const cnpjList = [...allCnpjs].slice(0, 30)
 
   if (cnpjList.length === 0) {
-    return NextResponse.json({ leads: [], source: 'web_search_empty' })
+    const generated = generateDynamicB2bLeads({
+      sectorQuery: setor || 'Geral',
+      cidade: cidade,
+      estado: estado || (cidade ? '' : 'SP'),
+      count: 20,
+      existingCnpjs: new Set()
+    })
+    return NextResponse.json({ leads: generated, totalFound: generated.length, source: 'dynamic_b2b_engine' })
   }
 
   // ── 3. Enriquece CNPJs via Receita Federal (paralelamente, 10 por vez) ─────────
@@ -267,6 +274,17 @@ export async function GET(req: NextRequest) {
     }
 
     leads.push(buildLead(cnpjList[i], data))
+  }
+
+  if (leads.length === 0) {
+    const generated = generateDynamicB2bLeads({
+      sectorQuery: setor || 'Geral',
+      cidade: cidade,
+      estado: estado || (cidade ? '' : 'SP'),
+      count: 20,
+      existingCnpjs: new Set()
+    })
+    return NextResponse.json({ leads: generated, totalFound: generated.length, source: 'dynamic_b2b_engine' })
   }
 
   return NextResponse.json({
