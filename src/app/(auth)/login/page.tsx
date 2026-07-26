@@ -263,9 +263,6 @@ export default function LoginPage() {
             <h1 className="text-sm font-bold font-display text-[var(--white)] tracking-wide uppercase mt-1">
               Plataforma CRM Comercial & Operacional
             </h1>
-            <p className="text-[11px] font-mono text-[var(--gray)] font-medium mt-0.5">
-              Gestão de Clientes, Prospecção B2B e Orçamentos
-            </p>
           </div>
         </div>
 
@@ -369,7 +366,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 px-4 rounded-xl bg-[var(--lime)] text-black font-display font-black text-sm uppercase tracking-wider hover:bg-[var(--lime-hover)] transition-all transform active:scale-[0.99] shadow-lg shadow-[rgba(180,217,50,0.2)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
+                className="w-full py-3.5 px-4 rounded-xl bg-[var(--lime)] text-black font-display font-black text-sm uppercase tracking-wider hover:bg-[#c7eb46] hover:brightness-110 hover:shadow-[0_0_25px_rgba(180,217,50,0.45)] transition-all transform active:scale-[0.99] shadow-lg shadow-[rgba(180,217,50,0.2)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
               >
                 <span>{loading ? 'Validando Acesso...' : 'ENTRAR NO SISTEMA'}</span>
                 {!loading && <ArrowRight size={16} />}
