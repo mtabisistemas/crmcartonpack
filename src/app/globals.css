@@ -68,6 +68,29 @@
   --shadow-lime:  0 8px 32px rgba(180,217,50,0.35);
 }
 
+/* ── Remover retângulo interno de foco e autofill dos navegadores ── */
+input, select, textarea {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+input:focus,
+input:focus-visible,
+input:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--black) inset !important;
+  -webkit-text-fill-color: var(--white) !important;
+  caret-color: var(--lime) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 [data-theme="light"] {
   --black:     #f8fafc;
   --charcoal:  #ffffff;

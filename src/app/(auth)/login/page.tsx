@@ -347,7 +347,7 @@ export default function LoginPage() {
                 <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray)] mb-1.5 block">
                   {loginType === 'representante' ? 'Nome de Usuário *' : 'E-mail Corporativo *'}
                 </label>
-                <div className="flex items-center bg-[var(--black)] border border-[var(--line)] rounded-xl focus-within:border-[var(--lime)]/60 focus-within:ring-1 focus-within:ring-[var(--lime)]/30 transition-all px-3.5 py-3 gap-2.5">
+                <div className="flex items-center bg-[var(--black)] border border-[var(--line)] rounded-xl focus-within:border-[var(--lime)]/60 focus-within:shadow-[0_0_15px_rgba(180,217,50,0.15)] transition-all px-3.5 py-3 gap-2.5">
                   {loginType === 'representante' ? (
                     <User size={16} className="text-[var(--lime)] shrink-0" />
                   ) : (
@@ -359,7 +359,8 @@ export default function LoginPage() {
                     value={identifier}
                     onChange={e => setIdentifier(e.target.value)}
                     required
-                    className="bg-transparent border-none outline-none text-sm text-[var(--white)] w-full placeholder:text-[var(--gray2)] font-mono"
+                    className="bg-transparent border-0 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-sm text-[var(--white)] w-full placeholder:text-[var(--gray2)] font-mono shadow-none"
+                    style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
                   />
                 </div>
               </div>
@@ -369,7 +370,7 @@ export default function LoginPage() {
                 <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray)] mb-1.5 block">
                   Senha de Acesso *
                 </label>
-                <div className="flex items-center bg-[var(--black)] border border-[var(--line)] rounded-xl focus-within:border-[var(--lime)]/60 focus-within:ring-1 focus-within:ring-[var(--lime)]/30 transition-all px-3.5 py-3 gap-2.5">
+                <div className="flex items-center bg-[var(--black)] border border-[var(--line)] rounded-xl focus-within:border-[var(--lime)]/60 focus-within:shadow-[0_0_15px_rgba(180,217,50,0.15)] transition-all px-3.5 py-3 gap-2.5">
                   <Lock size={16} className="text-[var(--gray2)] shrink-0" />
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -378,7 +379,8 @@ export default function LoginPage() {
                     onChange={e => setPassword(e.target.value)}
                     required
                     autoComplete="current-password"
-                    className="bg-transparent border-none outline-none text-sm text-[var(--white)] w-full placeholder:text-[var(--gray2)] font-mono"
+                    className="bg-transparent border-0 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-sm text-[var(--white)] w-full placeholder:text-[var(--gray2)] font-mono shadow-none"
+                    style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
                   />
                   <button
                     type="button"
