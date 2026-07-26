@@ -126,6 +126,7 @@ export default function DashboardPage() {
   const [completedVisits, setCompletedVisits] = useState(0)
   const [showCheckinModal, setShowCheckinModal] = useState(false)
   const [selectedContactId, setSelectedContactId] = useState('')
+  const [selectedPipelineStage, setSelectedPipelineStage] = useState('visita')
   const [isRecording, setIsRecording] = useState(false)
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [recordingTime, setRecordingTime] = useState(0)
@@ -700,6 +701,7 @@ export default function DashboardPage() {
       title: 'Check-in de Visita Comercial (Voz & Foto)',
       description: audioTranscription || 'Visita presencial efetuada pelo representante.',
       type: 'visita',
+      stage: selectedPipelineStage,
       hasAudio: !!audioTranscription,
       photoUrl: photoUrl || null
     }
@@ -708,13 +710,54 @@ export default function DashboardPage() {
       if (c.id === selectedContactId) {
         return {
           ...c,
-          status: 'ativo',
+          status: selectedPipelineStage === 'perdido' ? 'inativo' : 'ativo',
+          pipelineStage: selectedPipelineStage,
           lastPurchaseDays: 1,
           activities: [checkinActivity, ...(c.activities || [])]
         }
       }
       return c
     })
+
+    // Also update deal in pipeline if stored in cp_crm_pipeline_deals
+    try {
+      const rawDeals = localStorage.getItem('cp_crm_pipeline_deals')
+      if (rawDeals) {
+        const deals = JSON.parse(rawDeals)
+        let found = false
+        const updatedDeals = deals.map((d: any) => {
+          if (d.contact_id === selectedContactId || d.company?.toLowerCase() === selectedContact.company?.toLowerCase()) {
+            found = true
+            return { ...d, stage: selectedPipelineStage, updated_at: new Date().toISOString() }
+          }
+          return d
+        })
+        if (!found && selectedContact) {
+          updatedDeals.unshift({
+            id: 'deal_' + Date.now(),
+            title: selectedContact.company || selectedContact.name,
+            contact_id: selectedContact.id,
+            stage: selectedPipelineStage,
+            estimated_value: 0,
+            stage_entered_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            contact: {
+              id: selectedContact.id,
+              name: selectedContact.name,
+              company: selectedContact.company,
+              phone: selectedContact.phone,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+          })
+        }
+        localStorage.setItem('cp_crm_pipeline_deals', JSON.stringify(updatedDeals))
+        window.dispatchEvent(new Event('storage-deals-changed'))
+      }
+    } catch (e) {
+      console.error('Error updating pipeline deals on checkin:', e)
+    }
 
     saveContacts(updatedContacts)
     setCompletedVisits(v => v + 1)
@@ -1193,9 +1236,23 @@ export default function DashboardPage() {
                   </select>
                 </div>
 
-                <div className="flex items-center gap-2 p-2.5 bg-black/40 border border-[var(--line)] rounded-xl text-[10px] font-mono text-[var(--gray)]">
-                  <CheckCircle size={12} className="text-[var(--lime)] shrink-0" />
-                  <span>Visita registrada e confirmada com sucesso.</span>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Etapa do Pipeline *</label>
+                  <select
+                    className="input w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[var(--lime)]/50"
+                    required
+                    value={selectedPipelineStage}
+                    onChange={(e) => setSelectedPipelineStage(e.target.value)}
+                  >
+                    <option value="prospect" className="bg-[var(--charcoal)]">Prospect / Prospecção</option>
+                    <option value="potencial" className="bg-[var(--charcoal)]">Potencial / Em Negociação</option>
+                    <option value="visita" className="bg-[var(--charcoal)]">Visita Realizada / Reunião</option>
+                    <option value="briefing" className="bg-[var(--charcoal)]">Briefing / Solicitou Orçamento</option>
+                    <option value="aprovacao" className="bg-[var(--charcoal)]">Em Aprovação (Amostra / Layout)</option>
+                    <option value="fechamento" className="bg-[var(--charcoal)]">Fechamento / Venda Ganha</option>
+                    <option value="pos_venda" className="bg-[var(--charcoal)]">Pós-Vendas / Atendimento</option>
+                    <option value="perdido" className="bg-[var(--charcoal)]">Perdido / Sem Interesse</option>
+                  </select>
                 </div>
 
                 <div className="flex flex-col gap-1.5 border border-[var(--line)] rounded-xl p-4 bg-black/20">
