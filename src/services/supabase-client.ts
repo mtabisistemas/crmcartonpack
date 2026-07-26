@@ -7,7 +7,7 @@ import type {
 
 // Carregar variáveis de ambiente do Supabase com fallback garantido
 const DEFAULT_SUPABASE_URL = 'https://ycpottoodbkqbvdkndyr.supabase.co';
-const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljcG90dG9vZGJrcWJ2ZGtuZHlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwMDYzMjAsImV4cCI6MjA2MjU4MjMyMH0.5xLUpS7l90yC_mJ5LlydOQ6WjUylvU_Jg03r7X3_5D0';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljcG90dG9vZGJrcWJ2ZGtuZHlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5MjMwNTYsImV4cCI6MjEwMDQ5OTA1Nn0.howVY0balavkQmY19tCYoa_XgcBIbYHhvKSB7FjI09Q';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
@@ -37,30 +37,11 @@ export const dbService = {
         }
       }
 
-      if (!isSupabaseConfigured || !supabase) {
-        return localUsers.length > 0 ? localUsers : DBMock.getUsuarios();
-      }
-
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*');
-
-        if (!error && data && data.length > 0) {
-          const mappedFromSb = data.map((p: any) => ({
-            id: p.id,
-            name: p.full_name || p.name || p.email?.split('@')[0],
-            email: p.email,
-            role: p.role || 'representante',
-            status: p.status || 'ativo',
-            phone: p.phone || '',
-            createdAt: p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR'),
-            username: p.username,
-            tempPassword: p.temp_password || p.tempPassword,
-            isFirstAccess: p.is_first_access !== false
-          }));
-
-          const merged = [...mappedFromSb];
+        const res = await fetch('/api/users', { cache: 'no-store' });
+        const json = await res.json();
+        if (json.success && Array.isArray(json.users) && json.users.length > 0) {
+          const merged = [...json.users];
           localUsers.forEach(lu => {
             if (!merged.some(m => m.id === lu.id || (m.email && m.email === lu.email) || (m.username && m.username === lu.username))) {
               merged.push(lu);
@@ -70,11 +51,10 @@ export const dbService = {
           if (typeof window !== 'undefined') {
             localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(merged));
           }
-
           return merged;
         }
       } catch (err) {
-        console.warn('[Supabase Profiles Fetch Warning]:', err);
+        console.warn('[Users API Fetch Warning]:', err);
       }
 
       return localUsers;
@@ -93,23 +73,14 @@ export const dbService = {
         localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(users));
       }
 
-      if (isSupabaseConfigured && supabase) {
-        try {
-          const payload = {
-            full_name: user.name,
-            email: user.email,
-            username: user.username,
-            role: user.role,
-            phone: user.phone,
-            status: user.status || 'ativo',
-            temp_password: user.tempPassword,
-            is_first_access: user.isFirstAccess !== false
-          };
-
-          await supabase.from('profiles').upsert([payload]);
-        } catch (err) {
-          console.warn('[Supabase Sync Warning]:', err);
-        }
+      try {
+        await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(user)
+        });
+      } catch (err) {
+        console.warn('[Users API Save Warning]:', err);
       }
 
       return user;
@@ -124,12 +95,6 @@ export const dbService = {
             localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(users));
           } catch (e) {}
         }
-      }
-
-      if (isSupabaseConfigured && supabase) {
-        try {
-          await supabase.from('profiles').delete().eq('id', id);
-        } catch (e) {}
       }
     },
 
