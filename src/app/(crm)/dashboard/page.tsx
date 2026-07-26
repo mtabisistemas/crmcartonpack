@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { CartonPackLogo } from '@/components/CartonPackLogo'
 import {
   TrendingUp,
   Package,
@@ -60,6 +61,7 @@ const TOP_CLIENTS: any[] = []
 export default function DashboardPage() {
   // Roles and Current User Session
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null)
+  const [isSessionLoaded, setIsSessionLoaded] = useState(false)
   const [contacts, setContacts] = useState<any[]>([])
 
   // Dashboard Filters: Year, Month, Rep, Curve ABC
@@ -120,7 +122,11 @@ export default function DashboardPage() {
       const session = localStorage.getItem('crm_current_user')
       if (session) {
         try {
-          setCurrentUser(JSON.parse(session))
+          const user = JSON.parse(session)
+          setCurrentUser(user)
+          if (user.role === 'representante' || user.role === 'vendedor') {
+            setSelectedRep(user.name)
+          }
         } catch (e) {
           console.error(e)
         }
@@ -139,6 +145,8 @@ export default function DashboardPage() {
         setContacts([])
         localStorage.setItem('crm_contacts', JSON.stringify([]))
       }
+
+      setIsSessionLoaded(true)
     }
   }, [])
 
@@ -1091,6 +1099,18 @@ export default function DashboardPage() {
   }
 
   // ==================== ROLE: ADMIN / OUTROS (DESKTOP MAIN DASHBOARD - NO SCROLL) ====================
+  if (!isSessionLoaded || !currentUser) {
+    return (
+      <div className="w-full h-[80vh] flex flex-col items-center justify-center gap-4 bg-[var(--black)]">
+        <CartonPackLogo height={48} />
+        <div className="flex items-center gap-2 text-[var(--lime)] font-mono text-xs">
+          <div className="w-4 h-4 border-2 border-[var(--lime)] border-t-transparent rounded-full animate-spin" />
+          <span>Carregando Painel Comercial...</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="page-content animate-fade-in w-full h-[calc(100vh-64px)] flex flex-col gap-3 p-3 overflow-y-auto lg:overflow-hidden select-none">
       
@@ -1144,16 +1164,23 @@ export default function DashboardPage() {
           {/* Representative Filter */}
           <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--line)] px-2.5 py-1 rounded-xl">
             <span className="text-[9px] font-mono font-bold text-[var(--gray2)] uppercase">Rep:</span>
-            <select
-              className="bg-transparent text-xs font-mono text-[var(--white)] outline-none cursor-pointer max-w-[130px]"
-              value={selectedRep}
-              onChange={(e) => setSelectedRep(e.target.value)}
-            >
-              <option value="all" className="bg-[var(--charcoal)]">Todos</option>
-              {representatives.map(rep => (
-                <option key={rep} value={rep} className="bg-[var(--charcoal)]">{rep}</option>
-              ))}
-            </select>
+            {currentUser?.role === 'representante' || currentUser?.role === 'vendedor' ? (
+              <div className="text-xs font-mono text-[var(--lime)] font-bold px-1 select-none flex items-center gap-1">
+                <User size={11} />
+                <span>{currentUser.name}</span>
+              </div>
+            ) : (
+              <select
+                className="bg-transparent text-xs font-mono text-[var(--white)] outline-none cursor-pointer max-w-[130px]"
+                value={selectedRep}
+                onChange={(e) => setSelectedRep(e.target.value)}
+              >
+                <option value="all" className="bg-[var(--charcoal)]">Todos</option>
+                {representatives.map(rep => (
+                  <option key={rep} value={rep} className="bg-[var(--charcoal)]">{rep}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Curve ABC Filter */}
@@ -1367,54 +1394,13 @@ export default function DashboardPage() {
           </div>
 
           {/* Under-Chart indicators: Performance da Equipe & Combined Top Clientes + Embalagens */}
-          <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
-            {/* COL 1: Performance da Equipe */}
-            <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] h-full">
-              <div className="flex items-center justify-between border-b border-[var(--line)] pb-1 shrink-0">
-                <div className="flex items-center gap-2">
-                  <Users size={13} className="text-[var(--lime)]" />
-                  <span className="text-xs font-bold font-display text-[var(--white)]">Performance da Equipe</span>
-                </div>
-                <span className="text-[9px] font-mono text-[var(--gray2)] uppercase">Mês Atual</span>
-              </div>
-
-              <div className="flex-1 overflow-y-auto space-y-1.5 mt-2 pr-1 min-h-0">
-                {TEAM_PERFORMANCE.map(rep => (
-                  <div key={rep.id} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div 
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-black font-bold text-[10px] shrink-0"
-                        style={{ backgroundColor: rep.avatarColor }}
-                      >
-                        {rep.name.split(' ').map((p: any) => p[0]).join('')}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-xs font-bold text-[var(--white)] truncate leading-tight">{rep.name}</div>
-                        <div className="text-[8px] font-mono text-[var(--gray2)] truncate">{rep.role}</div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0 text-right">
-                      <div>
-                        <div className="text-[7px] font-mono text-[var(--gray2)] uppercase">Contatos</div>
-                        <div className="text-[10px] font-mono font-bold text-[var(--white)]">{rep.contactsCount}</div>
-                      </div>
-                      <div>
-                        <div className="text-[7px] font-mono text-[var(--gray2)] uppercase">Faturado</div>
-                        <div className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(rep.sales)}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* COL 2: Top Clientes e Embalagens Combinados (font sizes perfectly aligned to COL 1) */}
-            <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] h-full">
+          {currentUser?.role === 'representante' || currentUser?.role === 'vendedor' ? (
+            /* Visão Exclusiva de Representante: Oculta a Performance da Equipe e expande Top Clientes para 100% da área */
+            <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] flex-1 min-h-0">
               <div className="flex items-center justify-between border-b border-[var(--line)] pb-1 shrink-0">
                 <div className="flex items-center gap-2">
                   <Building size={13} className="text-[var(--lime)]" />
-                  <span className="text-xs font-bold font-display text-[var(--white)]">Top Clientes & Embalagens</span>
+                  <span className="text-xs font-bold font-display text-[var(--white)]">Meus Top Clientes & Embalagens</span>
                 </div>
               </div>
 
@@ -1424,7 +1410,7 @@ export default function DashboardPage() {
                   <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold tracking-wider flex items-center gap-1">
                     <Building size={10} className="text-[var(--lime)]" /> Principais Clientes
                   </div>
-                  <div className="space-y-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     {TOP_CLIENTS.map(cli => (
                       <div key={cli.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
                         <div className="flex items-center gap-2 min-w-0">
@@ -1445,7 +1431,7 @@ export default function DashboardPage() {
                   <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold tracking-wider flex items-center gap-1">
                     <Layers size={10} className="text-[var(--lime)]" /> Embalagens mais Demandadas
                   </div>
-                  <div className="space-y-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     {TOP_PRODUCTS.map(prod => (
                       <div key={prod.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
                         <div className="flex items-center gap-2 min-w-0">
@@ -1462,7 +1448,105 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-          </div>
+          ) : (
+            /* Visão Gestor/Admin: Exibe "Performance da Equipe" + "Top Clientes & Embalagens" lado a lado */
+            <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+              {/* COL 1: Performance da Equipe */}
+              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] h-full">
+                <div className="flex items-center justify-between border-b border-[var(--line)] pb-1 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Users size={13} className="text-[var(--lime)]" />
+                    <span className="text-xs font-bold font-display text-[var(--white)]">Performance da Equipe</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-[var(--gray2)] uppercase">Mês Atual</span>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-1.5 mt-2 pr-1 min-h-0">
+                  {TEAM_PERFORMANCE.map(rep => (
+                    <div key={rep.id} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div 
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-black font-bold text-[10px] shrink-0"
+                          style={{ backgroundColor: rep.avatarColor }}
+                        >
+                          {rep.name.split(' ').map((p: any) => p[0]).join('')}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-[var(--white)] truncate leading-tight">{rep.name}</div>
+                          <div className="text-[8px] font-mono text-[var(--gray2)] truncate">{rep.role}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 text-right">
+                        <div>
+                          <div className="text-[7px] font-mono text-[var(--gray2)] uppercase">Contatos</div>
+                          <div className="text-[10px] font-mono font-bold text-[var(--white)]">{rep.contactsCount}</div>
+                        </div>
+                        <div>
+                          <div className="text-[7px] font-mono text-[var(--gray2)] uppercase">Faturado</div>
+                          <div className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(rep.sales)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* COL 2: Top Clientes e Embalagens Combinados */}
+              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] h-full">
+                <div className="flex items-center justify-between border-b border-[var(--line)] pb-1 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Building size={13} className="text-[var(--lime)]" />
+                    <span className="text-xs font-bold font-display text-[var(--white)]">Top Clientes & Embalagens</span>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-3 mt-2 pr-1 min-h-0">
+                  {/* Principais Clientes */}
+                  <div className="space-y-1">
+                    <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold tracking-wider flex items-center gap-1">
+                      <Building size={10} className="text-[var(--lime)]" /> Principais Clientes
+                    </div>
+                    <div className="space-y-1">
+                      {TOP_CLIENTS.map(cli => (
+                        <div key={cli.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{cli.rank}</span>
+                            <div className="text-xs font-bold text-[var(--white)] truncate">{cli.name}</div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[8px] font-mono bg-lime-500/10 text-[var(--lime)] px-1.5 py-0.5 rounded font-black border border-[var(--lime)]/10">{cli.type}</span>
+                            <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(cli.value)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Embalagens Mais Demandadas */}
+                  <div className="space-y-1 border-t border-[var(--line)] pt-2.5">
+                    <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold tracking-wider flex items-center gap-1">
+                      <Layers size={10} className="text-[var(--lime)]" /> Embalagens mais Demandadas
+                    </div>
+                    <div className="space-y-1">
+                      {TOP_PRODUCTS.map(prod => (
+                        <div key={prod.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{prod.rank}</span>
+                            <div className="text-xs font-bold text-[var(--white)] truncate">{prod.name}</div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 text-right">
+                            <span className="text-[8px] font-mono bg-sky-500/10 text-sky-400 px-1.5 py-0.5 rounded font-black border border-sky-500/10">{prod.quantity}</span>
+                            <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(prod.value)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* RIGHT SIDE TALL CONTAINER (col-span-4) - Full-height Map */}
