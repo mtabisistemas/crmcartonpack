@@ -1,5 +1,6 @@
 'use client'
 
+import { dbService } from '@/services/supabase-client'
 import { useState, useEffect } from 'react'
 import { CartonPackLogo } from '@/components/CartonPackLogo'
 import { createClient } from '@/lib/supabase/client'
@@ -41,12 +42,47 @@ export default function LoginPage() {
     setError('')
 
     const cleanInput = identifier.trim()
+    const inputLower = cleanInput.toLowerCase()
 
-    // 1. Validation check according to login mode
-    if (loginType === 'corporativo' && !cleanInput.includes('@')) {
-      setError('Acesso corporativo requer um e-mail válido (ex: nome@cartonpack.com).')
-      setLoading(false)
-      return
+    // 0. AUTENTICAÇÃO EXCLUSIVA MASTER ADMIN (Maurício Maciel)
+    const isMasterUser = inputLower === 'mauricio@mtabi.com.br' || inputLower === 'mauricio'
+    if (isMasterUser) {
+      if (password === '@Speni190868') {
+        const masterSession = {
+          id: 'u-master-mauricio',
+          name: 'Maurício Maciel',
+          email: 'mauricio@mtabi.com.br',
+          username: 'mauricio',
+          role: 'administrador',
+          phone: '51997587025',
+          status: 'ativo'
+        }
+        localStorage.setItem('crm_current_user', JSON.stringify(masterSession))
+        document.cookie = `cp_crm_session=${masterSession.id}; path=/; max-age=86400`
+        try { dbService.usuarios.save(masterSession) } catch (e) {}
+        
+        router.push('/dashboard')
+        router.refresh()
+        return
+      } else {
+        setError('Senha de Administrador Master incorreta.')
+        setLoading(false)
+        return
+      }
+    }
+
+    // 1. VALIDAÇÃO DE ACESSO CORPORATIVO (Restrito a @cartonpack.com)
+    if (loginType === 'corporativo') {
+      if (!cleanInput.includes('@')) {
+        setError('Acesso corporativo requer um e-mail válido (ex: nome@cartonpack.com).')
+        setLoading(false)
+        return
+      }
+      if (!inputLower.endsWith('@cartonpack.com')) {
+        setError('Acesso corporativo restrito a e-mails autorizados da Carton Pack (@cartonpack.com).')
+        setLoading(false)
+        return
+      }
     }
 
     // 2. Try local storage mockup login intercept

@@ -40,11 +40,16 @@ export function Sidebar() {
     const newTheme = theme === 'dark' ? 'light' : 'dark'
     setTheme(newTheme)
     document.documentElement.setAttribute('data-theme', newTheme)
+    localStorage.setItem('cp_crm_theme', newTheme)
     localStorage.setItem('theme', newTheme)
+    document.cookie = `cp_crm_theme=${newTheme}; path=/; max-age=31536000; SameSite=Lax`
   }
 
   async function handleLogout() {
-    router.push('/login')
+    localStorage.removeItem('crm_current_user')
+    document.cookie = 'cp_crm_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    router.replace('/login')
+    router.refresh()
   }
 
   return (

@@ -30,7 +30,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('theme') || 'dark';
+                  var saved = localStorage.getItem('cp_crm_theme') || localStorage.getItem('theme');
+                  if (!saved) {
+                    var match = document.cookie.match(new RegExp('(^| )cp_crm_theme=([^;]+)'));
+                    if (match) saved = match[2];
+                  }
+                  var theme = saved || 'dark';
                   document.documentElement.setAttribute('data-theme', theme);
                 } catch (e) {}
               })();
