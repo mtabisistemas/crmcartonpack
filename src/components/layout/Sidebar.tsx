@@ -16,6 +16,8 @@ import {
   UserCog,
 } from 'lucide-react'
 
+import { CartonPackLogo } from '../CartonPackLogo'
+
 const navItems = [
   { href: '/dashboard',  label: 'Dashboard',   icon: LayoutDashboard },
   { href: '/pipeline',   label: 'Pipeline',     icon: KanbanSquare },
@@ -47,14 +49,10 @@ export function Sidebar() {
 
   return (
     <aside className="sidebar hidden lg:flex">
-      {/* Logo Oficial Carton Pack */}
+      {/* Logo Oficial Carton Pack com troca de tema */}
       <div className="px-5 py-5 border-b border-[var(--line)] flex flex-col gap-1 select-none">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <img
-            src="/cartonpack-logo.png"
-            alt="CARTON PACK®"
-            className="h-7 w-auto object-contain brightness-110 drop-shadow-[0_2px_8px_rgba(180,217,50,0.25)]"
-          />
+          <CartonPackLogo height={28} />
         </Link>
         <span className="text-[10px] font-mono text-[var(--gray2)] tracking-widest uppercase pl-0.5">
           CRM Comercial & Operacional
