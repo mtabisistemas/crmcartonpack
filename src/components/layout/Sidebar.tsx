@@ -14,6 +14,7 @@ import {
   Sun,
   Moon,
   UserCog,
+  MapPin,
 } from 'lucide-react'
 
 import { CartonPackLogo } from '../CartonPackLogo'
@@ -30,10 +31,22 @@ export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  const [currentUser, setCurrentUser] = useState<any | null>(null)
 
   useEffect(() => {
-    const activeTheme = (document.documentElement.getAttribute('data-theme') || 'dark') as 'dark' | 'light'
-    setTheme(activeTheme)
+    if (typeof window !== 'undefined') {
+      const activeTheme = (document.documentElement.getAttribute('data-theme') || 'dark') as 'dark' | 'light'
+      setTheme(activeTheme)
+
+      const session = localStorage.getItem('crm_current_user')
+      if (session) {
+        try {
+          setCurrentUser(JSON.parse(session))
+        } catch (e) {
+          console.error(e)
+        }
+      }
+    }
   }, [])
 
   function toggleTheme() {
@@ -52,6 +65,26 @@ export function Sidebar() {
     router.refresh()
   }
 
+  const isRep = currentUser?.role === 'representante' || currentUser?.role === 'vendedor'
+
+  const repNavItems = [
+    { href: '/dashboard?tab=dashboard', label: 'Dashboard', icon: BarChart3 },
+    { href: '/dashboard?tab=painel', label: 'Painel do Rep', icon: LayoutDashboard },
+    { href: '/contacts', label: 'Clientes', icon: Users },
+    { href: '/dashboard?tab=mapa', label: 'Mapa de Clientes', icon: MapPin },
+    { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
+  ]
+
+  const adminNavItems = [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
+    { href: '/contacts', label: 'Contatos', icon: Users },
+    { href: '/users', label: 'Usuários', icon: UserCog },
+    { href: '/briefings', label: 'Orçamentos', icon: FileText },
+  ]
+
+  const items = isRep ? repNavItems : adminNavItems
+
   return (
     <aside className="sidebar hidden lg:flex">
       {/* Logo Oficial Carton Pack com troca de tema */}
@@ -67,8 +100,17 @@ export function Sidebar() {
       {/* Nav */}
       <nav className="flex-1 py-3 overflow-y-auto">
         <div className="sidebar-section">
-          {navItems.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href || pathname.startsWith(href + '/')
+          {items.map(({ href, label, icon: Icon }) => {
+            let active = false
+            if (href.includes('?tab=')) {
+              if (typeof window !== 'undefined') {
+                const currentFull = window.location.pathname + window.location.search
+                active = currentFull === href || (href.endsWith('tab=dashboard') && window.location.pathname === '/dashboard' && !window.location.search)
+              }
+            } else {
+              active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+            }
+
             return (
               <Link
                 key={href}

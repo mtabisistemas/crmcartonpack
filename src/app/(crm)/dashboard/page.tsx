@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { CartonPackLogo } from '@/components/CartonPackLogo'
 import {
   TrendingUp,
@@ -100,7 +101,17 @@ export default function DashboardPage() {
   }, [isMapFullscreen, isMobileMapFullscreen])
 
   // Representative Portal States
-  const [activeTab, setActiveTab] = useState<'painel' | 'clientes' | 'mapa' | 'dashboard'>('painel')
+  const searchParams = useSearchParams()
+  const tabParam = searchParams?.get('tab') as 'painel' | 'clientes' | 'mapa' | 'dashboard' | null
+
+  const [activeTab, setActiveTab] = useState<'painel' | 'clientes' | 'mapa' | 'dashboard'>('dashboard')
+
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam)
+    }
+  }, [tabParam])
+
   const [mobileSearch, setMobileSearch] = useState('')
   const [mobileFilterStatus, setMobileFilterStatus] = useState<'todos' | 'pendentes' | 'concluidos'>('todos')
   const mobileMapContainerRef = useRef<HTMLDivElement>(null)
@@ -729,73 +740,21 @@ export default function DashboardPage() {
 
     return (
       <div className="page-content animate-fade-in w-full h-full flex flex-col gap-4 max-w-[1400px] mx-auto px-3 sm:px-6 py-4 pb-28 md:pb-6 select-none">
-        {/* Portal Header & 4 Tabs Sub-Nav */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--line)] pb-3 gap-3 shrink-0">
+        {/* Portal Header */}
+        <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 shrink-0">
           <div>
             <span className="text-[10px] font-mono text-[var(--lime)] font-bold tracking-wider uppercase">Portal do Representante</span>
             <h1 className="font-display text-xl text-[var(--white)] font-bold tracking-tight mt-0.5">
               Olá, {currentUser.name}!
             </h1>
           </div>
-
-          {/* 4 Main Tabs Nav (Desktop / Tablet) */}
-          <div className="flex items-center gap-1.5 bg-[var(--card)] border border-[var(--line)] p-1 rounded-2xl flex-wrap">
-            <button
-              onClick={() => setActiveTab('painel')}
-              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === 'painel'
-                  ? 'bg-[var(--lime)] text-black shadow-md'
-                  : 'text-[var(--gray2)] hover:text-white hover:bg-[var(--charcoal)]'
-              }`}
-            >
-              <Target size={14} />
-              <span>Painel</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('clientes')}
-              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === 'clientes'
-                  ? 'bg-[var(--lime)] text-black shadow-md'
-                  : 'text-[var(--gray2)] hover:text-white hover:bg-[var(--charcoal)]'
-              }`}
-            >
-              <Users size={14} />
-              <span>Clientes</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('mapa')}
-              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === 'mapa'
-                  ? 'bg-[var(--lime)] text-black shadow-md'
-                  : 'text-[var(--gray2)] hover:text-white hover:bg-[var(--charcoal)]'
-              }`}
-            >
-              <MapPin size={14} />
-              <span>Mapa</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === 'dashboard'
-                  ? 'bg-[var(--lime)] text-black shadow-md'
-                  : 'text-[var(--gray2)] hover:text-white hover:bg-[var(--charcoal)]'
-              }`}
-            >
-              <BarChart3 size={14} />
-              <span>Dashboard</span>
-            </button>
-
-            <button 
-              onClick={handleLogout}
-              title="Sair do CRM"
-              className="p-2 ml-1 text-[var(--gray2)] hover:text-red-400 hover:bg-[rgba(239,68,68,0.1)] rounded-xl transition-all cursor-pointer bg-transparent"
-            >
-              <LogOut size={16} />
-            </button>
-          </div>
+          <button 
+            onClick={handleLogout}
+            title="Sair do CRM"
+            className="p-2 border border-[var(--line)] rounded-xl text-[var(--gray2)] hover:text-red-400 hover:bg-[rgba(239,68,68,0.1)] transition-all bg-transparent cursor-pointer"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
 
         {/* Dynamic Tab Body */}
