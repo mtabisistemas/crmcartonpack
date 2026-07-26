@@ -701,8 +701,7 @@ export default function DashboardPage() {
       description: audioTranscription || 'Visita presencial efetuada pelo representante.',
       type: 'visita',
       hasAudio: !!audioTranscription,
-      photoUrl: photoUrl || null,
-      gps: 'Sapucaia do Sul - RS (GPS Simulado: -29.834, -51.143)'
+      photoUrl: photoUrl || null
     }
 
     const updatedContacts = contacts.map(c => {
@@ -906,7 +905,7 @@ export default function DashboardPage() {
                           className="flex-1 btn btn-secondary text-[11px] py-2 flex items-center justify-center gap-1.5 rounded-lg border-[var(--line)]"
                         >
                           <Navigation size={12} className="text-[var(--lime)]" />
-                          <span>Rota GPS</span>
+                          <span>Como Chegar</span>
                         </a>
                         
                         <button 
@@ -918,7 +917,7 @@ export default function DashboardPage() {
                           }}
                           className="flex-1 btn btn-secondary text-[11px] py-2 flex items-center justify-center gap-1.5 rounded-lg hover:border-[var(--lime)] hover:text-[var(--lime)]"
                         >
-                          <MapPin size={12} />
+                          <CheckCircle size={12} />
                           <span>Check-in</span>
                         </button>
                       </div>
@@ -941,7 +940,7 @@ export default function DashboardPage() {
               <div className="text-[10px] font-mono text-[var(--gray)] flex items-center justify-between px-1 shrink-0">
                 <div className="flex items-center gap-1.5">
                   <MapPin size={12} className="text-[var(--lime)]" />
-                  <span>Localização dos seus clientes no RS</span>
+                  <span>Clientes na sua carteira</span>
                 </div>
                 <button
                   type="button"
@@ -1169,7 +1168,6 @@ export default function DashboardPage() {
               <div className="flex justify-between items-center border-b border-[var(--line)] pb-3">
                 <div>
                   <h3 className="font-display text-sm text-[var(--white)] font-bold">Registrar Visita Presencial</h3>
-                  <p className="text-[10px] text-[var(--gray)] font-mono mt-0.5">GPS: Sapucaia do Sul - RS (Simulado)</p>
                 </div>
                 <button 
                   onClick={() => setShowCheckinModal(false)}
@@ -1196,8 +1194,8 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex items-center gap-2 p-2.5 bg-black/40 border border-[var(--line)] rounded-xl text-[10px] font-mono text-[var(--gray)]">
-                  <MapPin size={12} className="text-[var(--lime)] shrink-0" />
-                  <span>Check-in GPS validado no local do cliente.</span>
+                  <CheckCircle size={12} className="text-[var(--lime)] shrink-0" />
+                  <span>Visita registrada e confirmada com sucesso.</span>
                 </div>
 
                 <div className="flex flex-col gap-1.5 border border-[var(--line)] rounded-xl p-4 bg-black/20">
