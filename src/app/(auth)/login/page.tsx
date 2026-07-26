@@ -23,6 +23,8 @@ export default function LoginPage() {
   // Password Change Fields
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwordError, setPasswordError] = useState('')
 
   // Clean old mock users on initial load if needed
@@ -437,28 +439,52 @@ export default function LoginPage() {
                 <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray)] mb-1.5 block">
                   Nova Senha (mínimo 6 caracteres) *
                 </label>
-                <input
-                  type="password"
-                  required
-                  placeholder="Digite sua nova senha"
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  className="w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3.5 py-3 text-sm text-white font-mono outline-none focus:border-[var(--lime)]/60"
-                />
+                <div className="flex items-center bg-[var(--black)] border border-[var(--line)] rounded-xl focus-within:border-[var(--lime)]/60 focus-within:shadow-[0_0_15px_rgba(180,217,50,0.15)] transition-all px-3.5 py-3 gap-2.5">
+                  <Lock size={16} className="text-[var(--gray2)] shrink-0" />
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    required
+                    placeholder="Digite sua nova senha"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    className="bg-transparent border-0 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-sm text-[var(--white)] w-full placeholder:text-[var(--gray2)] font-mono shadow-none"
+                    style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="text-[var(--gray2)] hover:text-[var(--lime)] transition-colors p-1 cursor-pointer"
+                    title={showNewPassword ? 'Ocultar Senha' : 'Exibir Senha'}
+                  >
+                    {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray)] mb-1.5 block">
                   Confirmar Nova Senha *
                 </label>
-                <input
-                  type="password"
-                  required
-                  placeholder="Repita a nova senha"
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                  className="w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3.5 py-3 text-sm text-white font-mono outline-none focus:border-[var(--lime)]/60"
-                />
+                <div className="flex items-center bg-[var(--black)] border border-[var(--line)] rounded-xl focus-within:border-[var(--lime)]/60 focus-within:shadow-[0_0_15px_rgba(180,217,50,0.15)] transition-all px-3.5 py-3 gap-2.5">
+                  <Lock size={16} className="text-[var(--gray2)] shrink-0" />
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    required
+                    placeholder="Repita a nova senha"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    className="bg-transparent border-0 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-sm text-[var(--white)] w-full placeholder:text-[var(--gray2)] font-mono shadow-none"
+                    style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="text-[var(--gray2)] hover:text-[var(--lime)] transition-colors p-1 cursor-pointer"
+                    title={showConfirmPassword ? 'Ocultar Senha' : 'Exibir Senha'}
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               {passwordError && (
