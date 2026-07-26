@@ -99,7 +99,7 @@ export default function DashboardPage() {
   }, [isMapFullscreen, isMobileMapFullscreen])
 
   // Representative Portal States
-  const [activeTab, setActiveTab] = useState<'painel' | 'clientes' | 'mapa'>('painel')
+  const [activeTab, setActiveTab] = useState<'painel' | 'clientes' | 'mapa' | 'dashboard'>('painel')
   const [mobileSearch, setMobileSearch] = useState('')
   const [mobileFilterStatus, setMobileFilterStatus] = useState<'todos' | 'pendentes' | 'concluidos'>('todos')
   const mobileMapContainerRef = useRef<HTMLDivElement>(null)
@@ -727,22 +727,74 @@ export default function DashboardPage() {
     })
 
     return (
-      <div className="page-content animate-fade-in w-full h-full flex flex-col gap-4 max-w-md mx-auto px-2 py-3 pb-24 select-none">
-        {/* Header Row */}
-        <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 mt-1 shrink-0">
+      <div className="page-content animate-fade-in w-full h-full flex flex-col gap-4 max-w-[1400px] mx-auto px-3 sm:px-6 py-4 pb-28 md:pb-6 select-none">
+        {/* Portal Header & 4 Tabs Sub-Nav */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--line)] pb-3 gap-3 shrink-0">
           <div>
             <span className="text-[10px] font-mono text-[var(--lime)] font-bold tracking-wider uppercase">Portal do Representante</span>
-            <h1 className="font-display text-lg text-[var(--white)] font-bold tracking-tight mt-0.5">
+            <h1 className="font-display text-xl text-[var(--white)] font-bold tracking-tight mt-0.5">
               Olá, {currentUser.name}!
             </h1>
           </div>
-          <button 
-            onClick={handleLogout}
-            title="Sair do CRM"
-            className="p-2 border border-[var(--line)] rounded-xl text-[var(--gray2)] hover:text-red-400 hover:bg-[rgba(239,68,68,0.1)] transition-all bg-transparent"
-          >
-            <LogOut size={16} />
-          </button>
+
+          {/* 4 Main Tabs Nav (Desktop / Tablet) */}
+          <div className="flex items-center gap-1.5 bg-[var(--card)] border border-[var(--line)] p-1 rounded-2xl flex-wrap">
+            <button
+              onClick={() => setActiveTab('painel')}
+              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'painel'
+                  ? 'bg-[var(--lime)] text-black shadow-md'
+                  : 'text-[var(--gray2)] hover:text-white hover:bg-[var(--charcoal)]'
+              }`}
+            >
+              <Target size={14} />
+              <span>Painel</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('clientes')}
+              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'clientes'
+                  ? 'bg-[var(--lime)] text-black shadow-md'
+                  : 'text-[var(--gray2)] hover:text-white hover:bg-[var(--charcoal)]'
+              }`}
+            >
+              <Users size={14} />
+              <span>Clientes</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('mapa')}
+              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'mapa'
+                  ? 'bg-[var(--lime)] text-black shadow-md'
+                  : 'text-[var(--gray2)] hover:text-white hover:bg-[var(--charcoal)]'
+              }`}
+            >
+              <MapPin size={14} />
+              <span>Mapa</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'dashboard'
+                  ? 'bg-[var(--lime)] text-black shadow-md'
+                  : 'text-[var(--gray2)] hover:text-white hover:bg-[var(--charcoal)]'
+              }`}
+            >
+              <BarChart3 size={14} />
+              <span>Dashboard</span>
+            </button>
+
+            <button 
+              onClick={handleLogout}
+              title="Sair do CRM"
+              className="p-2 ml-1 text-[var(--gray2)] hover:text-red-400 hover:bg-[rgba(239,68,68,0.1)] rounded-xl transition-all cursor-pointer bg-transparent"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
         </div>
 
         {/* Dynamic Tab Body */}
@@ -776,7 +828,7 @@ export default function DashboardPage() {
                     setPhotoUrl('')
                     setShowCheckinModal(true)
                   }}
-                  className="btn btn-primary py-3 text-xs font-black uppercase tracking-wider text-black flex items-center justify-center gap-2 rounded-xl shadow-lg shadow-[rgba(180,217,50,0.2)] mt-1"
+                  className="btn btn-primary py-3 text-xs font-black uppercase tracking-wider text-black flex items-center justify-center gap-2 rounded-xl shadow-lg shadow-[rgba(180,217,50,0.2)] mt-1 max-w-sm"
                 >
                   <MapPin size={14} />
                   <span>Registrar Visita Rápida</span>
@@ -784,7 +836,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="card p-4 flex flex-col gap-1.5 bg-[var(--card)] border border-[var(--line)]">
                   <span className="text-[9px] font-mono text-[var(--gray2)] uppercase font-bold">Total de Clientes</span>
                   <span className="text-2xl font-display font-black text-[var(--white)]">{repAllContacts.length}</span>
@@ -799,7 +851,7 @@ export default function DashboardPage() {
               <div className="card p-4 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl text-xs flex flex-col gap-2">
                 <span className="font-bold text-[var(--lime)]">💡 Como usar o Portal:</span>
                 <p className="text-[11px] text-[var(--gray)] leading-relaxed">
-                  Utilize as abas inferiores para buscar seus clientes ou localizá-los diretamente no mapa. Clique em "Check-in" ao chegar no cliente para gravar o relato e anexar a foto da visita.
+                  Utilize as abas acima para navegar entre seu Painel, Clientes, Mapa de rotas e o Dashboard Comercial exclusivo com indicadores da sua carteira.
                 </p>
               </div>
             </div>
@@ -809,11 +861,11 @@ export default function DashboardPage() {
           {activeTab === 'clientes' && (
             <div className="flex flex-col gap-3 animate-fade-in">
               {/* Search input */}
-              <div className="flex items-center gap-2 bg-[var(--card)] border border-[var(--line)] rounded-xl px-3 py-2.5 focus-within:border-[var(--lime)]/50 transition-colors">
+              <div className="flex items-center gap-2 bg-[var(--card)] border border-[var(--line)] rounded-xl px-3.5 py-3 focus-within:border-[var(--lime)]/50 transition-colors">
                 <Search size={14} className="text-[var(--gray2)] shrink-0" />
                 <input 
                   type="text"
-                  placeholder="Buscar cliente por nome ou cidade..."
+                  placeholder="Buscar cliente por nome, empresa ou cidade..."
                   value={mobileSearch}
                   onChange={(e) => setMobileSearch(e.target.value)}
                   className="bg-transparent border-none outline-none text-xs w-full text-[var(--white)] placeholder-[var(--gray2)]"
@@ -842,12 +894,12 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              {/* List */}
-              <div className="flex flex-col gap-2">
+              {/* List Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {filteredMobileContacts.map(contact => {
                   const isInactive = contact.status === 'inativo' || (contact.lastPurchaseDays && contact.lastPurchaseDays > 30)
                   return (
-                    <div key={contact.id} className="card p-4 border border-[var(--line)] bg-[var(--card)] flex flex-col gap-3 hover:border-[var(--lime)]/30 transition-all">
+                    <div key={contact.id} className="card p-4 border border-[var(--line)] bg-[var(--card)] flex flex-col justify-between gap-3 hover:border-[var(--lime)]/30 transition-all">
                       <div className="flex justify-between items-start gap-2">
                         <div className="min-w-0">
                           <h4 className="text-sm font-bold text-[var(--white)] truncate">{contact.name}</h4>
@@ -892,7 +944,7 @@ export default function DashboardPage() {
                 })}
 
                 {filteredMobileContacts.length === 0 && (
-                  <div className="card p-8 text-center text-xs text-[var(--gray2)] font-mono border-dashed">
+                  <div className="col-span-full card p-8 text-center text-xs text-[var(--gray2)] font-mono border-dashed">
                     Nenhum cliente encontrado com os filtros selecionados.
                   </div>
                 )}
@@ -902,7 +954,7 @@ export default function DashboardPage() {
 
           {/* TAB 3: MAPA INTERATIVO */}
           {activeTab === 'mapa' && (
-            <div className={`flex-1 flex flex-col gap-3 h-full min-h-[400px] animate-fade-in ${isMobileMapFullscreen ? 'fixed inset-0 z-[99999] bg-[var(--charcoal)] p-4 max-w-none' : ''}`}>
+            <div className={`flex-1 flex flex-col gap-3 h-full min-h-[450px] animate-fade-in ${isMobileMapFullscreen ? 'fixed inset-0 z-[99999] bg-[var(--charcoal)] p-4 max-w-none' : ''}`}>
               <div className="text-[10px] font-mono text-[var(--gray)] flex items-center justify-between px-1 shrink-0">
                 <div className="flex items-center gap-1.5">
                   <MapPin size={12} className="text-[var(--lime)]" />
@@ -917,16 +969,159 @@ export default function DashboardPage() {
                   <span>{isMobileMapFullscreen ? 'Minimizar' : 'Ampliar'}</span>
                 </button>
               </div>
-              <div className="flex-1 w-full rounded-2xl overflow-hidden border border-[var(--line)] relative min-h-[350px] bg-[var(--charcoal)]">
-                <div ref={mobileMapContainerRef} className="w-full h-full min-h-[350px] z-10" />
+              <div className="flex-1 w-full rounded-2xl overflow-hidden border border-[var(--line)] relative min-h-[400px] bg-[var(--charcoal)]">
+                <div ref={mobileMapContainerRef} className="w-full h-full min-h-[400px] z-10" />
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: DASHBOARD COMERCIAL EXCLUSIVO DO REPRESENTANTE */}
+          {activeTab === 'dashboard' && (
+            <div className="flex flex-col gap-3 animate-fade-in w-full">
+              {/* ── ROW 1: SUMMARY KPIS ── */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
+                <div className="card px-3.5 py-2.5 flex items-center justify-between border-[rgba(180,217,50,0.15)] bg-[var(--card)]">
+                  <div>
+                    <div className="text-[9px] font-mono text-[var(--gray2)] uppercase font-bold">Negócios Ativos</div>
+                    <div className="text-xl font-display font-black text-[var(--lime)] mt-0.5">{activeDealsCount}</div>
+                  </div>
+                  <div className="w-8 h-8 rounded-lg bg-[rgba(180,217,50,0.1)] border border-[rgba(180,217,50,0.2)] flex items-center justify-center shrink-0">
+                    <Package size={16} className="text-[var(--lime)]" />
+                  </div>
+                </div>
+
+                <div className="card px-3.5 py-2.5 flex items-center justify-between border-[rgba(72,199,103,0.15)] bg-[var(--card)]">
+                  <div>
+                    <div className="text-[9px] font-mono text-[var(--gray2)] uppercase font-bold">Fechamentos (Mês)</div>
+                    <div className="text-xl font-display font-black text-[var(--green)] mt-0.5">{formatCurrency(fechamentoValue)}</div>
+                  </div>
+                  <div className="w-8 h-8 rounded-lg bg-[rgba(72,199,103,0.1)] border border-[rgba(72,199,103,0.2)] flex items-center justify-center shrink-0">
+                    <CheckCircle size={16} className="text-[var(--green)]" />
+                  </div>
+                </div>
+
+                <div className="card px-3.5 py-2.5 flex items-center justify-between border-[rgba(240,196,25,0.15)] bg-[var(--card)]">
+                  <div>
+                    <div className="text-[9px] font-mono text-[var(--gray2)] uppercase font-bold">Em Negociação</div>
+                    <div className="text-xl font-display font-black text-[var(--yellow)] mt-0.5">{inNegotiationCount}</div>
+                  </div>
+                  <div className="w-8 h-8 rounded-lg bg-[rgba(240,196,25,0.1)] border border-[rgba(240,196,25,0.2)] flex items-center justify-center shrink-0">
+                    <TrendingUp size={16} className="text-[var(--yellow)]" />
+                  </div>
+                </div>
+
+                <div className="card px-3.5 py-2.5 flex items-center justify-between border-[rgba(226,72,61,0.15)] bg-[var(--card)]">
+                  <div>
+                    <div className="text-[9px] font-mono text-[var(--gray2)] uppercase font-bold">Perdidos (Mês)</div>
+                    <div className="text-xl font-display font-black text-[var(--red)] mt-0.5">{formatCurrency(perdidoValue)}</div>
+                  </div>
+                  <div className="w-8 h-8 rounded-lg bg-[rgba(226,72,61,0.1)] border border-[rgba(226,72,61,0.2)] flex items-center justify-center shrink-0">
+                    <XCircle size={16} className="text-[var(--red)]" />
+                  </div>
+                </div>
+              </div>
+
+              {/* ── ROW 2: FUNNEL ── */}
+              <div className="card px-3 pt-2.5 pb-3 flex flex-col gap-2 shrink-0 bg-[var(--card)]">
+                <div className="flex items-center justify-between border-b border-[var(--line)] pb-2 mb-1">
+                  <div className="flex items-center gap-2">
+                    <Target size={13} className="text-[var(--lime)]" />
+                    <span className="text-[11px] font-bold font-display text-[var(--white)]">Funil de Vendas · Seus Negócios</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider">8 Etapas</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+                  {funnelSummary.map(item => (
+                    <div
+                      key={item.key}
+                      className="rounded-xl px-2.5 py-2 flex flex-col gap-1 border transition-all duration-200"
+                      style={{
+                        borderColor: `color-mix(in srgb, ${item.color} 25%, transparent)`,
+                        background: `color-mix(in srgb, ${item.color} 6%, transparent)`,
+                        borderTopColor: item.color,
+                        borderTopWidth: '2px'
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg font-black font-display leading-none" style={{ color: item.color }}>
+                          {item.count}
+                        </span>
+                        <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: `color-mix(in srgb, ${item.color} 15%, transparent)` }}>
+                          {getStageIcon(item.key, item.color)}
+                        </div>
+                      </div>
+                      <div className="text-[8px] font-mono font-bold uppercase tracking-wide truncate" style={{ color: `color-mix(in srgb, ${item.color} 85%, var(--white))` }}>
+                        {item.stage}
+                      </div>
+                      <div className="text-[9px] font-mono font-bold text-[var(--white)] truncate">
+                        {item.value ? formatCurrency(item.value) : <span className="text-[var(--gray2)]">—</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── ROW 3: TOP CLIENTES & EMBALAGENS (LARGURA TOTAL) ── */}
+              <div className="card p-3 flex flex-col justify-between bg-[var(--card)]">
+                <div className="flex items-center justify-between border-b border-[var(--line)] pb-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <Building size={13} className="text-[var(--lime)]" />
+                    <span className="text-xs font-bold font-display text-[var(--white)]">Meus Top Clientes & Embalagens</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Principais Clientes */}
+                  <div className="space-y-1.5">
+                    <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold tracking-wider flex items-center gap-1">
+                      <Building size={10} className="text-[var(--lime)]" /> Principais Clientes
+                    </div>
+                    <div className="space-y-1">
+                      {TOP_CLIENTS.map(cli => (
+                        <div key={cli.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{cli.rank}</span>
+                            <div className="text-xs font-bold text-[var(--white)] truncate">{cli.name}</div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[8px] font-mono bg-lime-500/10 text-[var(--lime)] px-1.5 py-0.5 rounded font-black border border-[var(--lime)]/10">{cli.type}</span>
+                            <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(cli.value)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Embalagens Mais Demandadas */}
+                  <div className="space-y-1.5">
+                    <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold tracking-wider flex items-center gap-1">
+                      <Layers size={10} className="text-[var(--lime)]" /> Embalagens mais Demandadas
+                    </div>
+                    <div className="space-y-1">
+                      {TOP_PRODUCTS.map(prod => (
+                        <div key={prod.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{prod.rank}</span>
+                            <div className="text-xs font-bold text-[var(--white)] truncate">{prod.name}</div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 text-right">
+                            <span className="text-[8px] font-mono bg-sky-500/10 text-sky-400 px-1.5 py-0.5 rounded font-black border border-sky-500/10">{prod.quantity}</span>
+                            <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(prod.value)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
         </div>
 
-        {/* FIXED BOTTOM NAVIGATION BAR */}
-        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[var(--charcoal)] border-t border-[var(--line)] flex justify-around py-3.5 z-[9999] shadow-2xl">
+        {/* FIXED BOTTOM NAVIGATION BAR (SMALL SCREENS MOBILE ONLY) */}
+        <div className="fixed bottom-0 left-0 right-0 md:hidden bg-[var(--charcoal)] border-t border-[var(--line)] flex justify-around py-3 z-[9999] shadow-2xl">
           <button 
             onClick={() => setActiveTab('painel')}
             className={`flex flex-col items-center gap-1 text-[9px] font-bold font-mono uppercase tracking-wider transition-colors ${activeTab === 'painel' ? 'text-[var(--lime)]' : 'text-[var(--gray2)]'}`}
@@ -934,6 +1129,7 @@ export default function DashboardPage() {
             <Target size={16} />
             <span>Painel</span>
           </button>
+
           <button 
             onClick={() => setActiveTab('clientes')}
             className={`flex flex-col items-center gap-1 text-[9px] font-bold font-mono uppercase tracking-wider transition-colors ${activeTab === 'clientes' ? 'text-[var(--lime)]' : 'text-[var(--gray2)]'}`}
@@ -941,12 +1137,21 @@ export default function DashboardPage() {
             <Users size={16} />
             <span>Clientes</span>
           </button>
+
           <button 
             onClick={() => setActiveTab('mapa')}
             className={`flex flex-col items-center gap-1 text-[9px] font-bold font-mono uppercase tracking-wider transition-colors ${activeTab === 'mapa' ? 'text-[var(--lime)]' : 'text-[var(--gray2)]'}`}
           >
             <MapPin size={16} />
             <span>Mapa</span>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex flex-col items-center gap-1 text-[9px] font-bold font-mono uppercase tracking-wider transition-colors ${activeTab === 'dashboard' ? 'text-[var(--lime)]' : 'text-[var(--gray2)]'}`}
+          >
+            <BarChart3 size={16} />
+            <span>Dashboard</span>
           </button>
         </div>
 
