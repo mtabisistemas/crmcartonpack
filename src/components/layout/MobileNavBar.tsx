@@ -69,17 +69,21 @@ export function MobileNavBar() {
   return (
     <>
       {/* Bottom Nav Bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-[var(--charcoal)] border-t border-[var(--line)] flex justify-around items-center z-40 px-2 shadow-2xl">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#161718]/95 backdrop-blur-xl border-t border-[var(--line)] flex justify-around items-center px-2 py-2 z-40 shadow-[0_-8px_30px_rgba(0,0,0,0.6)]">
         {primaryItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + '/')
           return (
             <Link
               key={href}
               href={href}
-              className={`flex flex-col items-center gap-1 text-[9px] font-bold font-mono uppercase tracking-wider transition-colors ${active ? 'text-[var(--lime)]' : 'text-[var(--gray2)]'}`}
+              className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all duration-200 ${
+                active 
+                  ? 'text-[var(--lime)] bg-lime-500/10 border border-lime-500/25 shadow-[0_0_15px_rgba(180,217,50,0.15)] scale-105' 
+                  : 'text-[var(--gray2)] hover:text-white'
+              }`}
             >
-              <Icon size={18} />
-              <span>{label}</span>
+              <Icon size={18} strokeWidth={active ? 2.5 : 2} />
+              <span className="text-[9px] font-mono font-bold uppercase tracking-wider">{label}</span>
             </Link>
           )
         })}
@@ -87,10 +91,14 @@ export function MobileNavBar() {
         {/* More Button */}
         <button
           onClick={() => setShowMoreMenu(true)}
-          className={`flex flex-col items-center gap-1 text-[9px] font-bold font-mono uppercase tracking-wider transition-colors ${showMoreMenu ? 'text-[var(--lime)]' : 'text-[var(--gray2)]'}`}
+          className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all duration-200 cursor-pointer ${
+            showMoreMenu 
+              ? 'text-[var(--lime)] bg-lime-500/10 border border-lime-500/25 shadow-[0_0_15px_rgba(180,217,50,0.15)] scale-105' 
+              : 'text-[var(--gray2)] hover:text-white'
+          }`}
         >
           <Menu size={18} />
-          <span>Mais</span>
+          <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Mais</span>
         </button>
       </div>
 

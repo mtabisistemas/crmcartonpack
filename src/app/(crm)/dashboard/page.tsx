@@ -1073,38 +1073,62 @@ export default function DashboardPage() {
 
         </div>
 
-        {/* FIXED BOTTOM NAVIGATION BAR (SMALL SCREENS MOBILE ONLY) */}
-        <div className="fixed bottom-0 left-0 right-0 md:hidden bg-[var(--charcoal)] border-t border-[var(--line)] flex justify-around py-3 z-[9999] shadow-2xl">
+        {/* FIXED ELEGANT BOTTOM NAVIGATION BAR (SMALL SCREENS MOBILE ONLY) */}
+        <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-[#161718]/95 backdrop-blur-xl border-t border-[var(--line)] flex justify-around items-center px-2 py-2 z-[9999] shadow-[0_-8px_30px_rgba(0,0,0,0.6)]">
           <button 
             onClick={() => setActiveTab('painel')}
-            className={`flex flex-col items-center gap-1 text-[9px] font-bold font-mono uppercase tracking-wider transition-colors ${activeTab === 'painel' ? 'text-[var(--lime)]' : 'text-[var(--gray2)]'}`}
+            className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all duration-200 cursor-pointer ${
+              activeTab === 'painel' 
+                ? 'text-[var(--lime)] bg-lime-500/10 border border-lime-500/25 shadow-[0_0_15px_rgba(180,217,50,0.15)] scale-105' 
+                : 'text-[var(--gray2)] hover:text-white'
+            }`}
           >
-            <Target size={16} />
-            <span>Painel</span>
+            <Target size={18} strokeWidth={activeTab === 'painel' ? 2.5 : 2} />
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Painel</span>
           </button>
 
           <button 
             onClick={() => setActiveTab('clientes')}
-            className={`flex flex-col items-center gap-1 text-[9px] font-bold font-mono uppercase tracking-wider transition-colors ${activeTab === 'clientes' ? 'text-[var(--lime)]' : 'text-[var(--gray2)]'}`}
+            className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all duration-200 cursor-pointer ${
+              activeTab === 'clientes' 
+                ? 'text-[var(--lime)] bg-lime-500/10 border border-lime-500/25 shadow-[0_0_15px_rgba(180,217,50,0.15)] scale-105' 
+                : 'text-[var(--gray2)] hover:text-white'
+            }`}
           >
-            <Users size={16} />
-            <span>Clientes</span>
+            <Users size={18} strokeWidth={activeTab === 'clientes' ? 2.5 : 2} />
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Clientes</span>
           </button>
 
           <button 
             onClick={() => setActiveTab('mapa')}
-            className={`flex flex-col items-center gap-1 text-[9px] font-bold font-mono uppercase tracking-wider transition-colors ${activeTab === 'mapa' ? 'text-[var(--lime)]' : 'text-[var(--gray2)]'}`}
+            className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all duration-200 cursor-pointer ${
+              activeTab === 'mapa' 
+                ? 'text-[var(--lime)] bg-lime-500/10 border border-lime-500/25 shadow-[0_0_15px_rgba(180,217,50,0.15)] scale-105' 
+                : 'text-[var(--gray2)] hover:text-white'
+            }`}
           >
-            <MapPin size={16} />
-            <span>Mapa</span>
+            <MapPin size={18} strokeWidth={activeTab === 'mapa' ? 2.5 : 2} />
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Mapa</span>
           </button>
 
           <button 
             onClick={() => setActiveTab('dashboard')}
-            className={`flex flex-col items-center gap-1 text-[9px] font-bold font-mono uppercase tracking-wider transition-colors ${activeTab === 'dashboard' ? 'text-[var(--lime)]' : 'text-[var(--gray2)]'}`}
+            className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all duration-200 cursor-pointer ${
+              activeTab === 'dashboard' 
+                ? 'text-[var(--lime)] bg-lime-500/10 border border-lime-500/25 shadow-[0_0_15px_rgba(180,217,50,0.15)] scale-105' 
+                : 'text-[var(--gray2)] hover:text-white'
+            }`}
           >
-            <BarChart3 size={16} />
-            <span>Dashboard</span>
+            <BarChart3 size={18} strokeWidth={activeTab === 'dashboard' ? 2.5 : 2} />
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Dashboard</span>
+          </button>
+
+          <button 
+            onClick={handleLogout}
+            className="flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all duration-200 text-[var(--gray2)] hover:text-red-400 cursor-pointer"
+          >
+            <LogOut size={18} />
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Sair</span>
           </button>
         </div>
 
