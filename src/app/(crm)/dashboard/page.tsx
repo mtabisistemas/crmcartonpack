@@ -33,6 +33,7 @@ import {
   Minimize2
 } from 'lucide-react'
 import { formatCurrency, whatsappLink } from '@/lib/utils'
+import { getPipelineDeals } from '@/services/pipeline-service'
 import Link from 'next/link'
 
 declare let L: any
@@ -106,7 +107,7 @@ export default function DashboardPage() {
   const mobileMapInstanceRef = useRef<any>(null)
   
   const [visitsGoal, setVisitsGoal] = useState(15)
-  const [completedVisits, setCompletedVisits] = useState(8)
+  const [completedVisits, setCompletedVisits] = useState(0)
   const [showCheckinModal, setShowCheckinModal] = useState(false)
   const [selectedContactId, setSelectedContactId] = useState('')
   const [isRecording, setIsRecording] = useState(false)
