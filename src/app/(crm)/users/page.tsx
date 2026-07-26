@@ -1,5 +1,6 @@
 'use client'
 
+import { dbService } from '@/services/supabase-client'
 import { useState, useEffect } from 'react'
 import {
   Plus,
@@ -77,28 +78,33 @@ export default function UsersPage() {
   const [toastMessage, setToastMessage] = useState('')
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
 
-  // Load from localStorage
+  // Load & Sync from localStorage and Supabase profiles table
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('cp_crm_v7_official_users')
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved)
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setUsers(parsed)
-            return
-          }
-        } catch (e) {}
+    async function syncUsers() {
+      try {
+        const fetched = await dbService.usuarios.list()
+        if (fetched && fetched.length > 0) {
+          setUsers(fetched)
+          fetched.forEach(u => {
+            try { dbService.usuarios.save(u) } catch(e) {}
+          })
+        }
+      } catch (e) {
+        console.error(e)
       }
     }
+    syncUsers()
   }, [])
 
-  // Persist to localStorage
+  // Persist to localStorage & Supabase profiles
   const saveUsers = (newUsers: TeamUser[]) => {
     setUsers(newUsers)
     if (typeof window !== 'undefined') {
       localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(newUsers))
     }
+    newUsers.forEach(u => {
+      try { dbService.usuarios.save(u) } catch(e) {}
+    })
   }
 
   const deriveUsername = (n: string) => {

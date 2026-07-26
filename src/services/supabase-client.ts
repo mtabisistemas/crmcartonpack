@@ -25,24 +25,118 @@ export const dbService = {
   isMock: !isSupabaseConfigured,
 
   usuarios: {
-    async list(): Promise<Usuario[]> {
-      if (!isSupabaseConfigured) return DBMock.getUsuarios();
-      const { data, error } = await supabase!
-        .from('usuarios')
-        .select('*')
-        .order('nome', { ascending: true });
-      if (error) throw error;
-      return data || [];
+    async list(): Promise<any[]> {
+      let localUsers: any[] = [];
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('cp_crm_v7_official_users');
+        if (saved) {
+          try { localUsers = JSON.parse(saved); } catch (e) {}
+        }
+      }
+
+      if (!isSupabaseConfigured || !supabase) {
+        return localUsers.length > 0 ? localUsers : DBMock.getUsuarios();
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*');
+
+        if (!error && data && data.length > 0) {
+          const mappedFromSb = data.map((p: any) => ({
+            id: p.id,
+            name: p.full_name || p.name || p.email?.split('@')[0],
+            email: p.email,
+            role: p.role || 'representante',
+            status: p.status || 'ativo',
+            phone: p.phone || '',
+            createdAt: p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR'),
+            username: p.username,
+            tempPassword: p.temp_password || p.tempPassword,
+            isFirstAccess: p.is_first_access !== false
+          }));
+
+          const merged = [...mappedFromSb];
+          localUsers.forEach(lu => {
+            if (!merged.some(m => m.id === lu.id || (m.email && m.email === lu.email) || (m.username && m.username === lu.username))) {
+              merged.push(lu);
+            }
+          });
+
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(merged));
+          }
+
+          return merged;
+        }
+      } catch (err) {
+        console.warn('[Supabase Profiles Fetch Warning]:', err);
+      }
+
+      return localUsers;
     },
-    
-    async getLogado(): Promise<Usuario> {
+
+    async save(user: any): Promise<any> {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('cp_crm_v7_official_users');
+        const users = saved ? JSON.parse(saved) : [];
+        const idx = users.findIndex((u: any) => u.id === user.id);
+        if (idx >= 0) {
+          users[idx] = user;
+        } else {
+          users.unshift(user);
+        }
+        localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(users));
+      }
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const payload = {
+            full_name: user.name,
+            email: user.email,
+            username: user.username,
+            role: user.role,
+            phone: user.phone,
+            status: user.status || 'ativo',
+            temp_password: user.tempPassword,
+            is_first_access: user.isFirstAccess !== false
+          };
+
+          await supabase.from('profiles').upsert([payload]);
+        } catch (err) {
+          console.warn('[Supabase Sync Warning]:', err);
+        }
+      }
+
+      return user;
+    },
+
+    async delete(id: string): Promise<void> {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('cp_crm_v7_official_users');
+        if (saved) {
+          try {
+            const users = JSON.parse(saved).filter((u: any) => u.id !== id);
+            localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(users));
+          } catch (e) {}
+        }
+      }
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          await supabase.from('profiles').delete().eq('id', id);
+        } catch (e) {}
+      }
+    },
+
+    async getLogado(): Promise<any> {
       if (!isSupabaseConfigured) return DBMock.getUsuarioLogado();
-      // Em produção, buscaríamos pelo auth.user
       const { data: { user } } = await supabase!.auth.getUser();
       if (!user) throw new Error('Não autenticado');
       
       const { data, error } = await supabase!
-        .from('usuarios')
+        .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
@@ -50,7 +144,7 @@ export const dbService = {
       return data;
     },
 
-    setLogado(usuario: Usuario) {
+    setLogado(usuario: any) {
       if (!isSupabaseConfigured) {
         DBMock.setUsuarioLogado(usuario);
       } else {
@@ -60,7 +154,7 @@ export const dbService = {
       }
     },
 
-    getLogadoSimulado(): Usuario {
+    getLogadoSimulado(): any {
       if (!isSupabaseConfigured) return DBMock.getUsuarioLogado();
       if (typeof window === 'undefined') return DBMock.getUsuarioLogado();
       const sim = localStorage.getItem('cp_crm_user_logado_simulado');
