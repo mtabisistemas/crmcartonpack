@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { MobileNavBar } from '@/components/layout/MobileNavBar'
+import { MobileTopBar } from '@/components/layout/MobileTopBar'
 import { Loader2 } from 'lucide-react'
 
 export default function CRMLayout({ children }: { children: React.ReactNode }) {
@@ -60,7 +61,9 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-layout">
       <Sidebar />
-      <main className="main-content">
+      {/* Mobile Top Header Bar (admin/manager only — reps have their own header) */}
+      <MobileTopBar />
+      <main className="main-content lg:pt-0 pt-14">
         {children}
       </main>
       <MobileNavBar />

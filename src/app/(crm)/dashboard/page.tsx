@@ -31,7 +31,9 @@ import {
   Layers,
   Search,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Sun,
+  Moon
 } from 'lucide-react'
 import { formatCurrency, whatsappLink } from '@/lib/utils'
 import { getPipelineDeals } from '@/services/pipeline-service'
@@ -65,6 +67,9 @@ export default function DashboardPage() {
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null)
   const [isSessionLoaded, setIsSessionLoaded] = useState(false)
   const [contacts, setContacts] = useState<any[]>([])
+
+  // Theme state (for mobile toggle)
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
   // Dashboard Filters: Year, Month, Rep, Curve ABC
   const [selectedYear, setSelectedYear] = useState<string>('2026')
@@ -159,6 +164,10 @@ export default function DashboardPage() {
       }
 
       setIsSessionLoaded(true)
+
+      // Initialize theme from DOM
+      const activeTheme = (document.documentElement.getAttribute('data-theme') || 'dark') as 'dark' | 'light'
+      setTheme(activeTheme)
     }
   }, [])
 
@@ -605,6 +614,23 @@ export default function DashboardPage() {
     }
   }
 
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('crm_current_user')
+      document.cookie = 'cp_crm_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+      window.location.replace('/login')
+    }
+  }
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark'
+    setTheme(newTheme)
+    document.documentElement.setAttribute('data-theme', newTheme)
+    localStorage.setItem('cp_crm_theme', newTheme)
+    localStorage.setItem('theme', newTheme)
+    document.cookie = `cp_crm_theme=${newTheme}; path=/; max-age=31536000; SameSite=Lax`
+  }
+
   // Filter deals based on state
   const filteredDeals = MOCK_DEALS.filter(deal => {
     const matchesRep = selectedRep === 'all' || deal.representative === selectedRep
@@ -713,10 +739,6 @@ export default function DashboardPage() {
     return `${min}:${sec < 10 ? '0' : ''}${sec}`
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('crm_current_user')
-    window.location.href = '/login'
-  }
 
   const maxSalesValue = selectedDrilldownMonth 
     ? Math.max(...selectedDrilldownMonth.daily.map((d: any) => d.value), 1)
@@ -748,6 +770,14 @@ export default function DashboardPage() {
             {activeTab === 'mapa' && 'Mapa de Clientes'}
             {activeTab === 'clientes' && 'Carteira de Clientes'}
           </h1>
+          {/* Theme Toggle - Mobile only */}
+          <button
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
+            className="lg:hidden p-2 rounded-xl text-[var(--gray2)] hover:text-[var(--white)] hover:bg-[var(--charcoal)] transition-all bg-transparent border border-[var(--line)] cursor-pointer"
+          >
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
         </div>
 
         {/* Dynamic Tab Body */}
