@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { CartonPackLogo } from '@/components/CartonPackLogo'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Key, ShieldAlert, Mail, Lock, ArrowRight, UserCheck, Shield, Eye, EyeOff, User } from 'lucide-react'
@@ -256,17 +257,13 @@ export default function LoginPage() {
         {/* LOGO OFICIAL CARTON PACK® */}
         <div className="text-center flex flex-col items-center gap-3 mb-2">
           <div className="p-3.5 rounded-2xl bg-[var(--card)] border border-[var(--line)] shadow-2xl backdrop-blur-md">
-            <img
-              src="/cartonpack-logo.png"
-              alt="CARTON PACK®"
-              className="h-10 w-auto object-contain brightness-110 drop-shadow-[0_4px_16px_rgba(180,217,50,0.3)]"
-            />
+            <CartonPackLogo height={40} />
           </div>
           <div>
-            <h1 className="text-sm font-bold font-display text-white tracking-wide uppercase mt-1">
+            <h1 className="text-sm font-bold font-display text-[var(--white)] tracking-wide uppercase mt-1">
               Plataforma CRM Comercial & Operacional
             </h1>
-            <p className="text-[11px] font-mono text-[var(--gray2)] mt-0.5">
+            <p className="text-[11px] font-mono text-[var(--gray)] font-medium mt-0.5">
               Gestão de Clientes, Prospecção B2B e Orçamentos
             </p>
           </div>
@@ -287,7 +284,7 @@ export default function LoginPage() {
                 className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   loginType === 'representante'
                     ? 'bg-[var(--lime)] text-black shadow-lg font-mono'
-                    : 'text-[var(--gray2)] hover:text-white'
+                    : 'text-[var(--gray)] hover:text-[var(--white)]'
                 }`}
               >
                 <User size={14} />
@@ -303,7 +300,7 @@ export default function LoginPage() {
                 className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   loginType === 'corporativo'
                     ? 'bg-[var(--lime)] text-black shadow-lg font-mono'
-                    : 'text-[var(--gray2)] hover:text-white'
+                    : 'text-[var(--gray)] hover:text-[var(--white)]'
                 }`}
               >
                 <Mail size={14} />
@@ -314,7 +311,7 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} className="space-y-4">
               {/* CAMPO DE USUÁRIO OU E-MAIL */}
               <div>
-                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] mb-1.5 block">
+                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray)] mb-1.5 block">
                   {loginType === 'representante' ? 'Nome de Usuário *' : 'E-mail Corporativo *'}
                 </label>
                 <div className="flex items-center bg-[var(--black)] border border-[var(--line)] rounded-xl focus-within:border-[var(--lime)]/60 focus-within:ring-1 focus-within:ring-[var(--lime)]/30 transition-all px-3.5 py-3 gap-2.5">
@@ -329,14 +326,14 @@ export default function LoginPage() {
                     value={identifier}
                     onChange={e => setIdentifier(e.target.value)}
                     required
-                    className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-zinc-600 font-mono"
+                    className="bg-transparent border-none outline-none text-sm text-[var(--white)] w-full placeholder:text-[var(--gray2)] font-mono"
                   />
                 </div>
               </div>
 
               {/* CAMPO DE SENHA */}
               <div>
-                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] mb-1.5 block">
+                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray)] mb-1.5 block">
                   Senha de Acesso *
                 </label>
                 <div className="flex items-center bg-[var(--black)] border border-[var(--line)] rounded-xl focus-within:border-[var(--lime)]/60 focus-within:ring-1 focus-within:ring-[var(--lime)]/30 transition-all px-3.5 py-3 gap-2.5">
@@ -348,12 +345,12 @@ export default function LoginPage() {
                     onChange={e => setPassword(e.target.value)}
                     required
                     autoComplete="current-password"
-                    className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-zinc-600 font-mono"
+                    className="bg-transparent border-none outline-none text-sm text-[var(--white)] w-full placeholder:text-[var(--gray2)] font-mono"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-[var(--gray2)] hover:text-white transition-colors cursor-pointer"
+                    className="text-[var(--gray)] hover:text-[var(--white)] transition-colors cursor-pointer"
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -380,7 +377,7 @@ export default function LoginPage() {
             </form>
 
             <div className="pt-2 border-t border-[var(--line)]/50 text-center">
-              <p className="text-[11px] text-[var(--gray2)] font-mono">
+              <p className="text-[11px] text-[var(--gray)] font-mono font-medium">
                 Acesso restrito à equipe autorizada Carton Pack.
               </p>
             </div>
@@ -402,7 +399,7 @@ export default function LoginPage() {
 
             <form onSubmit={handleSaveNewPassword} className="space-y-4">
               <div>
-                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] mb-1.5 block">
+                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray)] mb-1.5 block">
                   Nova Senha (mínimo 6 caracteres) *
                 </label>
                 <input
@@ -416,7 +413,7 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] mb-1.5 block">
+                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray)] mb-1.5 block">
                   Confirmar Nova Senha *
                 </label>
                 <input
@@ -482,7 +479,7 @@ export default function LoginPage() {
         )}
 
         {/* FOOTER */}
-        <p className="text-center text-[11px] font-mono text-[var(--gray2)]">
+        <p className="text-center text-[11px] font-mono text-[var(--gray)] font-medium">
           Carton Pack © {new Date().getFullYear()} — Sistema Interno Homologado
         </p>
 
