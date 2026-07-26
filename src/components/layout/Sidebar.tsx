@@ -47,24 +47,18 @@ export function Sidebar() {
 
   return (
     <aside className="sidebar hidden lg:flex">
-      {/* Logo */}
-      <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="#060606" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M3.27 6.96L12 12.01l8.73-5.05" stroke="#060606" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M12 22.08V12" stroke="#060606" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </div>
-        <div className="sidebar-logo-text">
-          <div className="sidebar-logo-name">
-            <span className="carton">CARTON</span>
-            <span className="pack"> PACK</span>
-          </div>
-          <div className="sidebar-logo-sub">
-            CRM Comercial
-          </div>
-        </div>
+      {/* Logo Oficial Carton Pack */}
+      <div className="px-5 py-5 border-b border-[var(--line)] flex flex-col gap-1 select-none">
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <img
+            src="/cartonpack-logo.png"
+            alt="CARTON PACK®"
+            className="h-7 w-auto object-contain brightness-110 drop-shadow-[0_2px_8px_rgba(180,217,50,0.25)]"
+          />
+        </Link>
+        <span className="text-[10px] font-mono text-[var(--gray2)] tracking-widest uppercase pl-0.5">
+          CRM Comercial & Operacional
+        </span>
       </div>
 
       {/* Nav */}

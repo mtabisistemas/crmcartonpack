@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { Key, ShieldAlert, Mail, Lock, ArrowRight } from 'lucide-react'
+import { Key, ShieldAlert, Mail, Lock, ArrowRight, UserCheck, Shield, Eye, EyeOff, User } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState('')
+  const [loginType, setLoginType] = useState<'representante' | 'corporativo'>('representante')
+  const [identifier, setIdentifier] = useState('') // username or email
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -21,43 +23,56 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
 
-  // Initialize storage check on client side
+  // Clean old mock users on initial load if needed
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Clean old mock users if present
-      const saved = localStorage.getItem('crm_users')
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved)
-          const clean = parsed.filter((u: any) => !['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara', 'Inácio Siqueira', 'Thaiane Antunes'].includes(u.name))
-          localStorage.setItem('crm_users', JSON.stringify(clean))
-        } catch (e) {}
+      const saved = localStorage.getItem('cp_crm_v7_official_users')
+      if (!saved) {
+        // Default clean state
       }
     }
   }, [])
 
-  // Standard or Mock auth handle
+  // Standard or Mock auth handler
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
 
-    // 1. Try local storage mockup login intercept
+    const cleanInput = identifier.trim()
+
+    // 1. Validation check according to login mode
+    if (loginType === 'corporativo' && !cleanInput.includes('@')) {
+      setError('Acesso corporativo requer um e-mail válido (ex: nome@cartonpack.com).')
+      setLoading(false)
+      return
+    }
+
+    // 2. Try local storage mockup login intercept
     if (typeof window !== 'undefined') {
-      const savedUsers = localStorage.getItem('crm_users')
+      const savedUsers = localStorage.getItem('cp_crm_v7_official_users')
       if (savedUsers) {
         try {
           const parsed = JSON.parse(savedUsers)
-          const matchedUser = parsed.find((u: any) => 
-            u.email?.toLowerCase() === email.toLowerCase() || 
-            (u.username && u.username.toLowerCase() === email.toLowerCase())
-          )
+          const matchedUser = parsed.find((u: any) => {
+            const inputLower = cleanInput.toLowerCase()
+            const isEmailMatch = u.email && u.email.toLowerCase() === inputLower
+            const isUsernameMatch = u.username && u.username.toLowerCase() === inputLower
+            return isEmailMatch || isUsernameMatch
+          })
 
           if (matchedUser) {
+            // Check role match if strictly enforcing representative username vs email
+            if (loginType === 'representante' && matchedUser.role !== 'representante' && matchedUser.role !== 'vendedor') {
+              setError('Este acesso é exclusivo para Representantes Comerciais. Use o login Corporativo.')
+              setLoading(false)
+              return
+            }
+
             const currentPassword = matchedUser.password || matchedUser.tempPassword
             if (password === currentPassword) {
               if (matchedUser.status === 'inativo') {
-                setError('Este usuário está inativo. Acesso bloqueado.')
+                setError('Este usuário está inativo. Acesso bloqueado pelo administrador.')
                 setLoading(false)
                 return
               }
@@ -71,9 +86,9 @@ export default function LoginPage() {
                 return
               }
 
-              // Check if email confirmation is required (only for cartonpack.com emails)
+              // Check if email confirmation is required (only for corporate cartonpack.com emails)
               const isCarton = matchedUser.email?.toLowerCase().endsWith('@cartonpack.com')
-              if (isCarton && matchedUser.isEmailConfirmed !== true) {
+              if (isCarton && matchedUser.isEmailConfirmed === false && loginType === 'corporativo') {
                 setActiveStep('confirm-email')
                 setLoading(false)
                 return
@@ -84,6 +99,7 @@ export default function LoginPage() {
                 id: matchedUser.id,
                 name: matchedUser.name,
                 email: matchedUser.email,
+                username: matchedUser.username,
                 role: matchedUser.role,
                 status: matchedUser.status
               }))
@@ -99,30 +115,35 @@ export default function LoginPage() {
       }
     }
 
-    // 2. Production fallback with Supabase
-    const supabase = createClient()
-    const { error: sbError } = await supabase.auth.signInWithPassword({ email, password })
+    // 3. Fallback Supabase authentication
+    try {
+      const supabase = createClient()
+      const authPayload = cleanInput.includes('@') ? { email: cleanInput, password } : { email: `${cleanInput}@cartonpack.com`, password }
+      const { error: sbError } = await supabase.auth.signInWithPassword(authPayload)
 
-    if (sbError) {
-      setError('E-mail, usuário ou senha incorretos.')
+      if (sbError) {
+        setError(loginType === 'representante' ? 'Nome de usuário ou senha incorretos.' : 'E-mail corporativo ou senha incorretos.')
+        setLoading(false)
+        return
+      }
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        localStorage.setItem('crm_current_user', JSON.stringify({
+          id: user.id,
+          name: user.user_metadata?.name || user.email?.split('@')[0],
+          email: user.email,
+          role: user.user_metadata?.role || 'admin',
+          status: 'ativo'
+        }))
+      }
+
+      router.push('/dashboard')
+      router.refresh()
+    } catch (err) {
+      setError(loginType === 'representante' ? 'Nome de usuário ou senha incorretos.' : 'E-mail corporativo ou senha incorretos.')
       setLoading(false)
-      return
     }
-
-    // Load active session user if Supabase login succeeded
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      localStorage.setItem('crm_current_user', JSON.stringify({
-        id: user.id,
-        name: user.user_metadata?.name || user.email?.split('@')[0],
-        email: user.email,
-        role: user.user_metadata?.role || 'admin',
-        status: 'ativo'
-      }))
-    }
-
-    router.push('/dashboard')
-    router.refresh()
   }
 
   // Handle first time password change
@@ -135,12 +156,12 @@ export default function LoginPage() {
       return
     }
     if (newPassword !== confirmPassword) {
-      setPasswordError('As senhas não coincidem.')
+      setPasswordError('As senhas digitadas não coincidem.')
       return
     }
 
     if (typeof window !== 'undefined' && targetUser) {
-      const savedUsers = localStorage.getItem('crm_users')
+      const savedUsers = localStorage.getItem('cp_crm_v7_official_users')
       if (savedUsers) {
         try {
           const parsed = JSON.parse(savedUsers)
@@ -152,16 +173,14 @@ export default function LoginPage() {
                 ...u,
                 password: newPassword,
                 isFirstAccess: false,
-                // Externals bypass email confirmation directly
                 isEmailConfirmed: isCarton ? false : true
               }
             }
             return u
           })
           
-          localStorage.setItem('crm_users', JSON.stringify(updated))
+          localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(updated))
           
-          // Log user record state update locally
           const updatedTargetUser = {
             ...targetUser,
             password: newPassword,
@@ -170,15 +189,14 @@ export default function LoginPage() {
           }
           setTargetUser(updatedTargetUser)
 
-          // Route based on email domain
-          if (isCarton) {
+          if (isCarton && loginType === 'corporativo') {
             setActiveStep('confirm-email')
           } else {
-            // Direct access
             localStorage.setItem('crm_current_user', JSON.stringify({
               id: targetUser.id,
               name: targetUser.name,
               email: targetUser.email,
+              username: targetUser.username,
               role: targetUser.role,
               status: targetUser.status
             }))
@@ -192,10 +210,10 @@ export default function LoginPage() {
     }
   }
 
-  // Handle email confirmation simulation click
+  // Handle email confirmation simulation
   const handleSimulateEmailConfirm = () => {
     if (typeof window !== 'undefined' && targetUser) {
-      const savedUsers = localStorage.getItem('crm_users')
+      const savedUsers = localStorage.getItem('cp_crm_v7_official_users')
       if (savedUsers) {
         try {
           const parsed = JSON.parse(savedUsers)
@@ -208,13 +226,13 @@ export default function LoginPage() {
             }
             return u
           })
-          localStorage.setItem('crm_users', JSON.stringify(updated))
+          localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(updated))
           
-          // Log in successfully
           localStorage.setItem('crm_current_user', JSON.stringify({
             id: targetUser.id,
             name: targetUser.name,
             email: targetUser.email,
+            username: targetUser.username,
             role: targetUser.role,
             status: targetUser.status
           }))
@@ -229,197 +247,224 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'var(--bg-base)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-      {/* Background glow */}
-      <div style={{
-        position: 'absolute',
-        width: '600px',
-        height: '600px',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(180,217,50,0.06) 0%, transparent 70%)',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        pointerEvents: 'none',
-      }} />
+    <div className="min-h-screen bg-[var(--bg-base)] flex items-center justify-center p-6 relative overflow-hidden select-none">
+      {/* Dynamic Background Glow */}
+      <div className="absolute w-[650px] h-[650px] rounded-full bg-[radial-gradient(circle,rgba(180,217,50,0.07)_0%,transparent_70%)] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
 
-      <div className="animate-fade-in" style={{ width: '100%', maxWidth: '400px', position: 'relative' }}>
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '14px',
-            background: 'var(--brand-500)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 16px',
-            boxShadow: '0 8px 28px rgba(180,217,50,0.3)',
-          }}>
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
-              <path d="M3 9l9-6 9 6v11a1 1 0 01-1 1H4a1 1 0 01-1-1V9z" stroke="#111" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M9 22V12h6v10" stroke="#111" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+      <div className="w-full max-w-[440px] relative z-10 space-y-6 animate-fade-up">
+
+        {/* LOGO OFICIAL CARTON PACK® */}
+        <div className="text-center flex flex-col items-center gap-3 mb-2">
+          <div className="p-3.5 rounded-2xl bg-[var(--card)] border border-[var(--line)] shadow-2xl backdrop-blur-md">
+            <img
+              src="/cartonpack-logo.png"
+              alt="CARTON PACK®"
+              className="h-10 w-auto object-contain brightness-110 drop-shadow-[0_4px_16px_rgba(180,217,50,0.3)]"
+            />
           </div>
-          <h1 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px', letterSpacing: '-0.02em' }}>
-            <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>CARTON</span>
-            <span style={{ color: 'var(--brand-500)' }}> PACK</span>
-          </h1>
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            CRM Comercial e Operacional
-          </p>
+          <div>
+            <h1 className="text-sm font-bold font-display text-white tracking-wide uppercase mt-1">
+              Plataforma CRM Comercial & Operacional
+            </h1>
+            <p className="text-[11px] font-mono text-[var(--gray2)] mt-0.5">
+              Gestão de Clientes, Prospecção B2B e Orçamentos
+            </p>
+          </div>
         </div>
 
-        {/* STEP 1: Standard Login Form */}
+        {/* STEP 1: LOGIN FORM */}
         {activeStep === 'login' && (
-          <div className="card" style={{ padding: '32px' }}>
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="rounded-3xl border border-[var(--line)] bg-[var(--card)]/90 backdrop-blur-xl p-7 shadow-2xl space-y-6">
+
+            {/* SELETOR DE MODO DE ACESSO */}
+            <div className="grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-[var(--black)] border border-[var(--line)]">
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginType('representante')
+                  setError('')
+                }}
+                className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  loginType === 'representante'
+                    ? 'bg-[var(--lime)] text-black shadow-lg font-mono'
+                    : 'text-[var(--gray2)] hover:text-white'
+                }`}
+              >
+                <User size={14} />
+                <span>Representante</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginType('corporativo')
+                  setError('')
+                }}
+                className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  loginType === 'corporativo'
+                    ? 'bg-[var(--lime)] text-black shadow-lg font-mono'
+                    : 'text-[var(--gray2)] hover:text-white'
+                }`}
+              >
+                <Mail size={14} />
+                <span>Corporativo</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              {/* CAMPO DE USUÁRIO OU E-MAIL */}
               <div>
-                <label className="label">E-mail ou Usuário</label>
-                <input
-                  className="input"
-                  type="text"
-                  placeholder="seu.nome ou seu@email.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required
-                />
+                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] mb-1.5 block">
+                  {loginType === 'representante' ? 'Nome de Usuário *' : 'E-mail Corporativo *'}
+                </label>
+                <div className="flex items-center bg-[var(--black)] border border-[var(--line)] rounded-xl focus-within:border-[var(--lime)]/60 focus-within:ring-1 focus-within:ring-[var(--lime)]/30 transition-all px-3.5 py-3 gap-2.5">
+                  {loginType === 'representante' ? (
+                    <User size={16} className="text-[var(--lime)] shrink-0" />
+                  ) : (
+                    <Mail size={16} className="text-[var(--lime)] shrink-0" />
+                  )}
+                  <input
+                    type={loginType === 'representante' ? 'text' : 'email'}
+                    placeholder={loginType === 'representante' ? 'ex: fausto.fleck' : 'ex: roberto.carlos@cartonpack.com'}
+                    value={identifier}
+                    onChange={e => setIdentifier(e.target.value)}
+                    required
+                    className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-zinc-600 font-mono"
+                  />
+                </div>
               </div>
 
+              {/* CAMPO DE SENHA */}
               <div>
-                <label className="label">Senha</label>
-                <input
-                  className="input"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                />
+                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] mb-1.5 block">
+                  Senha de Acesso *
+                </label>
+                <div className="flex items-center bg-[var(--black)] border border-[var(--line)] rounded-xl focus-within:border-[var(--lime)]/60 focus-within:ring-1 focus-within:ring-[var(--lime)]/30 transition-all px-3.5 py-3 gap-2.5">
+                  <Lock size={16} className="text-[var(--gray2)] shrink-0" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                    className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-zinc-600 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-[var(--gray2)] hover:text-white transition-colors cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
+              {/* MENSAGEM DE ERRO */}
               {error && (
-                <div style={{
-                  background: 'rgba(239,68,68,0.1)',
-                  border: '1px solid rgba(239,68,68,0.3)',
-                  borderRadius: '8px',
-                  padding: '10px 14px',
-                  color: '#fca5a5',
-                  fontSize: '13px',
-                }}>
-                  {error}
+                <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-mono flex items-start gap-2.5 animate-shake">
+                  <ShieldAlert size={16} className="shrink-0 text-red-400 mt-0.5" />
+                  <span>{error}</span>
                 </div>
               )}
 
+              {/* BOTÃO DE SUBMIT */}
               <button
                 type="submit"
-                className="btn btn-primary btn-lg"
                 disabled={loading}
-                style={{ width: '100%', marginTop: '4px' }}
+                className="w-full py-3.5 px-4 rounded-xl bg-[var(--lime)] text-black font-display font-black text-sm uppercase tracking-wider hover:bg-[var(--lime-hover)] transition-all transform active:scale-[0.99] shadow-lg shadow-[rgba(180,217,50,0.2)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
               >
-                {loading ? 'Validando...' : 'Entrar no Sistema'}
+                <span>{loading ? 'Validando Acesso...' : 'ENTRAR NO SISTEMA'}</span>
+                {!loading && <ArrowRight size={16} />}
               </button>
             </form>
+
+            <div className="pt-2 border-t border-[var(--line)]/50 text-center">
+              <p className="text-[11px] text-[var(--gray2)] font-mono">
+                Acesso restrito à equipe autorizada Carton Pack.
+              </p>
+            </div>
           </div>
         )}
 
-        {/* STEP 2: First Access - Change Password */}
+        {/* STEP 2: PRIMEIRO ACESSO - ALTERAÇÃO DE SENHA */}
         {activeStep === 'first-access' && targetUser && (
-          <div className="card animate-fade-up" style={{ padding: '32px', border: '1px solid var(--lime)' }}>
-            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'inline-flex', padding: '10px', background: 'rgba(180,217,50,0.1)', borderRadius: '50%', color: 'var(--lime)', marginBottom: '12px' }}>
-                <Key size={24} />
+          <div className="rounded-3xl border border-[var(--lime)]/40 bg-[var(--card)]/90 backdrop-blur-xl p-7 shadow-2xl space-y-5 animate-fade-up">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--lime)]/10 border border-[var(--lime)]/30 text-[var(--lime)] flex items-center justify-center mx-auto shadow-inner">
+                <Key size={22} />
               </div>
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Primeiro Acesso</h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                Defina uma nova senha para o usuário <strong style={{ color: 'var(--text-secondary)' }}>{targetUser.name}</strong>.
+              <h3 className="text-base font-bold font-display text-white">Primeiro Acesso Detectado</h3>
+              <p className="text-xs text-[var(--gray2)]">
+                Por motivos de segurança, defina uma nova senha para o usuário <strong className="text-white font-mono">{targetUser.name}</strong>.
               </p>
             </div>
 
-            <form onSubmit={handleSaveNewPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={handleSaveNewPassword} className="space-y-4">
               <div>
-                <label className="label">Nova Senha (mín. 6 dígitos)</label>
+                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] mb-1.5 block">
+                  Nova Senha (mínimo 6 caracteres) *
+                </label>
                 <input
-                  className="input"
                   type="password"
                   required
                   placeholder="Digite sua nova senha"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
+                  className="w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3.5 py-3 text-sm text-white font-mono outline-none focus:border-[var(--lime)]/60"
                 />
               </div>
 
               <div>
-                <label className="label">Confirmar Nova Senha</label>
+                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] mb-1.5 block">
+                  Confirmar Nova Senha *
+                </label>
                 <input
-                  className="input"
                   type="password"
                   required
                   placeholder="Repita a nova senha"
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
+                  className="w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3.5 py-3 text-sm text-white font-mono outline-none focus:border-[var(--lime)]/60"
                 />
               </div>
 
               {passwordError && (
-                <div style={{
-                  background: 'rgba(239,68,68,0.1)',
-                  border: '1px solid rgba(239,68,68,0.3)',
-                  borderRadius: '8px',
-                  padding: '10px 14px',
-                  color: '#fca5a5',
-                  fontSize: '12px',
-                }}>
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-mono">
                   {passwordError}
                 </div>
               )}
 
               <button
                 type="submit"
-                className="btn btn-primary btn-lg"
-                style={{ width: '100%', marginTop: '6px', color: 'black' }}
+                className="w-full py-3.5 px-4 rounded-xl bg-[var(--lime)] text-black font-display font-black text-sm uppercase tracking-wider hover:bg-[var(--lime-hover)] transition-all cursor-pointer shadow-lg"
               >
-                Definir Senha e Continuar
+                SALVAR SENHA E CONTINUAR
               </button>
             </form>
           </div>
         )}
 
-        {/* STEP 3: Confirm Email (Carton Pack Emails Only) */}
+        {/* STEP 3: CONFIRMAÇÃO DE E-MAIL (CORPORATIVO) */}
         {activeStep === 'confirm-email' && targetUser && (
-          <div className="card animate-fade-up" style={{ padding: '32px', border: '1px solid var(--brand-500)' }}>
-            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-              <div style={{ display: 'inline-flex', padding: '12px', background: 'rgba(99,102,241,0.12)', borderRadius: '50%', color: 'var(--brand-500)', marginBottom: '14px' }}>
-                <Mail size={28} />
+          <div className="rounded-3xl border border-[var(--lime)]/40 bg-[var(--card)]/90 backdrop-blur-xl p-7 shadow-2xl space-y-5 animate-fade-up">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mx-auto">
+                <Mail size={24} />
               </div>
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Confirmação Pendente</h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', lineHeight: '1.5' }}>
-                Um link de ativação foi enviado para seu e-mail corporativo: <br/>
-                <strong style={{ color: 'var(--text-primary)', fontFamily: 'monospace' }}>{targetUser.email}</strong>
-              </p>
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>
-                Acesse a caixa de entrada para confirmar seu acesso.
+              <h3 className="text-base font-bold font-display text-white">Confirmação de E-mail Pendente</h3>
+              <p className="text-xs text-[var(--gray2)] leading-relaxed">
+                Foi enviado um link de validação para o e-mail corporativo: <br/>
+                <strong className="text-white font-mono text-xs">{targetUser.email}</strong>
               </p>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="space-y-3 pt-2">
               <button
                 onClick={handleSimulateEmailConfirm}
-                className="btn btn-primary w-full flex items-center justify-center gap-2 py-3"
-                style={{ color: 'black' }}
+                className="w-full py-3 px-4 rounded-xl bg-[var(--lime)] text-black font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-md hover:bg-[var(--lime-hover)] transition-all"
               >
-                <span>Simular Ativação de E-mail</span>
+                <span>SIMULAR VALIDAÇÃO DE E-MAIL</span>
                 <ArrowRight size={14} />
               </button>
 
@@ -428,7 +473,7 @@ export default function LoginPage() {
                   setActiveStep('login')
                   setTargetUser(null)
                 }}
-                className="btn btn-secondary w-full py-2.5"
+                className="w-full py-2.5 px-4 rounded-xl bg-[var(--black)] border border-[var(--line)] text-[var(--gray2)] hover:text-white font-mono text-xs transition-colors cursor-pointer"
               >
                 Voltar para o Login
               </button>
@@ -436,9 +481,11 @@ export default function LoginPage() {
           </div>
         )}
 
-        <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '12px', color: 'var(--text-muted)' }}>
-          Carton Pack © {new Date().getFullYear()} — Sistema interno
+        {/* FOOTER */}
+        <p className="text-center text-[11px] font-mono text-[var(--gray2)]">
+          Carton Pack © {new Date().getFullYear()} — Sistema Interno Homologado
         </p>
+
       </div>
     </div>
   )

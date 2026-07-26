@@ -78,10 +78,18 @@ export default function UsersPage() {
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
 
   // Load from localStorage
-      useEffect(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.clear();
-      setUsers([]);
+      const saved = localStorage.getItem('cp_crm_v7_official_users')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setUsers(parsed)
+            return
+          }
+        } catch (e) {}
+      }
     }
   }, [])
 
@@ -149,12 +157,14 @@ export default function UsersPage() {
   // Submit modal form
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim() || (role !== 'representante' && !email.trim())) return
+    const isRep = role === 'representante' || role === 'vendedor'
+    if (!name.trim() || (!isRep && !email.trim())) return
 
     const formattedName = capitalizeName(name)
-    const isCarton = role !== 'representante' && email.toLowerCase().endsWith('@cartonpack.com')
-    const finalUsername = isCarton ? undefined : (username || deriveUsername(formattedName))
-    const finalEmail = role === 'representante' ? `${finalUsername || deriveUsername(formattedName)}@representante.local` : email
+    const derivedUser = username || deriveUsername(formattedName)
+    const isCarton = !isRep && email.toLowerCase().endsWith('@cartonpack.com')
+    const finalUsername = isRep ? derivedUser : (username || deriveUsername(formattedName))
+    const finalEmail = isRep ? `${derivedUser}@representante.local` : email
 
     if (editingUser) {
       // Edit mode
@@ -641,12 +651,12 @@ export default function UsersPage() {
 {`Olá, ${createdUserCredentials.name}! Seu acesso ao CRM Carton Pack está liberado.
 
 Link de Acesso: https://crm.cartonpack.com
-${createdUserCredentials.type === 'cartonpack' ? `Login (E-mail): ${createdUserCredentials.usernameOrEmail}` : `Usuário: ${createdUserCredentials.usernameOrEmail}`}
+${createdUserCredentials.type === 'cartonpack' ? `Login (E-mail Corporativo): ${createdUserCredentials.usernameOrEmail}` : `Login (Nome de Usuário): ${createdUserCredentials.usernameOrEmail}`}
 Senha Temporária: ${createdUserCredentials.tempPassword}
 
 ${createdUserCredentials.type === 'cartonpack' 
-  ? 'Obs: No primeiro acesso você deverá alterar a senha temporária e confirmar o link de ativação enviado para o seu e-mail.' 
-  : 'Obs: No primeiro acesso você deverá alterar a senha temporária para ativar sua conta.'}`}
+  ? 'Obs: No primeiro acesso você deverá alterar a senha temporária e validar seu e-mail corporativo.' 
+  : 'Obs: No primeiro acesso utilize seu Nome de Usuário e altere a senha temporária para ativar sua conta.'}`}
             </div>
 
             <button
