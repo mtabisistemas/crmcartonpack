@@ -78,16 +78,26 @@ export default function UsersPage() {
   const [toastMessage, setToastMessage] = useState('')
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
 
-  // Load & Sync from localStorage and Supabase profiles table
+  // Clean un-synced test users on init & Load users
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cp_crm_v7_official_users')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          const cleaned = parsed.filter((u: any) => !u.name?.includes('Versapack') && !u.email?.includes('versapack'))
+          localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(cleaned))
+          setUsers(cleaned)
+        } catch (e) {}
+      }
+    }
+
     async function syncUsers() {
       try {
         const fetched = await dbService.usuarios.list()
         if (fetched && fetched.length > 0) {
-          setUsers(fetched)
-          fetched.forEach(u => {
-            try { dbService.usuarios.save(u) } catch(e) {}
-          })
+          const cleaned = fetched.filter((u: any) => !u.name?.includes('Versapack') && !u.email?.includes('versapack'))
+          setUsers(cleaned)
         }
       } catch (e) {
         console.error(e)

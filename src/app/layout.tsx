@@ -12,6 +12,11 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: 'Carton Pack CRM',
   description: 'Sistema de gestão comercial — Carton Pack',
+  icons: {
+    icon: '/icon.png',
+    shortcut: '/favicon.ico',
+    apple: '/icon.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

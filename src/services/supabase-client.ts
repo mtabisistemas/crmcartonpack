@@ -5,12 +5,15 @@ import type {
   Orcamento, HistoricoCompra, Meta, Prospeccao
 } from '../types/crm';
 
-// Carregar variáveis de ambiente do Supabase (Next.js style)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Carregar variáveis de ambiente do Supabase com fallback garantido
+const DEFAULT_SUPABASE_URL = 'https://ycpottoodbkqbvdkndyr.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljcG90dG9vZGJrcWJ2ZGtuZHlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwMDYzMjAsImV4cCI6MjA2MjU4MjMyMH0.5xLUpS7l90yC_mJ5LlydOQ6WjUylvU_Jg03r7X3_5D0';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
 // Determinar se usaremos o Supabase real ou o Mock
-const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey && supabaseUrl !== 'SUA_URL_DO_SUPABASE');
+const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 
 export const supabase = isSupabaseConfigured 
   ? createClient(supabaseUrl, supabaseAnonKey) 
