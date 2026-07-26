@@ -576,12 +576,15 @@ export default function UsersPage() {
                 )}
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">Senha Temporária *</label>
+                  <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider flex items-center justify-between">
+                    <span>Senha Temporária *</span>
+                    <span className="text-[8px] text-[var(--gray2)] font-normal font-sans lowercase">(editável)</span>
+                  </label>
                   <input
                     type="text"
                     required
                     className="input w-full font-mono text-xs font-bold text-[var(--lime)] bg-[var(--card)]"
-                    placeholder="CP-1234"
+                    placeholder="123456"
                     value={tempPassword}
                     onChange={(e) => setTempPassword(e.target.value)}
                   />
