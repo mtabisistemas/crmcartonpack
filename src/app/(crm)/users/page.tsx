@@ -265,17 +265,21 @@ export default function UsersPage() {
   })
 
   // Role tag styling helpers
-  const getRoleDetails = (r: TeamUser['role']) => {
-    switch (r) {
-      case 'admin':
-        return { label: 'Administrador', bg: 'rgba(168,85,247,0.12)', color: '#c084fc', border: 'rgba(168,85,247,0.25)' }
-      case 'representante':
-        return { label: 'Representante', bg: 'rgba(180,217,50,0.12)', color: 'var(--lime)', border: 'rgba(180,217,50,0.25)' }
-      case 'vendedor':
-        return { label: 'Vendedor', bg: 'rgba(240,196,25,0.1)', color: 'var(--yellow)', border: 'rgba(240,196,25,0.2)' }
-      case 'financeiro':
-        return { label: 'Financeiro', bg: 'rgba(6,182,212,0.12)', color: '#22d3ee', border: 'rgba(6,182,212,0.25)' }
+  const getRoleDetails = (r: string) => {
+    const roleLower = (r || '').toLowerCase()
+    if (roleLower.includes('admin')) {
+      return { label: 'Administrador', bg: 'rgba(168,85,247,0.12)', color: '#c084fc', border: 'rgba(168,85,247,0.25)' }
     }
+    if (roleLower.includes('rep')) {
+      return { label: 'Representante', bg: 'rgba(180,217,50,0.12)', color: 'var(--lime)', border: 'rgba(180,217,50,0.25)' }
+    }
+    if (roleLower.includes('vend')) {
+      return { label: 'Vendedor', bg: 'rgba(240,196,25,0.1)', color: 'var(--yellow)', border: 'rgba(240,196,25,0.2)' }
+    }
+    if (roleLower.includes('finan')) {
+      return { label: 'Financeiro', bg: 'rgba(6,182,212,0.12)', color: '#22d3ee', border: 'rgba(6,182,212,0.25)' }
+    }
+    return { label: r || 'Membro', bg: 'rgba(180,217,50,0.12)', color: 'var(--lime)', border: 'rgba(180,217,50,0.25)' }
   }
 
   // Initial Avatar generator helper
