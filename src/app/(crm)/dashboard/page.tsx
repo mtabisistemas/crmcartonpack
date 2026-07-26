@@ -740,21 +740,14 @@ export default function DashboardPage() {
 
     return (
       <div className="page-content animate-fade-in w-full h-full flex flex-col gap-4 max-w-[1400px] mx-auto px-3 sm:px-6 py-4 pb-28 md:pb-6 select-none">
-        {/* Portal Header */}
+        {/* Clean Page Title Header */}
         <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 shrink-0">
-          <div>
-            <span className="text-[10px] font-mono text-[var(--lime)] font-bold tracking-wider uppercase">Portal do Representante</span>
-            <h1 className="font-display text-xl text-[var(--white)] font-bold tracking-tight mt-0.5">
-              Olá, {currentUser.name}!
-            </h1>
-          </div>
-          <button 
-            onClick={handleLogout}
-            title="Sair do CRM"
-            className="p-2 border border-[var(--line)] rounded-xl text-[var(--gray2)] hover:text-red-400 hover:bg-[rgba(239,68,68,0.1)] transition-all bg-transparent cursor-pointer"
-          >
-            <LogOut size={16} />
-          </button>
+          <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
+            {activeTab === 'dashboard' && 'Dashboard Comercial'}
+            {activeTab === 'painel' && 'Painel do Representante'}
+            {activeTab === 'mapa' && 'Mapa de Clientes'}
+            {activeTab === 'clientes' && 'Carteira de Clientes'}
+          </h1>
         </div>
 
         {/* Dynamic Tab Body */}

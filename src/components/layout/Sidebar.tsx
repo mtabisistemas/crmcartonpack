@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import {
   LayoutDashboard,
@@ -15,6 +15,7 @@ import {
   Moon,
   UserCog,
   MapPin,
+  User,
 } from 'lucide-react'
 
 import { CartonPackLogo } from '../CartonPackLogo'
@@ -29,6 +30,8 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get('tab')
   const router = useRouter()
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
   const [currentUser, setCurrentUser] = useState<any | null>(null)
@@ -103,10 +106,8 @@ export function Sidebar() {
           {items.map(({ href, label, icon: Icon }) => {
             let active = false
             if (href.includes('?tab=')) {
-              if (typeof window !== 'undefined') {
-                const currentFull = window.location.pathname + window.location.search
-                active = currentFull === href || (href.endsWith('tab=dashboard') && window.location.pathname === '/dashboard' && !window.location.search)
-              }
+              const targetTab = href.split('?tab=')[1]
+              active = pathname === '/dashboard' && (tabParam === targetTab || (!tabParam && targetTab === 'dashboard'))
             } else {
               active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
             }
@@ -126,6 +127,19 @@ export function Sidebar() {
           })}
         </div>
       </nav>
+
+      {/* Logged in User Profile Card */}
+      {currentUser && (
+        <div className="px-4 py-3 border-t border-[var(--line)] flex items-center gap-3 bg-[var(--charcoal)]/40 shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-lime-500/10 text-[var(--lime)] font-mono font-bold flex items-center justify-center border border-lime-500/20 shrink-0">
+            <User size={16} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <span className="text-xs font-bold text-[var(--white)] block truncate">{currentUser.name}</span>
+            <span className="text-[10px] font-mono text-[var(--gray2)] uppercase block truncate">{currentUser.role || 'Usuário'}</span>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="sidebar-footer">
