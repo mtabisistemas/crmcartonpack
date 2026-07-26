@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         },
         body: JSON.stringify({
           email: user.email,
-          password: user.tempPassword || user.password || '@CartonPack2026',
+          password: user.tempPassword || user.password || '123456',
           email_confirm: true,
           user_metadata: {
             full_name: user.name,

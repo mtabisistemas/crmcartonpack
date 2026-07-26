@@ -128,7 +128,7 @@ export default function UsersPage() {
   }
 
   const generateTempPassword = () => {
-    return 'CP-' + Math.floor(1000 + Math.random() * 9000)
+    return '123456'
   }
 
   // Open modal for Create
