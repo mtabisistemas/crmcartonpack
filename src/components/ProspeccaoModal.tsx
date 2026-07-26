@@ -94,10 +94,11 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     }
       const map = L.map(mapRef.current, { zoomControl: false, attributionControl: false }).setView(center, 13)
       
-      // MAPA SEMPRE NO MODO CLARO ESTILO GOOGLE MAPS (CartoDB Voyager Light)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      // MAPA NO MESMO ESTILO DO DASHBOARD (OpenStreetMap Standard)
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        subdomains: 'abcd'
+        subdomains: 'abcd',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(map)
       L.control.zoom({ position: 'bottomright' }).addTo(map)
       mapInstanceRef.current = map
