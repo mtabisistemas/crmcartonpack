@@ -135,8 +135,10 @@ export default function DashboardPage() {
   useEffect(() => {
     if (tabParam) {
       setActiveTab(tabParam)
+    } else if (currentUser?.role === 'representante') {
+      setActiveTab('painel')
     }
-  }, [tabParam])
+  }, [tabParam, currentUser?.role])
 
   const [mobileSearch, setMobileSearch] = useState('')
   const [mobileFilterStatus, setMobileFilterStatus] = useState<'todos' | 'pendentes' | 'concluidos'>('todos')
@@ -1828,61 +1830,71 @@ export default function DashboardPage() {
         </div>
 
         {/* FIXED ELEGANT BOTTOM NAVIGATION BAR (SMALL SCREENS MOBILE ONLY) */}
-        <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-[#161718]/95 backdrop-blur-xl border-t border-[var(--line)] flex justify-around items-center px-2 py-2 z-[9999] shadow-[0_-8px_30px_rgba(0,0,0,0.6)]">
+        <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-[#121314]/95 backdrop-blur-xl border-t border-[var(--line)] flex justify-around items-center px-2 py-2 z-[9999] shadow-[0_-8px_30px_rgba(0,0,0,0.8)]">
+          {/* 1. Painel */}
           <button 
             onClick={() => setActiveTab('painel')}
-            className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all duration-200 cursor-pointer ${
+            className={`flex flex-col items-center gap-1 py-1 px-2 rounded-2xl transition-all duration-200 cursor-pointer ${
               activeTab === 'painel' 
                 ? 'text-[var(--lime)] bg-lime-500/10 border border-lime-500/25 shadow-[0_0_15px_rgba(180,217,50,0.15)] scale-105' 
                 : 'text-[var(--gray2)] hover:text-white'
             }`}
           >
-            <Target size={18} strokeWidth={activeTab === 'painel' ? 2.5 : 2} />
+            <Target size={20} strokeWidth={activeTab === 'painel' ? 2.5 : 2} />
             <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Painel</span>
           </button>
 
+          {/* 2. Clientes */}
           <button 
             onClick={() => setActiveTab('clientes')}
-            className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all duration-200 cursor-pointer ${
+            className={`flex flex-col items-center gap-1 py-1 px-2 rounded-2xl transition-all duration-200 cursor-pointer ${
               activeTab === 'clientes' 
                 ? 'text-[var(--lime)] bg-lime-500/10 border border-lime-500/25 shadow-[0_0_15px_rgba(180,217,50,0.15)] scale-105' 
                 : 'text-[var(--gray2)] hover:text-white'
             }`}
           >
-            <Users size={18} strokeWidth={activeTab === 'clientes' ? 2.5 : 2} />
+            <Users size={20} strokeWidth={activeTab === 'clientes' ? 2.5 : 2} />
             <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Clientes</span>
           </button>
 
+          {/* 3. CENTER FLOATING BUTTON: Registrar Atividade Comercial */}
+          <button 
+            onClick={() => {
+              setSelectedContactId('')
+              setAudioTranscription('')
+              setPhotoUrl('')
+              setShowCheckinModal(true)
+            }}
+            title="Registrar Atividade Comercial"
+            className="w-13 h-13 -mt-6 rounded-full bg-[var(--lime)] text-black flex items-center justify-center shadow-[0_0_25px_rgba(180,217,50,0.5)] border-4 border-[#121314] active:scale-95 transition-transform cursor-pointer shrink-0"
+          >
+            <CheckCircle size={26} strokeWidth={2.5} />
+          </button>
+
+          {/* 4. Mapa */}
           <button 
             onClick={() => setActiveTab('mapa')}
-            className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all duration-200 cursor-pointer ${
+            className={`flex flex-col items-center gap-1 py-1 px-2 rounded-2xl transition-all duration-200 cursor-pointer ${
               activeTab === 'mapa' 
                 ? 'text-[var(--lime)] bg-lime-500/10 border border-lime-500/25 shadow-[0_0_15px_rgba(180,217,50,0.15)] scale-105' 
                 : 'text-[var(--gray2)] hover:text-white'
             }`}
           >
-            <MapPin size={18} strokeWidth={activeTab === 'mapa' ? 2.5 : 2} />
+            <MapPin size={20} strokeWidth={activeTab === 'mapa' ? 2.5 : 2} />
             <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Mapa</span>
           </button>
 
+          {/* 5. Dashboard */}
           <button 
             onClick={() => setActiveTab('dashboard')}
-            className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all duration-200 cursor-pointer ${
+            className={`flex flex-col items-center gap-1 py-1 px-2 rounded-2xl transition-all duration-200 cursor-pointer ${
               activeTab === 'dashboard' 
                 ? 'text-[var(--lime)] bg-lime-500/10 border border-lime-500/25 shadow-[0_0_15px_rgba(180,217,50,0.15)] scale-105' 
                 : 'text-[var(--gray2)] hover:text-white'
             }`}
           >
-            <BarChart3 size={18} strokeWidth={activeTab === 'dashboard' ? 2.5 : 2} />
+            <BarChart3 size={20} strokeWidth={activeTab === 'dashboard' ? 2.5 : 2} />
             <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Dashboard</span>
-          </button>
-
-          <button 
-            onClick={handleLogout}
-            className="flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all duration-200 text-[var(--gray2)] hover:text-red-400 cursor-pointer"
-          >
-            <LogOut size={18} />
-            <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Sair</span>
           </button>
         </div>
 

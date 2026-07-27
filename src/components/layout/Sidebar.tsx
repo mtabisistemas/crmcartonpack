@@ -16,6 +16,7 @@ import {
   UserCog,
   MapPin,
   User,
+  Target,
 } from 'lucide-react'
 
 import { CartonPackLogo } from '../CartonPackLogo'
@@ -68,9 +69,14 @@ export function Sidebar() {
     router.refresh()
   }
 
-  const isRep = currentUser?.role === 'representante' || currentUser?.role === 'vendedor'
-
   const repNavItems = [
+    { href: '/dashboard?tab=painel', label: 'Painel do Rep', icon: Target },
+    { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
+    { href: '/contacts', label: 'Clientes', icon: Users },
+    { href: '/dashboard?tab=mapa', label: 'Mapa de Clientes', icon: MapPin },
+  ]
+
+  const vendedorNavItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Clientes', icon: Users },
@@ -84,7 +90,11 @@ export function Sidebar() {
     { href: '/users', label: 'Usuários', icon: UserCog },
   ]
 
-  const items = isRep ? repNavItems : adminNavItems
+  const items = currentUser?.role === 'representante'
+    ? repNavItems
+    : currentUser?.role === 'vendedor'
+    ? vendedorNavItems
+    : adminNavItems
 
   return (
     <aside className="sidebar hidden lg:flex">
