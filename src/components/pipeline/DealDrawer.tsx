@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Deal, DealStage, STAGE_CONFIG } from '@/types'
+import { Deal, DealStage, STAGE_CONFIG, Appointment } from '@/types'
 import { 
   X, User, Mail, Phone, Building, Calendar, DollarSign, Tag,
-  MessageSquare, FileText, Send, PhoneCall, Users, CheckCircle, ArrowRight, Save
+  MessageSquare, FileText, Send, PhoneCall, Users, CheckCircle, ArrowRight, Save, Clock, Trash2, Edit2, Plus
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { getAppointmentsByDeal, saveAppointment, updateAppointment, deleteAppointment } from '@/services/appointment-service'
 
 interface Activity {
   id: string
@@ -22,7 +23,7 @@ interface DealDrawerProps {
 }
 
 export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
-  const [activeTab, setActiveTab] = useState<'geral' | 'historico' | 'orcamento'>('geral')
+  const [activeTab, setActiveTab] = useState<'geral' | 'historico' | 'agenda' | 'orcamento'>('geral')
   const [isOpen, setIsOpen] = useState(false)
   const [isSavedSuccess, setIsSavedSuccess] = useState(false)
 
@@ -52,6 +53,15 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const [toolingCost, setToolingCost] = useState(1200) // cliché + faca setup cost
 
   const [representative, setRepresentative] = useState('')
+
+  // Agenda / Appointments tab states
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [editingAptId, setEditingAptId] = useState<string | null>(null)
+  const [aptTitle, setAptTitle] = useState('')
+  const [aptType, setAptType] = useState<Appointment['type']>('visita')
+  const [aptDate, setAptDate] = useState(() => new Date().toISOString().split('T')[0])
+  const [aptTime, setAptTime] = useState('09:00')
+  const [aptNotes, setAptNotes] = useState('')
 
   // Load deal details
   useEffect(() => {
@@ -95,10 +105,74 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
 
       // Activities list (empty by default for real user tests)
       setActivities((deal as any).activities || [])
+
+      // Load deal appointments
+      const dealApts = getAppointmentsByDeal(deal.id)
+      setAppointments(dealApts)
+      setAptTitle(`Compromisso - ${deal.contact?.company || deal.title}`)
     } else {
       setIsOpen(false)
     }
   }, [deal])
+
+  const handleSaveAppointmentForm = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!deal || !aptTitle.trim()) return
+
+    if (editingAptId) {
+      const existing = appointments.find(a => a.id === editingAptId)
+      if (existing) {
+        const updated = updateAppointment({
+          ...existing,
+          title: aptTitle,
+          type: aptType,
+          date: aptDate,
+          time: aptTime,
+          notes: aptNotes
+        })
+        setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a))
+      }
+    } else {
+      const created = saveAppointment({
+        deal_id: deal.id,
+        deal_title: deal.title,
+        contact_name: contactName,
+        company_name: contactCompany,
+        title: aptTitle,
+        type: aptType,
+        date: aptDate,
+        time: aptTime,
+        notes: aptNotes,
+        status: 'agendado'
+      })
+      setAppointments(prev => [created, ...prev])
+    }
+    resetAptForm()
+  }
+
+  const handleStartEditApt = (apt: Appointment) => {
+    setEditingAptId(apt.id)
+    setAptTitle(apt.title)
+    setAptType(apt.type)
+    setAptDate(apt.date)
+    setAptTime(apt.time)
+    setAptNotes(apt.notes || '')
+  }
+
+  const handleCancelApt = (aptId: string) => {
+    deleteAppointment(aptId)
+    setAppointments(prev => prev.filter(a => a.id !== aptId))
+    if (editingAptId === aptId) resetAptForm()
+  }
+
+  const resetAptForm = () => {
+    setEditingAptId(null)
+    setAptTitle(deal ? `Compromisso - ${contactCompany || deal.title}` : '')
+    setAptType('visita')
+    setAptDate(new Date().toISOString().split('T')[0])
+    setAptTime('09:00')
+    setAptNotes('')
+  }
 
   // Hide Budget tab if stage is downgraded
   useEffect(() => {
@@ -309,6 +383,12 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
             Geral
           </button>
           <button 
+            className={`drawer-tab-btn ${activeTab === 'agenda' ? 'active' : ''}`}
+            onClick={() => setActiveTab('agenda')}
+          >
+            Agenda
+          </button>
+          <button 
             className={`drawer-tab-btn ${activeTab === 'historico' ? 'active' : ''}`}
             onClick={() => setActiveTab('historico')}
           >
@@ -468,6 +548,175 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     />
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: AGENDA */}
+          {activeTab === 'agenda' && (
+            <div className="flex flex-col gap-5">
+              {/* Form para novo/edição compromisso */}
+              <form onSubmit={handleSaveAppointmentForm} className="flex flex-col gap-3 bg-[var(--card)] border border-[var(--line)] rounded-xl p-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono flex items-center gap-1.5">
+                    <Calendar size={14} />
+                    <span>{editingAptId ? 'Editar Compromisso' : 'Agendar Novo Compromisso'}</span>
+                  </span>
+                  {editingAptId && (
+                    <button 
+                      type="button" 
+                      onClick={resetAptForm}
+                      className="text-[10px] text-gray-400 hover:text-white underline cursor-pointer"
+                    >
+                      Cancelar edição
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="label">Título / Assunto</label>
+                  <input 
+                    type="text" 
+                    className="input" 
+                    required
+                    placeholder="Ex: Reunião de apresentação de orçamento"
+                    value={aptTitle}
+                    onChange={(e) => setAptTitle(e.target.value)}
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="label">Tipo</label>
+                    <select 
+                      className="input bg-[var(--charcoal)] cursor-pointer"
+                      value={aptType}
+                      onChange={(e) => setAptType(e.target.value as any)}
+                    >
+                      <option value="visita">Visita</option>
+                      <option value="reuniao">Reunião</option>
+                      <option value="ligacao">Ligação</option>
+                      <option value="email">E-mail</option>
+                      <option value="proposta">Proposta</option>
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="label">Data</label>
+                    <input 
+                      type="date" 
+                      className="input bg-[var(--charcoal)] text-white cursor-pointer"
+                      required
+                      value={aptDate}
+                      onChange={(e) => setAptDate(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="label">Hora</label>
+                    <input 
+                      type="time" 
+                      className="input bg-[var(--charcoal)] text-white cursor-pointer"
+                      required
+                      value={aptTime}
+                      onChange={(e) => setAptTime(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="label">Observações (opcional)</label>
+                  <textarea 
+                    className="input min-h-[60px] resize-none"
+                    placeholder="Detalhes adicionais do compromisso..."
+                    value={aptNotes}
+                    onChange={(e) => setAptNotes(e.target.value)}
+                  />
+                </div>
+
+                <button type="submit" className="btn btn-primary text-xs py-2 px-4 font-bold flex items-center justify-center gap-2 uppercase tracking-wider text-[#060606] cursor-pointer mt-1">
+                  <Plus size={14} />
+                  <span>{editingAptId ? 'Atualizar Compromisso' : 'Salvar no Agendamento'}</span>
+                </button>
+              </form>
+
+              {/* Lista de compromissos salvos para este negócio */}
+              <div className="flex flex-col gap-3">
+                <div className="text-xs font-bold text-[var(--white)] uppercase tracking-wider font-mono flex items-center justify-between border-b border-[var(--line)] pb-2">
+                  <span>Compromissos Agendados</span>
+                  <span className="text-[10px] text-[var(--lime)] bg-lime-500/10 px-2 py-0.5 rounded-full border border-lime-500/20">
+                    {appointments.length} agendamentos
+                  </span>
+                </div>
+
+                {appointments.length === 0 ? (
+                  <div className="p-4 rounded-xl bg-black/20 border border-[var(--line)] text-center text-xs text-[var(--gray2)] font-mono">
+                    Nenhum compromisso agendado para este negócio.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2.5">
+                    {appointments.map(apt => (
+                      <div 
+                        key={apt.id} 
+                        className={`p-3.5 rounded-xl border flex flex-col gap-2 transition-all ${
+                          apt.status === 'cancelado' 
+                            ? 'bg-red-950/10 border-red-500/20 opacity-60' 
+                            : 'bg-[var(--card)] border-[var(--line)] hover:border-[var(--lime)]/40'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded ${
+                              apt.type === 'visita' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' :
+                              apt.type === 'reuniao' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                              apt.type === 'ligacao' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' :
+                              'bg-lime-500/10 text-lime-400 border border-lime-500/20'
+                            }`}>
+                              {apt.type}
+                            </span>
+                            <h4 className="text-xs font-bold text-[var(--white)]">{apt.title}</h4>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              title="Editar compromisso"
+                              onClick={() => handleStartEditApt(apt)}
+                              className="p-1 rounded text-gray-400 hover:text-white hover:bg-[var(--line)] cursor-pointer"
+                            >
+                              <Edit2 size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              title="Cancelar agendamento"
+                              onClick={() => handleCancelApt(apt.id)}
+                              className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 text-[11px] font-mono text-[var(--gray2)]">
+                          <span className="flex items-center gap-1 text-[var(--lime)] font-bold">
+                            <Calendar size={12} />
+                            {apt.date.split('-').reverse().join('/')}
+                          </span>
+                          <span className="flex items-center gap-1 text-[var(--white)] font-bold">
+                            <Clock size={12} />
+                            {apt.time}
+                          </span>
+                        </div>
+
+                        {apt.notes && (
+                          <p className="text-[11px] text-gray-300 bg-black/30 p-2 rounded-lg border border-[var(--line)]/50 mt-1">
+                            {apt.notes}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

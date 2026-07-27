@@ -201,3 +201,19 @@ export const FINISHINGS = [
   'Janela com PET',
   'Corte especial',
 ]
+
+export interface Appointment {
+  id: string
+  deal_id: string
+  deal_title?: string
+  contact_name?: string
+  company_name?: string
+  title: string
+  date: string
+  time: string
+  type: 'visita' | 'reuniao' | 'ligacao' | 'email' | 'proposta'
+  notes?: string
+  status: 'agendado' | 'concluido' | 'cancelado'
+  created_at: string
+  updated_at?: string
+}

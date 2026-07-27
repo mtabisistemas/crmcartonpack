@@ -20,8 +20,9 @@ import { CSS } from '@dnd-kit/utilities'
 import { useDroppable } from '@dnd-kit/core'
 import { Deal, DealStage, STAGE_CONFIG, FOLLOW_UP_LOST_REASONS } from '@/types'
 import { formatCurrency, daysSince } from '@/lib/utils'
-import { Plus, Clock, Trophy, XCircle, Search, Filter, Building2 } from 'lucide-react'
+import { Plus, Clock, Trophy, XCircle, Search, Filter, Building2, Calendar } from 'lucide-react'
 import { DealDrawer } from './DealDrawer'
+import { PipelineCalendarModal } from './PipelineCalendarModal'
 import { getPipelineDeals, savePipelineDeals } from '@/services/pipeline-service'
 
 // ─── Mock data ────────────────────────────────────────────────
@@ -504,6 +505,7 @@ export function PipelineBoard() {
   // Modals state
   const [lostModalDeal, setLostModalDeal] = useState<Deal | null>(null)
   const [showNewDealModal, setShowNewDealModal] = useState(false)
+  const [showCalendarModal, setShowCalendarModal] = useState(false)
   const [newDealStage, setNewDealStage] = useState<DealStage>('leads')
 
   // Filter states
@@ -760,11 +762,21 @@ export function PipelineBoard() {
           </select>
         </div>
 
-        {/* Botão Novo Negócio */}
-        <button className="btn btn-primary text-xs py-2 px-4 font-bold flex items-center gap-1.5 uppercase tracking-wider text-[#060606] shrink-0" onClick={() => handleOpenAddDeal('leads')}>
-          <Plus size={14} />
-          <span>Novo Negócio</span>
-        </button>
+        {/* Botões Ação */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button 
+            className="btn btn-secondary text-xs py-2 px-3.5 font-bold flex items-center gap-1.5 uppercase tracking-wider text-white border-[var(--line)] hover:border-[var(--lime)] cursor-pointer shadow-sm" 
+            onClick={() => setShowCalendarModal(true)}
+          >
+            <Calendar size={14} className="text-[var(--lime)]" />
+            <span>Agenda</span>
+          </button>
+
+          <button className="btn btn-primary text-xs py-2 px-4 font-bold flex items-center gap-1.5 uppercase tracking-wider text-[#060606] shrink-0" onClick={() => handleOpenAddDeal('leads')}>
+            <Plus size={14} />
+            <span>Novo Negócio</span>
+          </button>
+        </div>
       </div>
 
       {/* Board — rendered client-side only to avoid @dnd-kit aria-describedby hydration mismatch */}
@@ -851,6 +863,11 @@ export function PipelineBoard() {
           onCancel={() => setShowNewDealModal(false)}
         />
       )}
+      {/* Modal de Agendamento em Grade do Pipeline */}
+      <PipelineCalendarModal 
+        isOpen={showCalendarModal}
+        onClose={() => setShowCalendarModal(false)}
+      />
     </div>
   )
 }
