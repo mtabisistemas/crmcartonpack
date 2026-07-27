@@ -286,27 +286,18 @@ export function RegisterActivityModal({
             <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
               Como o Contato foi Feito? (Canal) *
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {CHANNEL_OPTIONS.map(ch => {
-                const Icon = ch.icon
-                const isSelected = channel === ch.id
-                return (
-                  <button
-                    type="button"
-                    key={ch.id}
-                    onClick={() => setChannel(ch.id)}
-                    className={`flex items-center gap-2 p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer ${
-                      isSelected 
-                        ? 'bg-[var(--black)] border-[var(--lime)] text-white shadow-[0_0_10px_rgba(180,217,50,0.15)] font-bold' 
-                        : 'bg-black/30 border-[var(--line)] text-[var(--gray)] hover:text-white hover:border-[var(--gray2)]'
-                    }`}
-                  >
-                    <Icon size={14} className={isSelected ? 'text-[var(--lime)]' : ch.color} />
-                    <span className="truncate">{ch.label}</span>
-                  </button>
-                )
-              })}
-            </div>
+            <select
+              className="input w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[var(--lime)]/50 cursor-pointer"
+              required
+              value={channel}
+              onChange={(e) => setChannel(e.target.value)}
+            >
+              {CHANNEL_OPTIONS.map(ch => (
+                <option key={ch.id} value={ch.id} className="bg-[var(--charcoal)]">
+                  {ch.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* 3. Ação Comercial Efetiva Realizada */}
@@ -315,7 +306,7 @@ export function RegisterActivityModal({
               Qual Ação Comercial foi Realizada? *
             </label>
             <select
-              className="input w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[var(--lime)]/50"
+              className="input w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[var(--lime)]/50 cursor-pointer"
               required
               value={actionId}
               onChange={(e) => setActionId(e.target.value)}
@@ -379,8 +370,8 @@ export function RegisterActivityModal({
           {/* 5. Foto / Anexo (Opcional) */}
           <div className="flex flex-col gap-1.5 border border-[var(--line)] rounded-xl p-3 bg-black/20">
             <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider flex items-center justify-between">
-              <span>Foto ou Comprovante (Opcional)</span>
-              <span className="text-[9px] text-[var(--gray)] font-normal">Fachada, print ou doc</span>
+              <span>Foto ou Anexo (Opcional)</span>
+              <span className="text-[9px] text-[var(--gray)] font-normal font-sans">Fachada, cartão ou imagem</span>
             </label>
             
             <label className="flex items-center justify-center gap-2 p-3 border border-dashed border-[var(--line)] hover:border-[var(--lime)]/50 rounded-xl cursor-pointer bg-black/30 transition-colors">
@@ -393,7 +384,7 @@ export function RegisterActivityModal({
 
             {photoUrl && (
               <div className="mt-1 rounded-xl overflow-hidden border border-[var(--line)] h-24 relative bg-black">
-                <img src={photoUrl} alt="Comprovante" className="w-full h-full object-cover" />
+                <img src={photoUrl} alt="Anexo" className="w-full h-full object-cover" />
               </div>
             )}
           </div>
