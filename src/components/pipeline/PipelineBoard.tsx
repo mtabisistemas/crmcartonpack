@@ -682,7 +682,7 @@ export function PipelineBoard() {
   }
 
   return (
-    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-3 overflow-hidden">
+    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-6 overflow-hidden">
       {/* ── HEADER ROW: TÍTULO DA PÁGINA + BOTÕES DE AÇÃO ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
