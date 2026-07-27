@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Deal, DealStage, STAGE_CONFIG } from '@/types'
 import { 
   X, User, Mail, Phone, Building, Calendar, DollarSign, Tag,
-  MessageSquare, FileText, Send, PhoneCall, Users, CheckCircle, ArrowRight
+  MessageSquare, FileText, Send, PhoneCall, Users, CheckCircle, ArrowRight, Save
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
@@ -24,6 +24,7 @@ interface DealDrawerProps {
 export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const [activeTab, setActiveTab] = useState<'geral' | 'historico' | 'orcamento'>('geral')
   const [isOpen, setIsOpen] = useState(false)
+  const [isSavedSuccess, setIsSavedSuccess] = useState(false)
 
   // Deal fields (Geral Tab)
   const [title, setTitle] = useState('')
@@ -151,6 +152,8 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       }
     }
     onUpdateDeal(updatedDeal)
+    setIsSavedSuccess(true)
+    setTimeout(() => setIsSavedSuccess(false), 2500)
   }
 
   const handleApplyBudgetToDeal = () => {
@@ -287,7 +290,6 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     className="input" 
                     value={title} 
                     onChange={(e) => setTitle(e.target.value)}
-                    onBlur={handleSaveGeneral}
                   />
                 </div>
 
@@ -301,7 +303,6 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                         className="input w-full !pl-9" 
                         value={estimatedValue || ''} 
                         onChange={(e) => setEstimatedValue(Number(e.target.value) || undefined)}
-                        onBlur={handleSaveGeneral}
                       />
                     </div>
                   </div>
@@ -312,7 +313,6 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                       className="input" 
                       value={stage}
                       onChange={(e) => setStage(e.target.value as DealStage)}
-                      onBlur={handleSaveGeneral}
                     >
                       {Object.keys(STAGE_CONFIG).map((key) => (
                         <option key={key} value={key}>
@@ -339,7 +339,6 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                       className="input w-full !pl-9" 
                       value={contactName} 
                       onChange={(e) => setContactName(e.target.value)}
-                      onBlur={handleSaveGeneral}
                     />
                   </div>
                 </div>
@@ -353,7 +352,6 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                       className="input w-full !pl-9" 
                       value={contactCompany} 
                       onChange={(e) => setContactCompany(e.target.value)}
-                      onBlur={handleSaveGeneral}
                     />
                   </div>
                 </div>
@@ -365,7 +363,6 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                       className="input font-bold" 
                       value={curve}
                       onChange={(e) => setCurve(e.target.value as any)}
-                      onBlur={handleSaveGeneral}
                       style={{
                         color: curve === 'A' ? 'var(--lime)' : curve === 'B' ? 'var(--yellow)' : 'var(--gray)'
                       }}
@@ -386,7 +383,6 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                         className="input w-full !pl-9" 
                         value={contactPhone} 
                         onChange={(e) => setContactPhone(e.target.value)}
-                        onBlur={handleSaveGeneral}
                       />
                     </div>
                   </div>
@@ -401,7 +397,6 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                       className="input w-full !pl-9" 
                       value={contactEmail} 
                       onChange={(e) => setContactEmail(e.target.value)}
-                      onBlur={handleSaveGeneral}
                     />
                   </div>
                 </div>
@@ -416,7 +411,6 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                       placeholder="Ex: Representante Responsável"
                       value={representative} 
                       onChange={(e) => setRepresentative(e.target.value)}
-                      onBlur={handleSaveGeneral}
                     />
                   </div>
                 </div>
@@ -643,6 +637,38 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
             </div>
           )}
 
+        </div>
+
+        {/* Sticky Footer for Saving Changes */}
+        <div className="p-4 border-t border-[var(--line)] bg-[var(--card)] flex items-center justify-between gap-3 shrink-0">
+          {isSavedSuccess ? (
+            <div className="flex items-center gap-2 text-xs text-[var(--lime)] font-mono font-bold animate-fade-in">
+              <CheckCircle size={15} />
+              <span>Alterações salvas com sucesso!</span>
+            </div>
+          ) : (
+            <span className="text-[11px] text-[var(--gray2)] font-mono">
+              Salvar para atualizar oportunidade.
+            </span>
+          )}
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn btn-secondary text-xs py-2 px-3 font-bold uppercase tracking-wider"
+            >
+              Fechar
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveGeneral}
+              className="btn btn-primary text-xs py-2 px-4 font-bold uppercase tracking-wider text-[#060606] flex items-center gap-2"
+            >
+              <Save size={14} />
+              <span>Salvar Alterações</span>
+            </button>
+          </div>
         </div>
       </div>
     </>
