@@ -115,7 +115,6 @@ export async function POST(req: Request) {
       full_name: user.name,
       // Store the internal email in DB (representatives use @crm.cartonpack.com.br)
       email: emailForAuth,
-      username: username,
       role: user.role || 'representante',
       phone: user.phone || null,
       active: user.status !== 'inativo',
