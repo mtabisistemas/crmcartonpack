@@ -502,10 +502,71 @@ export function PipelineBoard() {
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null)
 
   // Modals state
-  const [searchQuery, setSearchQuery] = useState('')
   const [lostModalDeal, setLostModalDeal] = useState<Deal | null>(null)
   const [showNewDealModal, setShowNewDealModal] = useState(false)
   const [newDealStage, setNewDealStage] = useState<DealStage>('leads')
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedYear, setSelectedYear] = useState<string>('all')
+  const [selectedMonth, setSelectedMonth] = useState<string>('all')
+  const [selectedRep, setSelectedRep] = useState<string>('all')
+  const [selectedCurve, setSelectedCurve] = useState<string>('all')
+  const [representativesList, setRepresentativesList] = useState<string[]>([])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedUsers = localStorage.getItem('crm_users')
+      let repsFromUsers: string[] = []
+      if (savedUsers) {
+        try {
+          const parsed = JSON.parse(savedUsers)
+          repsFromUsers = parsed
+            .filter((u: any) => u.role === 'representante' || u.role === 'vendedor')
+            .map((u: any) => u.name)
+        } catch (e) {}
+      }
+      const repsFromDeals = deals.map(d => d.assigned_to || d.contact?.representative).filter((r): r is string => !!r)
+      const allReps = Array.from(new Set([...repsFromUsers, ...repsFromDeals]))
+      setRepresentativesList(allReps)
+    }
+  }, [deals])
+
+  // Filter deals based on search query, year, month, representative, and curve
+  const filteredDeals = deals.filter(d => {
+    // 1. Search Query
+    const search = searchQuery.toLowerCase()
+    const matchesSearch = 
+      !searchQuery ||
+      d.title.toLowerCase().includes(search) ||
+      (d.contact?.name && d.contact.name.toLowerCase().includes(search)) ||
+      (d.contact?.company && d.contact.company.toLowerCase().includes(search))
+
+    if (!matchesSearch) return false
+
+    // 2. Representative
+    const dealRep = d.assigned_to || d.contact?.representative || ''
+    const matchesRep = selectedRep === 'all' || dealRep === selectedRep
+    if (!matchesRep) return false
+
+    // 3. Curve ABC
+    const dealCurve = d.contact?.curve || 'C'
+    const matchesCurve = selectedCurve === 'all' || dealCurve === selectedCurve
+    if (!matchesCurve) return false
+
+    // 4. Year
+    const dealDate = d.created_at || d.stage_entered_at || ''
+    const dealYear = dealDate ? dealDate.split('-')[0] : ''
+    const matchesYear = selectedYear === 'all' || !dealYear || dealYear === selectedYear
+    if (!matchesYear) return false
+
+    // 5. Month
+    const dealMonth = dealDate ? dealDate.split('-')[1] : ''
+    const matchesMonth = selectedMonth === 'all' || !dealMonth || dealMonth === selectedMonth
+    if (!matchesMonth) return false
+
+    return true
+  })
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -513,13 +574,6 @@ export function PipelineBoard() {
 
   // Map only active stages to Kanban board columns
   const activeStages = (Object.keys(STAGE_CONFIG) as DealStage[]).filter(s => s !== 'perdido' && s !== 'pos_venda')
-  
-  // Filter deals based on search query
-  const filteredDeals = deals.filter(d => 
-    d.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    d.contact?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    d.contact?.company?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
 
   const dealsByStage = (Object.keys(STAGE_CONFIG) as DealStage[]).reduce((acc, stage) => {
     acc[stage] = filteredDeals.filter(d => d.stage === stage).sort((a, b) => a.position - b.position)
@@ -626,29 +680,91 @@ export function PipelineBoard() {
   }
 
   return (
-    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-4 overflow-hidden">
-      {/* Page Header */}
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
-          Pipeline de Vendas
-        </h1>
-
-        <div className="flex items-center gap-2">
-          <div className="search-wrap">
-            <Search size={14} />
+    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-3 overflow-hidden">
+      {/* ── BARRA DE FILTROS ESTILIZADA DO PIPELINE ── */}
+      <div className="card p-3 border border-[var(--line)] bg-[var(--card)] flex flex-wrap items-center justify-between gap-3 shrink-0 rounded-2xl shadow-md">
+        <div className="flex flex-1 flex-wrap items-center gap-2.5 min-w-0">
+          {/* Busca */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--gray2)] pointer-events-none" />
             <input
-              className="search-input"
-              placeholder="Buscar negócio..."
+              type="text"
+              className="input w-full pl-9 py-2 text-xs font-medium"
+              placeholder="Buscar negócio, razão social..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          
-          <button className="btn btn-primary btn-sm" onClick={() => handleOpenAddDeal('leads')}>
-            <Plus size={13} />
-            <span>Novo Negócio</span>
-          </button>
+
+          {/* Ano */}
+          <div className="flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl">
+            <span className="text-[9px] font-mono font-bold text-[var(--gray2)] uppercase">Ano:</span>
+            <select
+              className="bg-transparent text-xs font-mono font-bold text-[var(--white)] outline-none cursor-pointer"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+            >
+              <option value="all" className="bg-[var(--charcoal)]">Todos os Anos</option>
+              <option value="2026" className="bg-[var(--charcoal)]">2026</option>
+              <option value="2025" className="bg-[var(--charcoal)]">2025</option>
+            </select>
+          </div>
+
+          {/* Mês */}
+          <div className="flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl">
+            <span className="text-[9px] font-mono font-bold text-[var(--gray2)] uppercase">Mês:</span>
+            <select
+              className="bg-transparent text-xs font-mono font-bold text-[var(--white)] outline-none cursor-pointer"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+            >
+              <option value="all" className="bg-[var(--charcoal)]">Todos os Meses</option>
+              <option value="01" className="bg-[var(--charcoal)]">Janeiro (01)</option>
+              <option value="02" className="bg-[var(--charcoal)]">Fevereiro (02)</option>
+              <option value="03" className="bg-[var(--charcoal)]">Março (03)</option>
+              <option value="04" className="bg-[var(--charcoal)]">Abril (04)</option>
+              <option value="05" className="bg-[var(--charcoal)]">Maio (05)</option>
+              <option value="06" className="bg-[var(--charcoal)]">Junho (06)</option>
+              <option value="07" className="bg-[var(--charcoal)]">Julho (07)</option>
+              <option value="08" className="bg-[var(--charcoal)]">Agosto (08)</option>
+              <option value="09" className="bg-[var(--charcoal)]">Setembro (09)</option>
+              <option value="10" className="bg-[var(--charcoal)]">Outubro (10)</option>
+              <option value="11" className="bg-[var(--charcoal)]">Novembro (11)</option>
+              <option value="12" className="bg-[var(--charcoal)]">Dezembro (12)</option>
+            </select>
+          </div>
+
+          {/* Representantes */}
+          <select
+            className="input py-2 px-3 text-xs font-mono font-bold bg-[var(--charcoal)] cursor-pointer"
+            value={selectedRep}
+            onChange={(e) => setSelectedRep(e.target.value)}
+          >
+            <option value="all">Todos os Representantes</option>
+            {representativesList.map((r, idx) => (
+              <option key={idx} value={r}>{r}</option>
+            ))}
+          </select>
+
+          {/* Curva ABC */}
+          <select
+            className="input py-2 px-3 text-xs font-mono font-bold bg-[var(--charcoal)] cursor-pointer"
+            value={selectedCurve}
+            onChange={(e) => setSelectedCurve(e.target.value)}
+          >
+            <option value="all">Todas as Curvas (ABC)</option>
+            <option value="A">Curva A (Alta)</option>
+            <option value="B">Curva B (Média)</option>
+            <option value="C">Curva C (Baixa)</option>
+            <option value="D">Curva D (Prospecção)</option>
+          </select>
         </div>
+
+        {/* Botão Novo Negócio */}
+        <button className="btn btn-primary text-xs py-2 px-4 font-bold flex items-center gap-1.5 uppercase tracking-wider text-[#060606] shrink-0" onClick={() => handleOpenAddDeal('leads')}>
+          <Plus size={14} />
+          <span>Novo Negócio</span>
+        </button>
       </div>
 
       {/* Board — rendered client-side only to avoid @dnd-kit aria-describedby hydration mismatch */}

@@ -52,6 +52,7 @@ export interface Contact {
   notes?: string
   curve?: 'A' | 'B' | 'C' | 'D'
   assigned_to?: string
+  representative?: string
   assigned_profile?: Profile
   created_at: string
   updated_at: string
