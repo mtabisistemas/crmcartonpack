@@ -247,6 +247,35 @@ function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number)
   return R * c;
 }
 
+function getFallbackCenter(city?: string, uf?: string): [number, number] {
+  const rawStr = ((city || '') + ' ' + (uf || '')).toLowerCase().trim()
+  const cleanStr = rawStr.replace(/[^a-z0-9]/g, '')
+
+  // 1. Busca por nome da cidade no CITY_COORDS_MAP
+  for (const key of Object.keys(CITY_COORDS_MAP)) {
+    const cleanKey = key.replace(/[^a-z0-9]/g, '')
+    if (cleanStr.includes(cleanKey)) {
+      return CITY_COORDS_MAP[key]
+    }
+  }
+
+  // 2. Busca estrita por Sigla de Estado UF de 2 letras
+  const ufMatch = rawStr.match(/\b(ro|ac|am|rr|pa|ap|to|ma|pi|ce|rn|pb|pe|al|se|ba|mg|es|rj|sp|pr|sc|rs|ms|mt|go|df)\b/i)
+  if (ufMatch) {
+    const ufUpper = ufMatch[1].toUpperCase()
+    if (STATE_CAPITALS_MAP[ufUpper]) {
+      return STATE_CAPITALS_MAP[ufUpper]
+    }
+  }
+
+  // 3. Checagem direta pela prop estado
+  if (uf && STATE_CAPITALS_MAP[uf.toUpperCase()]) {
+    return STATE_CAPITALS_MAP[uf.toUpperCase()]
+  }
+
+  return [-15.7801, -47.9292] // Brasil fallback (centro geográfico)
+}
+
 interface LeafletProspectMapProps {
   leads: ProspectLead[]
   selectedLeadCnpj: string | null
@@ -264,35 +293,6 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
   const mapRef = React.useRef<HTMLDivElement>(null)
   const mapInstanceRef = React.useRef<any>(null)
   const markersRef = React.useRef<Record<string, any>>({})
-
-  const getFallbackCenter = (city?: string, uf?: string): [number, number] => {
-    const rawStr = ((city || '') + ' ' + (uf || '')).toLowerCase().trim()
-    const cleanStr = rawStr.replace(/[^a-z0-9]/g, '')
-
-    // 1. Busca por nome da cidade no CITY_COORDS_MAP
-    for (const key of Object.keys(CITY_COORDS_MAP)) {
-      const cleanKey = key.replace(/[^a-z0-9]/g, '')
-      if (cleanStr.includes(cleanKey)) {
-        return CITY_COORDS_MAP[key]
-      }
-    }
-
-    // 2. Busca estrita por Sigla de Estado UF de 2 letras
-    const ufMatch = rawStr.match(/\b(ro|ac|am|rr|pa|ap|to|ma|pi|ce|rn|pb|pe|al|se|ba|mg|es|rj|sp|pr|sc|rs|ms|mt|go|df)\b/i)
-    if (ufMatch) {
-      const ufUpper = ufMatch[1].toUpperCase()
-      if (STATE_CAPITALS_MAP[ufUpper]) {
-        return STATE_CAPITALS_MAP[ufUpper]
-      }
-    }
-
-    // 3. Checagem direta pela prop estado
-    if (uf && STATE_CAPITALS_MAP[uf.toUpperCase()]) {
-      return STATE_CAPITALS_MAP[uf.toUpperCase()]
-    }
-
-    return [-15.7801, -47.9292] // Brasil fallback (centro geográfico)
-  }
 
   React.useEffect(() => {
     const L = (window as any).L
