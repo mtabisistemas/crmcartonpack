@@ -1705,7 +1705,7 @@ export default function ContactsPage() {
                 company: item.company || '',
                 cnpj: item.cnpj || '',
                 curve: item.curve || 'C',
-                representative: (item.representative && !['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara'].includes(item.representative)) ? item.representative : '',
+                representative: item.representative || item.assigned_to || item.assignedTo || item.assigned_to_name || localMatched?.representative || '',
                 phone: item.phone || '',
                 email: item.email || '',
                 city: item.city || '',
@@ -1860,6 +1860,8 @@ export default function ContactsPage() {
           status: updatedContact.status,
           curve: updatedContact.curve,
           representative: updatedContact.representative,
+          assigned_to: updatedContact.representative,
+          assignedTo: updatedContact.representative,
           cnpj: updatedContact.cnpj,
           address: updatedContact.address,
           bairro: updatedContact.bairro,
@@ -1879,14 +1881,26 @@ export default function ContactsPage() {
           updated_at: new Date().toISOString()
         }
 
-        if (updatedContact.id && !updatedContact.id.startsWith('c-')) {
-          await supabase.from('contacts').update(payload).eq('id', updatedContact.id)
-        } else if (updatedContact.cnpj) {
-          await supabase.from('contacts').update(payload).eq('cnpj', updatedContact.cnpj)
-        } else if (updatedContact.company) {
-          await supabase.from('contacts').update(payload).ilike('company', updatedContact.company)
+        // Try update by ID first
+        let updateRes: any = null
+        if (updatedContact.id) {
+          updateRes = await supabase.from('contacts').update(payload).eq('id', updatedContact.id)
         }
-        console.log('Successfully updated contact in Supabase!')
+
+        // Fallback to CNPJ matching (both raw and cleaned)
+        const cleanCnpj = (updatedContact.cnpj || '').replace(/\D/g, '')
+        if ((!updateRes || updateRes.error || updateRes.count === 0) && updatedContact.cnpj) {
+          updateRes = await supabase.from('contacts').update(payload).eq('cnpj', updatedContact.cnpj)
+          if ((!updateRes || updateRes.error || updateRes.count === 0) && cleanCnpj) {
+            updateRes = await supabase.from('contacts').update(payload).ilike('cnpj', `%${cleanCnpj}%`)
+          }
+        }
+
+        // Fallback to Company name matching
+        if ((!updateRes || updateRes.error || updateRes.count === 0) && updatedContact.company) {
+          updateRes = await supabase.from('contacts').update(payload).ilike('company', updatedContact.company)
+        }
+        console.log('Successfully updated contact in Supabase!', updateRes)
       } catch (err) {
         console.error('Error updating contact in Supabase:', err)
       }
@@ -1963,6 +1977,8 @@ export default function ContactsPage() {
         status: newContact.status,
         curve: newContact.curve,
         representative: newContact.representative,
+        assigned_to: newContact.representative,
+        assignedTo: newContact.representative,
         cnpj: newContact.cnpj,
         address: newContact.address,
         bairro: newContact.bairro,
