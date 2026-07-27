@@ -784,10 +784,11 @@ export function ProspeccaoModal({
   }
 
   const handleDistribuir = async () => {
-    if (!vendedorId) { toastService.warning('Selecione o responsável.'); return }
+    const currentUserLabel = usuarioLogado?.nome || (usuarioLogado as any)?.name || 'Vendedor'
+    if (isGestaoOuAdmin && !vendedorId) { toastService.warning('Selecione o responsável.'); return }
     
-    const targetUser = usuariosDisponiveis.find(u => u.id === vendedorId)
-    const targetLabel = targetUser?.nome || 'Responsável'
+    const targetUser = isGestaoOuAdmin ? usuariosDisponiveis.find(u => u.id === vendedorId) : null
+    const targetLabel = isGestaoOuAdmin ? (targetUser?.nome || (targetUser as any)?.name || currentUserLabel) : currentUserLabel
 
     try {
       setImporting(true)
@@ -1488,7 +1489,7 @@ export function ProspeccaoModal({
               <div>
                 <div className="text-xs font-bold text-white font-display">Distribuição pelo Supervisor Comercial</div>
                 <div className="text-[10px] font-mono text-[var(--gray2)]">
-                  {selectedCnpjs.length} lead(s) selecionado(s)  1ª etapa do Kanban (&quot;Leads Mapeados&quot;)
+                  {selectedCnpjs.length} lead(s) selecionado(s) · 1ª etapa do Kanban (&quot;Leads Mapeados&quot;)
                 </div>
               </div>
             </div>
@@ -1518,6 +1519,33 @@ export function ProspeccaoModal({
                 }
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ── BARRA DE ASSUMIR LEADS (Exibida para Vendedor / Representante) ── */}
+        {hasSearched && leads.length > 0 && !isGestaoOuAdmin && (
+          <div className="p-4 bg-[var(--card)] border-t border-[var(--line)] flex flex-wrap items-center justify-between gap-4 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-[var(--lime)]/10 border border-[var(--lime)]/20 flex items-center justify-center text-[var(--lime)]">
+                <Users size={15} />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-white font-display">Leads Selecionados</div>
+                <div className="text-[10px] font-mono text-[var(--gray2)]">
+                  {selectedCnpjs.length} lead(s) selecionado(s) para sua carteira
+                </div>
+              </div>
+            </div>
+            <button
+              disabled={!selectedCnpjs.length || importing}
+              onClick={handleDistribuir}
+              className="btn btn-primary py-2 px-5 text-xs font-black uppercase tracking-wider text-black flex items-center gap-2 rounded-xl shadow-lg shadow-[rgba(180,217,50,0.15)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {importing
+                ? <><Loader2 size={13} className="animate-spin" /><span>Cadastrando...</span></>
+                : <><UserPlus size={13} /><span>CADASTRAR NA BASE (ASSUMIR LEADS)</span></>
+              }
+            </button>
           </div>
         )}
         {/* ── FICHA DO LEAD — LAYOUT 100% IDáŠNTICO á€ FICHA DO CLIENTE (ContactDrawer) ── */}
@@ -1593,12 +1621,12 @@ function LeadDetailModal({ lead, usuariosDisponiveis, usuarioLogado, isGestaoOuA
   }
 
   const handleEncaminhar = async () => {
-    if (!encaminharVendedor) return
+    const currentUserLabel = usuarioLogado?.nome || (usuarioLogado as any)?.name || 'Vendedor'
+    if (isGestaoOuAdmin && !encaminharVendedor) return
     setEncaminhando(true)
     try {
-      const vendedor = usuariosDisponiveis.find(u => u.id === encaminharVendedor)
-      const targetUser = vendedor
-      const targetLabel = targetUser?.nome || 'Responsável'
+      const vendedor = isGestaoOuAdmin ? usuariosDisponiveis.find(u => u.id === encaminharVendedor) : null
+      const targetLabel = isGestaoOuAdmin ? (vendedor?.nome || (vendedor as any)?.name || currentUserLabel) : currentUserLabel
 
       // 1. Atualiza a Carteira de Clientes (localStorage crm_contacts)
       const existingSaved = typeof window !== 'undefined' ? localStorage.getItem('crm_contacts') : null

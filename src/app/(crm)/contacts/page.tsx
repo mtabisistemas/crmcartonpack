@@ -2392,7 +2392,7 @@ export default function ContactsPage() {
       <ProspeccaoModal
         isOpen={showProspeccaoModal}
         onClose={() => setShowProspeccaoModal(false)}
-        usuarioLogado={{ id: 'admin-1', nome: 'Supervisor Comercial', papel: 'supervisor', ativo: true }}
+        usuarioLogado={currentUser ? { id: currentUser.id, nome: currentUser.name, papel: (currentUser.role as any), ativo: true } : { id: 'admin-1', nome: 'Supervisor Comercial', papel: 'supervisor', ativo: true }}
         usuariosDisponiveis={representativesList.map((r, i) => ({ id: `usr-${i}`, nome: r, papel: 'representante', ativo: true }))}
         onLeadsImported={() => {
           if (typeof window !== 'undefined') {
