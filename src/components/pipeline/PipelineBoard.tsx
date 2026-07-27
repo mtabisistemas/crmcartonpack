@@ -683,105 +683,110 @@ export function PipelineBoard() {
 
   return (
     <div className="page-content animate-fade-in w-full h-full flex flex-col gap-3 overflow-hidden">
-      {/* ── BARRA DE FILTROS ESTILIZADA DO PIPELINE ── */}
-      <div className="card p-2.5 border border-[var(--line)] bg-[var(--card)] flex items-center justify-between gap-2 shrink-0 rounded-2xl shadow-md overflow-x-auto">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          {/* Busca */}
-          <div className="relative flex-1 min-w-[150px] max-w-[260px]">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--gray2)] pointer-events-none" />
-            <input
-              type="text"
-              className="input w-full pl-9 py-1.5 text-xs font-medium"
-              placeholder="Buscar negócio..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+      {/* ── HEADER ROW: TÍTULO DA PÁGINA + BOTÕES DE AÇÃO ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+        <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
+          Pipeline de Vendas
+        </h1>
 
-          {/* Ano */}
-          <div className="flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1 rounded-xl shrink-0">
-            <span className="text-[9px] font-mono font-bold text-[var(--gray2)] uppercase">Ano:</span>
-            <select
-              className="bg-transparent text-xs font-mono font-bold text-[var(--white)] outline-none cursor-pointer"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-            >
-              <option value="all" className="bg-[var(--charcoal)]">Todos</option>
-              <option value="2026" className="bg-[var(--charcoal)]">2026</option>
-              <option value="2025" className="bg-[var(--charcoal)]">2025</option>
-            </select>
-          </div>
-
-          {/* Mês */}
-          <div className="flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1 rounded-xl shrink-0">
-            <span className="text-[9px] font-mono font-bold text-[var(--gray2)] uppercase">Mês:</span>
-            <select
-              className="bg-transparent text-xs font-mono font-bold text-[var(--white)] outline-none cursor-pointer"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-            >
-              <option value="all" className="bg-[var(--charcoal)]">Todos</option>
-              <option value="01" className="bg-[var(--charcoal)]">Jan (01)</option>
-              <option value="02" className="bg-[var(--charcoal)]">Fev (02)</option>
-              <option value="03" className="bg-[var(--charcoal)]">Mar (03)</option>
-              <option value="04" className="bg-[var(--charcoal)]">Abr (04)</option>
-              <option value="05" className="bg-[var(--charcoal)]">Mai (05)</option>
-              <option value="06" className="bg-[var(--charcoal)]">Jun (06)</option>
-              <option value="07" className="bg-[var(--charcoal)]">Jul (07)</option>
-              <option value="08" className="bg-[var(--charcoal)]">Ago (08)</option>
-              <option value="09" className="bg-[var(--charcoal)]">Set (09)</option>
-              <option value="10" className="bg-[var(--charcoal)]">Out (10)</option>
-              <option value="11" className="bg-[var(--charcoal)]">Nov (11)</option>
-              <option value="12" className="bg-[var(--charcoal)]">Dez (12)</option>
-            </select>
-          </div>
-
-          {/* Representantes */}
-          <div className="flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1 rounded-xl shrink-0 max-w-[190px]">
-            <span className="text-[9px] font-mono font-bold text-[var(--gray2)] uppercase">Rep:</span>
-            <select
-              className="bg-transparent text-xs font-mono font-bold text-[var(--white)] outline-none cursor-pointer w-full truncate"
-              value={selectedRep}
-              onChange={(e) => setSelectedRep(e.target.value)}
-            >
-              <option value="all" className="bg-[var(--charcoal)]">Todos os Reps</option>
-              {representativesList.map((r, idx) => (
-                <option key={idx} value={r} className="bg-[var(--charcoal)]">{r}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Curva ABC */}
-          <div className="flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1 rounded-xl shrink-0">
-            <span className="text-[9px] font-mono font-bold text-[var(--gray2)] uppercase">Curva:</span>
-            <select
-              className="bg-transparent text-xs font-mono font-bold text-[var(--white)] outline-none cursor-pointer"
-              value={selectedCurve}
-              onChange={(e) => setSelectedCurve(e.target.value)}
-            >
-              <option value="all" className="bg-[var(--charcoal)]">Todas</option>
-              <option value="A" className="bg-[var(--charcoal)]">Curva A</option>
-              <option value="B" className="bg-[var(--charcoal)]">Curva B</option>
-              <option value="C" className="bg-[var(--charcoal)]">Curva C</option>
-              <option value="D" className="bg-[var(--charcoal)]">Curva D</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Botões Ação */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-3">
           <button 
-            className="btn btn-secondary text-xs py-1.5 px-3 font-bold flex items-center gap-1.5 uppercase tracking-wider text-white border-[var(--line)] hover:border-[var(--lime)] cursor-pointer shadow-sm" 
+            type="button"
+            className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-2 cursor-pointer text-white font-bold shadow-lg"
             onClick={() => setShowCalendarModal(true)}
           >
             <Calendar size={14} className="text-[var(--lime)]" />
             <span>Agenda</span>
           </button>
 
-          <button className="btn btn-primary text-xs py-1.5 px-3.5 font-bold flex items-center gap-1.5 uppercase tracking-wider text-[#060606] shrink-0" onClick={() => handleOpenAddDeal('leads')}>
+          <button 
+            type="button"
+            className="btn btn-primary text-xs py-2 px-3 flex items-center gap-2 cursor-pointer font-bold text-[#060606]" 
+            onClick={() => handleOpenAddDeal('leads')}
+          >
             <Plus size={14} />
             <span>Novo Negócio</span>
           </button>
+        </div>
+      </div>
+
+      {/* ── BARRA DE FILTROS DO PIPELINE (ESTILO IDÊNTICO A CONTATOS) ── */}
+      <div className="card p-4 grid grid-cols-1 md:grid-cols-6 gap-3 items-center shrink-0">
+        {/* Busca — ocupa 2 colunas */}
+        <div className="md:col-span-2 flex items-center gap-2 input w-full">
+          <Search size={14} className="text-[var(--gray2)] shrink-0" />
+          <input
+            type="text"
+            className="bg-transparent border-none outline-none w-full text-xs text-[var(--white)] placeholder-[var(--gray2)] font-medium"
+            placeholder="Buscar negócio..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        {/* Ano */}
+        <div>
+          <select
+            className="input w-full text-xs cursor-pointer"
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+          >
+            <option value="all" className="bg-[var(--charcoal)] text-white">Ano: Todos</option>
+            <option value="2026" className="bg-[var(--charcoal)] text-white">Ano: 2026</option>
+            <option value="2025" className="bg-[var(--charcoal)] text-white">Ano: 2025</option>
+          </select>
+        </div>
+
+        {/* Mês */}
+        <div>
+          <select
+            className="input w-full text-xs cursor-pointer"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+          >
+            <option value="all" className="bg-[var(--charcoal)] text-white">Mês: Todos</option>
+            <option value="01" className="bg-[var(--charcoal)] text-white">Jan (01)</option>
+            <option value="02" className="bg-[var(--charcoal)] text-white">Fev (02)</option>
+            <option value="03" className="bg-[var(--charcoal)] text-white">Mar (03)</option>
+            <option value="04" className="bg-[var(--charcoal)] text-white">Abr (04)</option>
+            <option value="05" className="bg-[var(--charcoal)] text-white">Mai (05)</option>
+            <option value="06" className="bg-[var(--charcoal)] text-white">Jun (06)</option>
+            <option value="07" className="bg-[var(--charcoal)] text-white">Jul (07)</option>
+            <option value="08" className="bg-[var(--charcoal)] text-white">Ago (08)</option>
+            <option value="09" className="bg-[var(--charcoal)] text-white">Set (09)</option>
+            <option value="10" className="bg-[var(--charcoal)] text-white">Out (10)</option>
+            <option value="11" className="bg-[var(--charcoal)] text-white">Nov (11)</option>
+            <option value="12" className="bg-[var(--charcoal)] text-white">Dez (12)</option>
+          </select>
+        </div>
+
+        {/* Representantes */}
+        <div>
+          <select
+            className="input w-full text-xs cursor-pointer truncate"
+            value={selectedRep}
+            onChange={(e) => setSelectedRep(e.target.value)}
+          >
+            <option value="all" className="bg-[var(--charcoal)] text-white">Todos os Reps</option>
+            {representativesList.map((r, idx) => (
+              <option key={idx} value={r} className="bg-[var(--charcoal)] text-white">{r}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Curva ABC */}
+        <div>
+          <select
+            className="input w-full text-xs cursor-pointer"
+            value={selectedCurve}
+            onChange={(e) => setSelectedCurve(e.target.value)}
+          >
+            <option value="all" className="bg-[var(--charcoal)] text-white">Todas as Curvas (ABC)</option>
+            <option value="A" className="bg-[var(--charcoal)] text-white">Curva A</option>
+            <option value="B" className="bg-[var(--charcoal)] text-white">Curva B</option>
+            <option value="C" className="bg-[var(--charcoal)] text-white">Curva C</option>
+            <option value="D" className="bg-[var(--charcoal)] text-white">Curva D</option>
+          </select>
         </div>
       </div>
 
