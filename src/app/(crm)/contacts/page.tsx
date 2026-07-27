@@ -23,6 +23,7 @@ import {
   Clock,
   UserPlus,
   Save,
+  AlertTriangle,
   Copy,
   Check,
   CheckCircle,
@@ -79,6 +80,7 @@ export interface MockContact {
   linkedin?: string
   facebook?: string // Inscrição Estadual
   sideActivities?: {id: string; text: string}[]
+  activities?: Activity[]
 }
 
 interface Activity {
