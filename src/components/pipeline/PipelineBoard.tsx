@@ -266,7 +266,7 @@ function NewDealModal({
   onCancel
 }: {
   initialStage?: DealStage
-  onConfirm: (data: { title: string; contactName: string; company: string; value: number; stage: DealStage }) => void
+  onConfirm: (data: { title: string; contactName: string; company: string; value: number; stage: DealStage; contactId?: string; representative?: string }) => void
   onCancel: () => void
 }) {
   const [clientName, setClientName] = useState('')
@@ -345,7 +345,10 @@ function NewDealModal({
     return comp.includes(q) || cnpj.includes(q) || city.includes(q)
   })
 
-  const handleSelectContact = (c: { company: string; name?: string; cnpj?: string; city?: string }) => {
+  const [selectedContactObj, setSelectedContactObj] = useState<any>(null)
+
+  const handleSelectContact = (c: { company: string; name?: string; cnpj?: string; city?: string; representative?: string; id?: string }) => {
+    setSelectedContactObj(c)
     const chosenName = c.company || c.name || ''
     setClientName(chosenName)
     if (c.name && c.name !== chosenName) {
@@ -357,12 +360,31 @@ function NewDealModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!clientName.trim()) return
+
+    let matchedRep = selectedContactObj?.representative || (selectedContactObj as any)?.assignedTo || (selectedContactObj as any)?.assigned_to
+    let contactId = selectedContactObj?.id
+
+    if (!matchedRep) {
+      const q = clientName.toLowerCase().trim()
+      const found = contactsList.find(c => (c.company || c.name || '').toLowerCase().trim() === q)
+      if (found) {
+        matchedRep = found.representative || (found as any)?.assignedTo || (found as any)?.assigned_to
+        contactId = found.id
+      }
+    }
+
+    if (!matchedRep && currentUser?.name) {
+      matchedRep = currentUser.name
+    }
+
     onConfirm({
       title: clientName.trim(),
       contactName: contactName.trim() || clientName.trim(),
       company: clientName.trim(),
       value,
-      stage
+      stage,
+      contactId,
+      representative: matchedRep
     })
   }
 
@@ -669,17 +691,41 @@ export function PipelineBoard() {
     setShowNewDealModal(true)
   }
 
-  const handleConfirmNewDeal = (data: { title: string; contactName: string; company: string; value: number; stage: DealStage }) => {
+  const handleConfirmNewDeal = (data: { title: string; contactName: string; company: string; value: number; stage: DealStage; contactId?: string; representative?: string }) => {
+    const userRaw = typeof window !== 'undefined' ? localStorage.getItem('crm_current_user') : null
+    const currentUser = userRaw ? JSON.parse(userRaw) : null
+
+    let rep = data.representative
+    if (!rep) {
+      try {
+        const rawContacts = localStorage.getItem('crm_contacts')
+        if (rawContacts) {
+          const contacts = JSON.parse(rawContacts)
+          const comp = (data.company || data.title).trim().toLowerCase()
+          const matched = contacts.find((c: any) => (c.company || c.name || '').trim().toLowerCase() === comp)
+          if (matched && matched.representative) {
+            rep = matched.representative
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!rep && currentUser?.name) {
+      rep = currentUser.name
+    }
+
     const newDeal: Deal = {
       id: `d-${Date.now()}`,
       title: data.title,
       stage: data.stage,
       estimated_value: data.value,
-      contact_id: `c-${Date.now()}`,
+      assigned_to: rep,
+      contact_id: data.contactId || `c-${Date.now()}`,
       contact: {
-        id: `c-${Date.now()}`,
+        id: data.contactId || `c-${Date.now()}`,
         name: data.contactName,
         company: data.company,
+        representative: rep,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       },

@@ -259,6 +259,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
         email: contactEmail,
         company: contactCompany || title,
         curve: curve,
+        representative: representative,
         created_at: deal.contact?.created_at ?? new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }

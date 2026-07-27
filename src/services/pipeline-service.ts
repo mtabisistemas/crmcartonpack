@@ -196,20 +196,51 @@ export const DEFAULT_PIPELINE_DEALS: Deal[] = [
   }
 ]
 
-export function getPipelineDeals(defaultDeals: Deal[] = DEFAULT_PIPELINE_DEALS): Deal[] {
+export function getPipelineDeals(defaultDeals: Deal[] = []): Deal[] {
   if (typeof window === 'undefined') return defaultDeals
+  let rawDeals: Deal[] = defaultDeals
   try {
     const raw = localStorage.getItem(PIPELINE_STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      if (Array.isArray(parsed) && parsed.length > 0) rawDeals = parsed
     }
   } catch (e) {
     console.error(e)
   }
-  // Initialize with DEFAULT_PIPELINE_DEALS if empty
-  localStorage.setItem(PIPELINE_STORAGE_KEY, JSON.stringify(DEFAULT_PIPELINE_DEALS))
-  return DEFAULT_PIPELINE_DEALS
+
+  // Auto-normalize deals missing representative against crm_contacts
+  try {
+    const rawContacts = localStorage.getItem(CONTACTS_STORAGE_KEY)
+    if (rawContacts) {
+      const contacts: MockContact[] = JSON.parse(rawContacts)
+      rawDeals = rawDeals.map(d => {
+        const dRep = d.assigned_to || d.contact?.representative
+        if (!dRep) {
+          const comp = (d.title || d.contact?.company || '').trim().toLowerCase()
+          const matchedContact = contacts.find(c => (c.company || c.name || '').trim().toLowerCase() === comp)
+          if (matchedContact && matchedContact.representative) {
+            return {
+              ...d,
+              assigned_to: matchedContact.representative,
+              contact: {
+                ...d.contact,
+                id: d.contact?.id || d.contact_id || `c-${Date.now()}`,
+                name: d.contact?.name || d.title,
+                company: d.contact?.company || d.title,
+                representative: matchedContact.representative,
+                created_at: d.contact?.created_at || new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }
+            }
+          }
+        }
+        return d
+      })
+    }
+  } catch (e) {}
+
+  return rawDeals
 }
 
 export function savePipelineDeals(deals: Deal[]) {
@@ -226,12 +257,15 @@ export function createPipelineDeal(dealData: {
   email?: string
   value?: number
   assignedToName?: string
+  representative?: string
   stage?: DealStage
   notes?: string
   cnpj?: string
 }, defaultDeals: Deal[] = []): Deal {
   const currentDeals = getPipelineDeals(defaultDeals)
   const now = new Date().toISOString()
+  
+  const rep = dealData.representative || dealData.assignedToName || ''
   
   const newDeal: Deal = {
     id: 'deal_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
@@ -240,15 +274,17 @@ export function createPipelineDeal(dealData: {
     stage: dealData.stage || 'leads',
     position: 0,
     estimated_value: dealData.value || 0,
+    assigned_to: rep,
     stage_entered_at: now,
     created_at: now,
     updated_at: now,
     contact: {
       id: 'c_' + Date.now(),
-      name: dealData.assignedToName ? `${dealData.assignedToName}` : (dealData.contactName || dealData.company),
+      name: dealData.contactName || dealData.company,
       company: dealData.company,
       phone: dealData.phone,
       email: dealData.email,
+      representative: rep,
       created_at: now,
       updated_at: now
     }
