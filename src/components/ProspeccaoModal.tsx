@@ -637,41 +637,105 @@ export function ProspeccaoModal({
   }
   const handleDistribuir = async () => {
     if (!selectedCnpjs.length) { toastService.warning('Selecione ao menos 1 lead.'); return }
-    if (!vendedorId) { toastService.warning('Selecione o responsá¡vel.'); return }
+    if (!vendedorId) { toastService.warning('Selecione o responsável.'); return }
     const targetUser = usuariosDisponiveis.find(u => u.id === vendedorId)
-    const targetLabel = targetUser?.nome || 'Responsá¡vel'
+    const targetLabel = targetUser?.nome || 'Responsável'
     try {
       setImporting(true)
       const toImport = leads
         .filter(l => selectedCnpjs.includes(l.cnpj))
         .map(l => getDisplayLead(l))
+
+      // 1. Atualiza a Carteira de Clientes (localStorage crm_contacts)
+      const existingSaved = typeof window !== 'undefined' ? localStorage.getItem('crm_contacts') : null
+      let contactList = existingSaved ? JSON.parse(existingSaved) : []
+
+      // 2. Atualiza o Kanban Pipeline (localStorage cp_crm_v7_official_deals)
+      const existingDeals = typeof window !== 'undefined' ? localStorage.getItem('cp_crm_v7_official_deals') : null
+      let dealsList = existingDeals ? JSON.parse(existingDeals) : []
+
       for (const lead of toImport) {
-        const novoCliente = await dbService.clientes.save({
-          razao_social: lead.razao_social,
+        // Criar Cliente
+        const newContactObj = {
+          id: 'cli_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          company: lead.razao_social,
+          name: lead.contato_nome && lead.contato_nome !== 'Não Disponível' ? lead.contato_nome : lead.razao_social,
           cnpj: lead.cnpj,
-          cidade: lead.cidade,
-          estado: lead.estado,
-          segmento: lead.setor,
-          representante_id: targetUser?.papel === 'representante' ? targetUser.id : null,
-          vendedor_interno_id: targetUser?.papel === 'vendedor_interno' ? targetUser.id : null,
-          intervalo_medio_compras: null,
-          classificacao_potencial: lead.porte === 'Grande' ? 'A' : lead.porte === 'Média' ? 'B' : 'C',
-          volume_mensal: 0,
-          principais_produtos: [lead.setor],
-          exigencias_qualidade: `Prospecção B2B Real - CNAE: ${lead.cnae_codigo}`,
-        })
-        await dbService.orcamentos.save({
-          cliente_id: novoCliente.id,
-          responsavel_id: vendedorId,
-          etapa_atual: 'solicitacao_briefing',
-          probabilidade_fechamento: 3,
-          valor_aprovado: null,
-          data_fechamento: null,
-          motivo_perda: null,
-          justificativa_livre: `Lead real prospectado (${lead.setor} - ${lead.cidade}/${lead.estado}) e atribuído a ${targetLabel}.`,
-        })
+          curve: lead.porte === 'Grande' ? 'A' : lead.porte === 'Média' ? 'B' : 'C',
+          representative: targetLabel,
+          lastPurchaseDays: 0,
+          phone: lead.telefone || '',
+          city: lead.cidade || '',
+          state: lead.estado || '',
+          status: 'prospeccao',
+          email: lead.email || '',
+          tradeName: lead.nome_fantasia || lead.razao_social,
+          address: lead.logradouro || '',
+          bairro: lead.bairro || '',
+          cep: lead.cep || '',
+          mainCnae: lead.cnae_codigo ? `${lead.cnae_codigo} - ${lead.cnae_descricao || lead.setor}` : lead.setor,
+          activities: []
+        }
+        contactList = [newContactObj, ...contactList.filter((c: any) => c.cnpj !== lead.cnpj)]
+
+        // Criar Deal no Kanban
+        const newDealObj = {
+          id: 'deal_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          clientName: lead.razao_social,
+          cnpj: lead.cnpj,
+          city: lead.cidade || '',
+          state: lead.estado || '',
+          value: lead.porte === 'Grande' ? 150000 : lead.porte === 'Média' ? 45000 : 15000,
+          stage: 'leads_mapeados',
+          representative: targetLabel,
+          assignedTo: targetLabel,
+          assignedToId: targetUser?.id,
+          createdAt: new Date().toISOString(),
+          lastActivityDays: 0,
+          notes: `Lead prospectado (${lead.setor} - ${lead.cidade}/${lead.estado}) distribuído para ${targetLabel}.`
+        }
+        dealsList = [newDealObj, ...dealsList.filter((d: any) => d.cnpj !== lead.cnpj)]
+
+        // Salva no Supabase se ativo
+        try {
+          const novoCliente = await dbService.clientes.save({
+            razao_social: lead.razao_social,
+            cnpj: lead.cnpj,
+            cidade: lead.cidade,
+            estado: lead.estado,
+            segmento: lead.setor,
+            representante_id: targetUser?.papel === 'representante' ? targetUser.id : null,
+            vendedor_interno_id: targetUser?.papel === 'vendedor_interno' ? targetUser.id : null,
+            intervalo_medio_compras: null,
+            classificacao_potencial: lead.porte === 'Grande' ? 'A' : lead.porte === 'Média' ? 'B' : 'C',
+            volume_mensal: 0,
+            principais_produtos: [lead.setor],
+            exigencias_qualidade: `Prospecção B2B Real - CNAE: ${lead.cnae_codigo}`,
+          })
+          await dbService.orcamentos.save({
+            cliente_id: novoCliente.id,
+            responsavel_id: vendedorId,
+            etapa_atual: 'solicitacao_briefing',
+            probabilidade_fechamento: 3,
+            valor_aprovado: null,
+            data_fechamento: null,
+            motivo_perda: null,
+            justificativa_livre: `Lead prospectado (${lead.setor} - ${lead.cidade}/${lead.estado}) e atribuído a ${targetLabel}.`,
+          })
+        } catch (e) {
+          console.warn('Erro ao salvar Supabase:', e)
+        }
       }
-      toastService.success(`ðŸš€ ${toImport.length} leads autênticos distribuídos para ${targetLabel}!`)
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('crm_contacts', JSON.stringify(contactList))
+        localStorage.setItem('cp_crm_v7_official_deals', JSON.stringify(dealsList))
+        window.dispatchEvent(new Event('storage-contacts-changed'))
+        window.dispatchEvent(new Event('storage-pipeline-changed'))
+        window.dispatchEvent(new Event('storage'))
+      }
+
+      toastService.success(`🚀 ${toImport.length} lead(s) encaminhado(s) com sucesso para ${targetLabel} e cadastrado(s) no Kanban/CRM!`)
       if (onLeadsImported) onLeadsImported()
       await fetchLeads(currentPage)
     } catch (e) {
@@ -1288,7 +1352,7 @@ export function ProspeccaoModal({
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono text-[var(--gray2)]">Atribuir a:</span>
+                <span className="text-[10px] font-mono text-[var(--gray2)]">Encaminhar para:</span>
                 <select
                   value={vendedorId}
                   onChange={e => setVendedorId(e.target.value)}
@@ -1296,7 +1360,7 @@ export function ProspeccaoModal({
                 >
                   {usuariosDisponiveis.map(u => (
                     <option key={u.id} value={u.id}>
-                      {u.nome} ({u.papel === 'vendedor_interno' ? 'Vendedor' : u.papel === 'representante' ? 'Representante' : u.papel})
+                      {u.nome} ({u.papel === 'representante' ? 'Representante' : u.papel === 'vendedor_interno' ? 'Vendedor Interno' : u.papel})
                     </option>
                   ))}
                 </select>
@@ -1388,37 +1452,100 @@ function LeadDetailModal({ lead, usuariosDisponiveis, onClose, onLeadsImported }
     try {
       const vendedor = usuariosDisponiveis.find(u => u.id === encaminharVendedor)
       const targetUser = vendedor
-      const novoCliente = await dbService.clientes.save({
-        razao_social: lead.razao_social,
+      const targetLabel = targetUser?.nome || 'Responsável'
+
+      // 1. Atualiza a Carteira de Clientes (localStorage crm_contacts)
+      const existingSaved = typeof window !== 'undefined' ? localStorage.getItem('crm_contacts') : null
+      let contactList = existingSaved ? JSON.parse(existingSaved) : []
+
+      const newContactObj = {
+        id: 'cli_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        company: lead.razao_social,
+        name: lead.contato_nome && lead.contato_nome !== 'Não Disponível' ? lead.contato_nome : lead.razao_social,
         cnpj: lead.cnpj,
-        cidade: lead.cidade,
-        estado: lead.estado,
-        segmento: lead.setor,
-        representante_id: targetUser?.papel === 'representante' ? targetUser.id : null,
-        vendedor_interno_id: targetUser?.papel === 'vendedor_interno' ? targetUser.id : null,
-        intervalo_medio_compras: null,
-        classificacao_potencial: (lead.porte as string) === 'Grande' ? 'A' : (lead.porte as string) === 'Média' ? 'B' : 'C',
-        volume_mensal: 0,
-        principais_produtos: [lead.setor],
-        exigencias_qualidade: `Prospecção B2B Real - CNAE: ${lead.cnae_codigo}`,
-      })
-      await dbService.orcamentos.save({
-        cliente_id: novoCliente.id,
-        responsavel_id: encaminharVendedor,
-        etapa_atual: 'solicitacao_briefing',
-        probabilidade_fechamento: 3,
-        valor_aprovado: null,
-        data_fechamento: null,
-        motivo_perda: null,
-        justificativa_livre: `Lead prospectado (${lead.setor} - ${lead.cidade}/${lead.estado}) encaminhado para ${vendedor?.nome || 'vendedor'}.`,
-      })
+        curve: (lead.porte as string) === 'Grande' ? 'A' : (lead.porte as string) === 'Média' ? 'B' : 'C',
+        representative: targetLabel,
+        lastPurchaseDays: 0,
+        phone: lead.telefone || '',
+        city: lead.cidade || '',
+        state: lead.estado || '',
+        status: 'prospeccao',
+        email: lead.email || '',
+        tradeName: lead.nome_fantasia || lead.razao_social,
+        address: lead.logradouro || '',
+        bairro: lead.bairro || '',
+        cep: lead.cep || '',
+        mainCnae: lead.cnae_codigo ? `${lead.cnae_codigo} - ${lead.cnae_descricao || lead.setor}` : lead.setor,
+        activities: []
+      }
+      contactList = [newContactObj, ...contactList.filter((c: any) => c.cnpj !== lead.cnpj)]
+
+      // 2. Atualiza o Kanban Pipeline (localStorage cp_crm_v7_official_deals)
+      const existingDeals = typeof window !== 'undefined' ? localStorage.getItem('cp_crm_v7_official_deals') : null
+      let dealsList = existingDeals ? JSON.parse(existingDeals) : []
+
+      const newDealObj = {
+        id: 'deal_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        clientName: lead.razao_social,
+        cnpj: lead.cnpj,
+        city: lead.cidade || '',
+        state: lead.estado || '',
+        value: lead.porte === 'Grande' ? 150000 : lead.porte === 'Média' ? 45000 : 15000,
+        stage: 'leads_mapeados',
+        representative: targetLabel,
+        assignedTo: targetLabel,
+        assignedToId: targetUser?.id,
+        createdAt: new Date().toISOString(),
+        lastActivityDays: 0,
+        notes: `Lead prospectado (${lead.setor} - ${lead.cidade}/${lead.estado}) encaminhado para ${targetLabel}.`
+      }
+      dealsList = [newDealObj, ...dealsList.filter((d: any) => d.cnpj !== lead.cnpj)]
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('crm_contacts', JSON.stringify(contactList))
+        localStorage.setItem('cp_crm_v7_official_deals', JSON.stringify(dealsList))
+        window.dispatchEvent(new Event('storage-contacts-changed'))
+        window.dispatchEvent(new Event('storage-pipeline-changed'))
+        window.dispatchEvent(new Event('storage'))
+      }
+
+      // Salva no Supabase se ativo
+      try {
+        const novoCliente = await dbService.clientes.save({
+          razao_social: lead.razao_social,
+          cnpj: lead.cnpj,
+          cidade: lead.cidade,
+          estado: lead.estado,
+          segmento: lead.setor,
+          representante_id: targetUser?.papel === 'representante' ? targetUser.id : null,
+          vendedor_interno_id: targetUser?.papel === 'vendedor_interno' ? targetUser.id : null,
+          intervalo_medio_compras: null,
+          classificacao_potencial: (lead.porte as string) === 'Grande' ? 'A' : (lead.porte as string) === 'Média' ? 'B' : 'C',
+          volume_mensal: 0,
+          principais_produtos: [lead.setor],
+          exigencias_qualidade: `Prospecção B2B Real - CNAE: ${lead.cnae_codigo}`,
+        })
+        await dbService.orcamentos.save({
+          cliente_id: novoCliente.id,
+          responsavel_id: encaminharVendedor,
+          etapa_atual: 'solicitacao_briefing',
+          probabilidade_fechamento: 3,
+          valor_aprovado: null,
+          data_fechamento: null,
+          motivo_perda: null,
+          justificativa_livre: `Lead prospectado (${lead.setor} - ${lead.cidade}/${lead.estado}) encaminhado para ${vendedor?.nome || 'vendedor'}.`,
+        })
+      } catch (e) {
+        console.warn('Erro Supabase:', e)
+      }
+
       setEncaminhadoOk(true)
-      toastService.success(`Lead encaminhado para ${vendedor?.nome || 'vendedor'}!`)
+      toastService.success(`🚀 Lead ${lead.razao_social} encaminhado com sucesso para ${targetLabel} e cadastrado no Kanban/CRM!`)
       if (onLeadsImported) onLeadsImported()
       setTimeout(() => {
         setEncaminhadoOk(false)
         onClose()
-      }, 1800)
+      }, 1500)
     } catch {
       toastService.error('Erro ao encaminhar lead. Tente novamente.')
     } finally {
@@ -1818,7 +1945,9 @@ function LeadDetailModal({ lead, usuariosDisponiveis, onClose, onLeadsImported }
               onChange={(e) => setEncaminharVendedor(e.target.value)}
             >
               {usuariosDisponiveis.map(u => (
-                <option key={u.id} value={u.id}>{u.nome}</option>
+                <option key={u.id} value={u.id}>
+                  {u.nome} ({u.papel === 'representante' ? 'Representante' : u.papel === 'vendedor_interno' ? 'Vendedor Interno' : u.papel})
+                </option>
               ))}
             </select>
             <button

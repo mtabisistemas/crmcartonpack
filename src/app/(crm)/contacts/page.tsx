@@ -2104,6 +2104,7 @@ Para evitar duplicidade, utilize o cadastro já existente.`)
                   <th className="p-4">Curva</th>
                   <th className="p-4">Cidade</th>
                   <th className="p-4">UF</th>
+                  <th className="p-4">Status</th>
                   <th className="p-4">Representante</th>
                   <th className="p-4">Última Compra</th>
                   <th className="p-4 pr-6 text-right">Localização</th>
@@ -2168,6 +2169,31 @@ Para evitar duplicidade, utilize o cadastro já existente.`)
                         <span className="text-xs font-bold text-[var(--gray)] font-mono uppercase">{contact.state || '-'}</span>
                       </td>
 
+                      {/* Status */}
+                      <td className="p-4">
+                        {(() => {
+                          const s = contact.status || 'ativo'
+                          if (s === 'prospeccao') return (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-amber-400/10 border border-amber-400/25 text-amber-300">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-pulse" />
+                              Prospecção
+                            </span>
+                          )
+                          if (s === 'inativo') return (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-red-500/10 border border-red-500/25 text-red-400">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
+                              Inativo
+                            </span>
+                          )
+                          return (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-[var(--lime)]/10 border border-[var(--lime)]/25 text-[var(--lime)]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[var(--lime)] inline-block" />
+                              Ativo
+                            </span>
+                          )
+                        })()}
+                      </td>
+
                       {/* Representante */}
                       <td className="p-4 text-xs font-semibold text-[var(--white)]">
                         <div className="flex items-center gap-2">
@@ -2204,7 +2230,7 @@ Para evitar duplicidade, utilize o cadastro já existente.`)
 
                 {filteredContacts.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="p-12 text-center text-sm text-[var(--gray2)] font-mono">
+                    <td colSpan={8} className="p-12 text-center text-sm text-[var(--gray2)] font-mono">
                       Nenhum cliente encontrado com os filtros selecionados.
                     </td>
                   </tr>
