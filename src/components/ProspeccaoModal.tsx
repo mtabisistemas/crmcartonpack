@@ -564,9 +564,10 @@ export function ProspeccaoModal({
       handleEnrichActiveLead(activeLeadDetails)
     }
   }, [activeLeadDetails?.cnpj])
+  const isGestaoOuAdmin = usuarioLogado?.papel === 'admin' || usuarioLogado?.papel === 'supervisor' || (usuarioLogado as any)?.role === 'admin' || (usuarioLogado as any)?.role === 'administrador'
   // ── Seleção e Distribuição ──
   const [selectedCnpjs, setSelectedCnpjs] = useState<string[]>([])
-  const [vendedorId, setVendedorId] = useState<string>(usuariosDisponiveis[0]?.id || '')
+  const [vendedorId, setVendedorId] = useState<string>(usuarioLogado?.id || usuariosDisponiveis[0]?.id || '')
   const [importing, setImporting] = useState(false)
   const [showConfirmDistribuir, setShowConfirmDistribuir] = useState(false)
   // ── Geocoding (Nominatim) para posicionamento preciso no mapa ──
@@ -1240,7 +1241,11 @@ export function ProspeccaoModal({
                             >
                               {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
                             </button>
-                            
+                            {lead.isDuplicate && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[9px] font-mono font-bold">
+                                <AlertTriangle size={10} /> Já na Base {lead.responsibleUser ? `(${lead.responsibleUser})` : ''}
+                              </span>
+                            )}
                           </div>
                           <span className="text-[10px] font-mono text-[var(--gray2)]">{lead.cnpj}</span>
                         </div>
@@ -1338,13 +1343,13 @@ export function ProspeccaoModal({
                           <CheckSquare size={16} />
                         </button>
                       </th>
-                      <th className="p-3">CNPJ e Nome</th>
-                      <th className="p-3">Endereço</th>
-                      <th className="p-3">CNAE e Setor</th>
-                      <th className="p-3 text-right">Status / Ação</th>
+                      <th className="p-3">Empresa / Razão Social</th>
+                      <th className="p-3">Localização</th>
+                      <th className="p-3">CNAE / Setor</th>
+                      <th className="p-3 text-right">Ação</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[var(--line)]/40">
+                  <tbody className="divide-y divide-[var(--line)]">
                     {leads.map((leadRaw, idx) => {
                       const lead = getDisplayLead(leadRaw)
                       const isEnriching = enrichingIds.has(lead.cnpj)
@@ -1417,7 +1422,7 @@ export function ProspeccaoModal({
                             <div className="flex flex-col items-end gap-1.5">
                               {lead.isDuplicate && (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-mono font-bold whitespace-nowrap">
-                                  <AlertTriangle size={11} /> Já Cadastrado
+                                  <AlertTriangle size={11} /> Já na Base {lead.responsibleUser ? `(${lead.responsibleUser})` : ''}
                                 </span>
                               )}
                               <button
@@ -1450,7 +1455,7 @@ export function ProspeccaoModal({
               </div>
             </div>
           ) : null}
-          {/* Paginaá§á£o */}
+          {/* Paginação */}
           {hasSearched && result && (
             <div className="flex items-center justify-between pt-1">
               <button
@@ -1473,8 +1478,8 @@ export function ProspeccaoModal({
             </div>
           )}
         </div>
-        {/* ── BARRA DE DISTRIBUIá‡áƒO DO SUPERVISOR (Exibida somente se houver busca feita) ── */}
-        {hasSearched && leads.length > 0 && (
+        {/* ── BARRA DE DISTRIBUIÇÃO DO SUPERVISOR (Exibida somente para Gestão / Admin) ── */}
+        {hasSearched && leads.length > 0 && isGestaoOuAdmin && (
           <div className="p-4 bg-[var(--card)] border-t border-[var(--line)] flex flex-wrap items-center justify-between gap-4 shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-[var(--lime)]/10 border border-[var(--lime)]/20 flex items-center justify-center text-[var(--lime)]">
@@ -1521,6 +1526,8 @@ export function ProspeccaoModal({
           <LeadDetailModal
             lead={activeDisplayLead}
             usuariosDisponiveis={usuariosDisponiveis}
+            usuarioLogado={usuarioLogado}
+            isGestaoOuAdmin={isGestaoOuAdmin}
             onClose={() => setActiveLeadDetails(null)}
             onLeadsImported={onLeadsImported}
           />
@@ -1552,12 +1559,14 @@ const WhatsappIcon = ({ size = 15, className = "" }: { size?: number; className?
 interface LeadDetailModalProps {
   lead: ProspectLead
   usuariosDisponiveis: Usuario[]
+  usuarioLogado?: Usuario
+  isGestaoOuAdmin?: boolean
   onClose: () => void
   onLeadsImported?: () => void
 }
 
-function LeadDetailModal({ lead, usuariosDisponiveis, onClose, onLeadsImported }: LeadDetailModalProps) {
-  const [encaminharVendedor, setEncaminharVendedor] = useState(usuariosDisponiveis[0]?.id || '')
+function LeadDetailModal({ lead, usuariosDisponiveis, usuarioLogado, isGestaoOuAdmin, onClose, onLeadsImported }: LeadDetailModalProps) {
+  const [encaminharVendedor, setEncaminharVendedor] = useState(usuarioLogado?.id || usuariosDisponiveis[0]?.id || '')
   const [encaminhando, setEncaminhando] = useState(false)
   const [encaminhadoOk, setEncaminhadoOk] = useState(false)
   const [copiedEmail, setCopiedEmail] = useState(false)
@@ -2077,37 +2086,51 @@ function LeadDetailModal({ lead, usuariosDisponiveis, onClose, onLeadsImported }
           </button>
 
           <div className="flex items-center gap-3">
-            <span className="text-[10px] font-mono text-[var(--gray2)]">Encaminhar para:</span>
-            <select
-              className="bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[var(--lime)]/50 cursor-pointer min-w-[200px]"
-              value={encaminharVendedor}
-              onChange={(e) => setEncaminharVendedor(e.target.value)}
-            >
-              {usuariosDisponiveis.map(u => (
-                <option key={u.id} value={u.id}>
-                  {u.nome} ({u.papel === 'representante' ? 'Representante' : u.papel === 'vendedor_interno' ? 'Vendedor Interno' : u.papel})
-                </option>
-              ))}
-            </select>
+            {isGestaoOuAdmin && (
+              <>
+                <span className="text-[10px] font-mono text-[var(--gray2)]">Encaminhar para:</span>
+                <select
+                  className="bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[var(--lime)]/50 cursor-pointer min-w-[200px]"
+                  value={encaminharVendedor}
+                  onChange={(e) => setEncaminharVendedor(e.target.value)}
+                >
+                  {usuariosDisponiveis.map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.nome} ({u.papel === 'representante' ? 'Representante' : u.papel === 'vendedor_interno' ? 'Vendedor' : u.papel})
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
             <button
               onClick={handleEncaminhar}
-              disabled={encaminhando || encaminhadoOk || !encaminharVendedor}
-              className="btn btn-primary text-xs py-2 px-5 font-bold uppercase tracking-wider text-black flex items-center gap-2 rounded-xl shadow-lg shadow-[rgba(180,217,50,0.15)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed min-w-[220px] justify-center"
+              disabled={encaminhando || encaminhadoOk || !encaminharVendedor || !!lead?.isDuplicate}
+              className="btn btn-primary text-xs py-2 px-5 font-bold uppercase tracking-wider text-black flex items-center gap-2 rounded-xl shadow-lg shadow-[rgba(180,217,50,0.15)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed min-w-[240px] justify-center"
             >
-              {encaminhadoOk ? (
+              {lead?.isDuplicate ? (
+                <>
+                  <AlertTriangle size={14} />
+                  <span>CLIENTE JÁ CADASTRADO {lead.responsibleUser ? `(${lead.responsibleUser.toUpperCase()})` : ''}</span>
+                </>
+              ) : encaminhadoOk ? (
                 <>
                   <CheckCircle size={14} />
-                  <span>Encaminhado com Sucesso!</span>
+                  <span>Cadastrado na Base!</span>
                 </>
               ) : encaminhando ? (
                 <>
                   <Loader2 size={14} className="animate-spin" />
-                  <span>Encaminhando...</span>
+                  <span>Cadastrando...</span>
+                </>
+              ) : !isGestaoOuAdmin ? (
+                <>
+                  <UserPlus size={14} />
+                  <span>CADASTRAR NA BASE (ASSUMIR LEAD)</span>
                 </>
               ) : (
                 <>
                   <UserPlus size={14} />
-                  <span>ENCAMINHAR PARA ATENDIMENTO</span>
+                  <span>CADASTRAR NA BASE</span>
                 </>
               )}
             </button>

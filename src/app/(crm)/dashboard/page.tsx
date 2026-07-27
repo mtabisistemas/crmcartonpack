@@ -2164,26 +2164,26 @@ export default function DashboardPage() {
 
           {/* Under-Chart indicators: Performance da Equipe & Combined Top Clientes + Embalagens */}
           {currentUser?.role === 'representante' || currentUser?.role === 'vendedor' ? (
-            /* Visão Exclusiva de Representante: Oculta a Performance da Equipe e expande Top Clientes para 100% da área */
-            <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] flex-1 min-h-0">
-              <div className="flex items-center justify-between border-b border-[var(--line)] pb-1 shrink-0">
-                <div className="flex items-center gap-2">
-                  <Building size={13} className="text-[var(--lime)]" />
-                  <span className="text-xs font-bold font-display text-[var(--white)]">Meus Top Clientes & Embalagens</span>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto space-y-3 mt-2 pr-1 min-h-0">
-                {/* Principais Clientes */}
-                <div className="space-y-1">
-                  <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold tracking-wider flex items-center gap-1">
-                    <Building size={10} className="text-[var(--lime)]" /> Principais Clientes
+            /* Visão Exclusiva de Vendedor/Representante: Separa Top Clientes de Top Embalagens lado a lado */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 min-h-0">
+              {/* CARD 1: Top Clientes */}
+              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] h-full">
+                <div className="flex items-center justify-between border-b border-[var(--line)] pb-1.5 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Building size={13} className="text-[var(--lime)]" />
+                    <span className="text-xs font-bold font-display text-[var(--white)]">Top Clientes</span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                    {TOP_CLIENTS.map(cli => (
+                  <span className="text-[9px] font-mono text-[var(--lime)] font-bold">Fechamentos</span>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-1.5 mt-2 pr-1 min-h-0">
+                  {TOP_CLIENTS.length === 0 ? (
+                    <div className="text-[10px] font-mono text-[var(--gray2)] py-4 italic text-center">Nenhum cliente com venda fechada no período.</div>
+                  ) : (
+                    TOP_CLIENTS.map(cli => (
                       <div key={cli.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{cli.rank}</span>
+                          <span className="text-[9px] font-mono text-[var(--lime)] font-black">#{cli.rank}</span>
                           <div className="text-xs font-bold text-[var(--white)] truncate">{cli.name}</div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -2191,20 +2191,29 @@ export default function DashboardPage() {
                           <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(cli.value)}</span>
                         </div>
                       </div>
-                    ))}
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* CARD 2: Top Embalagens */}
+              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] h-full">
+                <div className="flex items-center justify-between border-b border-[var(--line)] pb-1.5 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Layers size={13} className="text-[var(--lime)]" />
+                    <span className="text-xs font-bold font-display text-[var(--white)]">Top Embalagens</span>
                   </div>
+                  <span className="text-[9px] font-mono text-sky-400 font-bold">Mais Demandadas</span>
                 </div>
 
-                {/* Embalagens Mais Demandadas */}
-                <div className="space-y-1 border-t border-[var(--line)] pt-2.5">
-                  <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold tracking-wider flex items-center gap-1">
-                    <Layers size={10} className="text-[var(--lime)]" /> Embalagens mais Demandadas
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                    {TOP_PRODUCTS.map(prod => (
+                <div className="flex-1 overflow-y-auto space-y-1.5 mt-2 pr-1 min-h-0">
+                  {TOP_PRODUCTS.length === 0 ? (
+                    <div className="text-[10px] font-mono text-[var(--gray2)] py-4 italic text-center">Nenhuma embalagem demandada no período.</div>
+                  ) : (
+                    TOP_PRODUCTS.map(prod => (
                       <div key={prod.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{prod.rank}</span>
+                          <span className="text-[9px] font-mono text-sky-400 font-black">#{prod.rank}</span>
                           <div className="text-xs font-bold text-[var(--white)] truncate">{prod.name}</div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0 text-right">
@@ -2212,8 +2221,8 @@ export default function DashboardPage() {
                           <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(prod.value)}</span>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>

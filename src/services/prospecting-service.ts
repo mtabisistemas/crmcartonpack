@@ -23,6 +23,7 @@ export interface ProspectLead {
   situacao?: string       // Situação cadastral (RFB) ex: 'ATIVA desde 03/11/2005'
   isDuplicate?: boolean
   duplicateReason?: string
+  responsibleUser?: string
   enriched?: boolean
   enriching?: boolean
 
@@ -1117,12 +1118,35 @@ export const prospectingService = {
     const limit = params.limit || 10
 
     let existingCnpjs = new Set<string>()
+    let existingContactsMap = new Map<string, any>()
     try {
       const crmClientes = await dbService.clientes.list()
       crmClientes.forEach(c => {
-        if (c.cnpj) existingCnpjs.add(c.cnpj.replace(/\D/g, ''))
+        if (c.cnpj) {
+          const clean = c.cnpj.replace(/\D/g, '')
+          existingCnpjs.add(clean)
+          existingContactsMap.set(clean, c)
+        }
       })
     } catch { /* fallback silencioso */ }
+
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('crm_contacts')
+        if (saved) {
+          const list = JSON.parse(saved)
+          list.forEach((c: any) => {
+            if (c.cnpj) {
+              const clean = c.cnpj.replace(/\D/g, '')
+              existingCnpjs.add(clean)
+              if (!existingContactsMap.has(clean)) {
+                existingContactsMap.set(clean, c)
+              }
+            }
+          })
+        }
+      } catch {}
+    }
 
     const rawSetor = params.setor_texto || ''
     const regiaoStr = params.regiao || ''
@@ -1162,12 +1186,15 @@ export const prospectingService = {
     // Atribuir ranking posicional (1º, 2º, 3º...)
     const processed = filtered.map((lead, idx) => {
       const clean = lead.cnpj.replace(/\D/g, '')
-      const isDup = existingCnpjs.has(clean)
+      const existing = existingContactsMap.get(clean)
+      const isDup = existingCnpjs.has(clean) || !!existing
+      const respName = existing?.representative || existing?.representante || existing?.user_name || existing?.name || ''
       return {
         ...lead,
         posicao: idx + 1,
         isDuplicate: isDup,
-        duplicateReason: isDup ? '⚠️ Já cadastrado no CRM' : undefined,
+        duplicateReason: isDup ? (respName ? `⚠️ Já cadastrado (${respName})` : '⚠️ Já cadastrado no CRM') : undefined,
+        responsibleUser: respName,
         // ⚠️ FIX: preserva o enriched=true dos leads gerados; só define false se ainda não estava enriquecido
         enriched: lead.enriched === true ? true : false,
         enriching: false,

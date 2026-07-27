@@ -161,9 +161,7 @@ export default function UsersPage() {
 
     const formattedName = capitalizeName(name)
     const derivedUser = username || deriveUsername(formattedName)
-    // TODO: Reativar restrição @cartonpack.com após testes
-    // const isCarton = !isRep && email.toLowerCase().endsWith('@cartonpack.com')
-    const isCarton = !isRep && email.includes('@') && email.trim().length > 0
+    const isCarton = !isRep && (email.toLowerCase().endsWith('@cartonpack.com') || email.toLowerCase().endsWith('@cartonpack.com.br'))
     const finalUsername = derivedUser
     // Representatives don't have real email — API generates internal email on the Supabase side
     const finalEmail = isRep ? '' : email
