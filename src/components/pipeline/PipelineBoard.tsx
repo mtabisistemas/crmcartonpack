@@ -275,7 +275,7 @@ function NewDealModal({
   const [stage, setStage] = useState<DealStage>(initialStage)
 
   // Autocomplete contacts list state
-  const [contactsList, setContactsList] = useState<{ id: string; company: string; name?: string; cnpj?: string; city?: string; state?: string }[]>([])
+  const [contactsList, setContactsList] = useState<{ id: string; company: string; name?: string; cnpj?: string; city?: string; state?: string; representative?: string }[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -287,9 +287,9 @@ function NewDealModal({
         if (supabase) {
           const { data, error } = await supabase
             .from('contacts')
-            .select('id, company, name, cnpj, city, state')
+            .select('id, company, name, cnpj, city, state, representative')
             .order('created_at', { ascending: false })
-            .limit(200)
+            .limit(500)
 
           if (!error && data && data.length > 0) {
             setContactsList(data)
@@ -322,7 +322,21 @@ function NewDealModal({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const filteredContacts = contactsList.filter(c => {
+  // User role check for data isolation
+  const userRaw = typeof window !== 'undefined' ? localStorage.getItem('crm_current_user') : null
+  const currentUser = userRaw ? JSON.parse(userRaw) : null
+  const isGestaoOuAdmin = !currentUser || currentUser.role === 'admin' || currentUser.role === 'gestor'
+  const loggedUserRep = (currentUser?.name || '').trim().toLowerCase()
+
+  // Filter contacts by logged-in user if non-gestor/non-admin
+  const userContacts = contactsList.filter(c => {
+    if (isGestaoOuAdmin) return true
+    if (!loggedUserRep) return true
+    const rep = (c.representative || (c as any).assignedTo || (c as any).assigned_to || '').trim().toLowerCase()
+    return rep === loggedUserRep
+  })
+
+  const filteredContacts = userContacts.filter(c => {
     const q = clientName.toLowerCase().trim()
     if (!q) return true
     const comp = (c.company || c.name || '').toLowerCase()
