@@ -148,11 +148,30 @@ const CITY_COORDS_MAP: Record<string, [number, number]> = {
   'caxias do sul': [-29.1688, -51.1796],
   'canoas-rs': [-29.9178, -51.1841],
   'canoas': [-29.9178, -51.1841],
+  'gravatai-rs': [-29.9430, -50.9934],
   'gravatai': [-29.9430, -50.9934],
+  'cachoeirinha-rs': [-29.9504, -51.0944],
+  'cachoeirinha': [-29.9504, -51.0944],
   'novo hamburgo': [-29.6842, -51.1313],
   'sao leopoldo': [-29.7592, -51.1472],
   'sapucaia do sul': [-29.8197, -51.1608],
+  'sapucaia': [-29.8197, -51.1608],
   'esteio': [-29.8622, -51.1578],
+  'alvorada': [-30.0019, -51.0825],
+  'viamao': [-30.0811, -50.9344],
+  'bento goncalves': [-29.1706, -51.5186],
+  'passo fundo': [-28.2612, -52.4083],
+  'santa maria': [-29.6842, -53.8069],
+  'pelotas': [-31.7654, -52.3376],
+  'rio grande': [-32.0350, -52.0986],
+  'lajeado': [-29.4670, -51.9614],
+  'santa cruz do sul': [-29.7175, -52.4262],
+  'erechim': [-27.6341, -52.2739],
+  'uruguaiana': [-29.7547, -57.0883],
+  'bage': [-31.3314, -54.1069],
+  'campo bom': [-29.6781, -51.0544],
+  'estancia velha': [-29.6547, -51.1739],
+  'guaiba': [-30.1139, -51.3253],
 
   // Mato Grosso do Sul (MS)
   'campo grande-ms': [-20.4428, -54.6464],
@@ -288,10 +307,14 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     const bounds = L.latLngBounds([])
 
     leads.forEach((lead, idx) => {
-      const latOffset = (Math.sin(idx * 2.3 + lead.cnpj.length) * 0.018)
-      const lngOffset = (Math.cos(idx * 1.7 + lead.cnpj.length) * 0.024)
-      const lat = center[0] + latOffset
-      const lng = center[1] + lngOffset
+      // Look up specific coordinates for THIS lead's city
+      const leadCityCoords = getFallbackCenter(lead.cidade, lead.estado)
+      const baseCenter = (leadCityCoords[0] !== -15.7801) ? leadCityCoords : (geocodedCenter || center)
+
+      const latOffset = (Math.sin(idx * 2.3 + (lead.cnpj || '').length) * 0.007)
+      const lngOffset = (Math.cos(idx * 1.7 + (lead.cnpj || '').length) * 0.010)
+      const lat = baseCenter[0] + latOffset
+      const lng = baseCenter[1] + lngOffset
 
       const isSelected = selectedLeadCnpj === lead.cnpj
 
@@ -361,7 +384,7 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     if (leads.length > 0) {
       map.fitBounds(bounds.pad(0.25))
     }
-  }, [leads, selectedLeadCnpj, cidade, estado])
+  }, [leads, selectedLeadCnpj, geocodedCenter])
 
   React.useEffect(() => {
     if (selectedLeadCnpj && markersRef.current[selectedLeadCnpj] && mapInstanceRef.current) {
@@ -449,6 +472,7 @@ export function ProspeccaoModal({
   const [showSetorDropdown, setShowSetorDropdown] = useState(false)
   const [cnaeMatches, setCnaeMatches] = useState<CnaeOfficial[]>([])
   const [regiaoTexto, setRegiaoTexto] = useState('')
+  const [searchedRegiao, setSearchedRegiao] = useState('')
   const [showRegiaoDropdown, setShowRegiaoDropdown] = useState(false)
   const [regiaoSuggestions, setRegiaoSuggestions] = useState<RegiaoOption[]>(REGIOES_SUGERIDAS)
   const [porte, setPorte] = useState('todos')
@@ -559,6 +583,7 @@ export function ProspeccaoModal({
       setLoading(true)
       setHasSearched(true)
       setSelectedCnpjs([])
+      setSearchedRegiao(regiaoTexto)
 
       // ── Geocodifica a cidade pesquisada via Nominatim para posicionamento preciso no mapa ──
       const cidadeParaGeocode = regiaoTexto && regiaoTexto !== 'Todo Brasil' ? regiaoTexto : ''
@@ -1205,10 +1230,11 @@ export function ProspeccaoModal({
                     selectedLeadCnpj={activeLeadMapCnpj}
                     onSelectLead={(l) => setActiveLeadMapCnpj(l.cnpj)}
                     onOpenDetails={(l) => setActiveLeadDetails(l)}
-                    cidade={regiaoTexto}
+                    cidade={searchedRegiao || regiaoTexto}
                     estado=""
                     isMapExpanded={isMapExpanded}
                     onToggleExpand={() => setIsMapExpanded(v => !v)}
+                    geocodedCenter={geocodedCenter}
                   />
                 </div>
               </div>
