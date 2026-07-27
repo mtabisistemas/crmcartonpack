@@ -73,18 +73,20 @@ export default function LoginPage() {
       }
     }
 
-    // 1. VALIDAÇÃO DE ACESSO CORPORATIVO (Restrito a @cartonpack.com)
+    // 1. VALIDAÇÃO DE ACESSO CORPORATIVO
+    // TODO: Reativar restrição de domínio @cartonpack.com após testes
     if (loginType === 'corporativo') {
       if (!cleanInput.includes('@')) {
-        setError('Acesso corporativo requer um e-mail válido (ex: nome@cartonpack.com).')
+        setError('Acesso corporativo requer um e-mail válido (ex: nome@empresa.com).')
         setLoading(false)
         return
       }
-      if (!inputLower.endsWith('@cartonpack.com')) {
-        setError('Acesso corporativo restrito a e-mails autorizados da Carton Pack (@cartonpack.com).')
-        setLoading(false)
-        return
-      }
+      // TEMPORARIAMENTE LIBERADO para testes — reativar após validação:
+      // if (!inputLower.endsWith('@cartonpack.com')) {
+      //   setError('Acesso corporativo restrito a e-mails autorizados da Carton Pack (@cartonpack.com).')
+      //   setLoading(false)
+      //   return
+      // }
     }
 
     // 2. Try local storage mockup login intercept
