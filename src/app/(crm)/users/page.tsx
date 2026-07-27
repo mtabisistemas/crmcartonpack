@@ -24,7 +24,7 @@ interface TeamUser {
   id: string
   name: string
   email: string
-  role: 'admin' | 'representante' | 'vendedor' | 'financeiro'
+  role: 'admin' | 'gestor' | 'representante' | 'vendedor' | 'financeiro'
   status: 'ativo' | 'inativo'
   phone: string
   createdAt: string
@@ -340,6 +340,9 @@ export default function UsersPage() {
     if (roleLower.includes('admin')) {
       return { label: 'Administrador', bg: 'rgba(168,85,247,0.12)', color: '#c084fc', border: 'rgba(168,85,247,0.25)' }
     }
+    if (roleLower.includes('gestor')) {
+      return { label: 'Gestor Comercial', bg: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: 'rgba(59,130,246,0.3)' }
+    }
     if (roleLower.includes('rep')) {
       return { label: 'Representante', bg: 'rgba(180,217,50,0.12)', color: 'var(--lime)', border: 'rgba(180,217,50,0.25)' }
     }
@@ -396,9 +399,10 @@ export default function UsersPage() {
             onChange={(e) => setSelectedRole(e.target.value)}
           >
             <option value="all">Todas as Funções</option>
-            <option value="admin">Administrador</option>
-            <option value="representante">Representante</option>
+            <option value="gestor">Gestor Comercial</option>
             <option value="vendedor">Vendedor</option>
+            <option value="representante">Representante</option>
+            <option value="admin">Administrador</option>
             <option value="financeiro">Financeiro</option>
           </select>
         </div>
@@ -611,6 +615,7 @@ export default function UsersPage() {
                 >
                   <option value="vendedor">Vendedor</option>
                   <option value="representante">Representante</option>
+                  <option value="gestor">Gestor Comercial</option>
                   <option value="admin">Administrador</option>
                   <option value="financeiro">Financeiro</option>
                 </select>

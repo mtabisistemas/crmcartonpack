@@ -1,6 +1,6 @@
 import { Target, Radio, RefreshCw, Briefcase, Car, FileText, CheckCircle, Trophy, XCircle, Handshake } from 'lucide-react'
 
-export type UserRole = 'admin' | 'vendedor' | 'representante'
+export type UserRole = 'admin' | 'gestor' | 'vendedor' | 'representante' | 'financeiro'
 
 export type DealStage =
   | 'leads'
