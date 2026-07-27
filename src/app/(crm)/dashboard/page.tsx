@@ -807,7 +807,7 @@ export default function DashboardPage() {
     })
   }, [pipelineDeals, selectedYear])
 
-  // 2. Dynamic Team Performance (Performance dos Usuários/Representantes — Somente Fechamentos)
+  // 2. Dynamic Team Performance (Performance dos Usuários/Representantes — Somente Fechamentos Reais)
   const TEAM_PERFORMANCE = useMemo(() => {
     const repMap: Record<string, { name: string; role: string; closedCount: number; sales: number; avatarColor: string }> = {}
     
@@ -819,7 +819,7 @@ export default function DashboardPage() {
     ]
 
     standardReps.forEach(r => {
-      repMap[r.name] = { ...r, closedCount: 0, sales: 0 }
+      repMap[r.name.toLowerCase().trim()] = { ...r, closedCount: 0, sales: 0 }
     })
 
     try {
@@ -827,34 +827,41 @@ export default function DashboardPage() {
       if (rawUsers) {
         const customUsers = JSON.parse(rawUsers)
         customUsers.forEach((u: any) => {
-          if (u.name && !repMap[u.name]) {
-            repMap[u.name] = {
-              name: u.name,
-              role: u.role === 'vendedor' ? 'Vendedor Comercial' : u.role === 'representante' ? 'Representante Comercial' : 'Usuário',
-              closedCount: 0,
-              sales: 0,
-              avatarColor: '#B4D932'
+          if (u.name) {
+            const key = u.name.toLowerCase().trim()
+            if (!repMap[key]) {
+              repMap[key] = {
+                name: u.name,
+                role: u.role === 'vendedor' ? 'Vendedor Comercial' : u.role === 'representante' ? 'Representante Comercial' : 'Usuário',
+                closedCount: 0,
+                sales: 0,
+                avatarColor: '#B4D932'
+              }
             }
           }
         })
       }
     } catch (e) {}
 
+    // Processa APENAS vendas fechadas e credita unicamente a USUÁRIOS VÁLIDOS (sem criar contatos como usuários)
     pipelineDeals.forEach(d => {
       if (d.stage !== 'fechamento' && d.stage !== 'pos_venda') return
 
-      const repName = d.assigned_to || d.contact?.representative || 'Representante Teste'
-      if (!repMap[repName]) {
-        repMap[repName] = { name: repName, role: 'Representante Comercial', closedCount: 0, sales: 0, avatarColor: '#38bdf8' }
+      const assignedRep = (d.assigned_to || d.contact?.representative || '').toLowerCase().trim()
+      if (!assignedRep) return
+
+      const matchedUserKey = Object.keys(repMap).find(k => k === assignedRep || assignedRep.includes(k) || k.includes(assignedRep))
+
+      if (matchedUserKey && repMap[matchedUserKey]) {
+        repMap[matchedUserKey].closedCount += 1
+        repMap[matchedUserKey].sales += (d.final_value || d.estimated_value || 0)
       }
-      repMap[repName].closedCount += 1
-      repMap[repName].sales += (d.final_value || d.estimated_value || 0)
     })
 
     return Object.values(repMap).map((r, idx) => ({ id: `rep-${idx}`, ...r }))
   }, [pipelineDeals])
 
-  // 3. Dynamic Top Clients (Principais Clientes — Somente Fechamentos)
+  // 3. Dynamic Top Clients (Principais Clientes — Somente Fechamentos Reais)
   const TOP_CLIENTS = useMemo(() => {
     const clientMap: Record<string, { name: string; value: number; type: string }> = {}
 
@@ -874,29 +881,49 @@ export default function DashboardPage() {
     return sorted.map((cli, idx) => ({ rank: idx + 1, ...cli }))
   }, [pipelineDeals])
 
-  // 4. Dynamic Top Embalagens (Products — Somente Fechamentos)
+  // 4. Dynamic Top Embalagens (Products — Somente Fechamentos Reais)
   const TOP_PRODUCTS = useMemo(() => {
-    const closedTotal = pipelineDeals
-      .filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda')
-      .reduce((sum, d) => sum + (d.final_value || d.estimated_value || 0), 0)
+    const closedDeals = pipelineDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda')
 
-    if (closedTotal === 0) {
-      return [
-        { rank: 1, name: 'Caixas Térmicas EPS (Hortifruti)', quantity: '0 un', value: 0 },
-        { rank: 2, name: 'Caixas Master Papelão K200 (Exportação)', quantity: '0 un', value: 0 },
-        { rank: 3, name: 'Bandejas Poliestireno Expandido', quantity: '0 un', value: 0 },
-        { rank: 4, name: 'Divisórias Corrugadas Internas', quantity: '0 un', value: 0 },
-        { rank: 5, name: 'Caixas Auto-montáveis E-commerce', quantity: '0 un', value: 0 },
-      ]
+    if (closedDeals.length === 0) {
+      return []
     }
 
-    return [
-      { rank: 1, name: 'Caixas Térmicas EPS (Hortifruti)', quantity: '4.200 un', value: Math.round(closedTotal * 0.45) },
-      { rank: 2, name: 'Caixas Master Papelão K200 (Exportação)', quantity: '2.800 un', value: Math.round(closedTotal * 0.25) },
-      { rank: 3, name: 'Bandejas Poliestireno Expandido', quantity: '1.950 un', value: Math.round(closedTotal * 0.15) },
-      { rank: 4, name: 'Divisórias Corrugadas Internas', quantity: '1.400 un', value: Math.round(closedTotal * 0.10) },
-      { rank: 5, name: 'Caixas Auto-montáveis E-commerce', quantity: '980 un', value: Math.round(closedTotal * 0.05) },
-    ]
+    const productMap: Record<string, { name: string; quantityCount: number; value: number }> = {}
+
+    closedDeals.forEach(d => {
+      const val = d.final_value || d.estimated_value || 0
+      const rawType = (d as any).box_type || (d as any).product_name || ''
+
+      let prodName = 'Caixas Cartão Duplex'
+      if (rawType.includes('acoplada')) {
+        prodName = 'Caixas Acopladas Micro-ondulado'
+      } else if (rawType.includes('triplex')) {
+        prodName = 'Caixas Cartão Triplex'
+      } else if (rawType.includes('duplex')) {
+        prodName = 'Caixas Cartão Duplex'
+      } else if (d.title?.toLowerCase().includes('inpel') || d.contact?.company?.toLowerCase().includes('inpel')) {
+        prodName = 'Caixas Master Papelão K200'
+      } else if (d.title?.toLowerCase().includes('spezia') || d.contact?.company?.toLowerCase().includes('spezia')) {
+        prodName = 'Caixas Térmicas EPS (Hortifruti)'
+      }
+
+      const qty = (d as any).quantity || Math.round(val / 2.8) || 1000
+
+      if (!productMap[prodName]) {
+        productMap[prodName] = { name: prodName, quantityCount: 0, value: 0 }
+      }
+      productMap[prodName].quantityCount += qty
+      productMap[prodName].value += val
+    })
+
+    const sorted = Object.values(productMap).sort((a, b) => b.value - a.value)
+    return sorted.map((prod, idx) => ({
+      rank: idx + 1,
+      name: prod.name,
+      quantity: `${prod.quantityCount.toLocaleString('pt-BR')} un`,
+      value: prod.value
+    }))
   }, [pipelineDeals])
 
   // Filter deals based on state
@@ -2035,18 +2062,22 @@ export default function DashboardPage() {
                       <Building size={10} className="text-[var(--lime)]" /> Principais Clientes
                     </div>
                     <div className="space-y-1">
-                      {TOP_CLIENTS.map(cli => (
-                        <div key={cli.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{cli.rank}</span>
-                            <div className="text-xs font-bold text-[var(--white)] truncate">{cli.name}</div>
+                      {TOP_CLIENTS.length === 0 ? (
+                        <div className="text-[10px] font-mono text-[var(--gray2)] py-2 italic text-center">Nenhum cliente com venda fechada no período.</div>
+                      ) : (
+                        TOP_CLIENTS.map(cli => (
+                          <div key={cli.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{cli.rank}</span>
+                              <div className="text-xs font-bold text-[var(--white)] truncate">{cli.name}</div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[8px] font-mono bg-lime-500/10 text-[var(--lime)] px-1.5 py-0.5 rounded font-black border border-[var(--lime)]/10">{cli.type}</span>
+                              <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(cli.value)}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[8px] font-mono bg-lime-500/10 text-[var(--lime)] px-1.5 py-0.5 rounded font-black border border-[var(--lime)]/10">{cli.type}</span>
-                            <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(cli.value)}</span>
-                          </div>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </div>
 
@@ -2056,18 +2087,22 @@ export default function DashboardPage() {
                       <Layers size={10} className="text-[var(--lime)]" /> Embalagens mais Demandadas
                     </div>
                     <div className="space-y-1">
-                      {TOP_PRODUCTS.map(prod => (
-                        <div key={prod.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{prod.rank}</span>
-                            <div className="text-xs font-bold text-[var(--white)] truncate">{prod.name}</div>
+                      {TOP_PRODUCTS.length === 0 ? (
+                        <div className="text-[10px] font-mono text-[var(--gray2)] py-2 italic text-center">Nenhuma embalagem com venda fechada no período.</div>
+                      ) : (
+                        TOP_PRODUCTS.map(prod => (
+                          <div key={prod.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{prod.rank}</span>
+                              <div className="text-xs font-bold text-[var(--white)] truncate">{prod.name}</div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0 text-right">
+                              <span className="text-[8px] font-mono bg-sky-500/10 text-sky-400 px-1.5 py-0.5 rounded font-black border border-sky-500/10">{prod.quantity}</span>
+                              <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(prod.value)}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0 text-right">
-                            <span className="text-[8px] font-mono bg-sky-500/10 text-sky-400 px-1.5 py-0.5 rounded font-black border border-sky-500/10">{prod.quantity}</span>
-                            <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(prod.value)}</span>
-                          </div>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
