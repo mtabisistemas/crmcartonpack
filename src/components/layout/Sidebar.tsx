@@ -71,8 +71,8 @@ export function Sidebar() {
   const isRep = currentUser?.role === 'representante' || currentUser?.role === 'vendedor'
 
   const repNavItems = [
-    { href: '/dashboard?tab=dashboard', label: 'Dashboard', icon: BarChart3 },
-    { href: '/dashboard?tab=painel', label: 'Painel do Rep', icon: LayoutDashboard },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Clientes', icon: Users },
     { href: '/dashboard?tab=mapa', label: 'Mapa de Clientes', icon: MapPin },
   ]

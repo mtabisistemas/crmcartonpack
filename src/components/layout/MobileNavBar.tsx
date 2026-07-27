@@ -40,8 +40,7 @@ export function MobileNavBar() {
     }
   }, [])
 
-  // If user is a representative, they have their own integrated bottom bar in dashboard
-  if (currentUser?.role === 'representante') return null
+  const isRep = currentUser?.role === 'representante' || currentUser?.role === 'vendedor'
 
   function toggleTheme() {
     const newTheme = theme === 'dark' ? 'light' : 'dark'
@@ -55,8 +54,12 @@ export function MobileNavBar() {
     router.push('/login')
   }
 
-  const primaryItems = [
-    { href: '/dashboard', label: 'Painel', icon: LayoutDashboard },
+  const primaryItems = isRep ? [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
+    { href: '/contacts', label: 'Clientes', icon: Users },
+  ] : [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Contatos', icon: Users },
     { href: '/users', label: 'Usuários', icon: UserCog },

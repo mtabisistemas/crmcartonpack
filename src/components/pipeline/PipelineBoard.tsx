@@ -518,6 +518,20 @@ export function PipelineBoard() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const session = localStorage.getItem('crm_current_user')
+      if (session) {
+        try {
+          const user = JSON.parse(session)
+          if (user?.name && (user.role === 'representante' || user.role === 'vendedor')) {
+            setSelectedRep(user.name)
+          }
+        } catch (e) {}
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
       const savedUsers = localStorage.getItem('crm_users')
       let repsFromUsers: string[] = []
       if (savedUsers) {
@@ -548,7 +562,7 @@ export function PipelineBoard() {
 
     // 2. Representative
     const dealRep = d.assigned_to || d.contact?.representative || ''
-    const matchesRep = selectedRep === 'all' || dealRep === selectedRep
+    const matchesRep = selectedRep === 'all' || dealRep.toLowerCase() === selectedRep.toLowerCase() || dealRep === selectedRep
     if (!matchesRep) return false
 
     // 3. Curve ABC
