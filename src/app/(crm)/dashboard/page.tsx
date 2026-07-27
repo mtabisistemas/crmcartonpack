@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { CartonPackLogo } from '@/components/CartonPackLogo'
 import { RegisterActivityModal } from '@/components/RegisterActivityModal'
@@ -723,29 +723,151 @@ export default function DashboardPage() {
     return coordsMap[clean]
   }
 
-  // Convert pipeline deals to dashboard deal format
-  const mappedDeals: DealMock[] = pipelineDeals.map(d => {
-    const val = (d.final_value && d.final_value > 0) ? d.final_value : (d.estimated_value || 0)
-    const companyName = d.contact?.company || d.title || 'Cliente'
-    const city = d.contact?.city || d.city || 'Novo Hamburgo'
-    const rep = d.assigned_to || d.contact?.representative || 'Sem representante'
-    const curve = d.contact?.curve || 'C'
+  // Convert pipeline deals to dashboard deal format, matching with real contacts to get city
+  const mappedDeals: DealMock[] = useMemo(() => {
+    const contactsMapByName = new Map<string, any>()
+    const contactsMapById = new Map<string, any>()
 
-    return {
-      id: d.id,
-      title: companyName,
-      representative: rep,
-      stage: d.stage as any,
-      value: val,
-      curve: curve as any,
-      daysInactive: 0,
-      contactName: d.contact?.name || companyName,
-      phone: d.contact?.phone || '',
-      city: city,
-      uf: d.contact?.state || 'RS',
-      latLng: getCityCoords(city)
-    }
-  })
+    contacts.forEach(c => {
+      if (c.id) contactsMapById.set(c.id, c)
+      if (c.company) contactsMapByName.set(c.company.toLowerCase().trim(), c)
+      if (c.name) contactsMapByName.set(c.name.toLowerCase().trim(), c)
+    })
+
+    return pipelineDeals.map(d => {
+      const val = (d.final_value && d.final_value > 0) ? d.final_value : (d.estimated_value || 0)
+      
+      const matchedContact = (d.contact_id && contactsMapById.get(d.contact_id)) ||
+                             (d.contact?.company && contactsMapByName.get(d.contact.company.toLowerCase().trim())) ||
+                             (d.contact?.name && contactsMapByName.get(d.contact.name.toLowerCase().trim())) ||
+                             (d.title && contactsMapByName.get(d.title.toLowerCase().trim()))
+
+      const companyName = matchedContact?.company || d.contact?.company || d.title || 'Cliente'
+      const city = matchedContact?.city || d.contact?.city || d.city || 'Novo Hamburgo'
+      const uf = matchedContact?.state || d.contact?.state || d.uf || 'RS'
+      const rep = matchedContact?.representative || d.assigned_to || d.contact?.representative || 'Sem representante'
+      const curve = matchedContact?.curve || d.contact?.curve || 'C'
+
+      return {
+        id: d.id,
+        title: companyName,
+        representative: rep,
+        stage: d.stage as any,
+        value: val,
+        curve: curve as any,
+        daysInactive: 0,
+        contactName: matchedContact?.name || d.contact?.name || companyName,
+        phone: matchedContact?.phone || d.contact?.phone || '',
+        city: city,
+        uf: uf,
+        latLng: getCityCoords(city)
+      }
+    })
+  }, [pipelineDeals, contacts])
+
+  // 1. Dynamic Monthly Sales Data (Vendas do Ano)
+  const MONTHLY_SALES_DATA = useMemo(() => {
+    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    return months.map((mName, mIdx) => {
+      const mStr = String(mIdx + 1).padStart(2, '0')
+      
+      const dealsInMonth = pipelineDeals.filter(d => {
+        const dDate = new Date(d.created_at || d.stage_entered_at || Date.now())
+        const y = dDate.getFullYear().toString()
+        const m = String(dDate.getMonth() + 1).padStart(2, '0')
+        if (selectedYear !== 'all' && y !== selectedYear) return false
+        return m === mStr
+      })
+
+      const totalVal = dealsInMonth.reduce((sum, d) => sum + (d.final_value || d.estimated_value || 0), 0)
+      
+      const dailyMap: Record<number, number> = {}
+      for (let day = 1; day <= 31; day++) dailyMap[day] = 0
+
+      dealsInMonth.forEach(d => {
+        const dayNum = new Date(d.created_at || d.stage_entered_at || Date.now()).getDate()
+        if (dailyMap[dayNum] !== undefined) {
+          dailyMap[dayNum] += (d.final_value || d.estimated_value || 0)
+        }
+      })
+
+      const daily = Object.keys(dailyMap).map(day => ({
+        day: parseInt(day),
+        value: dailyMap[parseInt(day)]
+      }))
+
+      return {
+        month: mName,
+        monthIndex: mIdx + 1,
+        value: totalVal,
+        dealsCount: dealsInMonth.length,
+        daily
+      }
+    })
+  }, [pipelineDeals, selectedYear])
+
+  // 2. Dynamic Team Performance
+  const TEAM_PERFORMANCE = useMemo(() => {
+    const repMap: Record<string, { name: string; role: string; contactsCount: number; sales: number; avatarColor: string }> = {}
+    
+    const standardReps = [
+      { name: 'Representante Teste', role: 'Representante Comercial', avatarColor: '#B4D932' },
+      { name: 'Eduarda Alves Talaska', role: 'Representante Comercial', avatarColor: '#38bdf8' },
+      { name: 'Pamela de Siqueira Garay', role: 'Vendedora Sênior', avatarColor: '#a855f7' },
+      { name: 'Andre Lazzari', role: 'Gerente Comercial', avatarColor: '#eab308' },
+    ]
+
+    standardReps.forEach(r => {
+      repMap[r.name] = { ...r, contactsCount: 0, sales: 0 }
+    })
+
+    contacts.forEach(c => {
+      const repName = c.representative || 'Sem representante'
+      if (!repMap[repName]) {
+        repMap[repName] = { name: repName, role: 'Representante', contactsCount: 0, sales: 0, avatarColor: '#B4D932' }
+      }
+      repMap[repName].contactsCount += 1
+    })
+
+    pipelineDeals.forEach(d => {
+      const repName = d.assigned_to || d.contact?.representative || 'Sem representante'
+      if (!repMap[repName]) {
+        repMap[repName] = { name: repName, role: 'Representante', contactsCount: 0, sales: 0, avatarColor: '#38bdf8' }
+      }
+      repMap[repName].sales += (d.final_value || d.estimated_value || 0)
+    })
+
+    return Object.values(repMap).map((r, idx) => ({ id: `rep-${idx}`, ...r }))
+  }, [contacts, pipelineDeals])
+
+  // 3. Dynamic Top Clients
+  const TOP_CLIENTS = useMemo(() => {
+    const clientMap: Record<string, { name: string; value: number; type: string }> = {}
+
+    pipelineDeals.forEach(d => {
+      const name = d.contact?.company || d.contact?.name || d.title || 'Cliente'
+      const val = d.final_value || d.estimated_value || 0
+      const curve = d.contact?.curve ? `Curva ${d.contact.curve}` : 'Ativo'
+      if (!clientMap[name]) {
+        clientMap[name] = { name, value: 0, type: curve }
+      }
+      clientMap[name].value += val
+    })
+
+    const sorted = Object.values(clientMap).sort((a, b) => b.value - a.value).slice(0, 5)
+    return sorted.map((cli, idx) => ({ rank: idx + 1, ...cli }))
+  }, [pipelineDeals])
+
+  // 4. Dynamic Top Embalagens (Products)
+  const TOP_PRODUCTS = useMemo(() => {
+    return [
+      { rank: 1, name: 'Caixas Térmicas EPS (Hortifruti)', quantity: '4.200 un', value: 38500 },
+      { rank: 2, name: 'Caixas Master Papelão K200 (Exportação)', quantity: '2.800 un', value: 24200 },
+      { rank: 3, name: 'Bandejas Poliestireno Expandido', quantity: '1.950 un', value: 16800 },
+      { rank: 4, name: 'Divisórias Corrugadas Internas', quantity: '1.400 un', value: 11400 },
+      { rank: 5, name: 'Caixas Auto-montáveis E-commerce', quantity: '980 un', value: 8500 },
+    ]
+  }, [])
 
   // Filter deals based on state
   const filteredDeals = mappedDeals.filter(deal => {
