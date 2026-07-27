@@ -922,12 +922,92 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Quick instructions / Info */}
-              <div className="card p-4 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl text-xs flex flex-col gap-2">
-                <span className="font-bold text-[var(--lime)]">💡 Como usar o Portal:</span>
-                <p className="text-[11px] text-[var(--gray)] leading-relaxed">
-                  Utilize as abas acima para navegar entre seu Painel, Clientes, Mapa de rotas e o Dashboard Comercial exclusivo com indicadores da sua carteira.
-                </p>
+              {/* Clientes Sem Contato / Em Risco de Inatividade */}
+              <div className="card p-4 bg-[var(--card)] border border-[var(--line)] rounded-2xl flex flex-col gap-3">
+                <div className="flex justify-between items-center border-b border-[var(--line)] pb-2">
+                  <span className="text-xs font-bold text-[var(--white)] font-display flex items-center gap-2">
+                    <AlertTriangle size={15} className="text-[var(--yellow)]" />
+                    <span>Clientes Prioritários (Sem Contato &gt; 30 dias)</span>
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-[var(--yellow)] bg-[var(--yellow)]/10 px-2 py-0.5 rounded-full border border-[var(--yellow)]/20">
+                    {repContactsNeedingAttention.length} clientes
+                  </span>
+                </div>
+
+                {repContactsNeedingAttention.length === 0 ? (
+                  <div className="p-4 rounded-xl bg-black/20 border border-[var(--line)] text-center text-xs text-[var(--gray2)] font-mono">
+                    ✓ Todos os clientes da sua carteira estão com compras/contatos em dia.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
+                    {repContactsNeedingAttention.slice(0, 5).map(c => (
+                      <div key={c.id} className="flex items-center justify-between p-3 rounded-xl bg-[var(--charcoal)] border border-[var(--line)]/60 hover:border-[var(--lime)]/30 transition-all">
+                        <div className="min-w-0 pr-2">
+                          <h4 className="text-xs font-bold text-[var(--white)] truncate">{c.company || c.name}</h4>
+                          <p className="text-[10px] text-[var(--gray2)] font-mono mt-0.5">
+                            {c.city} · Sem compra há {c.lastPurchaseDays || 30} dias
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedContactId(c.id)
+                            setAudioTranscription('')
+                            setPhotoUrl('')
+                            setShowCheckinModal(true)
+                          }}
+                          className="btn btn-secondary text-[11px] py-1.5 px-3 shrink-0 flex items-center gap-1.5 cursor-pointer text-[var(--lime)] border-[var(--lime)]/30 hover:border-[var(--lime)] font-bold"
+                        >
+                          <CheckCircle size={13} />
+                          <span>Registrar</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Últimas Atividades Registradas */}
+              <div className="card p-4 bg-[var(--card)] border border-[var(--line)] rounded-2xl flex flex-col gap-3">
+                <div className="flex justify-between items-center border-b border-[var(--line)] pb-2">
+                  <span className="text-xs font-bold text-[var(--white)] font-display flex items-center gap-2">
+                    <Clock size={15} className="text-[var(--lime)]" />
+                    <span>Últimas Atividades Registradas</span>
+                  </span>
+                </div>
+
+                {(() => {
+                  const recentActivities = repAllContacts
+                    .flatMap(c => (c.activities || []).map((act: any) => ({ ...act, clientCompany: c.company || c.name, clientId: c.id })))
+                    .sort((a: any, b: any) => new Date(b.timestamp || Date.now()).getTime() - new Date(a.timestamp || Date.now()).getTime())
+                    .slice(0, 5)
+
+                  if (recentActivities.length === 0) {
+                    return (
+                      <div className="p-4 rounded-xl bg-black/20 border border-[var(--line)] text-center text-xs text-[var(--gray2)] font-mono">
+                        Nenhuma atividade registrada recentemente na sua carteira.
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div className="flex flex-col gap-2">
+                      {recentActivities.map((act: any, i: number) => (
+                        <div key={i} className="p-3 rounded-xl bg-[var(--charcoal)] border border-[var(--line)]/60 flex flex-col gap-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-[var(--lime)] truncate">{act.clientCompany}</span>
+                            <span className="text-[10px] font-mono text-[var(--gray2)]">{act.date}</span>
+                          </div>
+                          <p className="text-[11px] text-[var(--white)] font-mono font-medium">{act.title}</p>
+                          {act.description && (
+                            <p className="text-[10px] text-[var(--gray)] font-mono line-clamp-1 italic">
+                              "{act.description}"
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
             </div>
           )}
