@@ -67,6 +67,10 @@ export function MobileNavBar() {
 
   const moreItems: any[] = []
 
+  if (currentUser?.role === 'representante' && pathname === '/dashboard') {
+    return null
+  }
+
   return (
     <>
       {/* Bottom Nav Bar */}

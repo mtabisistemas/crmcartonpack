@@ -270,8 +270,8 @@ export function RegisterActivityModal({
     : contactsList
 
   return (
-    <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[99999] flex flex-col justify-end lg:justify-center lg:items-center p-0 lg:p-4">
-      <div className="bg-[var(--charcoal)] border-t lg:border border-[var(--line)] rounded-t-3xl lg:rounded-3xl p-5 sm:p-6 flex flex-col gap-4 animate-fade-up max-w-lg mx-auto w-full max-h-[92vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[999999] flex flex-col justify-end lg:justify-center lg:items-center p-0 lg:p-4">
+      <div className="bg-[var(--charcoal)] border-t lg:border border-[var(--line)] rounded-t-3xl lg:rounded-3xl p-5 sm:p-6 flex flex-col gap-4 animate-fade-up max-w-lg mx-auto w-full max-h-[88vh] lg:max-h-[90vh] overflow-y-auto shadow-2xl pb-6">
         
         {/* Modal Header */}
         <div className="flex justify-between items-center border-b border-[var(--line)] pb-3">
@@ -429,8 +429,8 @@ export function RegisterActivityModal({
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
+          {/* Actions (Sticky at bottom of modal) */}
+          <div className="sticky bottom-0 bg-[var(--charcoal)] pt-3 pb-3 border-t border-[var(--line)] flex gap-3 mt-auto shrink-0 z-20 shadow-[0_-10px_20px_rgba(0,0,0,0.8)]">
             <button
               type="button"
               onClick={onClose}
@@ -441,7 +441,7 @@ export function RegisterActivityModal({
             <button
               type="submit"
               disabled={isSavedToast}
-              className="flex-1 btn btn-primary py-3 text-xs font-black uppercase tracking-wider text-black cursor-pointer shadow-lg shadow-[rgba(180,217,50,0.2)]"
+              className="flex-1 btn btn-primary py-3 text-xs font-black uppercase tracking-wider text-black cursor-pointer shadow-lg shadow-[rgba(180,217,50,0.3)] bg-[var(--lime)] hover:brightness-110"
             >
               Salvar Registro
             </button>
