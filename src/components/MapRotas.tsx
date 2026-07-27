@@ -134,8 +134,29 @@ export const MapRotas: React.FC<MapRotasProps> = ({ isDarkTheme }) => {
         html: `<div style="position:relative;display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%)"><div style="background-color:${visitColor};width:12px;height:12px;border-radius:50%;border:2.5px solid #000;box-shadow:0 0 10px ${visitColor}"></div><div style="position:absolute;top:-18px;background-color:rgba(9,9,11,0.95);color:#fff;font-size:8px;font-weight:bold;padding:1px 5px;border-radius:4px;border:1px solid ${visitColor};white-space:nowrap">${p.horario}</div></div>`,
         iconSize: [0, 0], iconAnchor: [0, 0]
       });
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p.local} ${p.cidade}`)}`
       const marker = L.marker(p.latLng, { icon: customIcon })
-        .bindPopup(`<div style="padding:3px;font-family:'Inter',sans-serif"><strong style="color:${repAtivo.cor};font-size:11px">${p.local}</strong><br/><span style="font-size:10px;color:#E4E4E7;line-height:1.5"><b>Horário:</b> ${p.horario}<br/><b>Objetivo:</b> ${p.objetivo}</span></div>`)
+        .bindTooltip(`
+          <div style="font-family:sans-serif;padding:6px 10px;background:#0f172a;color:#ffffff;border:1px solid #334155;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,0.5);">
+            <strong style="font-size:12px;color:${repAtivo.cor};display:block">${p.local}</strong>
+            <span style="font-size:10px;color:#94a3b8">${p.cidade}</span>
+            <div style="font-size:10px;color:#e4e4e7;margin-top:3px"><b>Horário:</b> ${p.horario} • <b>Objetivo:</b> ${p.objetivo}</div>
+          </div>
+        `, { direction: 'top' })
+        .bindPopup(`
+          <div style="padding:8px;font-family:sans-serif;background:#14161E;color:#fff;border-radius:10px;min-width:210px">
+            <strong style="color:${repAtivo.cor};font-size:12px;display:block;margin-bottom:2px">${p.local}</strong>
+            <span style="font-size:10px;color:#94a3b8;display:block;margin-bottom:6px">${p.cidade} • ${p.horario}</span>
+            <div style="font-size:10px;color:#cbd5e1;margin-bottom:8px"><b>Objetivo:</b> ${p.objetivo}</div>
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <a href="${mapsUrl}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:4px;background:#0284c7;color:#fff;padding:6px;border-radius:6px;font-size:9px;font-weight:bold;text-decoration:none;text-transform:uppercase">📍 Ver Rota</a>
+              <button onclick="window.handleMapRegistrarAtividade?.('','${p.local}')" style="display:flex;align-items:center;justify-content:center;gap:4px;background:#B4D932;color:#000;padding:6px;border-radius:6px;font-size:9px;font-weight:bold;border:none;cursor:pointer;text-transform:uppercase">📝 Atividade</button>
+              <a href="https://wa.me/5551999999999" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:4px;background:#25D366;color:#fff;padding:6px;border-radius:6px;font-size:9px;font-weight:bold;text-decoration:none;text-transform:uppercase">💬 WhatsApp</a>
+              <a href="/contacts" style="display:flex;align-items:center;justify-content:center;gap:4px;background:#334155;color:#fff;padding:6px;border-radius:6px;font-size:9px;font-weight:bold;text-decoration:none;text-transform:uppercase">📄 Ver Ficha</a>
+            </div>
+          </div>
+        `)
         .addTo(map);
       markersRef.current[`point-${idx}`] = marker;
     });

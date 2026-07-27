@@ -210,6 +210,26 @@ export default function DashboardPage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).handleMapRegistrarAtividade = (contactId: string, companyName?: string) => {
+        const found = contacts.find(c => c.id === contactId || c.company === companyName || c.name === companyName)
+        if (found) {
+          setSelectedContactId(found.id)
+        } else if (contactId) {
+          setSelectedContactId(contactId)
+        }
+        setAudioTranscription('')
+        setPhotoUrl('')
+        setShowCheckinModal(true)
+      };
+
+      (window as any).handleMapVerFicha = (contactId: string, companyName?: string) => {
+        window.location.href = '/contacts'
+      };
+    }
+  }, [contacts])
+
   // Robust client-side loader for Leaflet resources (CSS + JS)
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -503,17 +523,62 @@ export default function DashboardPage() {
       })
 
       const marker = L_Global.marker(finalLatLng, { icon: customIcon }).addTo(map)
+
+      const contactObj = contacts.find(c => c.id === (deal as any).contact_id || c.company === (deal as any).contact?.company || c.name === deal.title)
+      const cnpjStr = contactObj?.cnpj || (deal as any).contact?.cnpj || ''
+      const phoneStr = contactObj?.phone || (deal as any).contact?.phone || ''
+      const cityStr = deal.city || contactObj?.city || 'Novo Hamburgo'
+      const stateStr = (deal as any).state || contactObj?.state || 'RS'
+      const compName = deal.title || contactObj?.company || contactObj?.name || 'Cliente'
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${compName} ${cityStr}`)}`
+      const waUrl = phoneStr ? whatsappLink(phoneStr, `Olá, tudo bem?`) : 'https://wa.me/5551999999999'
+
+      // Tooltip on Hover (Exibe ao passar o mouse)
       marker.bindTooltip(`
-        <div style="font-family: sans-serif; padding: 4px 6px; background: #ffffff; color: #0f172a; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-          <strong style="font-size: 13px; display: block;">${deal.title}</strong>
-          <span style="color: ${stageColor}; font-family: monospace; font-size: 12px; font-weight: bold;">${formatCurrency(deal.value)}</span>
-          <div style="font-size: 11px; margin-top: 2px;">${deal.contactName} (${deal.city || 'Novo Hamburgo'})</div>
-          <div style="font-size: 10px; text-transform: uppercase; opacity: 0.8; font-weight: bold; color: ${stageColor}; margin-top: 2px;">Etapa: ${deal.stage}</div>
+        <div style="font-family: sans-serif; padding: 6px 10px; background: #0f172a; color: #ffffff; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.5); min-width: 150px;">
+          <strong style="font-size: 12px; display: block; color: #ffffff;">${compName}</strong>
+          <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">${cityStr} ${stateStr ? `· ${stateStr}` : ''}</div>
+          <div style="font-size: 11px; font-family: monospace; font-weight: bold; color: ${stageColor}; margin-top: 3px;">${formatCurrency(deal.value)}</div>
+          <div style="font-size: 9px; text-transform: uppercase; font-weight: bold; color: ${stageColor}; margin-top: 2px;">Etapa: ${deal.stage}</div>
         </div>
       `, {
         direction: 'top',
         className: 'custom-leaflet-tooltip'
       })
+
+      // Popup on Click (Botões: Ver Rota, Registrar Atividade, WhatsApp, Ver Ficha)
+      marker.bindPopup(`
+        <div style="font-family: sans-serif; padding: 8px; color: #ffffff; background: #14161E; border-radius: 12px; min-width: 220px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; border-bottom: 1px solid #262938; padding-bottom: 6px; margin-bottom: 8px;">
+            <div>
+              <strong style="font-size: 13px; color: #ffffff; display: block; line-height: 1.2;">${compName}</strong>
+              <span style="font-size: 10px; color: #94a3b8;">${cityStr} ${stateStr ? `· ${stateStr}` : ''}</span>
+            </div>
+            <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(180,217,50,0.15); color: #B4D932; border: 1px solid rgba(180,217,50,0.3); whitespace: nowrap;">${deal.stage}</span>
+          </div>
+
+          <div style="font-size: 10px; color: #cbd5e1; margin-bottom: 10px; line-height: 1.5;">
+            <div><strong>Valor:</strong> <span style="color: #B4D932; font-family: monospace; font-weight: bold;">${formatCurrency(deal.value)}</span></div>
+            <div><strong>CNPJ:</strong> ${cnpjStr || 'Não informado'}</div>
+            <div><strong>Representante:</strong> ${deal.representative || 'Sem representante'}</div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <a href="${mapsUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #0284c7; color: #ffffff; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; text-decoration: none; text-transform: uppercase;">
+              📍 Ver Rota
+            </a>
+            <button onclick="window.handleMapRegistrarAtividade('${(deal as any).contact_id || contactObj?.id || ''}', '${compName}')" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #B4D932; color: #060606; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase;">
+              📝 Atividade
+            </button>
+            <a href="${waUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #25D366; color: #ffffff; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; text-decoration: none; text-transform: uppercase;">
+              💬 WhatsApp
+            </a>
+            <button onclick="window.handleMapVerFicha('${(deal as any).contact_id || contactObj?.id || ''}', '${compName}')" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #334155; color: #ffffff; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase;">
+              📄 Ver Ficha
+            </button>
+          </div>
+        </div>
+      `)
     })
 
     if (bounds.length > 0) {
@@ -620,13 +685,58 @@ export default function DashboardPage() {
 
       const marker = L_Global.marker(finalLatLng, { icon: customIcon }).addTo(map)
 
+      const contactObj = contacts.find(c => c.id === (deal as any).contact_id || c.company === (deal as any).contact?.company || c.name === deal.title)
+      const cnpjStr = contactObj?.cnpj || (deal as any).contact?.cnpj || ''
+      const phoneStr = contactObj?.phone || (deal as any).contact?.phone || ''
+      const cityStr = deal.city || contactObj?.city || 'Novo Hamburgo'
+      const stateStr = (deal as any).state || contactObj?.state || 'RS'
+      const compName = deal.title || contactObj?.company || contactObj?.name || 'Cliente'
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${compName} ${cityStr}`)}`
+      const waUrl = phoneStr ? whatsappLink(phoneStr, `Olá ${deal.contactName || compName}, tudo bem?`) : 'https://wa.me/5551999999999'
+
+      // Tooltip on Mouse Hover (Exibe informações ao passar o mouse por cima)
+      marker.bindTooltip(`
+        <div style="font-family: sans-serif; padding: 6px 10px; background: #0f172a; color: #ffffff; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.5); min-width: 150px;">
+          <strong style="font-size: 12px; display: block; color: #ffffff;">${compName}</strong>
+          <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">${cityStr} ${stateStr ? `· ${stateStr}` : ''}</div>
+          <div style="font-size: 11px; font-family: monospace; font-weight: bold; color: ${stageColor}; margin-top: 3px;">${formatCurrency(deal.value)}</div>
+          <div style="font-size: 9px; text-transform: uppercase; font-weight: bold; color: ${stageColor}; margin-top: 2px;">Etapa: ${deal.stage}</div>
+        </div>
+      `, {
+        direction: 'top',
+        className: 'custom-leaflet-tooltip'
+      })
+
+      // Popup on Click (Botões: Ver Rota, Registrar Atividade, WhatsApp, Ver Ficha)
       marker.bindPopup(`
-        <div style="font-family: sans-serif; padding: 4px; color: #0f172a; min-width: 140px;">
-          <strong style="font-size: 11px; display: block;">${deal.title}</strong>
-          <span style="color: ${stageColor}; font-family: monospace; font-size: 10px; font-weight: bold;">${formatCurrency(deal.value)}</span>
-          <div style="font-size: 9px; margin-top: 1px; color: #64748b;">${deal.contactName} (${deal.city || 'Novo Hamburgo'})</div>
-          <div style="margin-top: 4px; display: flex; gap: 4px;">
-            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${deal.title} ${deal.city || ''}`)}" target="_blank" style="flex: 1; text-align: center; background: #cbd5e1; color: #0f172a; padding: 2px 4px; border-radius: 4px; text-decoration: none; font-size: 9px; font-weight: bold;">Rota</a>
+        <div style="font-family: sans-serif; padding: 8px; color: #ffffff; background: #14161E; border-radius: 12px; min-width: 220px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; border-bottom: 1px solid #262938; padding-bottom: 6px; margin-bottom: 8px;">
+            <div>
+              <strong style="font-size: 13px; color: #ffffff; display: block; line-height: 1.2;">${compName}</strong>
+              <span style="font-size: 10px; color: #94a3b8;">${cityStr} ${stateStr ? `· ${stateStr}` : ''}</span>
+            </div>
+            <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(180,217,50,0.15); color: #B4D932; border: 1px solid rgba(180,217,50,0.3); whitespace: nowrap;">${deal.stage}</span>
+          </div>
+
+          <div style="font-size: 10px; color: #cbd5e1; margin-bottom: 10px; line-height: 1.5;">
+            <div><strong>Valor:</strong> <span style="color: #B4D932; font-family: monospace; font-weight: bold;">${formatCurrency(deal.value)}</span></div>
+            <div><strong>CNPJ:</strong> ${cnpjStr || 'Não informado'}</div>
+            <div><strong>Representante:</strong> ${deal.representative || 'Sem representante'}</div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <a href="${mapsUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #0284c7; color: #ffffff; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; text-decoration: none; text-transform: uppercase;">
+              📍 Ver Rota
+            </a>
+            <button onclick="window.handleMapRegistrarAtividade('${(deal as any).contact_id || contactObj?.id || ''}', '${compName}')" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #B4D932; color: #060606; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase;">
+              📝 Atividade
+            </button>
+            <a href="${waUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #25D366; color: #ffffff; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; text-decoration: none; text-transform: uppercase;">
+              💬 WhatsApp
+            </a>
+            <button onclick="window.handleMapVerFicha('${(deal as any).contact_id || contactObj?.id || ''}', '${compName}')" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #334155; color: #ffffff; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase;">
+              📄 Ver Ficha
+            </button>
           </div>
         </div>
       `)
