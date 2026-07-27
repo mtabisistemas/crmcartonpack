@@ -848,6 +848,19 @@ export default function DashboardPage() {
           </h1>
           {/* Actions */}
           <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                setSelectedContactId('')
+                setAudioTranscription('')
+                setPhotoUrl('')
+                setShowCheckinModal(true)
+              }}
+              className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-2 cursor-pointer text-white font-bold shadow-lg"
+            >
+              <CheckCircle size={14} />
+              <span>Registrar Atividade</span>
+            </button>
+
             <InstallPWAButton variant="mobile_header" className="lg:hidden" />
             <button
               onClick={toggleTheme}
@@ -892,8 +905,8 @@ export default function DashboardPage() {
                   }}
                   className="btn btn-primary py-3 text-xs font-black uppercase tracking-wider text-black flex items-center justify-center gap-2 rounded-xl shadow-lg shadow-[rgba(180,217,50,0.2)] mt-1 max-w-sm"
                 >
-                  <MapPin size={14} />
-                  <span>Registrar Visita Rápida</span>
+                  <CheckCircle size={15} />
+                  <span>Registrar Atividade</span>
                 </button>
               </div>
 
