@@ -45,6 +45,7 @@ export function RegisterActivityModal({
   contactsList,
   preselectedContactId = ''
 }: RegisterActivityModalProps) {
+  const [currentUser, setCurrentUser] = useState<any | null>(null)
   const [selectedContactId, setSelectedContactId] = useState(preselectedContactId)
   const [channel, setChannel] = useState('visita')
   const [actionId, setActionId] = useState('prospeccao')
@@ -56,6 +57,17 @@ export function RegisterActivityModal({
 
   const recognitionRef = useRef<any>(null)
   const timerRef = useRef<any>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const session = localStorage.getItem('crm_current_user')
+      if (session) {
+        try {
+          setCurrentUser(JSON.parse(session))
+        } catch (e) {}
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (preselectedContactId) {
@@ -237,6 +249,11 @@ export function RegisterActivityModal({
     }, 1000)
   }
 
+  const isRep = currentUser?.role === 'representante' || currentUser?.role === 'vendedor'
+  const availableContacts = isRep && currentUser?.name 
+    ? contactsList.filter(c => c.representative === currentUser.name)
+    : contactsList
+
   return (
     <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[99999] flex flex-col justify-end lg:justify-center lg:items-center p-0 lg:p-4">
       <div className="bg-[var(--charcoal)] border-t lg:border border-[var(--line)] rounded-t-3xl lg:rounded-3xl p-5 sm:p-6 flex flex-col gap-4 animate-fade-up max-w-lg mx-auto w-full max-h-[92vh] overflow-y-auto shadow-2xl">
@@ -273,7 +290,7 @@ export function RegisterActivityModal({
               onChange={(e) => setSelectedContactId(e.target.value)}
             >
               <option value="" className="bg-[var(--charcoal)]">Selecione o Cliente...</option>
-              {contactsList.map(c => (
+              {availableContacts.map(c => (
                 <option key={c.id} value={c.id} className="bg-[var(--charcoal)]">
                   {c.name} — {c.company} {c.city ? `(${c.city})` : ''}
                 </option>

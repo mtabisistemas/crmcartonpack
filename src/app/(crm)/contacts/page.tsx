@@ -2299,7 +2299,7 @@ Para evitar duplicidade, utilize o cadastro já existente.`)
             }
           }
         }}
-        contactsList={contacts}
+        contactsList={filteredContacts}
         preselectedContactId={selectedContactForActivity}
       />
     </div>
