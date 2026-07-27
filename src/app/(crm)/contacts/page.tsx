@@ -1666,39 +1666,70 @@ export default function ContactsPage() {
     }
 
     async function loadContacts() {
+      let existingLocalMap = new Map<string, any>()
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem('crm_contacts')
+          if (raw) {
+            const list = JSON.parse(raw)
+            list.forEach((c: any) => {
+              if (c.id) existingLocalMap.set(c.id, c)
+              if (c.company) existingLocalMap.set(c.company.toLowerCase().trim(), c)
+            })
+          }
+        } catch (e) {}
+      }
+
       if (supabase) {
         try {
           const { data, error } = await supabase.from('contacts').select('*').order('created_at', { ascending: false })
           if (!error && data) {
-            const mapped: MockContact[] = data.map((item: any) => ({
-              id: item.id,
-              name: item.name || '',
-              company: item.company || '',
-              cnpj: item.cnpj || '',
-              curve: item.curve || 'C',
-              representative: (item.representative && !['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara'].includes(item.representative)) ? item.representative : '',
-              phone: item.phone || '',
-              email: item.email || '',
-              city: item.city || '',
-              state: item.state || '',
-              status: item.status || 'ativo',
-              lastPurchaseDays: 0,
-              tradeName: item.role || item.company || '',
-              registrationStatus: item.registration_status || 'ATIVA',
-              mainCnae: item.main_cnae || '',
-              address: item.address || '',
-              bairro: item.bairro || '',
-              cep: item.cep || '',
-              sideActivities: item.side_activities ? (typeof item.side_activities === 'string' ? JSON.parse(item.side_activities) : item.side_activities) : [],
-              taxRegime: item.tax_regime || 'Simples Nacional',
-              specialSituation: item.special_situation || 'Nenhuma',
-              specialSituationDate: item.special_situation_date || '-',
-              stateRegistration: item.state_registration || '',
-              website: item.website || '',
-              instagram: item.instagram || '',
-              linkedin: item.linkedin || '',
-              facebook: item.facebook || ''
-            }))
+            const mapped: MockContact[] = data.map((item: any) => {
+              let loadedActs: Activity[] = []
+              if (item.activities) {
+                try {
+                  loadedActs = typeof item.activities === 'string' ? JSON.parse(item.activities) : item.activities
+                } catch (e) {}
+              }
+              const localMatched = existingLocalMap.get(item.id) || (item.company && existingLocalMap.get(item.company.toLowerCase().trim()))
+              if (localMatched && localMatched.activities && Array.isArray(localMatched.activities)) {
+                const actMap = new Map<string, Activity>()
+                loadedActs.forEach((a: Activity) => actMap.set(a.id, a))
+                localMatched.activities.forEach((a: Activity) => actMap.set(a.id, a))
+                loadedActs = Array.from(actMap.values())
+              }
+
+              return {
+                id: item.id,
+                name: item.name || '',
+                company: item.company || '',
+                cnpj: item.cnpj || '',
+                curve: item.curve || 'C',
+                representative: (item.representative && !['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara'].includes(item.representative)) ? item.representative : '',
+                phone: item.phone || '',
+                email: item.email || '',
+                city: item.city || '',
+                state: item.state || '',
+                status: item.status || 'ativo',
+                lastPurchaseDays: 0,
+                tradeName: item.role || item.company || '',
+                registrationStatus: item.registration_status || 'ATIVA',
+                mainCnae: item.main_cnae || '',
+                address: item.address || '',
+                bairro: item.bairro || '',
+                cep: item.cep || '',
+                sideActivities: item.side_activities ? (typeof item.side_activities === 'string' ? JSON.parse(item.side_activities) : item.side_activities) : [],
+                taxRegime: item.tax_regime || 'Simples Nacional',
+                specialSituation: item.special_situation || 'Nenhuma',
+                specialSituationDate: item.special_situation_date || '-',
+                stateRegistration: item.state_registration || '',
+                website: item.website || '',
+                instagram: item.instagram || '',
+                linkedin: item.linkedin || '',
+                facebook: item.facebook || '',
+                activities: loadedActs
+              }
+            })
             setContacts(mapped)
             if (typeof window !== 'undefined') {
               localStorage.setItem('crm_contacts', JSON.stringify(mapped))
@@ -1844,6 +1875,7 @@ export default function ContactsPage() {
           instagram: updatedContact.instagram,
           linkedin: updatedContact.linkedin,
           facebook: updatedContact.facebook,
+          activities: JSON.stringify(updatedContact.activities || []),
           updated_at: new Date().toISOString()
         }
 

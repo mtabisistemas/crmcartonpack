@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { X, Mic, MicOff, Camera, CheckCircle2, Phone, MessageSquare, Mail, Video, MapPin, Target, FileText, Package, Briefcase, Trophy, RefreshCw, Handshake, AlertCircle } from 'lucide-react'
 import { DealStage } from '@/types'
+import { supabase } from '@/services/supabase-client'
 
 export interface RegisterActivityModalProps {
   isOpen: boolean
@@ -199,6 +200,24 @@ export function RegisterActivityModal({
             return c
           })
           localStorage.setItem('crm_contacts', JSON.stringify(updatedContacts))
+          
+          // Also sync to Supabase if available
+          if (supabase) {
+            const targetContact = updatedContacts.find((c: any) => c.id === selectedContactId)
+            if (targetContact) {
+              const payload = {
+                status: selectedActionObj.stage === 'perdido' ? 'inativo' : 'ativo',
+                activities: JSON.stringify(targetContact.activities || []),
+                updated_at: new Date().toISOString()
+              }
+              if (selectedContactId && !selectedContactId.startsWith('c-')) {
+                supabase.from('contacts').update(payload).eq('id', selectedContactId).then(() => {})
+              } else if (selectedContact.company) {
+                supabase.from('contacts').update(payload).ilike('company', selectedContact.company).then(() => {})
+              }
+            }
+          }
+
           window.dispatchEvent(new Event('storage-contacts-changed'))
         } catch (e) {
           console.error(e)
