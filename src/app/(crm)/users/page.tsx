@@ -16,7 +16,8 @@ import {
   Shield,
   Clock,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Key
 } from 'lucide-react'
 
 interface TeamUser {
@@ -162,6 +163,46 @@ export default function UsersPage() {
     } catch (e) {
       console.error('Failed to update user status on API', e)
     }
+  }
+
+  // Resets temporary password and forces first-access password update
+  const handleResetTempPassword = async (user: TeamUser) => {
+    const newTempPassword = 'CP@' + Math.floor(100000 + Math.random() * 900000)
+    const updatedUser: TeamUser = {
+      ...user,
+      tempPassword: newTempPassword,
+      isFirstAccess: true
+    }
+
+    const updatedList = users.map(u => u.id === user.id ? updatedUser : u)
+    saveUsers(updatedList)
+
+    if (selectedUserForFicha?.id === user.id) {
+      setSelectedUserForFicha(updatedUser)
+    }
+
+    try {
+      await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...updatedUser,
+          resetFirstAccess: true
+        })
+      })
+    } catch (e) {
+      console.error('Failed to sync temp password to API', e)
+    }
+
+    const isCarton = user.email?.endsWith('@cartonpack.com') || user.email?.endsWith('@cartonpack.com.br')
+    setCreatedUserCredentials({
+      name: user.name,
+      usernameOrEmail: user.role === 'representante' ? (user.username || user.name) : user.email,
+      tempPassword: newTempPassword,
+      type: isCarton ? 'cartonpack' : 'externo'
+    })
+    setShowCopyModal(true)
+    setToastMessage(`Nova senha temporária gerada para ${user.name}!`)
   }
 
   const capitalizeName = (n: string) => {
@@ -464,7 +505,19 @@ export default function UsersPage() {
 
                     {/* Actions */}
                     <td className="p-4 pr-6 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex justify-end gap-1.5">
+                      <div className="flex justify-end items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleResetTempPassword(user)
+                          }}
+                          title="Reenviar Nova Senha Temporária (Primeiro Acesso)"
+                          className="px-2.5 py-1 rounded-lg bg-[rgba(217,249,157,0.1)] text-[var(--lime)] hover:bg-[rgba(217,249,157,0.2)] border border-[rgba(217,249,157,0.3)] text-[10px] font-mono font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                        >
+                          <Key size={12} />
+                          <span>Nova Senha</span>
+                        </button>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -886,10 +939,19 @@ ${createdUserCredentials.type === 'cartonpack'
 
                   {selectedUserForFicha.tempPassword && (
                     <div className="p-3 bg-[var(--black)] border border-[var(--line)] rounded-xl space-y-1">
-                      <div className="text-[9px] text-[var(--gray2)] uppercase font-mono">Senha Temporária de Acesso</div>
+                      <div className="text-[9px] text-[var(--gray2)] uppercase font-mono">Senha Temporária Ativa</div>
                       <div className="text-xs font-mono font-bold text-[var(--lime)]">{selectedUserForFicha.tempPassword}</div>
                     </div>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={() => handleResetTempPassword(selectedUserForFicha)}
+                    className="w-full py-2.5 px-3 rounded-xl border border-[var(--lime)]/40 bg-[var(--lime)]/10 text-[var(--lime)] text-xs font-bold font-mono flex items-center justify-center gap-2 hover:bg-[var(--lime)]/20 transition-all cursor-pointer shadow-lg"
+                  >
+                    <Key size={14} />
+                    <span>Reenviar Nova Senha Temporária</span>
+                  </button>
                 </div>
               </div>
 

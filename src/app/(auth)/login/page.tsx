@@ -262,19 +262,35 @@ export default function LoginPage() {
 
       // 2. Update local state and save session
       if (targetUser) {
-        // Also update localStorage users list if it exists
         if (typeof window !== 'undefined') {
-          const savedUsers = localStorage.getItem('cp_crm_v7_official_users')
-          if (savedUsers) {
-            try {
-              const parsed = JSON.parse(savedUsers)
-              const updated = parsed.map((u: any) =>
-                u.id === targetUser.id ? { ...u, password: newPassword, isFirstAccess: false } : u
-              )
-              localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(updated))
-            } catch {}
-          }
+          const keysToUpdate = ['cp_crm_v7_official_users', 'crm_users']
+          keysToUpdate.forEach(k => {
+            const raw = localStorage.getItem(k)
+            if (raw) {
+              try {
+                const parsed = JSON.parse(raw)
+                const updated = parsed.map((u: any) =>
+                  (u.id === targetUser.id || (u.email && targetUser.email && u.email.toLowerCase() === targetUser.email.toLowerCase()) || (u.username && targetUser.username && u.username.toLowerCase() === targetUser.username.toLowerCase()))
+                    ? { ...u, password: newPassword, tempPassword: '', isFirstAccess: false }
+                    : u
+                )
+                localStorage.setItem(k, JSON.stringify(updated))
+              } catch {}
+            }
+          })
         }
+
+        try {
+          fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...targetUser,
+              password: newPassword,
+              isFirstAccess: false
+            })
+          }).catch(() => {})
+        } catch (e) {}
 
         const sessionData = {
           id: targetUser.id,

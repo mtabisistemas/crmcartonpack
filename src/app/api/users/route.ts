@@ -104,11 +104,37 @@ export async function POST(req: Request) {
       }
     }
 
-    if (!authUserId) {
-      return NextResponse.json(
-        { success: false, error: 'Não foi possível criar o usuário no Supabase Auth' },
-        { status: 400 }
-      )
+    if (authUserId) {
+      // Update Auth user password or metadata if resetFirstAccess or tempPassword provided
+      const updateMetadata: any = {
+        full_name: user.name,
+        role: user.role,
+        phone: user.phone
+      }
+      if (user.resetFirstAccess || user.isFirstAccess) {
+        updateMetadata.isFirstAccess = true
+      } else if (user.isFirstAccess === false) {
+        updateMetadata.isFirstAccess = false
+      }
+
+      const updatePayload: any = { user_metadata: updateMetadata }
+      if (user.tempPassword || user.password) {
+        updatePayload.password = user.tempPassword || user.password
+      }
+
+      try {
+        await fetch(`${supabaseUrl}/auth/v1/admin/users/${authUserId}`, {
+          method: 'PUT',
+          headers: {
+            'apikey': serviceRoleKey,
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(updatePayload)
+        })
+      } catch (e) {
+        console.error('[API /users] Error updating Auth user for password reset', e)
+      }
     }
 
     const profilePayload = {
