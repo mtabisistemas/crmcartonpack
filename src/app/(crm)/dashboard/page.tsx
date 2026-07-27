@@ -312,14 +312,29 @@ export default function DashboardPage() {
       attribution: '&copy; IBGE'
     }).addTo(map)
 
-    // Add Markers for deals in negotiation
-    const negotiatingDeals = mappedDeals.filter(d => 
-      ['potencial', 'briefing', 'visita', 'aprovacao', 'prospect', 'leads', 'dinamica'].includes(d.stage) && d.latLng
-    )
+    // Add Markers for all active deals in negotiation and closing stages
+    const activeDealsForMap = mappedDeals.filter(d => d.stage !== 'perdido')
+    const coordsCount: Record<string, number> = {}
+    const bounds: [number, number][] = []
 
-    negotiatingDeals.forEach(deal => {
-      if (!deal.latLng) return
+    activeDealsForMap.forEach((deal) => {
+      let baseCoords: [number, number] = deal.latLng || getCityCoords(deal.city) || [-29.6842, -51.1303]
+      const key = `${baseCoords[0].toFixed(3)}_${baseCoords[1].toFixed(3)}`
+      const indexInCity = coordsCount[key] || 0
+      coordsCount[key] = indexInCity + 1
 
+      let finalLat = baseCoords[0]
+      let finalLng = baseCoords[1]
+
+      if (indexInCity > 0) {
+        const angle = indexInCity * 1.8 // Spread pins outwards in a spiral
+        const distance = 0.003 * Math.sqrt(indexInCity)
+        finalLat += distance * Math.cos(angle)
+        finalLng += distance * Math.sin(angle)
+      }
+
+      const finalLatLng: [number, number] = [finalLat, finalLng]
+      bounds.push(finalLatLng)
       const stageColor = getStageColor(deal.stage)
 
       // Scaled-down SVG drop-pin custom icon (size 18x22)
@@ -339,13 +354,13 @@ export default function DashboardPage() {
         iconAnchor: [9, 22] // accurately anchors bottom point of teardrop
       })
 
-      const marker = L_Global.marker(deal.latLng, { icon: customIcon }).addTo(map)
+      const marker = L_Global.marker(finalLatLng, { icon: customIcon }).addTo(map)
       marker.bindTooltip(`
-        <div style="font-family: sans-serif; padding: 2px; background: #ffffff; color: #0f172a; border: 1px solid #e2e8f0; border-radius: 6px;">
+        <div style="font-family: sans-serif; padding: 4px 6px; background: #ffffff; color: #0f172a; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
           <strong style="font-size: 12px; display: block;">${deal.title}</strong>
           <span style="color: ${stageColor}; font-family: monospace; font-size: 11px; font-weight: bold;">${formatCurrency(deal.value)}</span>
-          <div style="font-size: 10px; margin-top: 2px;">${deal.contactName} (${deal.city})</div>
-          <div style="font-size: 9px; text-transform: uppercase; opacity: 0.8; font-weight: bold; color: ${stageColor};">Etapa: ${deal.stage}</div>
+          <div style="font-size: 10px; margin-top: 2px;">${deal.contactName} (${deal.city || 'Novo Hamburgo'})</div>
+          <div style="font-size: 9px; text-transform: uppercase; opacity: 0.8; font-weight: bold; color: ${stageColor}; margin-top: 2px;">Etapa: ${deal.stage}</div>
         </div>
       `, {
         direction: 'top',
@@ -354,14 +369,10 @@ export default function DashboardPage() {
     })
 
     // Calculate bounds containing all markers responsively
-    const bounds = negotiatingDeals
-      .map(d => d.latLng)
-      .filter((latLng): latLng is [number, number] => !!latLng)
-
     if (bounds.length > 0) {
       map.fitBounds(bounds, {
-        padding: [30, 30], // padding around edges so pins are not clipped
-        maxZoom: 12        // prevent over-zooming if only a single pin is present
+        padding: [30, 30],
+        maxZoom: 12
       })
     } else {
       map.setView([-29.7, -51.15], 9)
@@ -435,14 +446,29 @@ export default function DashboardPage() {
       attribution: '&copy; IBGE'
     }).addTo(map)
 
-    // Add Markers for deals in negotiation
-    const negotiatingDeals = mappedDeals.filter(d => 
-      ['potencial', 'briefing', 'visita', 'aprovacao', 'prospect', 'leads', 'dinamica'].includes(d.stage) && d.latLng
-    )
+    // Add Markers for all active deals in negotiation and closing stages
+    const activeDealsForMap = mappedDeals.filter(d => d.stage !== 'perdido')
+    const coordsCount: Record<string, number> = {}
+    const bounds: [number, number][] = []
 
-    negotiatingDeals.forEach(deal => {
-      if (!deal.latLng) return
+    activeDealsForMap.forEach((deal) => {
+      let baseCoords: [number, number] = deal.latLng || getCityCoords(deal.city) || [-29.6842, -51.1303]
+      const key = `${baseCoords[0].toFixed(3)}_${baseCoords[1].toFixed(3)}`
+      const indexInCity = coordsCount[key] || 0
+      coordsCount[key] = indexInCity + 1
 
+      let finalLat = baseCoords[0]
+      let finalLng = baseCoords[1]
+
+      if (indexInCity > 0) {
+        const angle = indexInCity * 1.8
+        const distance = 0.003 * Math.sqrt(indexInCity)
+        finalLat += distance * Math.cos(angle)
+        finalLng += distance * Math.sin(angle)
+      }
+
+      const finalLatLng: [number, number] = [finalLat, finalLng]
+      bounds.push(finalLatLng)
       const stageColor = getStageColor(deal.stage)
 
       const customIcon = L_Global.divIcon({
@@ -459,12 +485,12 @@ export default function DashboardPage() {
         iconAnchor: [11, 26]
       })
 
-      const marker = L_Global.marker(deal.latLng, { icon: customIcon }).addTo(map)
+      const marker = L_Global.marker(finalLatLng, { icon: customIcon }).addTo(map)
       marker.bindTooltip(`
         <div style="font-family: sans-serif; padding: 4px 6px; background: #ffffff; color: #0f172a; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
           <strong style="font-size: 13px; display: block;">${deal.title}</strong>
           <span style="color: ${stageColor}; font-family: monospace; font-size: 12px; font-weight: bold;">${formatCurrency(deal.value)}</span>
-          <div style="font-size: 11px; margin-top: 2px;">${deal.contactName} (${deal.city})</div>
+          <div style="font-size: 11px; margin-top: 2px;">${deal.contactName} (${deal.city || 'Novo Hamburgo'})</div>
           <div style="font-size: 10px; text-transform: uppercase; opacity: 0.8; font-weight: bold; color: ${stageColor}; margin-top: 2px;">Etapa: ${deal.stage}</div>
         </div>
       `, {
@@ -472,10 +498,6 @@ export default function DashboardPage() {
         className: 'custom-leaflet-tooltip'
       })
     })
-
-    const bounds = negotiatingDeals
-      .map(d => d.latLng)
-      .filter((latLng): latLng is [number, number] => !!latLng)
 
     if (bounds.length > 0) {
       map.fitBounds(bounds, {
@@ -540,11 +562,28 @@ export default function DashboardPage() {
     }).addTo(map)
 
     // Add Markers for all deals assigned to this representative
-    const repDeals = MOCK_DEALS.filter(d => d.representative === currentUser.name && d.latLng)
+    const repDeals = mappedDeals.filter(d => (!currentUser || d.representative === currentUser.name) && d.stage !== 'perdido')
+    const coordsCount: Record<string, number> = {}
+    const bounds: [number, number][] = []
 
-    repDeals.forEach(deal => {
-      if (!deal.latLng) return
+    repDeals.forEach((deal) => {
+      let baseCoords: [number, number] = deal.latLng || getCityCoords(deal.city) || [-29.6842, -51.1303]
+      const key = `${baseCoords[0].toFixed(3)}_${baseCoords[1].toFixed(3)}`
+      const indexInCity = coordsCount[key] || 0
+      coordsCount[key] = indexInCity + 1
 
+      let finalLat = baseCoords[0]
+      let finalLng = baseCoords[1]
+
+      if (indexInCity > 0) {
+        const angle = indexInCity * 1.8
+        const distance = 0.003 * Math.sqrt(indexInCity)
+        finalLat += distance * Math.cos(angle)
+        finalLng += distance * Math.sin(angle)
+      }
+
+      const finalLatLng: [number, number] = [finalLat, finalLng]
+      bounds.push(finalLatLng)
       const stageColor = getStageColor(deal.stage)
 
       // Custom DivIcon for mobile map pins (clean & high contrast)
@@ -562,25 +601,21 @@ export default function DashboardPage() {
         iconAnchor: [9, 22]
       })
 
-      const marker = L_Global.marker(deal.latLng, { icon: customIcon }).addTo(map)
+      const marker = L_Global.marker(finalLatLng, { icon: customIcon }).addTo(map)
 
       marker.bindPopup(`
         <div style="font-family: sans-serif; padding: 4px; color: #0f172a; min-width: 140px;">
           <strong style="font-size: 11px; display: block;">${deal.title}</strong>
           <span style="color: ${stageColor}; font-family: monospace; font-size: 10px; font-weight: bold;">${formatCurrency(deal.value)}</span>
-          <div style="font-size: 9px; margin-top: 1px; color: #64748b;">${deal.contactName} (${deal.city})</div>
+          <div style="font-size: 9px; margin-top: 1px; color: #64748b;">${deal.contactName} (${deal.city || 'Novo Hamburgo'})</div>
           <div style="margin-top: 4px; display: flex; gap: 4px;">
-            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${deal.title} ${deal.city}`)}" target="_blank" style="flex: 1; text-align: center; background: #cbd5e1; color: #0f172a; padding: 2px 4px; border-radius: 4px; text-decoration: none; font-size: 9px; font-weight: bold;">Rota</a>
+            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${deal.title} ${deal.city || ''}`)}" target="_blank" style="flex: 1; text-align: center; background: #cbd5e1; color: #0f172a; padding: 2px 4px; border-radius: 4px; text-decoration: none; font-size: 9px; font-weight: bold;">Rota</a>
           </div>
         </div>
       `)
     })
 
     // Calculate bounds containing all representative's markers
-    const bounds = repDeals
-      .map(d => d.latLng)
-      .filter((latLng): latLng is [number, number] => !!latLng)
-
     if (bounds.length > 0) {
       map.fitBounds(bounds, {
         padding: [30, 30],
