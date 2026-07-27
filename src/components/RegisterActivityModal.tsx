@@ -189,10 +189,13 @@ export function RegisterActivityModal({
             const matchesComp = selectedContact.company && c.company && c.company.toLowerCase().trim() === selectedContact.company.toLowerCase().trim()
             const matchesName = selectedContact.name && c.name && c.name.toLowerCase().trim() === selectedContact.name.toLowerCase().trim()
             if (matchesId || matchesComp || matchesName) {
+              const isFinal = c.pipelineStage === 'fechamento' || c.pipelineStage === 'pos_venda' || c.pipelineStage === 'perdido'
+              const preservedStage = isFinal ? c.pipelineStage : (c.pipelineStage || selectedActionObj.stage)
+
               return {
                 ...c,
-                status: selectedActionObj.stage === 'perdido' ? 'inativo' : 'ativo',
-                pipelineStage: selectedActionObj.stage,
+                status: (selectedActionObj.stage === 'perdido' || c.status === 'inativo') ? 'inativo' : 'ativo',
+                pipelineStage: preservedStage,
                 lastPurchaseDays: 1,
                 activities: [newActivity, ...(c.activities || [])]
               }
@@ -206,7 +209,7 @@ export function RegisterActivityModal({
             const targetContact = updatedContacts.find((c: any) => c.id === selectedContactId)
             if (targetContact) {
               const payload = {
-                status: selectedActionObj.stage === 'perdido' ? 'inativo' : 'ativo',
+                status: targetContact.status,
                 activities: JSON.stringify(targetContact.activities || []),
                 updated_at: new Date().toISOString()
               }
@@ -224,48 +227,26 @@ export function RegisterActivityModal({
         }
       }
 
-      // Update deals in pipeline if stored
+      // Update deals in pipeline if stored (SEM alterar etapas fechadas/perdedoras e SEM criar cards duplicados)
       const rawDeals = localStorage.getItem('cp_crm_pipeline_deals')
       if (rawDeals) {
         try {
           const deals = JSON.parse(rawDeals)
-          let found = false
           const updatedDeals = deals.map((d: any) => {
             const matchesId = d.contact_id === selectedContactId
             const matchesComp = selectedContact.company && (d.contact?.company || d.title) && (d.contact?.company || d.title).toLowerCase().trim() === selectedContact.company.toLowerCase().trim()
             if (matchesId || matchesComp) {
-              found = true
+              // REGRA ESSENCIAL: Se o negócio já estiver em 'fechamento', 'pos_venda' ou 'perdido', ele NUNCA sai dessa etapa.
+              // O lançamento de atividade apenas adiciona o histórico à timeline sem alterar a etapa d.stage.
               return { 
                 ...d, 
-                stage: selectedActionObj.stage, 
+                stage: d.stage || selectedActionObj.stage, 
                 updated_at: new Date().toISOString(),
                 activities: [newActivity, ...(d.activities || [])]
               }
             }
             return d
           })
-
-          if (!found) {
-            updatedDeals.unshift({
-              id: 'deal_' + Date.now(),
-              title: selectedContact.company || selectedContact.name,
-              contact_id: selectedContact.id,
-              stage: selectedActionObj.stage,
-              estimated_value: 0,
-              activities: [newActivity],
-              stage_entered_at: new Date().toISOString(),
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              contact: {
-                id: selectedContact.id,
-                name: selectedContact.name,
-                company: selectedContact.company,
-                phone: selectedContact.phone,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              }
-            })
-          }
 
           localStorage.setItem('cp_crm_pipeline_deals', JSON.stringify(updatedDeals))
           window.dispatchEvent(new Event('storage-deals-changed'))
