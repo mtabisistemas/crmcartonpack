@@ -103,13 +103,51 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       setContactEmail(email)
       setRepresentative(rep)
 
-      // Activities list (empty by default for real user tests)
-      setActivities((deal as any).activities || [])
+      // Load activities combining deal and matched contact from crm_contacts
+      const loadAllActivities = () => {
+        const dealActs: Activity[] = (deal as any).activities || []
+        let contactActs: Activity[] = []
+        try {
+          const raw = typeof window !== 'undefined' ? localStorage.getItem('crm_contacts') : null
+          if (raw) {
+            const contacts = JSON.parse(raw)
+            const match = contacts.find((c: any) => {
+              const cComp = (c.company || c.name || '').trim().toLowerCase()
+              const cName = (c.name || '').trim().toLowerCase()
+              return (deal.contact_id && c.id === deal.contact_id) || (searchCompany && cComp === searchCompany) || (searchName && cName === searchName)
+            })
+            if (match && match.activities) {
+              contactActs = match.activities
+            }
+          }
+        } catch (e) {}
+
+        const mergedMap = new Map<string, Activity>()
+        dealActs.forEach(a => mergedMap.set(a.id, a))
+        contactActs.forEach(a => mergedMap.set(a.id, a))
+
+        const merged = Array.from(mergedMap.values()).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
+        setActivities(merged)
+      }
+
+      loadAllActivities()
+
+      if (typeof window !== 'undefined') {
+        window.addEventListener('storage-contacts-changed', loadAllActivities)
+        window.addEventListener('storage-deals-changed', loadAllActivities)
+      }
 
       // Load deal appointments
       const dealApts = getAppointmentsByDeal(deal.id)
       setAppointments(dealApts)
       setAptTitle(`Compromisso - ${deal.contact?.company || deal.title}`)
+
+      return () => {
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('storage-contacts-changed', loadAllActivities)
+          window.removeEventListener('storage-deals-changed', loadAllActivities)
+        }
+      }
     } else {
       setIsOpen(false)
     }
@@ -320,20 +358,54 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
 
   const handleAddActivity = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newNote.trim()) return
+    if (!newNote.trim() || !deal) return
 
     const now = new Date()
     const timestampStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
     const activity: Activity = {
-      id: String(Date.now()),
+      id: `act_${Date.now()}`,
       type: activityType,
       content: newNote,
       timestamp: timestampStr
     }
 
-    setActivities(prev => [activity, ...prev])
+    const updatedActs = [activity, ...activities]
+    setActivities(updatedActs)
     setNewNote('')
+
+    // Update deal activities
+    const updatedDeal: Deal = {
+      ...deal,
+      activities: updatedActs
+    }
+    onUpdateDeal(updatedDeal)
+
+    // Save to contact in crm_contacts
+    if (typeof window !== 'undefined') {
+      const searchCompany = (deal.contact?.company || deal.title || '').trim().toLowerCase()
+      const searchName = (deal.contact?.name || '').trim().toLowerCase()
+      try {
+        const raw = localStorage.getItem('crm_contacts')
+        if (raw) {
+          const contacts = JSON.parse(raw)
+          const updatedContacts = contacts.map((c: any) => {
+            const matchesId = deal.contact_id && c.id === deal.contact_id
+            const matchesComp = searchCompany && c.company && c.company.toLowerCase().trim() === searchCompany
+            const matchesName = searchName && c.name && c.name.toLowerCase().trim() === searchName
+            if (matchesId || matchesComp || matchesName) {
+              return {
+                ...c,
+                activities: [activity, ...(c.activities || [])]
+              }
+            }
+            return c
+          })
+          localStorage.setItem('crm_contacts', JSON.stringify(updatedContacts))
+          window.dispatchEvent(new Event('storage-contacts-changed'))
+        }
+      } catch (e) {}
+    }
   }
 
   const getActivityIcon = (type: Activity['type']) => {

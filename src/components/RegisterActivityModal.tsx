@@ -160,17 +160,21 @@ export function RegisterActivityModal({
     const selectedActionObj = ACTION_OPTIONS.find(a => a.id === actionId) || ACTION_OPTIONS[0]
     const selectedChannelObj = CHANNEL_OPTIONS.find(c => c.id === channel) || CHANNEL_OPTIONS[0]
 
+    const now = new Date()
+    const timestampStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+
     const newActivity = {
-      date: new Date().toLocaleDateString('pt-BR'),
+      id: `act_${Date.now()}`,
+      type: channel === 'visita' ? 'reuniao' : channel === 'whatsapp' ? 'whatsapp' : channel === 'ligacao' ? 'ligacao' : channel === 'email' ? 'email' : 'nota',
+      content: `[${selectedActionObj.label} - ${selectedChannelObj.label}] ${description || 'Atividade registrada.'}`,
       title: `Registro: ${selectedActionObj.label} (${selectedChannelObj.label})`,
       description: description || `Atividade de ${selectedActionObj.label} via ${selectedChannelObj.label}.`,
-      type: channel === 'visita' ? 'visita' : channel === 'whatsapp' ? 'whatsapp' : channel === 'ligacao' ? 'ligacao' : 'nota',
       channel: channel,
       actionId: actionId,
       stage: selectedActionObj.stage,
       hasAudio: isRecording || !!description,
       photoUrl: photoUrl || null,
-      timestamp: new Date().toISOString()
+      timestamp: timestampStr
     }
 
     // Update contacts in localStorage
@@ -180,7 +184,10 @@ export function RegisterActivityModal({
         try {
           const contacts = JSON.parse(savedContacts)
           const updatedContacts = contacts.map((c: any) => {
-            if (c.id === selectedContactId) {
+            const matchesId = c.id === selectedContactId
+            const matchesComp = selectedContact.company && c.company && c.company.toLowerCase().trim() === selectedContact.company.toLowerCase().trim()
+            const matchesName = selectedContact.name && c.name && c.name.toLowerCase().trim() === selectedContact.name.toLowerCase().trim()
+            if (matchesId || matchesComp || matchesName) {
               return {
                 ...c,
                 status: selectedActionObj.stage === 'perdido' ? 'inativo' : 'ativo',
@@ -205,9 +212,16 @@ export function RegisterActivityModal({
           const deals = JSON.parse(rawDeals)
           let found = false
           const updatedDeals = deals.map((d: any) => {
-            if (d.contact_id === selectedContactId || d.company?.toLowerCase() === selectedContact.company?.toLowerCase()) {
+            const matchesId = d.contact_id === selectedContactId
+            const matchesComp = selectedContact.company && (d.contact?.company || d.title) && (d.contact?.company || d.title).toLowerCase().trim() === selectedContact.company.toLowerCase().trim()
+            if (matchesId || matchesComp) {
               found = true
-              return { ...d, stage: selectedActionObj.stage, updated_at: new Date().toISOString() }
+              return { 
+                ...d, 
+                stage: selectedActionObj.stage, 
+                updated_at: new Date().toISOString(),
+                activities: [newActivity, ...(d.activities || [])]
+              }
             }
             return d
           })
@@ -219,6 +233,7 @@ export function RegisterActivityModal({
               contact_id: selectedContact.id,
               stage: selectedActionObj.stage,
               estimated_value: 0,
+              activities: [newActivity],
               stage_entered_at: new Date().toISOString(),
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),

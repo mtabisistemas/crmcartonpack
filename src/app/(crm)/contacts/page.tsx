@@ -247,7 +247,27 @@ function ContactDrawer({
       setLinkedin(contact.linkedin ?? '')
       setFacebook(contact.facebook ?? '')
 
-      setActivities(contact.activities || [])
+      // Load activities with fallback to crm_contacts in localStorage
+      const loadContactActivities = () => {
+        try {
+          const raw = localStorage.getItem('crm_contacts')
+          if (raw) {
+            const list = JSON.parse(raw)
+            const matched = list.find((c: any) => c.id === contact.id || (c.company && contact.company && c.company.toLowerCase().trim() === contact.company.toLowerCase().trim()))
+            if (matched && matched.activities) {
+              setActivities(matched.activities)
+              return
+            }
+          }
+        } catch (e) {}
+        setActivities(contact.activities || [])
+      }
+
+      loadContactActivities()
+
+      if (typeof window !== 'undefined') {
+        window.addEventListener('storage-contacts-changed', loadContactActivities)
+      }
     } else {
       setIsOpen(false)
     }
@@ -287,6 +307,7 @@ function ContactDrawer({
       instagram,
       linkedin,
       facebook,
+      activities,
       ...cleanOverrides
     })
     setIsSaving(false)
@@ -294,19 +315,30 @@ function ContactDrawer({
     setTimeout(() => setIsSaved(false), 2500)
   }
 
-  const handleAddActivity = (e: React.FormEvent) => {
+  const handleAddActivity = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newNote.trim()) return
 
+    const now = new Date()
+    const timestampStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+
     const newAct: Activity = {
-      id: String(Date.now()),
+      id: `act_${Date.now()}`,
       type: activityType,
       content: newNote,
-      timestamp: new Date().toLocaleString('pt-BR', { hour12: false }).substring(0, 16)
+      timestamp: timestampStr
     }
 
-    setActivities(prev => [newAct, ...prev])
+    const updatedActs = [newAct, ...activities]
+    setActivities(updatedActs)
     setNewNote('')
+
+    if (contact) {
+      await onUpdateContact({
+        ...contact,
+        activities: updatedActs
+      })
+    }
   }
 
   const getActivityIcon = (type: Activity['type']) => {

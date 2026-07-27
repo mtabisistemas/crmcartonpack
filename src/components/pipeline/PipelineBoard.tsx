@@ -578,7 +578,7 @@ export function PipelineBoard() {
   const activeStages = (Object.keys(STAGE_CONFIG) as DealStage[]).filter(s => s !== 'perdido' && s !== 'pos_venda')
 
   const dealsByStage = (Object.keys(STAGE_CONFIG) as DealStage[]).reduce((acc, stage) => {
-    acc[stage] = filteredDeals.filter(d => d.stage === stage).sort((a, b) => a.position - b.position)
+    acc[stage] = filteredDeals.filter(d => d.stage === stage).sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
     return acc
   }, {} as Record<DealStage, Deal[]>)
 

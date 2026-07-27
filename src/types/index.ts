@@ -70,10 +70,11 @@ export interface Deal {
   final_value?: number
   lost_reason?: string
   lost_notes?: string
+  activities?: any[]
   stage_entered_at: string
   expected_close_date?: string
   closed_at?: string
-  position: number
+  position?: number
   created_at: string
   updated_at: string
 }
