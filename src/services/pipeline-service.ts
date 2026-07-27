@@ -87,7 +87,15 @@ export function saveContactToCarteira(contactData: {
   }
 
   const cleanCnpj = (contactData.cnpj || '').replace(/\D/g, '')
-  const existingIdx = contacts.findIndex(c => c.cnpj && c.cnpj.replace(/\D/g, '') === cleanCnpj)
+  const cleanCompany = (contactData.razao_social || '').trim().toLowerCase()
+
+  const existingIdx = contacts.findIndex(c => {
+    const cCnpj = (c.cnpj || '').replace(/\D/g, '')
+    const cCompany = (c.company || c.name || '').trim().toLowerCase()
+    const matchCnpj = cleanCnpj.length >= 8 && cCnpj.length >= 8 && cleanCnpj === cCnpj
+    const matchCompany = cleanCompany.length >= 3 && cCompany.length >= 3 && cleanCompany === cCompany
+    return matchCnpj || matchCompany
+  })
   if (existingIdx >= 0) return contacts[existingIdx]
 
   const newContact: MockContact = {

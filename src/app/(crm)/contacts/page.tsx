@@ -1806,13 +1806,41 @@ export default function ContactsPage() {
   }
 
   const handleConfirmNewContact = (data: Partial<MockContact>) => {
+    // 🔍 DUPLICATE DETECTION LOGIC
+    const cleanNewCnpj = (data.cnpj || '').replace(/\D/g, '')
+    const cleanNewCompany = (data.company || '').trim().toLowerCase()
+
+    const existingDuplicate = contacts.find(c => {
+      const cleanCnpj = (c.cnpj || '').replace(/\D/g, '')
+      const cleanCompany = (c.company || '').trim().toLowerCase()
+
+      const matchesCnpj = cleanNewCnpj.length >= 8 && cleanCnpj.length >= 8 && cleanNewCnpj === cleanCnpj
+      const matchesCompany = cleanNewCompany.length >= 3 && cleanCompany.length >= 3 && cleanNewCompany === cleanCompany
+
+      return matchesCnpj || matchesCompany
+    })
+
+    if (existingDuplicate) {
+      alert(`⚠️ CLIENTE JÁ CADASTRADO NO SISTEMA!
+
+Razão Social / Empresa: ${existingDuplicate.company}
+CNPJ: ${existingDuplicate.cnpj || 'Não informado'}
+Representante Vinculado: ${existingDuplicate.representative || 'Sem representante'}
+Status Atual: ${existingDuplicate.status}
+
+Para evitar duplicidade, utilize o cadastro já existente.`)
+      return false
+    }
+
+    const assignedRep = data.representative || (currentUser?.name ? currentUser.name : (representativesList[0] || ''))
+
     const newContact: MockContact = {
       id: `c-${Date.now()}`,
       name: data.name || '',
       company: data.company || '',
       cnpj: data.cnpj || '',
       curve: data.curve || 'C',
-      representative: data.representative || (representativesList[0] || ''),
+      representative: assignedRep,
       phone: data.phone || '',
       email: data.email || '',
       city: data.city || '',
@@ -1886,34 +1914,30 @@ export default function ContactsPage() {
           Carteira de Clientes
         </h1>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => {
               setSelectedContactForActivity('')
               setShowActivityModal(true)
             }}
-            className="btn btn-primary text-xs py-2 px-4 flex items-center gap-2 cursor-pointer text-black font-bold shadow-lg"
+            className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-2 cursor-pointer text-white font-bold shadow-lg"
           >
             <CheckCircle size={14} />
             <span>Registrar Atividade</span>
           </button>
 
-          {!isRep && (
-            <>
-              <button
-                onClick={() => setShowProspeccaoModal(true)}
-                className="btn btn-secondary text-xs py-2 px-4 flex items-center gap-2 cursor-pointer text-[var(--lime)] border-[var(--lime)]/30 hover:border-[var(--lime)] font-bold shadow-lg"
-              >
-                <UserPlus size={14} />
-                <span>Prospectar Novos Leads B2B</span>
-              </button>
+          <button
+            onClick={() => setShowProspeccaoModal(true)}
+            className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-2 cursor-pointer text-[var(--lime)] border-[var(--lime)]/30 hover:border-[var(--lime)] font-bold shadow-lg"
+          >
+            <UserPlus size={14} />
+            <span>Prospectar Leads</span>
+          </button>
 
-              <button onClick={() => setShowNewContactModal(true)} className="btn btn-primary text-xs py-2 px-4 flex items-center gap-2 cursor-pointer">
-                <Plus size={14} />
-                <span>Novo Cliente</span>
-              </button>
-            </>
-          )}
+          <button onClick={() => setShowNewContactModal(true)} className="btn btn-primary text-xs py-2 px-3 flex items-center gap-2 cursor-pointer">
+            <Plus size={14} />
+            <span>Novo Cliente</span>
+          </button>
         </div>
       </div>
 
