@@ -34,28 +34,7 @@ interface TeamUser {
   isEmailConfirmed?: boolean
 }
 
-export const DEFAULT_USERS: TeamUser[] = [
-  {
-    id: 'usr-admin-1',
-    name: 'Maurício Maciel',
-    email: 'mauricio@mtabi.com.br',
-    role: 'admin',
-    status: 'ativo',
-    phone: '',
-    createdAt: '26/07/2026',
-    username: 'mauricio.maciel'
-  },
-  {
-    id: 'usr-rep-teste',
-    name: 'Representante Teste',
-    email: 'rep.teste@cartonpack.com.br',
-    role: 'representante',
-    status: 'ativo',
-    phone: '(51) 98888-1111',
-    createdAt: '26/07/2026',
-    username: 'representante.teste'
-  }
-]
+// No hardcoded users — source of truth is Supabase profiles table
 
 function formatPhoneBr(v: string) {
   const clean = v.replace(/\D/g, '')
@@ -67,7 +46,7 @@ function formatPhoneBr(v: string) {
 }
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<TeamUser[]>(DEFAULT_USERS)
+  const [users, setUsers] = useState<TeamUser[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRole, setSelectedRole] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
@@ -99,45 +78,25 @@ export default function UsersPage() {
   const [toastMessage, setToastMessage] = useState('')
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
 
-  // Clean un-synced test users on init & Load users
+  // Load users — always from Supabase via /api/users, never from localStorage
   useEffect(() => {
     async function syncUsers() {
       try {
-        const fetched = await dbService.usuarios.list()
-        if (fetched && fetched.length > 0) {
-          const cleaned = fetched.filter((u: any) => 
-            !u.name?.includes('Versapack') && 
-            !u.email?.includes('versapack') &&
-            !['fausto.fleck', 'ana.nunes', 'felipe.ribeiro', 'witalo.frota', 'diessica.hartmann', 'thaiane.antunes'].some(demo => u.email?.includes(demo) || u.username?.includes(demo))
-          )
-          DEFAULT_USERS.forEach(du => {
-            if (!cleaned.some((u: any) => u.id === du.id || u.email === du.email)) {
-              cleaned.push(du)
-            }
-          })
-          setUsers(cleaned)
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(cleaned))
-          }
-        } else {
-          setUsers(DEFAULT_USERS)
+        const res = await fetch('/api/users', { cache: 'no-store' })
+        const json = await res.json()
+        if (json.success && Array.isArray(json.users)) {
+          setUsers(json.users)
         }
       } catch (e) {
-        setUsers(DEFAULT_USERS)
+        console.error('[UsersPage] Failed to load users from API', e)
       }
     }
     syncUsers()
   }, [])
 
-  // Persist to localStorage & Supabase profiles
+  // Update local state only — source of truth is Supabase
   const saveUsers = (newUsers: TeamUser[]) => {
     setUsers(newUsers)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(newUsers))
-    }
-    newUsers.forEach(u => {
-      try { dbService.usuarios.save(u) } catch(e) {}
-    })
   }
 
   const deriveUsername = (n: string) => {
@@ -202,8 +161,9 @@ export default function UsersPage() {
     const formattedName = capitalizeName(name)
     const derivedUser = username || deriveUsername(formattedName)
     const isCarton = !isRep && email.toLowerCase().endsWith('@cartonpack.com')
-    const finalUsername = isRep ? derivedUser : (username || deriveUsername(formattedName))
-    const finalEmail = isRep ? `${derivedUser}@representante.local` : email
+    const finalUsername = derivedUser
+    // Representatives don't have real email — API generates internal email on the Supabase side
+    const finalEmail = isRep ? '' : email
 
     if (editingUser) {
       // Edit mode
@@ -228,33 +188,62 @@ export default function UsersPage() {
       }
       setShowModal(false)
     } else {
-      // Create mode
+      // Create mode — call API to create user in Supabase Auth + profiles
       const finalTempPassword = tempPassword || generateTempPassword()
 
-      const newUser: TeamUser = {
-        id: `u-${Date.now()}`,
+      const newUserPayload = {
+        id: `u-${Date.now()}`, // temporary, API will replace with real UUID
         name: formattedName,
         email: finalEmail,
         role,
         status,
         phone: formatPhoneBr(phone),
-        createdAt: new Date().toLocaleDateString('pt-BR'),
-        isFirstAccess: true,
-        isEmailConfirmed: isCarton ? false : true,
         tempPassword: finalTempPassword,
         username: finalUsername
       }
-      
-      saveUsers([newUser, ...users])
-      
+
+      // Optimistic local update
+      const optimisticUser: TeamUser = {
+        ...newUserPayload,
+        createdAt: new Date().toLocaleDateString('pt-BR'),
+        isFirstAccess: true,
+        isEmailConfirmed: isCarton ? false : true
+      }
+      setUsers(prev => [optimisticUser, ...prev])
+
+      // Persist to Supabase
+      fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUserPayload)
+      })
+        .then(r => r.json())
+        .then(json => {
+          if (json.success && json.user?.id) {
+            // Replace optimistic entry with real Supabase ID
+            setUsers(prev => prev.map(u =>
+              u.id === optimisticUser.id ? { ...u, id: json.user.id } : u
+            ))
+          }
+          // Reload from API to reflect server state
+          return fetch('/api/users', { cache: 'no-store' })
+        })
+        .then(r => r?.json())
+        .then(json => {
+          if (json?.success && Array.isArray(json.users)) {
+            setUsers(json.users)
+          }
+        })
+        .catch(e => console.error('[UsersPage] Failed to save user', e))
+
       // Save credentials for the Copy Screen
       setCreatedUserCredentials({
         name: formattedName,
-        usernameOrEmail: isCarton ? finalEmail : (finalUsername || finalEmail),
+        usernameOrEmail: finalUsername,
         tempPassword: finalTempPassword,
         type: isCarton ? 'cartonpack' : 'externo'
       })
-      
+
       setShowModal(false)
       setShowCopyModal(true)
     }
