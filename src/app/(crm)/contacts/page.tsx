@@ -1668,6 +1668,9 @@ export default function ContactsPage() {
               facebook: item.facebook || ''
             }))
             setContacts(mapped)
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('crm_contacts', JSON.stringify(mapped))
+            }
             return
           }
         } catch (err) {

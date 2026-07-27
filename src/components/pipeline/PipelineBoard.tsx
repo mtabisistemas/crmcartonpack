@@ -273,29 +273,33 @@ function NewDealModal({
 
   useEffect(() => {
     async function loadContacts() {
-      let list: any[] = []
-      // 1. LocalStorage
-      try {
-        const raw = localStorage.getItem('crm_contacts')
-        if (raw) list = JSON.parse(raw)
-      } catch (e) {}
-
-      // 2. Supabase
+      // 1. Supabase (Banco de dados oficial)
       try {
         const { supabase } = await import('@/services/supabase-client')
         if (supabase) {
-          const { data } = await supabase.from('contacts').select('id, company, name, cnpj, city, state').limit(150)
-          if (data && data.length > 0) {
-            data.forEach(sc => {
-              if (!list.some(c => (c.cnpj && sc.cnpj && c.cnpj === sc.cnpj) || c.company === sc.company)) {
-                list.push(sc)
-              }
-            })
+          const { data, error } = await supabase
+            .from('contacts')
+            .select('id, company, name, cnpj, city, state')
+            .order('created_at', { ascending: false })
+            .limit(200)
+
+          if (!error && data && data.length > 0) {
+            setContactsList(data)
+            localStorage.setItem('crm_contacts', JSON.stringify(data))
+            return
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Erro ao carregar contatos para autocomplete:', e)
+      }
 
-      setContactsList(list)
+      // 2. Fallback local somente se o banco não retornar nada
+      try {
+        const raw = localStorage.getItem('crm_contacts')
+        if (raw) {
+          setContactsList(JSON.parse(raw))
+        }
+      } catch (e) {}
     }
     loadContacts()
   }, [])
