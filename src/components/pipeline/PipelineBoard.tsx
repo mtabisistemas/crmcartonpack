@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -269,7 +269,7 @@ function NewDealModal({
   // Autocomplete contacts list state
   const [contactsList, setContactsList] = useState<{ id: string; company: string; name?: string; cnpj?: string; city?: string; state?: string }[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
-  const dropdownRef = React.useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     async function loadContacts() {
