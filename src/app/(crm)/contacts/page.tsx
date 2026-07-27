@@ -1701,6 +1701,19 @@ export default function ContactsPage() {
       }
     }
     loadContacts()
+
+    // Recarrega contatos quando lead é encaminhado da prospecção
+    const handleStorageChange = () => loadContacts()
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage-contacts-changed', handleStorageChange)
+      window.addEventListener('storage', handleStorageChange)
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage-contacts-changed', handleStorageChange)
+        window.removeEventListener('storage', handleStorageChange)
+      }
+    }
   }, [])
 
   // Persist contacts on change

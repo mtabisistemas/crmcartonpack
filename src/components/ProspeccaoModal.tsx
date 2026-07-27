@@ -773,8 +773,8 @@ export function ProspeccaoModal({
         {/* ── FILTROS (EXACT ECONODATA STYLE COM áCONES 100% CENTRALIZADOS) ── */}
         <div className="p-5 bg-[var(--black)]/40 border-b border-[var(--line)] shrink-0">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-            {/* 1. Setor, palavra-chave ou CNAE (5 cols) */}
-            <div className="md:col-span-5 relative">
+            {/* 1. Setor, palavra-chave ou CNAE (6 cols) */}
+            <div className="md:col-span-6 relative">
               <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">
                 Setor, palavra-chave ou CNAE
               </label>
@@ -903,8 +903,8 @@ export function ProspeccaoModal({
                 </div>
               )}
             </div>
-            {/* 2. Região (Combobox Estado/Cidade - 3 cols) */}
-            <div className="md:col-span-3 relative">
+            {/* 2. Região (Combobox Estado/Cidade - 4 cols) */}
+            <div className="md:col-span-4 relative">
               <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">
                 Região
               </label>
@@ -979,22 +979,7 @@ export function ProspeccaoModal({
                 </div>
               )}
             </div>
-            {/* 3. Porte (2 cols) */}
-            <div className="md:col-span-2">
-              <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">
-                Porte
-              </label>
-              <select
-                value={porte}
-                onChange={e => setPorte(e.target.value)}
-                className="w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 h-11 text-sm text-white outline-none focus:border-[var(--lime)]/60 transition-all cursor-pointer"
-              >
-                {PORTES.map(p => (
-                  <option key={p} value={p}>{p === 'todos' ? 'Qualquer Porte' : p}</option>
-                ))}
-              </select>
-            </div>
-            {/* 4. Botá£o Gerar Leads (2 cols) */}
+            {/* 3. Botão Gerar Leads (2 cols) */}
             <div className="md:col-span-2">
               <button
                 onClick={() => fetchLeads(1)}
@@ -1007,7 +992,7 @@ export function ProspeccaoModal({
           </div>
           <div className="flex justify-end mt-2">
             <button
-              onClick={() => { setSetorTexto(''); setRegiaoTexto(''); setPorte('todos'); setHasSearched(false); setResult(null); setLeads([]) }}
+              onClick={() => { setSetorTexto(''); setRegiaoTexto(''); setHasSearched(false); setResult(null); setLeads([]) }}
               className="text-xs font-mono text-[var(--gray2)] hover:text-white transition-all cursor-pointer underline underline-offset-2"
             >
               Limpar filtros

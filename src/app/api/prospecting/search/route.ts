@@ -551,7 +551,48 @@ export async function GET(req: NextRequest) {
       if (/aliment|bebid|laticin|frigorif/i.test(qNorm)) {
         if (/(?:10|11|46|47)/.test(leadAllCnaeDigits)) sectorMatch = true
       }
+      // Calçados / Couro / Sapatos / Tênis
+      if (/calcad|sapato|tenis|couro|calcado|calcadista|artefato/i.test(qNorm)) {
+        if (/(?:15|46|47)/.test(leadAllCnaeDigits)) sectorMatch = true
+        // calçado nos nomes de empresa também conta
+        if (/calcad|sapato|couro|solado|cabedal|palmilha/i.test(leadAllText)) sectorMatch = true
+      }
+      // Vestuário / Moda / Confecção / Roupa / Têxtil
+      if (/vestuar|confec|roupa|moda|textil|malha|fiacao/i.test(qNorm)) {
+        if (/(?:13|14|46|47)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
+      // Restaurante / Alimentação / Gastronomia
+      if (/restaur|lanchon|gastronom|alimentac|refeit|bar|cafe/i.test(qNorm)) {
+        if (/(?:56|47)/.test(leadAllCnaeDigits)) sectorMatch = true
+        if (/restaur|lanchon|bar|cafe|pizz/i.test(leadAllText)) sectorMatch = true
+      }
+      // Imóveis / Imobiliária / Incorporação
+      if (/imovel|imoveis|imobiliar|incorpor|condomin/i.test(qNorm)) {
+        if (/(?:41|68)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
+      // Beleza / Estética / Salão
+      if (/beleza|estetica|cabelereir|salao|spa|tratamento/i.test(qNorm)) {
+        if (/(?:96)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
+      // Pet Shop / Veterinária
+      if (/pet|petshop|veterinar|animal|racao/i.test(qNorm)) {
+        if (/(?:47|75)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
+      // TI / Software / Tecnologia / Informática
+      if (/tecnolog|software|sistem|informatic|ti |suport/i.test(qNorm)) {
+        if (/(?:62|63|46)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
+      // Saúde / Hospital / Clínica / Médico / Farmácia / Laboratório
+      if (/saude|hospital|clinic|medic|farmaci|laborat|fisio|odontolog/i.test(qNorm)) {
+        if (/(?:86|47)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
+      // Educação / Escola / Curso / Ensino
+      if (/educac|escola|ensino|colegio|curso|treinam|capacit/i.test(qNorm)) {
+        if (/(?:85)/.test(leadAllCnaeDigits)) sectorMatch = true
+      }
 
+      // Fallback: se o setor digitado aparece no texto completo da empresa (razão social, CNAE, etc.)
+      // garante match por texto caso nenhuma regra específica capture
       const tokens = qNorm.split(/\s+/).filter(t => t.length > 2)
       const userStems = tokens.flatMap(t => getB2bStems(t))
       const matchesToken = tokens.some(t => leadAllText.includes(t)) ||
