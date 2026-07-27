@@ -266,6 +266,68 @@ function NewDealModal({
   const [value, setValue] = useState(0)
   const [stage, setStage] = useState<DealStage>(initialStage)
 
+  // Autocomplete contacts list state
+  const [contactsList, setContactsList] = useState<{ id: string; company: string; name?: string; cnpj?: string; city?: string; state?: string }[]>([])
+  const [showDropdown, setShowDropdown] = useState(false)
+  const dropdownRef = React.useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    async function loadContacts() {
+      let list: any[] = []
+      // 1. LocalStorage
+      try {
+        const raw = localStorage.getItem('crm_contacts')
+        if (raw) list = JSON.parse(raw)
+      } catch (e) {}
+
+      // 2. Supabase
+      try {
+        const { supabase } = await import('@/services/supabase-client')
+        if (supabase) {
+          const { data } = await supabase.from('contacts').select('id, company, name, cnpj, city, state').limit(150)
+          if (data && data.length > 0) {
+            data.forEach(sc => {
+              if (!list.some(c => (c.cnpj && sc.cnpj && c.cnpj === sc.cnpj) || c.company === sc.company)) {
+                list.push(sc)
+              }
+            })
+          }
+        }
+      } catch (e) {}
+
+      setContactsList(list)
+    }
+    loadContacts()
+  }, [])
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const filteredContacts = contactsList.filter(c => {
+    const q = clientName.toLowerCase().trim()
+    if (!q) return true
+    const comp = (c.company || c.name || '').toLowerCase()
+    const cnpj = (c.cnpj || '').replace(/\D/g, '')
+    const city = (c.city || '').toLowerCase()
+    return comp.includes(q) || cnpj.includes(q) || city.includes(q)
+  })
+
+  const handleSelectContact = (c: { company: string; name?: string; cnpj?: string; city?: string }) => {
+    const chosenName = c.company || c.name || ''
+    setClientName(chosenName)
+    if (c.name && c.name !== chosenName) {
+      setContactName(c.name)
+    }
+    setShowDropdown(false)
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!clientName.trim()) return
@@ -286,19 +348,55 @@ function NewDealModal({
       <form onSubmit={handleSubmit} className="bg-[var(--charcoal)] border border-[var(--line)] rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 animate-fade-up">
         <div>
           <h3 className="font-display text-base text-[var(--white)] font-bold">Novo Negócio</h3>
-          <p className="text-xs text-[var(--gray)] mt-1">Preencha as informações básicas do novo negócio por cliente.</p>
+          <p className="text-xs text-[var(--gray)] mt-1">Selecione ou digite o nome do cliente para a oportunidade.</p>
         </div>
 
-        <div className="flex flex-col gap-1.5">
+        {/* Cliente / Empresa — Busca Autocomplete dos Contatos */}
+        <div className="flex flex-col gap-1.5 relative" ref={dropdownRef}>
           <label className="label">Nome do Cliente / Empresa *</label>
-          <input 
-            type="text" 
-            required
-            className="input font-bold" 
-            placeholder="Ex: Madeireira Parisotto Ltda"
-            value={clientName} 
-            onChange={(e) => setClientName(e.target.value)}
-          />
+          <div className="relative">
+            <input 
+              type="text" 
+              required
+              className="input font-bold pl-9 w-full" 
+              placeholder="Digite para buscar um cliente ou criar novo..."
+              value={clientName} 
+              onChange={(e) => {
+                setClientName(e.target.value)
+                setShowDropdown(true)
+              }}
+              onFocus={() => setShowDropdown(true)}
+            />
+            <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--gray)]" />
+          </div>
+
+          {/* Autocomplete Dropdown List */}
+          {showDropdown && filteredContacts.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1.5 z-50 max-h-52 overflow-y-auto bg-[#141416] border border-[var(--line)] rounded-xl shadow-2xl divide-y divide-[var(--line)] animate-fade-in">
+              <div className="px-3 py-1.5 text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider bg-[var(--charcoal)] sticky top-0">
+                Selecione um Cliente Salvo ({filteredContacts.length})
+              </div>
+              {filteredContacts.map((c, idx) => (
+                <div
+                  key={c.id || idx}
+                  onClick={() => handleSelectContact(c)}
+                  className="p-3 hover:bg-[var(--lime)]/10 cursor-pointer transition-colors flex items-center justify-between gap-2 group"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-bold text-white group-hover:text-[var(--lime)] transition-colors truncate">
+                      {c.company || c.name}
+                    </div>
+                    <div className="text-[10px] text-[var(--gray)] font-mono truncate mt-0.5">
+                      {c.cnpj ? `${c.cnpj} ` : ''}{c.city ? `• ${c.city}/${c.state}` : ''}
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono text-[var(--lime)] bg-[var(--lime)]/10 px-2 py-0.5 rounded border border-[var(--lime)]/20 shrink-0 opacity-80 group-hover:opacity-100">
+                    Selecionar
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
