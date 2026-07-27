@@ -47,7 +47,7 @@ interface DealMock {
   id: string
   title: string
   representative: string
-  stage: 'leads' | 'prospect' | 'dinamica' | 'potencial' | 'visita' | 'briefing' | 'aprovacao' | 'fechamento' | 'perdido'
+  stage: 'leads' | 'prospect' | 'dinamica' | 'potencial' | 'visita' | 'briefing' | 'aprovacao' | 'fechamento' | 'pos_venda' | 'perdido'
   value: number
   curve: 'A' | 'B' | 'C' | 'D'
   daysInactive: number
@@ -69,6 +69,7 @@ export default function DashboardPage() {
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null)
   const [isSessionLoaded, setIsSessionLoaded] = useState(false)
   const [contacts, setContacts] = useState<any[]>([])
+  const [pipelineDeals, setPipelineDeals] = useState<any[]>([])
 
   // Theme state (for mobile toggle)
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
@@ -169,9 +170,26 @@ export default function DashboardPage() {
 
       setIsSessionLoaded(true)
 
+      // Load real pipeline deals
+      const loadDeals = () => {
+        const loaded = getPipelineDeals([])
+        setPipelineDeals(loaded)
+      }
+      loadDeals()
+
+      window.addEventListener('storage-deals-changed', loadDeals)
+      window.addEventListener('storage', loadDeals)
+      window.addEventListener('storage-contacts-changed', loadDeals)
+
       // Initialize theme from DOM
       const activeTheme = (document.documentElement.getAttribute('data-theme') || 'dark') as 'dark' | 'light'
       setTheme(activeTheme)
+
+      return () => {
+        window.removeEventListener('storage-deals-changed', loadDeals)
+        window.removeEventListener('storage', loadDeals)
+        window.removeEventListener('storage-contacts-changed', loadDeals)
+      }
     }
   }, [])
 
@@ -295,8 +313,8 @@ export default function DashboardPage() {
     }).addTo(map)
 
     // Add Markers for deals in negotiation
-    const negotiatingDeals = MOCK_DEALS.filter(d => 
-      ['potencial', 'briefing', 'visita', 'aprovacao', 'prospect', 'leads'].includes(d.stage) && d.latLng
+    const negotiatingDeals = mappedDeals.filter(d => 
+      ['potencial', 'briefing', 'visita', 'aprovacao', 'prospect', 'leads', 'dinamica'].includes(d.stage) && d.latLng
     )
 
     negotiatingDeals.forEach(deal => {
@@ -374,7 +392,7 @@ export default function DashboardPage() {
         mapInstanceRef.current = null
       }
     }
-  }, [leafletReady, currentUser])
+  }, [leafletReady, currentUser, pipelineDeals])
 
   // Initialize Dedicated Fullscreen Leaflet Map Modal (Admin/Desktop)
   useEffect(() => {
@@ -418,8 +436,8 @@ export default function DashboardPage() {
     }).addTo(map)
 
     // Add Markers for deals in negotiation
-    const negotiatingDeals = MOCK_DEALS.filter(d => 
-      ['potencial', 'briefing', 'visita', 'aprovacao', 'prospect', 'leads'].includes(d.stage) && d.latLng
+    const negotiatingDeals = mappedDeals.filter(d => 
+      ['potencial', 'briefing', 'visita', 'aprovacao', 'prospect', 'leads', 'dinamica'].includes(d.stage) && d.latLng
     )
 
     negotiatingDeals.forEach(deal => {
@@ -479,7 +497,7 @@ export default function DashboardPage() {
         fullscreenMapInstanceRef.current = null
       }
     }
-  }, [isMapFullscreen, leafletReady])
+  }, [isMapFullscreen, leafletReady, pipelineDeals])
 
   // Initialize Leaflet Map for Mobile Representative View (activeTab === 'mapa')
   useEffect(() => {
@@ -635,19 +653,78 @@ export default function DashboardPage() {
     document.cookie = `cp_crm_theme=${newTheme}; path=/; max-age=31536000; SameSite=Lax`
   }
 
+  // Helper to resolve city coordinates for Leaflet map pins
+  const getCityCoords = (cityStr?: string): [number, number] | undefined => {
+    if (!cityStr) return undefined
+    const clean = cityStr.trim().toLowerCase()
+    const coordsMap: Record<string, [number, number]> = {
+      'novo hamburgo': [-29.6842, -51.1303],
+      'dois irmãos': [-29.5800, -51.0833],
+      'dois irmaos': [-29.5800, -51.0833],
+      'porto alegre': [-30.0346, -51.2177],
+      'gravataí': [-29.9419, -50.9925],
+      'gravatai': [-29.9419, -50.9925],
+      'canoas': [-29.9189, -51.1781],
+      'sapucaia do sul': [-29.8272, -51.1444],
+      'são leopoldo': [-29.7606, -51.1472],
+      'sao leopoldo': [-29.7606, -51.1472],
+      'estância velha': [-29.6508, -51.1783],
+      'estancia velha': [-29.6508, -51.1783],
+      'campo bom': [-29.6781, -51.0558],
+      'ivoti': [-29.5939, -51.1606],
+      'canela': [-29.3658, -50.8092],
+      'gramado': [-29.3787, -50.8739],
+      'caxias do sul': [-29.1681, -51.1794],
+      'bento gonçalves': [-29.1706, -51.5186],
+      'sapiranga': [-29.6381, -51.0069],
+      'nova hartz': [-29.5819, -50.9031],
+      'igrejinha': [-29.5742, -50.7936],
+      'três coroas': [-29.5175, -50.7778],
+      'tres coroas': [-29.5175, -50.7778],
+      'parobé': [-29.6289, -50.8344],
+      'parobe': [-29.6289, -50.8344],
+      'taquara': [-29.6517, -50.7817],
+    }
+    return coordsMap[clean]
+  }
+
+  // Convert pipeline deals to dashboard deal format
+  const mappedDeals: DealMock[] = pipelineDeals.map(d => {
+    const val = (d.final_value && d.final_value > 0) ? d.final_value : (d.estimated_value || 0)
+    const companyName = d.contact?.company || d.title || 'Cliente'
+    const city = d.contact?.city || d.city || 'Novo Hamburgo'
+    const rep = d.assigned_to || d.contact?.representative || 'Sem representante'
+    const curve = d.contact?.curve || 'C'
+
+    return {
+      id: d.id,
+      title: companyName,
+      representative: rep,
+      stage: d.stage as any,
+      value: val,
+      curve: curve as any,
+      daysInactive: 0,
+      contactName: d.contact?.name || companyName,
+      phone: d.contact?.phone || '',
+      city: city,
+      uf: d.contact?.state || 'RS',
+      latLng: getCityCoords(city)
+    }
+  })
+
   // Filter deals based on state
-  const filteredDeals = MOCK_DEALS.filter(deal => {
+  const filteredDeals = mappedDeals.filter(deal => {
     const matchesRep = selectedRep === 'all' || deal.representative === selectedRep
     const matchesCurve = selectedCurve === 'all' || deal.curve === selectedCurve
     return matchesRep && matchesCurve
   })
 
-  // Compute stats
-  const activeDealsCount = filteredDeals.filter(d => d.stage !== 'fechamento' && d.stage !== 'perdido').length
-  const inNegotiationCount = filteredDeals.filter(d => ['potencial', 'briefing', 'visita', 'aprovacao'].includes(d.stage)).length
+  // Compute stats dynamically from real pipeline deals
+  const activeDealsCount = filteredDeals.filter(d => d.stage !== 'fechamento' && d.stage !== 'pos_venda' && d.stage !== 'perdido').length
+  const inNegotiationCount = filteredDeals.filter(d => ['dinamica', 'potencial', 'visita', 'briefing', 'aprovacao'].includes(d.stage)).length
   
   const fechamentoValue = filteredDeals
-    .filter(d => d.stage === 'fechamento')
+    .filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda')
     .reduce((acc, d) => acc + d.value, 0)
     
   const perdidoValue = filteredDeals
@@ -663,10 +740,13 @@ export default function DashboardPage() {
     { key: 'visita', stage: 'Visita', count: filteredDeals.filter(d => d.stage === 'visita').length, value: filteredDeals.filter(d => d.stage === 'visita').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-visita)' },
     { key: 'briefing', stage: 'Briefing', count: filteredDeals.filter(d => d.stage === 'briefing').length, value: filteredDeals.filter(d => d.stage === 'briefing').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-briefing)' },
     { key: 'aprovacao', stage: 'Aprovação', count: filteredDeals.filter(d => d.stage === 'aprovacao').length, value: filteredDeals.filter(d => d.stage === 'aprovacao').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-aprovacao)' },
-    { key: 'fechamento', stage: 'Fechamento', count: filteredDeals.filter(d => d.stage === 'fechamento').length, value: filteredDeals.filter(d => d.stage === 'fechamento').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-fechamento)' },
+    { key: 'fechamento', stage: 'Fechamento', count: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda').length, value: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-fechamento)' },
   ]
 
-  const representatives = Array.from(new Set(MOCK_DEALS.map(d => d.representative)))
+  const representatives = Array.from(new Set([
+    ...mappedDeals.map(d => d.representative).filter(Boolean),
+    ...contacts.map(c => c.representative).filter(Boolean)
+  ]))
 
   const handleStartRecording = () => {
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
@@ -1233,7 +1313,19 @@ export default function DashboardPage() {
                       <Building size={10} className="text-[var(--lime)]" /> Principais Clientes
                     </div>
                     <div className="space-y-1">
-                      {TOP_CLIENTS.map(cli => (
+                      {(filteredDeals.length > 0
+                        ? filteredDeals
+                            .slice()
+                            .sort((a, b) => b.value - a.value)
+                            .slice(0, 5)
+                            .map((cli, idx) => ({
+                              rank: idx + 1,
+                              name: cli.title,
+                              type: cli.curve ? `Curva ${cli.curve}` : 'Curva C',
+                              value: cli.value
+                            }))
+                        : TOP_CLIENTS
+                      ).map(cli => (
                         <div key={cli.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{cli.rank}</span>
