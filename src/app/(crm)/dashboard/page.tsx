@@ -92,6 +92,7 @@ export default function DashboardPage() {
 
   const mobileFullscreenMapContainerRef = useRef<HTMLDivElement>(null)
   const mobileFullscreenMapInstanceRef = useRef<any>(null)
+  const recognitionRef = useRef<any>(null)
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -666,19 +667,50 @@ export default function DashboardPage() {
   const representatives = Array.from(new Set(MOCK_DEALS.map(d => d.representative)))
 
   const handleStartRecording = () => {
-    setIsRecording(true)
-    setAudioTranscription('')
+    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      try {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        const recognition = new SpeechRecognition()
+        recognition.continuous = true
+        recognition.interimResults = true
+        recognition.lang = 'pt-BR'
+
+        recognition.onresult = (event: any) => {
+          let currentTranscript = ''
+          for (let i = 0; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript
+          }
+          setAudioTranscription(currentTranscript)
+        }
+
+        recognition.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error)
+          setIsRecording(false)
+        }
+
+        recognition.onend = () => {
+          setIsRecording(false)
+        }
+
+        recognitionRef.current = recognition
+        recognition.start()
+        setIsRecording(true)
+      } catch (e) {
+        console.error('Speech recognition start failed:', e)
+        setIsRecording(true)
+      }
+    } else {
+      setIsRecording(true)
+    }
   }
 
   const handleStopRecording = () => {
     setIsRecording(false)
-    setIsTranscribing(true)
-    setTimeout(() => {
-      setIsTranscribing(false)
-      setAudioTranscription(
-        "Reunião presencial produtiva. O cliente analisou os novos mostruários de papel cartão triplex com verniz localizado. Gostou do acabamento Carton Pack e solicitou orçamento detalhado para lote inicial de 5.000 caixas personalizadas."
-      )
-    }, 2500)
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop()
+      } catch (e) {}
+    }
   }
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1244,24 +1276,26 @@ export default function DashboardPage() {
                     value={selectedPipelineStage}
                     onChange={(e) => setSelectedPipelineStage(e.target.value)}
                   >
-                    <option value="prospect" className="bg-[var(--charcoal)]">Prospect / Prospecção</option>
-                    <option value="potencial" className="bg-[var(--charcoal)]">Potencial / Em Negociação</option>
-                    <option value="visita" className="bg-[var(--charcoal)]">Visita Realizada / Reunião</option>
-                    <option value="briefing" className="bg-[var(--charcoal)]">Briefing / Solicitou Orçamento</option>
-                    <option value="aprovacao" className="bg-[var(--charcoal)]">Em Aprovação (Amostra / Layout)</option>
-                    <option value="fechamento" className="bg-[var(--charcoal)]">Fechamento / Venda Ganha</option>
-                    <option value="pos_venda" className="bg-[var(--charcoal)]">Pós-Vendas / Atendimento</option>
-                    <option value="perdido" className="bg-[var(--charcoal)]">Perdido / Sem Interesse</option>
+                    <option value="leads" className="bg-[var(--charcoal)]">Leads</option>
+                    <option value="prospect" className="bg-[var(--charcoal)]">Prospect</option>
+                    <option value="dinamica" className="bg-[var(--charcoal)]">Dinâmica</option>
+                    <option value="potencial" className="bg-[var(--charcoal)]">Potencial</option>
+                    <option value="visita" className="bg-[var(--charcoal)]">Visita</option>
+                    <option value="briefing" className="bg-[var(--charcoal)]">Briefing</option>
+                    <option value="aprovacao" className="bg-[var(--charcoal)]">Aprovação</option>
+                    <option value="fechamento" className="bg-[var(--charcoal)]">Fechamento</option>
+                    <option value="pos_venda" className="bg-[var(--charcoal)]">Pós-Vendas</option>
+                    <option value="perdido" className="bg-[var(--charcoal)]">Perdido</option>
                   </select>
                 </div>
 
                 <div className="flex flex-col gap-1.5 border border-[var(--line)] rounded-xl p-4 bg-black/20">
                   <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider flex items-center justify-between">
-                    <span>Relato Comercial por Voz</span>
-                    {isRecording && <span className="text-[var(--red)] animate-pulse">Gravando... {formatTimer(recordingTime)}</span>}
+                    <span>Relato da Visita (Digitado ou Por Voz)</span>
+                    {isRecording && <span className="text-[var(--red)] animate-pulse">Gravando por voz... {formatTimer(recordingTime)}</span>}
                   </label>
                   
-                  <div className="flex flex-col items-center justify-center py-4 gap-3">
+                  <div className="flex flex-col items-center justify-center py-3 gap-3">
                     {isRecording ? (
                       <div className="flex items-center gap-1 justify-center h-10 w-full">
                         {[...Array(9)].map((_, i) => (
@@ -1278,11 +1312,11 @@ export default function DashboardPage() {
                     ) : isTranscribing ? (
                       <div className="flex flex-col items-center gap-2 py-2">
                         <div className="w-6 h-6 border-2 border-[var(--lime)] border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-[10px] text-[var(--gray)] font-mono animate-pulse">Gerando inteligência por áudio...</span>
+                        <span className="text-[10px] text-[var(--gray)] font-mono animate-pulse">Processando áudio...</span>
                       </div>
                     ) : (
-                      <div className="text-[10px] text-[var(--gray2)] font-mono text-center max-w-[200px]">
-                        Toque no microfone abaixo e fale seu relato para transcrever.
+                      <div className="text-[11px] text-[var(--gray2)] font-mono text-center max-w-[280px]">
+                        Você pode digitar seu relato abaixo ou tocar no microfone para gravar por voz.
                       </div>
                     )}
 
@@ -1300,8 +1334,8 @@ export default function DashboardPage() {
                   </div>
 
                   <textarea
-                    className="input w-full min-h-[90px] text-xs font-mono bg-[var(--black)] border border-[var(--line)] rounded-xl p-3 text-white outline-none focus:border-[var(--lime)]/50"
-                    placeholder="Transcrição do áudio aparecerá aqui..."
+                    className="input w-full min-h-[100px] text-xs font-mono bg-[var(--black)] border border-[var(--line)] rounded-xl p-3 text-white outline-none focus:border-[var(--lime)]/50"
+                    placeholder="Escreva seu relato da visita aqui ou use a gravação de voz acima..."
                     value={audioTranscription}
                     onChange={(e) => setAudioTranscription(e.target.value)}
                   />
