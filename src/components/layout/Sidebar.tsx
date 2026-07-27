@@ -26,7 +26,6 @@ const navItems = [
   { href: '/pipeline',   label: 'Pipeline',     icon: KanbanSquare },
   { href: '/contacts',   label: 'Contatos',     icon: Users },
   { href: '/users',      label: 'Usuários',     icon: UserCog },
-  { href: '/briefings',  label: 'Orçamentos',   icon: FileText },
 ]
 
 export function Sidebar() {
@@ -84,7 +83,6 @@ export function Sidebar() {
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Contatos', icon: Users },
     { href: '/users', label: 'Usuários', icon: UserCog },
-    { href: '/briefings', label: 'Orçamentos', icon: FileText },
   ]
 
   const items = isRep ? repNavItems : adminNavItems

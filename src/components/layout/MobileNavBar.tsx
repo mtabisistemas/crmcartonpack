@@ -59,12 +59,10 @@ export function MobileNavBar() {
     { href: '/dashboard', label: 'Painel', icon: LayoutDashboard },
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Contatos', icon: Users },
-    { href: '/briefings', label: 'Orçamentos', icon: FileText },
-  ]
-
-  const moreItems = [
     { href: '/users', label: 'Usuários', icon: UserCog },
   ]
+
+  const moreItems: any[] = []
 
   return (
     <>
