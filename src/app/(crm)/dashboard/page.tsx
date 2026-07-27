@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { CartonPackLogo } from '@/components/CartonPackLogo'
 import { RegisterActivityModal } from '@/components/RegisterActivityModal'
+import { InstallPWAButton } from '@/components/InstallPWA'
 import {
   TrendingUp,
   Package,
@@ -845,14 +846,17 @@ export default function DashboardPage() {
             {activeTab === 'mapa' && 'Mapa de Clientes'}
             {activeTab === 'clientes' && 'Carteira de Clientes'}
           </h1>
-          {/* Theme Toggle - Mobile only */}
-          <button
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
-            className="lg:hidden p-2 rounded-xl text-[var(--gray2)] hover:text-[var(--white)] hover:bg-[var(--charcoal)] transition-all bg-transparent border border-[var(--line)] cursor-pointer"
-          >
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
+          {/* Actions */}
+          <div className="flex items-center gap-2 shrink-0">
+            <InstallPWAButton variant="mobile_header" className="lg:hidden" />
+            <button
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
+              className="lg:hidden p-2 rounded-xl text-[var(--gray2)] hover:text-[var(--white)] hover:bg-[var(--charcoal)] transition-all bg-transparent border border-[var(--line)] cursor-pointer"
+            >
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+          </div>
         </div>
 
         {/* Dynamic Tab Body */}

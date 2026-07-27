@@ -12,6 +12,7 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: 'Carton Pack CRM',
   description: 'Sistema de gestão comercial — Carton Pack',
+  manifest: '/manifest.json',
   icons: {
     icon: '/icon.png',
     shortcut: '/favicon.ico',
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" className={roboto.variable} suppressHydrationWarning>
       <head>
+        <link rel="manifest" href="/manifest.json" />
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossOrigin="" />
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossOrigin=""></script>
         <script
@@ -38,6 +40,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   var theme = saved || 'dark';
                   document.documentElement.setAttribute('data-theme', theme);
                 } catch (e) {}
+
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                      console.log('SW registration failed: ', err);
+                    });
+                  });
+                }
               })();
             `,
           }}

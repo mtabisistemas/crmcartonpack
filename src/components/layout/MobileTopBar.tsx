@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { Sun, Moon } from 'lucide-react'
 import { CartonPackLogo } from '../CartonPackLogo'
+import { InstallPWAButton } from '../InstallPWA'
 
 // Map of pathnames to page titles
 const PAGE_TITLES: Record<string, string> = {
@@ -60,14 +61,17 @@ export function MobileTopBar() {
         {title}
       </h1>
 
-      {/* Theme Toggle Icon */}
-      <button
-        onClick={toggleTheme}
-        title={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
-        className="p-2 rounded-xl text-[var(--gray2)] hover:text-[var(--white)] hover:bg-[var(--charcoal)] transition-all bg-transparent border border-[var(--line)] cursor-pointer shrink-0"
-      >
-        {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-      </button>
+      {/* Actions */}
+      <div className="flex items-center gap-2 shrink-0">
+        <InstallPWAButton variant="mobile_header" />
+        <button
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
+          className="p-2 rounded-xl text-[var(--gray2)] hover:text-[var(--white)] hover:bg-[var(--charcoal)] transition-all bg-transparent border border-[var(--line)] cursor-pointer shrink-0"
+        >
+          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
+      </div>
     </header>
   )
 }

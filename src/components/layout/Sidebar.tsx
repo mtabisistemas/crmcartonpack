@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 
 import { CartonPackLogo } from '../CartonPackLogo'
+import { InstallPWAButton } from '../InstallPWA'
 
 const navItems = [
   { href: '/dashboard',  label: 'Dashboard',   icon: LayoutDashboard },
@@ -143,6 +144,8 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="sidebar-footer">
+        <InstallPWAButton variant="sidebar" />
+
         <button
           onClick={toggleTheme}
           className="nav-item text-left border-none bg-none cursor-pointer w-full mb-1"
