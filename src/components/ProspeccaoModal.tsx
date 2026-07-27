@@ -152,6 +152,15 @@ const CITY_COORDS_MAP: Record<string, [number, number]> = {
   'gravatai': [-29.9430, -50.9934],
   'cachoeirinha-rs': [-29.9504, -51.0944],
   'cachoeirinha': [-29.9504, -51.0944],
+  'dois irmaos-rs': [-29.5802, -51.0838],
+  'dois irmaos': [-29.5802, -51.0838],
+  'ivoti': [-29.5936, -51.1606],
+  'sapiranga': [-29.6381, -51.0069],
+  'gramado': [-29.3788, -50.8741],
+  'canela': [-29.3658, -50.8094],
+  'nova hartz': [-29.5819, -50.9039],
+  'igrejinha': [-29.5744, -50.7939],
+  'tres coroas': [-29.5169, -50.7783],
   'novo hamburgo': [-29.6842, -51.1313],
   'sao leopoldo': [-29.7592, -51.1472],
   'sapucaia do sul': [-29.8197, -51.1608],
@@ -224,6 +233,18 @@ const STATE_CAPITALS_MAP: Record<string, [number, number]> = {
   'MT': [-13.0610, -55.9108], // Mato Grosso (Lucas do Rio Verde/Cuiabá)
   'GO': [-16.6869, -49.2648], // Goiás (Goiânia)
   'DF': [-15.7975, -47.8919], // Distrito Federal (Brasília)
+}
+
+function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 interface LeafletProspectMapProps {
@@ -667,9 +688,18 @@ export function ProspeccaoModal({
           if (res.ok) {
             const data = await res.json()
             if (data && data.length > 0) {
-              coordsMap[lead.cnpj] = [parseFloat(data[0].lat), parseFloat(data[0].lon)]
-              hasChanges = true
-              continue
+              const gLat = parseFloat(data[0].lat)
+              const gLon = parseFloat(data[0].lon)
+              const leadCityCenter = getFallbackCenter(lead.cidade, lead.estado)
+
+              // Trava de segurança no nível da raiz: se a rua geocodificar fora da cidade do lead (>18km do centro da cidade do lead), descarta o ponto de rua
+              if (leadCityCenter[0] !== -15.7801 && getDistanceInKm(gLat, gLon, leadCityCenter[0], leadCityCenter[1]) > 18) {
+                console.warn(`Geocodificação de rua fora da cidade para ${lead.razao_social}: descartada.`)
+              } else {
+                coordsMap[lead.cnpj] = [gLat, gLon]
+                hasChanges = true
+                continue
+              }
             }
           }
         } catch {}

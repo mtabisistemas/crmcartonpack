@@ -2114,7 +2114,7 @@ Para evitar duplicidade, utilize o cadastro já existente.`)
               <thead>
                 <tr className="border-b border-[var(--line)] bg-[var(--charcoal)] font-mono text-[10px] text-[var(--gray)] uppercase tracking-wider">
                   <th className="p-4 pl-6">Cliente / CNPJ</th>
-                  <th className="p-4">Curva</th>
+                  <th className="p-4 whitespace-nowrap">Curva</th>
                   <th className="p-4">Cidade</th>
                   <th className="p-4">UF</th>
                   <th className="p-4">Status</th>
@@ -2146,12 +2146,6 @@ Para evitar duplicidade, utilize o cadastro já existente.`)
                                   Inativo
                                 </span>
                               )}
-                              {contact.status === 'prospeccao' && (
-                                <span className="font-mono text-[10px] text-[var(--yellow)] flex items-center gap-1.5 font-normal">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-pulse" />
-                                  Prospecção
-                                </span>
-                              )}
                             </div>
                             <div className="text-xs text-[var(--gray)] font-mono mt-0.5">{contact.cnpj}</div>
                           </div>
@@ -2159,9 +2153,9 @@ Para evitar duplicidade, utilize o cadastro já existente.`)
                       </td>
 
                       {/* Curva */}
-                      <td className="p-4">
+                      <td className="p-4 whitespace-nowrap">
                         <span 
-                          className="font-mono text-xs font-black px-2.5 py-1 rounded-md"
+                          className="font-mono text-xs font-black px-2.5 py-1 rounded-md whitespace-nowrap inline-block shrink-0"
                           style={{
                             background: contact.curve === 'A' ? 'rgba(180,217,50,0.12)' : contact.curve === 'B' ? 'rgba(240,196,25,0.1)' : 'rgba(255,255,255,0.05)',
                             color: contact.curve === 'A' ? 'var(--lime)' : contact.curve === 'B' ? 'var(--yellow)' : 'var(--gray)',
