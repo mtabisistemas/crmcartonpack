@@ -60,10 +60,15 @@ function DealCard({ deal, overlay = false, onCardClick }: { deal: Deal; overlay?
       {/* Contact */}
       {deal.contact && (
         <div className="deal-contact">
-          <div className="deal-contact-name">
-            {deal.contact.name}
-          </div>
-          {deal.contact.company && (
+          {deal.contact.name && 
+           deal.contact.name.trim().toLowerCase() !== deal.title.trim().toLowerCase() && (
+            <div className="deal-contact-name">
+              {deal.contact.name}
+            </div>
+          )}
+          {deal.contact.company && 
+           deal.contact.company.trim().toLowerCase() !== deal.title.trim().toLowerCase() && 
+           deal.contact.company.trim().toLowerCase() !== (deal.contact.name || '').trim().toLowerCase() && (
             <div className="deal-contact-company">
               {deal.contact.company}
             </div>

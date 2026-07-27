@@ -50,6 +50,8 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const [margin, setMargin] = useState(35)   // %
   const [toolingCost, setToolingCost] = useState(1200) // cliché + faca setup cost
 
+  const [representative, setRepresentative] = useState('')
+
   // Load deal details
   useEffect(() => {
     if (deal) {
@@ -58,16 +60,40 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       setEstimatedValue(deal.final_value ?? deal.estimated_value)
       setStage(deal.stage)
       setContactName(deal.contact?.name ?? '')
-      setContactPhone(deal.contact?.phone ?? '')
-      setContactEmail(deal.contact?.email ?? '')
-      setContactCompany(deal.contact?.company ?? '')
+      setContactCompany(deal.contact?.company ?? deal.title ?? '')
       setCurve(deal.contact?.curve ?? 'C')
 
-      // Mock initial activities
-      setActivities([
-        { id: '1', type: 'nota', content: 'Lead importador gerado no sistema.', timestamp: '15/07/2026 14:32' },
-        { id: '2', type: 'whatsapp', content: 'Primeiro contato realizado. Cliente demonstrou interesse em embalagens acopladas microonduladas.', timestamp: '16/07/2026 10:15' },
-      ])
+      let phone = deal.contact?.phone ?? ''
+      let email = deal.contact?.email ?? ''
+      let rep = deal.assigned_to ?? (deal as any).assignedTo ?? (deal as any).assignedToName ?? (deal as any).representative ?? ''
+
+      // Auto-populate Phone, Email, and Representative from saved contacts database
+      const searchCompany = (deal.contact?.company || deal.title || '').trim().toLowerCase()
+      const searchName = (deal.contact?.name || '').trim().toLowerCase()
+
+      try {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('crm_contacts') : null
+        if (raw) {
+          const contacts = JSON.parse(raw)
+          const match = contacts.find((c: any) => {
+            const cComp = (c.company || c.name || '').trim().toLowerCase()
+            const cName = (c.name || '').trim().toLowerCase()
+            return (searchCompany && cComp === searchCompany) || (searchName && cName === searchName)
+          })
+          if (match) {
+            if (match.phone && !phone) phone = match.phone
+            if (match.email && !email) email = match.email
+            if (match.representative && !rep) rep = match.representative
+          }
+        }
+      } catch (e) {}
+
+      setContactPhone(phone)
+      setContactEmail(email)
+      setRepresentative(rep)
+
+      // Activities list (empty by default for real user tests)
+      setActivities((deal as any).activities || [])
     } else {
       setIsOpen(false)
     }
@@ -111,6 +137,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       title,
       estimated_value: estimatedValue,
       stage,
+      assigned_to: representative,
       contact: {
         ...deal.contact,
         id: deal.contact?.id ?? 'c-temp',
@@ -378,6 +405,21 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     />
                   </div>
                 </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="label">Representante / Vendedor</label>
+                  <div className="relative flex items-center">
+                    <Users size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
+                    <input 
+                      type="text" 
+                      className="input w-full !pl-9" 
+                      placeholder="Ex: Representante Responsável"
+                      value={representative} 
+                      onChange={(e) => setRepresentative(e.target.value)}
+                      onBlur={handleSaveGeneral}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -422,26 +464,32 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
               </form>
 
               {/* Timeline list */}
-              <div className="relative pl-6 flex flex-col gap-6 border-l border-[var(--line)] ml-3 mt-2">
-                {activities.map((act) => (
-                  <div key={act.id} className="relative">
-                    {/* Circle icon */}
-                    <div className="absolute -left-[33px] top-0 w-[22px] h-[22px] rounded-full bg-[var(--card)] border border-[var(--line)] flex items-center justify-center">
-                      {getActivityIcon(act.type)}
-                    </div>
-                    
-                    {/* Time */}
-                    <div className="font-mono text-[9px] text-[var(--gray2)] mb-1">
-                      {act.timestamp}
-                    </div>
+              {activities.length === 0 ? (
+                <div className="card p-8 text-center text-xs text-[var(--gray2)] font-mono border-dashed">
+                  Nenhum histórico registrado nesta oportunidade. Utilize o formulário acima para lançar um registro ou anotação.
+                </div>
+              ) : (
+                <div className="relative pl-6 flex flex-col gap-6 border-l border-[var(--line)] ml-3 mt-2">
+                  {activities.map((act) => (
+                    <div key={act.id} className="relative">
+                      {/* Circle icon */}
+                      <div className="absolute -left-[33px] top-0 w-[22px] h-[22px] rounded-full bg-[var(--card)] border border-[var(--line)] flex items-center justify-center">
+                        {getActivityIcon(act.type)}
+                      </div>
+                      
+                      {/* Time */}
+                      <div className="font-mono text-[9px] text-[var(--gray2)] mb-1">
+                        {act.timestamp}
+                      </div>
 
-                    {/* Content */}
-                    <div className="text-xs text-[var(--white)] bg-[var(--card)] border border-[var(--line)] rounded-lg p-3 leading-relaxed">
-                      {act.content}
+                      {/* Content */}
+                      <div className="text-xs text-[var(--white)] bg-[var(--card)] border border-[var(--line)] rounded-lg p-3 leading-relaxed">
+                        {act.content}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
