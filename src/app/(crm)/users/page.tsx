@@ -685,7 +685,7 @@ export default function UsersPage() {
             <div className="bg-black/40 border border-[var(--line)] rounded-xl p-4 font-mono text-[11px] text-[var(--white)] whitespace-pre-wrap leading-relaxed select-all">
 {`Olá, ${createdUserCredentials.name}! Seu acesso ao CRM Carton Pack está liberado.
 
-Link de Acesso: https://crm.cartonpack.com
+Link de Acesso: https://crmcartonpack.vercel.app
 ${createdUserCredentials.type === 'cartonpack' ? `Login (E-mail Corporativo): ${createdUserCredentials.usernameOrEmail}` : `Login (Nome de Usuário): ${createdUserCredentials.usernameOrEmail}`}
 Senha Temporária: ${createdUserCredentials.tempPassword}
 
@@ -697,7 +697,7 @@ ${createdUserCredentials.type === 'cartonpack'
             <button
               type="button"
               onClick={() => {
-                const text = `Olá, ${createdUserCredentials.name}! Seu acesso ao CRM Carton Pack está liberado.\n\nLink de Acesso: https://crm.cartonpack.com\n${createdUserCredentials.type === 'cartonpack' ? `Login (E-mail): ${createdUserCredentials.usernameOrEmail}` : `Usuário: ${createdUserCredentials.usernameOrEmail}`}\nSenha Temporária: ${createdUserCredentials.tempPassword}\n\n${createdUserCredentials.type === 'cartonpack' ? 'Obs: No primeiro acesso você deverá alterar a senha temporária e confirmar o link de ativação enviado para o seu e-mail.' : 'Obs: No primeiro acesso você deverá alterar a senha temporária para ativar sua conta.'}`
+                const text = `Olá, ${createdUserCredentials.name}! Seu acesso ao CRM Carton Pack está liberado.\n\nLink de Acesso: https://crmcartonpack.vercel.app\n${createdUserCredentials.type === 'cartonpack' ? `Login (E-mail): ${createdUserCredentials.usernameOrEmail}` : `Usuário: ${createdUserCredentials.usernameOrEmail}`}\nSenha Temporária: ${createdUserCredentials.tempPassword}\n\n${createdUserCredentials.type === 'cartonpack' ? 'Obs: No primeiro acesso você deverá alterar a senha temporária e confirmar o link de ativação enviado para o seu e-mail.' : 'Obs: No primeiro acesso você deverá alterar a senha temporária para ativar sua conta.'}`
                 navigator.clipboard.writeText(text)
                 setToastMessage('Mensagem de acesso copiada com sucesso!')
                 setTimeout(() => setToastMessage(''), 3000)
