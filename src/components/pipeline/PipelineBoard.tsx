@@ -354,11 +354,13 @@ function NewDealModal({
         {/* Cliente / Empresa — Busca Autocomplete dos Contatos */}
         <div className="flex flex-col gap-1.5 relative" ref={dropdownRef}>
           <label className="label">Nome do Cliente / Empresa *</label>
-          <div className="relative">
+          <div className="relative flex items-center">
+            <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--gray2)] z-10 pointer-events-none" />
             <input 
               type="text" 
               required
-              className="input font-bold pl-9 w-full" 
+              style={{ paddingLeft: '2.5rem' }}
+              className="input font-bold w-full" 
               placeholder="Digite para buscar um cliente ou criar novo..."
               value={clientName} 
               onChange={(e) => {
@@ -367,7 +369,6 @@ function NewDealModal({
               }}
               onFocus={() => setShowDropdown(true)}
             />
-            <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--gray)]" />
           </div>
 
           {/* Autocomplete Dropdown List */}
@@ -471,7 +472,7 @@ export function PipelineBoard() {
   }, [])
 
   const updateAndSaveDeals = (updater: Deal[] | ((prev: Deal[]) => Deal[])) => {
-    updateAndSaveDeals(prev => {
+    setDeals(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater
       savePipelineDeals(next)
       return next
