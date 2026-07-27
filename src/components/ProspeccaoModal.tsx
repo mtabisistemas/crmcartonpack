@@ -236,9 +236,10 @@ interface LeafletProspectMapProps {
   isMapExpanded?: boolean
   onToggleExpand?: () => void
   geocodedCenter?: [number, number] | null
+  leadCoordsMap?: Record<string, [number, number]>
 }
 
-function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetails, cidade, estado, isMapExpanded, onToggleExpand, geocodedCenter }: LeafletProspectMapProps) {
+function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetails, cidade, estado, isMapExpanded, onToggleExpand, geocodedCenter, leadCoordsMap }: LeafletProspectMapProps) {
   const mapRef = React.useRef<HTMLDivElement>(null)
   const mapInstanceRef = React.useRef<any>(null)
   const markersRef = React.useRef<Record<string, any>>({})
@@ -307,12 +308,14 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     const bounds = L.latLngBounds([])
 
     leads.forEach((lead, idx) => {
-      // Look up specific coordinates for THIS lead's city
+      // 1. Prefer exact address geocoordinates if found via Nominatim
+      const exactCoords = leadCoordsMap?.[lead.cnpj]
+      // 2. Fallback to city dictionary lookup
       const leadCityCoords = getFallbackCenter(lead.cidade, lead.estado)
-      const baseCenter = (leadCityCoords[0] !== -15.7801) ? leadCityCoords : (geocodedCenter || center)
+      const baseCenter = exactCoords || ((leadCityCoords[0] !== -15.7801) ? leadCityCoords : (geocodedCenter || center))
 
-      const latOffset = (Math.sin(idx * 2.3 + (lead.cnpj || '').length) * 0.007)
-      const lngOffset = (Math.cos(idx * 1.7 + (lead.cnpj || '').length) * 0.010)
+      const latOffset = exactCoords ? 0 : (Math.sin(idx * 2.3 + (lead.cnpj || '').length) * 0.004)
+      const lngOffset = exactCoords ? 0 : (Math.cos(idx * 1.7 + (lead.cnpj || '').length) * 0.006)
       const lat = baseCenter[0] + latOffset
       const lng = baseCenter[1] + lngOffset
 
@@ -384,7 +387,7 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     if (leads.length > 0) {
       map.fitBounds(bounds.pad(0.25))
     }
-  }, [leads, selectedLeadCnpj, geocodedCenter])
+  }, [leads, selectedLeadCnpj, geocodedCenter, leadCoordsMap])
 
   React.useEffect(() => {
     if (selectedLeadCnpj && markersRef.current[selectedLeadCnpj] && mapInstanceRef.current) {
@@ -474,6 +477,7 @@ export function ProspeccaoModal({
   const [regiaoTexto, setRegiaoTexto] = useState('')
   const [searchedRegiao, setSearchedRegiao] = useState('')
   const [showRegiaoDropdown, setShowRegiaoDropdown] = useState(false)
+  const [leadCoordsMap, setLeadCoordsMap] = useState<Record<string, [number, number]>>({})
   const [regiaoSuggestions, setRegiaoSuggestions] = useState<RegiaoOption[]>(REGIOES_SUGERIDAS)
   const [porte, setPorte] = useState('todos')
   const [viewMode, setViewMode] = useState<'split' | 'list'>('split')
@@ -640,6 +644,63 @@ export function ProspeccaoModal({
       setLoading(false)
     }
   }, [setorTexto, regiaoTexto, porte])
+
+  // ── Geocodificação em tempo real por endereço de cada empresa via OpenStreetMap / Nominatim ──
+  useEffect(() => {
+    if (!leads.length) return
+    let isMounted = true
+
+    async function geocodeLeads() {
+      const coordsMap: Record<string, [number, number]> = { ...leadCoordsMap }
+      let hasChanges = false
+
+      for (let i = 0; i < leads.length; i++) {
+        const lead = leads[i]
+        if (coordsMap[lead.cnpj]) continue
+
+        // 1. Endereço completo (Rua, Cidade, UF)
+        const fullAddr = [lead.logradouro, lead.cidade, lead.estado, 'Brasil'].filter(Boolean).join(', ')
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(fullAddr)}&format=json&limit=1&countrycodes=br`, {
+            headers: { 'User-Agent': 'CartonPackCRM/1.0', 'Accept-Language': 'pt-BR' }
+          })
+          if (res.ok) {
+            const data = await res.json()
+            if (data && data.length > 0) {
+              coordsMap[lead.cnpj] = [parseFloat(data[0].lat), parseFloat(data[0].lon)]
+              hasChanges = true
+              continue
+            }
+          }
+        } catch {}
+
+        // 2. Fallback Cidade + UF
+        const cityAddr = [lead.cidade, lead.estado, 'Brasil'].filter(Boolean).join(', ')
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityAddr)}&format=json&limit=1&countrycodes=br`, {
+            headers: { 'User-Agent': 'CartonPackCRM/1.0', 'Accept-Language': 'pt-BR' }
+          })
+          if (res.ok) {
+            const data = await res.json()
+            if (data && data.length > 0) {
+              coordsMap[lead.cnpj] = [
+                parseFloat(data[0].lat) + Math.sin(i * 2.3) * 0.003,
+                parseFloat(data[0].lon) + Math.cos(i * 1.7) * 0.003
+              ]
+              hasChanges = true
+            }
+          }
+        } catch {}
+      }
+
+      if (isMounted && hasChanges) {
+        setLeadCoordsMap(coordsMap)
+      }
+    }
+
+    geocodeLeads()
+    return () => { isMounted = false }
+  }, [leads])
 
   const enrichLeadInBackground = useCallback(async (cnpj: string, targetUf?: string, targetCity?: string, targetCnae?: string) => {
     setEnrichingIds(prev => new Set(prev).add(cnpj))
@@ -1235,6 +1296,7 @@ export function ProspeccaoModal({
                     isMapExpanded={isMapExpanded}
                     onToggleExpand={() => setIsMapExpanded(v => !v)}
                     geocodedCenter={geocodedCenter}
+                    leadCoordsMap={leadCoordsMap}
                   />
                 </div>
               </div>
@@ -1557,34 +1619,39 @@ function LeadDetailModal({ lead, usuariosDisponiveis, onClose, onLeadsImported }
         window.dispatchEvent(new Event('storage'))
       }
 
-      // Salva no Supabase se ativo
+      // Salva na tabela 'contacts' do Supabase (mesmo schema da Carteira/Lista)
       try {
-        const novoCliente = await dbService.clientes.save({
-          razao_social: lead.razao_social,
-          cnpj: lead.cnpj,
-          cidade: lead.cidade,
-          estado: lead.estado,
-          segmento: lead.setor,
-          representante_id: targetUser?.papel === 'representante' ? targetUser.id : null,
-          vendedor_interno_id: targetUser?.papel === 'vendedor_interno' ? targetUser.id : null,
-          intervalo_medio_compras: null,
-          classificacao_potencial: (lead.porte as string) === 'Grande' ? 'A' : (lead.porte as string) === 'Média' ? 'B' : 'C',
-          volume_mensal: 0,
-          principais_produtos: [lead.setor],
-          exigencias_qualidade: `Prospecção B2B Real - CNAE: ${lead.cnae_codigo}`,
-        })
-        await dbService.orcamentos.save({
-          cliente_id: novoCliente.id,
-          responsavel_id: encaminharVendedor,
-          etapa_atual: 'solicitacao_briefing',
-          probabilidade_fechamento: 3,
-          valor_aprovado: null,
-          data_fechamento: null,
-          motivo_perda: null,
-          justificativa_livre: `Lead prospectado (${lead.setor} - ${lead.cidade}/${lead.estado}) encaminhado para ${vendedor?.nome || 'vendedor'}.`,
-        })
+        const { supabase } = await import('@/services/supabase-client')
+        if (supabase) {
+          const { error } = await supabase.from('contacts').insert([{
+            name: newContactObj.name,
+            company: newContactObj.company,
+            role: newContactObj.tradeName || newContactObj.company,
+            phone: newContactObj.phone,
+            email: newContactObj.email,
+            city: newContactObj.city,
+            state: newContactObj.state,
+            status: 'prospeccao',
+            curve: newContactObj.curve,
+            representative: targetLabel,
+            cnpj: newContactObj.cnpj,
+            address: newContactObj.address,
+            bairro: newContactObj.bairro,
+            cep: newContactObj.cep,
+            main_cnae: newContactObj.mainCnae,
+            registration_status: 'ATIVA',
+            tax_regime: (lead.porte as string) === 'MEI' ? 'MEI' : 'Simples Nacional',
+            special_situation: 'Nenhuma',
+            side_activities: JSON.stringify([]),
+          }])
+          if (error) {
+            console.warn('Aviso ao salvar no Supabase (ficha):', error.message)
+          } else {
+            console.log('Contato salvo com sucesso no Supabase (ficha):', newContactObj.company)
+          }
+        }
       } catch (e) {
-        console.warn('Erro Supabase:', e)
+        console.warn('Erro Supabase (ficha):', e)
       }
 
       setEncaminhadoOk(true)
