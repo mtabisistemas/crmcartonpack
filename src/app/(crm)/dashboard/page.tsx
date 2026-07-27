@@ -906,7 +906,14 @@ export default function DashboardPage() {
       }
     })
 
-    return Object.values(repMap).map((r, idx) => ({ id: `rep-${idx}`, ...r }))
+    // Exibe no indicador da equipe apenas os representantes/vendedores comerciais ou usuários com vendas fechadas
+    const commercialTeam = Object.values(repMap).filter(r => {
+      const isCommercial = r.role !== 'Administrador' && r.role !== 'admin'
+      const hasSales = r.closedCount > 0 || r.sales > 0
+      return isCommercial || hasSales
+    })
+
+    return commercialTeam.map((r, idx) => ({ id: `rep-${idx}`, ...r }))
   }, [pipelineDeals])
 
   // 3. Dynamic Top Clients (Principais Clientes — Somente Fechamentos Reais)
