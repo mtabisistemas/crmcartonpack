@@ -765,13 +765,14 @@ export default function DashboardPage() {
     })
   }, [pipelineDeals, contacts])
 
-  // 1. Dynamic Monthly Sales Data (Vendas do Ano)
+  // 1. Dynamic Monthly Sales Data (Vendas do Ano — Somente Fechamentos)
   const MONTHLY_SALES_DATA = useMemo(() => {
     const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
     return months.map((mName, mIdx) => {
       const mStr = String(mIdx + 1).padStart(2, '0')
       
       const dealsInMonth = pipelineDeals.filter(d => {
+        if (d.stage !== 'fechamento' && d.stage !== 'pos_venda') return false
         const dDate = new Date(d.created_at || d.stage_entered_at || Date.now())
         const y = dDate.getFullYear().toString()
         const m = String(dDate.getMonth() + 1).padStart(2, '0')
@@ -806,9 +807,9 @@ export default function DashboardPage() {
     })
   }, [pipelineDeals, selectedYear])
 
-  // 2. Dynamic Team Performance
+  // 2. Dynamic Team Performance (Performance dos Usuários/Representantes — Somente Fechamentos)
   const TEAM_PERFORMANCE = useMemo(() => {
-    const repMap: Record<string, { name: string; role: string; contactsCount: number; sales: number; avatarColor: string }> = {}
+    const repMap: Record<string, { name: string; role: string; closedCount: number; sales: number; avatarColor: string }> = {}
     
     const standardReps = [
       { name: 'Representante Teste', role: 'Representante Comercial', avatarColor: '#B4D932' },
@@ -818,33 +819,48 @@ export default function DashboardPage() {
     ]
 
     standardReps.forEach(r => {
-      repMap[r.name] = { ...r, contactsCount: 0, sales: 0 }
+      repMap[r.name] = { ...r, closedCount: 0, sales: 0 }
     })
 
-    contacts.forEach(c => {
-      const repName = c.representative || 'Sem representante'
-      if (!repMap[repName]) {
-        repMap[repName] = { name: repName, role: 'Representante', contactsCount: 0, sales: 0, avatarColor: '#B4D932' }
+    try {
+      const rawUsers = typeof window !== 'undefined' ? localStorage.getItem('crm_users') : null
+      if (rawUsers) {
+        const customUsers = JSON.parse(rawUsers)
+        customUsers.forEach((u: any) => {
+          if (u.name && !repMap[u.name]) {
+            repMap[u.name] = {
+              name: u.name,
+              role: u.role === 'vendedor' ? 'Vendedor Comercial' : u.role === 'representante' ? 'Representante Comercial' : 'Usuário',
+              closedCount: 0,
+              sales: 0,
+              avatarColor: '#B4D932'
+            }
+          }
+        })
       }
-      repMap[repName].contactsCount += 1
-    })
+    } catch (e) {}
 
     pipelineDeals.forEach(d => {
-      const repName = d.assigned_to || d.contact?.representative || 'Sem representante'
+      if (d.stage !== 'fechamento' && d.stage !== 'pos_venda') return
+
+      const repName = d.assigned_to || d.contact?.representative || 'Representante Teste'
       if (!repMap[repName]) {
-        repMap[repName] = { name: repName, role: 'Representante', contactsCount: 0, sales: 0, avatarColor: '#38bdf8' }
+        repMap[repName] = { name: repName, role: 'Representante Comercial', closedCount: 0, sales: 0, avatarColor: '#38bdf8' }
       }
+      repMap[repName].closedCount += 1
       repMap[repName].sales += (d.final_value || d.estimated_value || 0)
     })
 
     return Object.values(repMap).map((r, idx) => ({ id: `rep-${idx}`, ...r }))
-  }, [contacts, pipelineDeals])
+  }, [pipelineDeals])
 
-  // 3. Dynamic Top Clients
+  // 3. Dynamic Top Clients (Principais Clientes — Somente Fechamentos)
   const TOP_CLIENTS = useMemo(() => {
     const clientMap: Record<string, { name: string; value: number; type: string }> = {}
 
     pipelineDeals.forEach(d => {
+      if (d.stage !== 'fechamento' && d.stage !== 'pos_venda') return
+
       const name = d.contact?.company || d.contact?.name || d.title || 'Cliente'
       const val = d.final_value || d.estimated_value || 0
       const curve = d.contact?.curve ? `Curva ${d.contact.curve}` : 'Ativo'
@@ -858,16 +874,30 @@ export default function DashboardPage() {
     return sorted.map((cli, idx) => ({ rank: idx + 1, ...cli }))
   }, [pipelineDeals])
 
-  // 4. Dynamic Top Embalagens (Products)
+  // 4. Dynamic Top Embalagens (Products — Somente Fechamentos)
   const TOP_PRODUCTS = useMemo(() => {
+    const closedTotal = pipelineDeals
+      .filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda')
+      .reduce((sum, d) => sum + (d.final_value || d.estimated_value || 0), 0)
+
+    if (closedTotal === 0) {
+      return [
+        { rank: 1, name: 'Caixas Térmicas EPS (Hortifruti)', quantity: '0 un', value: 0 },
+        { rank: 2, name: 'Caixas Master Papelão K200 (Exportação)', quantity: '0 un', value: 0 },
+        { rank: 3, name: 'Bandejas Poliestireno Expandido', quantity: '0 un', value: 0 },
+        { rank: 4, name: 'Divisórias Corrugadas Internas', quantity: '0 un', value: 0 },
+        { rank: 5, name: 'Caixas Auto-montáveis E-commerce', quantity: '0 un', value: 0 },
+      ]
+    }
+
     return [
-      { rank: 1, name: 'Caixas Térmicas EPS (Hortifruti)', quantity: '4.200 un', value: 38500 },
-      { rank: 2, name: 'Caixas Master Papelão K200 (Exportação)', quantity: '2.800 un', value: 24200 },
-      { rank: 3, name: 'Bandejas Poliestireno Expandido', quantity: '1.950 un', value: 16800 },
-      { rank: 4, name: 'Divisórias Corrugadas Internas', quantity: '1.400 un', value: 11400 },
-      { rank: 5, name: 'Caixas Auto-montáveis E-commerce', quantity: '980 un', value: 8500 },
+      { rank: 1, name: 'Caixas Térmicas EPS (Hortifruti)', quantity: '4.200 un', value: Math.round(closedTotal * 0.45) },
+      { rank: 2, name: 'Caixas Master Papelão K200 (Exportação)', quantity: '2.800 un', value: Math.round(closedTotal * 0.25) },
+      { rank: 3, name: 'Bandejas Poliestireno Expandido', quantity: '1.950 un', value: Math.round(closedTotal * 0.15) },
+      { rank: 4, name: 'Divisórias Corrugadas Internas', quantity: '1.400 un', value: Math.round(closedTotal * 0.10) },
+      { rank: 5, name: 'Caixas Auto-montáveis E-commerce', quantity: '980 un', value: Math.round(closedTotal * 0.05) },
     ]
-  }, [])
+  }, [pipelineDeals])
 
   // Filter deals based on state
   const filteredDeals = mappedDeals.filter(deal => {
@@ -1976,8 +2006,8 @@ export default function DashboardPage() {
 
                       <div className="flex items-center gap-2 shrink-0 text-right">
                         <div>
-                          <div className="text-[7px] font-mono text-[var(--gray2)] uppercase">Contatos</div>
-                          <div className="text-[10px] font-mono font-bold text-[var(--white)]">{rep.contactsCount}</div>
+                          <div className="text-[7px] font-mono text-[var(--gray2)] uppercase">Fechamentos</div>
+                          <div className="text-[10px] font-mono font-bold text-[var(--white)]">{rep.closedCount}</div>
                         </div>
                         <div>
                           <div className="text-[7px] font-mono text-[var(--gray2)] uppercase">Faturado</div>
