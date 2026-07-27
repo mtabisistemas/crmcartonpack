@@ -20,7 +20,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useDroppable } from '@dnd-kit/core'
 import { Deal, DealStage, STAGE_CONFIG, FOLLOW_UP_LOST_REASONS } from '@/types'
 import { formatCurrency, daysSince } from '@/lib/utils'
-import { Plus, Clock, Trophy, XCircle, Search, Filter } from 'lucide-react'
+import { Plus, Clock, Trophy, XCircle, Search, Filter, Building2 } from 'lucide-react'
 import { DealDrawer } from './DealDrawer'
 import { getPipelineDeals, savePipelineDeals } from '@/services/pipeline-service'
 
