@@ -46,12 +46,14 @@ export async function GET() {
   }
 }
 
+const isUUID = (str: string) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
+
 export async function POST(req: Request) {
   try {
     const user = await req.json()
     
-    let authUserId = user.id
-    if (!authUserId || !authUserId.includes('-')) {
+    let authUserId = isUUID(user.id) ? user.id : null
+    if (!authUserId) {
       const authRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
         method: 'POST',
         headers: {
@@ -74,6 +76,18 @@ export async function POST(req: Request) {
       const authData = await authRes.json()
       if (authData?.id) {
         authUserId = authData.id
+      } else {
+        const listRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+          headers: {
+            'apikey': serviceRoleKey,
+            'Authorization': `Bearer ${serviceRoleKey}`
+          }
+        })
+        const listData = await listRes.json()
+        const existing = listData?.users?.find((u: any) => u.email?.toLowerCase() === user.email?.toLowerCase())
+        if (existing?.id) {
+          authUserId = existing.id
+        }
       }
     }
 
@@ -85,10 +99,11 @@ export async function POST(req: Request) {
         email: user.email,
         role: user.role || 'representante',
         phone: user.phone || null,
-        active: user.status !== 'inativo'
+        active: user.status !== 'inativo',
+        updated_at: new Date().toISOString()
       }
 
-      await fetch(`${supabaseUrl}/rest/v1/profiles`, {
+      const pRes = await fetch(`${supabaseUrl}/rest/v1/profiles`, {
         method: 'POST',
         headers: {
           'apikey': serviceRoleKey,
@@ -98,9 +113,11 @@ export async function POST(req: Request) {
         },
         body: JSON.stringify([profilePayload])
       })
+      const pData = await pRes.json()
+      return NextResponse.json({ success: true, user: { ...user, id: authUserId }, profile: pData })
     }
 
-    return NextResponse.json({ success: true, user })
+    return NextResponse.json({ success: false, error: 'Não foi possível gerar ID do usuário no Supabase' }, { status: 400 })
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 })
   }
