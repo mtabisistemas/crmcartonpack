@@ -350,7 +350,13 @@ export default function DashboardPage() {
     }).addTo(map)
 
     // Add Markers for all active deals in negotiation and closing stages
-    const activeDealsForMap = mappedDeals.filter(d => d.stage !== 'perdido')
+    const activeDealsForMap = mappedDeals.filter(d => {
+      if (d.stage === 'perdido') return false
+      if (!selectedRep || selectedRep === 'all') return true
+      const repNorm = selectedRep.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+      const dRepNorm = (d.representative || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+      return dRepNorm === repNorm || dRepNorm.includes(repNorm) || repNorm.includes(dRepNorm)
+    })
     const coordsCount: Record<string, number> = {}
     const bounds: [number, number][] = []
 
@@ -603,9 +609,10 @@ export default function DashboardPage() {
     }
   }, [isMapFullscreen, leafletReady, pipelineDeals])
 
-  // Initialize Leaflet Map for Mobile Representative View (activeTab === 'mapa')
+  // Initialize Leaflet Map for Mobile Representative / Vendedor View (activeTab === 'mapa')
   useEffect(() => {
-    if (!leafletReady || currentUser?.role !== 'representante' || activeTab !== 'mapa') return
+    const isRepOrVend = currentUser?.role === 'representante' || currentUser?.role === 'vendedor'
+    if (!leafletReady || !isRepOrVend || activeTab !== 'mapa') return
     if (!mobileMapContainerRef.current) return
 
     const L_Global = (window as any).L
@@ -644,7 +651,13 @@ export default function DashboardPage() {
     }).addTo(map)
 
     // Add Markers for all deals assigned to this representative
-    const repDeals = mappedDeals.filter(d => (!currentUser || d.representative === currentUser.name) && d.stage !== 'perdido')
+    const userNorm = currentUser?.name ? currentUser.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ''
+    const repDeals = mappedDeals.filter(d => {
+      if (d.stage === 'perdido') return false
+      if (!userNorm) return true
+      const dNorm = (d.representative || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+      return dNorm === userNorm || dNorm.includes(userNorm) || userNorm.includes(dNorm)
+    })
     const coordsCount: Record<string, number> = {}
     const bounds: [number, number][] = []
 
@@ -892,13 +905,24 @@ export default function DashboardPage() {
     })
   }, [pipelineDeals, contacts])
 
-  // 1. Dynamic Monthly Sales Data (Vendas do Ano — Somente Fechamentos)
+  // Deals estritamente filtrados pelo Representante / Vendedor selecionado no topo
+  const repFilteredDeals = useMemo(() => {
+    if (!selectedRep || selectedRep === 'all') return pipelineDeals
+    const repNorm = selectedRep.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+    return pipelineDeals.filter(d => {
+      const assigned = d.assigned_to || d.contact?.representative || ''
+      const assignedNorm = assigned.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+      return assignedNorm === repNorm || assignedNorm.includes(repNorm) || repNorm.includes(assignedNorm)
+    })
+  }, [pipelineDeals, selectedRep])
+
+  // 1. Dynamic Monthly Sales Data (Vendas do Ano — Somente Fechamentos Reais do Rep Selecionado)
   const MONTHLY_SALES_DATA = useMemo(() => {
     const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
     return months.map((mName, mIdx) => {
       const mStr = String(mIdx + 1).padStart(2, '0')
       
-      const dealsInMonth = pipelineDeals.filter(d => {
+      const dealsInMonth = repFilteredDeals.filter(d => {
         if (d.stage !== 'fechamento' && d.stage !== 'pos_venda') return false
         const dDate = new Date(d.created_at || d.stage_entered_at || Date.now())
         const y = dDate.getFullYear().toString()
@@ -932,7 +956,7 @@ export default function DashboardPage() {
         daily
       }
     })
-  }, [pipelineDeals, selectedYear])
+  }, [repFilteredDeals, selectedYear])
 
   // 2. Dynamic Team Performance (Performance dos Usuários do Sistema — Somente Fechamentos Reais)
   const TEAM_PERFORMANCE = useMemo(() => {
@@ -1043,11 +1067,11 @@ export default function DashboardPage() {
     return commercialTeam.map((r, idx) => ({ id: `rep-${idx}`, ...r }))
   }, [pipelineDeals])
 
-  // 3. Dynamic Top Clients (Principais Clientes — Somente Fechamentos Reais)
+  // 3. Dynamic Top Clients (Principais Clientes do Rep Selecionado — Somente Fechamentos Reais)
   const TOP_CLIENTS = useMemo(() => {
     const clientMap: Record<string, { name: string; value: number; type: string }> = {}
 
-    pipelineDeals.forEach(d => {
+    repFilteredDeals.forEach(d => {
       if (d.stage !== 'fechamento' && d.stage !== 'pos_venda') return
 
       const name = d.contact?.company || d.contact?.name || d.title || 'Cliente'
@@ -1061,11 +1085,11 @@ export default function DashboardPage() {
 
     const sorted = Object.values(clientMap).sort((a, b) => b.value - a.value).slice(0, 5)
     return sorted.map((cli, idx) => ({ rank: idx + 1, ...cli }))
-  }, [pipelineDeals])
+  }, [repFilteredDeals])
 
-  // 4. Dynamic Top Embalagens (Products — Somente Fechamentos Reais)
+  // 4. Dynamic Top Embalagens (Products do Rep Selecionado — Somente Fechamentos Reais)
   const TOP_PRODUCTS = useMemo(() => {
-    const closedDeals = pipelineDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda')
+    const closedDeals = repFilteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda')
 
     if (closedDeals.length === 0) {
       return []
@@ -1106,11 +1130,13 @@ export default function DashboardPage() {
       quantity: `${prod.quantityCount.toLocaleString('pt-BR')} un`,
       value: prod.value
     }))
-  }, [pipelineDeals])
+  }, [repFilteredDeals])
 
   // Filter deals based on state
   const filteredDeals = mappedDeals.filter(deal => {
-    const matchesRep = selectedRep === 'all' || deal.representative === selectedRep
+    const repNorm = (selectedRep || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+    const dealRepNorm = (deal.representative || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+    const matchesRep = selectedRep === 'all' || dealRepNorm === repNorm || dealRepNorm.includes(repNorm) || repNorm.includes(dealRepNorm)
     const matchesCurve = selectedCurve === 'all' || deal.curve === selectedCurve
     return matchesRep && matchesCurve
   })
@@ -1296,9 +1322,14 @@ export default function DashboardPage() {
     ? Math.max(...selectedDrilldownMonth.daily.map((d: any) => d.value), 1)
     : Math.max(...MONTHLY_SALES_DATA.map((m: any) => m.value), 1)
 
-  // ==================== ROLE: REPRESENTANTE (MOBILE PORTAL) ====================
-  if (currentUser?.role === 'representante') {
-    const repAllContacts = contacts.filter(c => !currentUser || c.representative === currentUser.name)
+  // ==================== ROLE: REPRESENTANTE / VENDEDOR (MOBILE PORTAL) ====================
+  if (currentUser?.role === 'representante' || currentUser?.role === 'vendedor') {
+    const userRepNorm = currentUser?.name ? currentUser.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ''
+    const repAllContacts = contacts.filter(c => {
+      if (!userRepNorm) return true
+      const cRepNorm = (c.representative || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+      return cRepNorm === userRepNorm || cRepNorm.includes(userRepNorm) || userRepNorm.includes(cRepNorm)
+    })
     const filteredMobileContacts = repAllContacts.filter(c => {
       const matchesSearch = c.name.toLowerCase().includes(mobileSearch.toLowerCase()) || 
                             (c.company && c.company.toLowerCase().includes(mobileSearch.toLowerCase())) ||
