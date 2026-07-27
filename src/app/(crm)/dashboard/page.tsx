@@ -1519,8 +1519,10 @@ export default function DashboardPage() {
                     <div key={contact.id} className="card p-4 border border-[var(--line)] bg-[var(--card)] flex flex-col justify-between gap-3 hover:border-[var(--lime)]/30 transition-all">
                       <div className="flex justify-between items-start gap-2">
                         <div className="min-w-0">
-                          <h4 className="text-sm font-bold text-[var(--white)] truncate">{contact.name}</h4>
-                          <span className="text-[10px] font-mono text-[var(--gray)] block mt-0.5">{contact.company}</span>
+                          <h4 className="text-sm font-bold text-[var(--white)] truncate">{contact.company || contact.name}</h4>
+                          {contact.company && contact.name && (
+                            <span className="text-[10px] font-mono text-[var(--gray)] block mt-0.5 truncate">Contato: {contact.name}</span>
+                          )}
                           <span className="text-[10px] text-[var(--gray)] font-mono block">{contact.city}{contact.state ? ` · ${contact.state}` : ''}</span>
                         </div>
                         {(() => {
