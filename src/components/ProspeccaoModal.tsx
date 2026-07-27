@@ -94,11 +94,11 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     }
       const map = L.map(mapRef.current, { zoomControl: false, attributionControl: false }).setView(center, 13)
       
-      // MAPA NO MESMO ESTILO DO DASHBOARD (OpenStreetMap Standard)
+      // MAPA NO MESMO ESTILO DO DASHBOARD (OpenStreetMap Standard com subdomínios válidos)
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        subdomains: 'abcd',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        subdomains: 'abc',
+        attribution: '&copy; OpenStreetMap'
       }).addTo(map)
       L.control.zoom({ position: 'bottomright' }).addTo(map)
       mapInstanceRef.current = map
@@ -108,6 +108,7 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     const center = getCityCenter(cidade || leads[0]?.cidade, estado || leads[0]?.estado)
     if (map) {
       map.setView(center, 13)
+      try { map.invalidateSize() } catch (e) {}
     }
     Object.values(markersRef.current).forEach((m: any) => {
       try { m.remove() } catch {}
@@ -936,7 +937,7 @@ export function ProspeccaoModal({
                 {/* Painel da Direita (12 ou 7 cols): Mapa Interativo Leaflet estilo Google Places */}
                 <div className={`${isMapExpanded ? 'lg:col-span-12' : 'lg:col-span-7'} h-full min-h-0 flex flex-col overflow-hidden transition-all duration-300`}>
                   <LeafletProspectMap
-                    leads={leads}
+                    leads={isMapExpanded ? (result?.leads || leads) : leads}
                     selectedLeadCnpj={activeLeadMapCnpj}
                     onSelectLead={(l) => setActiveLeadMapCnpj(l.cnpj)}
                     onOpenDetails={(l) => setActiveLeadDetails(l)}
@@ -1248,7 +1249,7 @@ function LeadDetailModal({ lead, usuariosDisponiveis, onClose, onLeadsImported }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[100000] flex items-center justify-center p-2 sm:p-4 animate-fade-in">
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100010] flex items-center justify-center p-2 sm:p-4 animate-fade-in">
       <div className="bg-[var(--charcoal)] border border-[var(--line)] rounded-2xl w-full max-w-[95vw] xl:max-w-6xl shadow-2xl flex flex-col gap-2.5 max-h-[96vh] overflow-hidden p-4 sm:p-5 text-[var(--white)] my-auto">
 
         {/* Header */}
