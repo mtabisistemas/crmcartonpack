@@ -32,7 +32,9 @@ function DealCard({ deal, overlay = false, onCardClick }: { deal: Deal; overlay?
   const cfg = STAGE_CONFIG[deal.stage]
   const days = daysSince(deal.stage_entered_at)
   const isStale = days >= 5
-  const value = deal.final_value ?? deal.estimated_value
+  const value = (deal.final_value && deal.final_value > 0) 
+    ? deal.final_value 
+    : (deal.estimated_value && deal.estimated_value > 0 ? deal.estimated_value : 0)
 
   const style = {
     ...(overlay ? {} : {
@@ -471,7 +473,10 @@ export function PipelineBoard() {
   const [deals, setDeals] = useState<Deal[]>(() => getPipelineDeals(MOCK_DEALS))
 
   useEffect(() => {
-    const syncDeals = () => updateAndSaveDeals(getPipelineDeals(MOCK_DEALS))
+    const syncDeals = () => {
+      const latestDeals = getPipelineDeals(MOCK_DEALS)
+      setDeals(latestDeals)
+    }
     window.addEventListener('storage-deals-changed', syncDeals)
     window.addEventListener('storage', syncDeals)
     return () => {
@@ -559,7 +564,13 @@ export function PipelineBoard() {
 
     updateAndSaveDeals(prev => prev.map(d =>
       d.id === draggedDeal.id
-        ? { ...d, stage: newStage, stage_entered_at: new Date().toISOString() }
+        ? { 
+            ...d, 
+            stage: newStage, 
+            stage_entered_at: new Date().toISOString(),
+            estimated_value: d.estimated_value ?? draggedDeal.estimated_value ?? 0,
+            final_value: d.final_value ?? draggedDeal.final_value
+          }
         : d
     ))
   }
