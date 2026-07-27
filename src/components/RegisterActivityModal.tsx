@@ -1,0 +1,430 @@
+'use client'
+
+import { useState, useRef, useEffect } from 'react'
+import { X, Mic, MicOff, Camera, CheckCircle2, Phone, MessageSquare, Mail, Video, MapPin, Target, FileText, Package, Briefcase, Trophy, RefreshCw, Handshake, AlertCircle } from 'lucide-react'
+import { DealStage } from '@/types'
+
+export interface RegisterActivityModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onSuccess?: () => void
+  contactsList: Array<{ id: string; name: string; company: string; city?: string; state?: string; phone?: string; representative?: string }>
+  preselectedContactId?: string
+}
+
+export const CHANNEL_OPTIONS = [
+  { id: 'visita', label: 'Reunião Presencial (Visita)', icon: MapPin, color: 'text-cyan-400' },
+  { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare, color: 'text-emerald-400' },
+  { id: 'ligacao', label: 'Ligação Telefônica', icon: Phone, color: 'text-amber-400' },
+  { id: 'email', label: 'E-mail', icon: Mail, color: 'text-indigo-400' },
+  { id: 'reuniao_online', label: 'Reunião Online (Video)', icon: Video, color: 'text-purple-400' },
+]
+
+export const ACTION_OPTIONS: Array<{
+  id: string
+  label: string
+  stage: DealStage
+  icon: any
+  description: string
+}> = [
+  { id: 'prospeccao', label: 'Prospecção / 1º Contato', stage: 'prospect', icon: Target, description: 'Apresentação inicial ou prospecção ativa' },
+  { id: 'briefing', label: 'Orçamento / Solicitou Briefing', stage: 'briefing', icon: FileText, description: 'Cliente solicitou cotação de embalagem' },
+  { id: 'amostra', label: 'Envio de Amostra / Layout', stage: 'aprovacao', icon: Package, description: 'Amostra física ou mockup em aprovação' },
+  { id: 'negociacao', label: 'Negociação / Proposta', stage: 'potencial', icon: Briefcase, description: 'Apresentação de proposta comercial ou negociação' },
+  { id: 'visita_relato', label: 'Reunião / Acompanhamento', stage: 'visita', icon: MapPin, description: 'Reunião técnica ou alinhamento comercial' },
+  { id: 'fechamento', label: 'Fechamento de Venda', stage: 'fechamento', icon: Trophy, description: 'Pedido fechado e venda realizada' },
+  { id: 'pos_venda', label: 'Pós-Venda / Atendimento', stage: 'pos_venda', icon: Handshake, description: 'Manutenção de carteira e acompanhamento' },
+  { id: 'reativacao', label: 'Reativação de Inativo', stage: 'dinamica', icon: RefreshCw, description: 'Contato para reativar cliente sem compra' },
+  { id: 'perdido', label: 'Sem Interesse / Perdido', stage: 'perdido', icon: AlertCircle, description: 'Cliente declinou a proposta ou sem interesse' },
+]
+
+export function RegisterActivityModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  contactsList,
+  preselectedContactId = ''
+}: RegisterActivityModalProps) {
+  const [selectedContactId, setSelectedContactId] = useState(preselectedContactId)
+  const [channel, setChannel] = useState('visita')
+  const [actionId, setActionId] = useState('prospeccao')
+  const [description, setDescription] = useState('')
+  const [photoUrl, setPhotoUrl] = useState('')
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingTime, setRecordingTime] = useState(0)
+  const [isSavedToast, setIsSavedToast] = useState(false)
+
+  const recognitionRef = useRef<any>(null)
+  const timerRef = useRef<any>(null)
+
+  useEffect(() => {
+    if (preselectedContactId) {
+      setSelectedContactId(preselectedContactId)
+    }
+  }, [preselectedContactId])
+
+  useEffect(() => {
+    if (isRecording) {
+      timerRef.current = setInterval(() => {
+        setRecordingTime(t => t + 1)
+      }, 1000)
+    } else {
+      clearInterval(timerRef.current)
+      setRecordingTime(0)
+    }
+    return () => clearInterval(timerRef.current)
+  }, [isRecording])
+
+  if (!isOpen) return null
+
+  const handleStartRecording = () => {
+    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      try {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        const recognition = new SpeechRecognition()
+        recognition.continuous = true
+        recognition.interimResults = true
+        recognition.lang = 'pt-BR'
+
+        recognition.onresult = (event: any) => {
+          let currentTranscript = ''
+          for (let i = 0; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript
+          }
+          setDescription(currentTranscript)
+        }
+
+        recognition.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error)
+          setIsRecording(false)
+        }
+
+        recognition.onend = () => {
+          setIsRecording(false)
+        }
+
+        recognitionRef.current = recognition
+        recognition.start()
+        setIsRecording(true)
+      } catch (e) {
+        console.error('Speech recognition start failed:', e)
+        setIsRecording(true)
+      }
+    } else {
+      setIsRecording(true)
+    }
+  }
+
+  const handleStopRecording = () => {
+    setIsRecording(false)
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop()
+      } catch (e) {}
+    }
+  }
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      const url = URL.createObjectURL(file)
+      setPhotoUrl(url)
+    }
+  }
+
+  const formatTimer = (s: number) => {
+    const min = Math.floor(s / 60)
+    const sec = s % 60
+    return `${min}:${sec < 10 ? '0' : ''}${sec}`
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedContactId) return
+
+    const selectedContact = contactsList.find(c => c.id === selectedContactId)
+    if (!selectedContact) return
+
+    const selectedActionObj = ACTION_OPTIONS.find(a => a.id === actionId) || ACTION_OPTIONS[0]
+    const selectedChannelObj = CHANNEL_OPTIONS.find(c => c.id === channel) || CHANNEL_OPTIONS[0]
+
+    const newActivity = {
+      date: new Date().toLocaleDateString('pt-BR'),
+      title: `Registro: ${selectedActionObj.label} (${selectedChannelObj.label})`,
+      description: description || `Atividade de ${selectedActionObj.label} via ${selectedChannelObj.label}.`,
+      type: channel === 'visita' ? 'visita' : channel === 'whatsapp' ? 'whatsapp' : channel === 'ligacao' ? 'ligacao' : 'nota',
+      channel: channel,
+      actionId: actionId,
+      stage: selectedActionObj.stage,
+      hasAudio: isRecording || !!description,
+      photoUrl: photoUrl || null,
+      timestamp: new Date().toISOString()
+    }
+
+    // Update contacts in localStorage
+    if (typeof window !== 'undefined') {
+      const savedContacts = localStorage.getItem('crm_contacts')
+      if (savedContacts) {
+        try {
+          const contacts = JSON.parse(savedContacts)
+          const updatedContacts = contacts.map((c: any) => {
+            if (c.id === selectedContactId) {
+              return {
+                ...c,
+                status: selectedActionObj.stage === 'perdido' ? 'inativo' : 'ativo',
+                pipelineStage: selectedActionObj.stage,
+                lastPurchaseDays: 1,
+                activities: [newActivity, ...(c.activities || [])]
+              }
+            }
+            return c
+          })
+          localStorage.setItem('crm_contacts', JSON.stringify(updatedContacts))
+          window.dispatchEvent(new Event('storage-contacts-changed'))
+        } catch (e) {
+          console.error(e)
+        }
+      }
+
+      // Update deals in pipeline if stored
+      const rawDeals = localStorage.getItem('cp_crm_pipeline_deals')
+      if (rawDeals) {
+        try {
+          const deals = JSON.parse(rawDeals)
+          let found = false
+          const updatedDeals = deals.map((d: any) => {
+            if (d.contact_id === selectedContactId || d.company?.toLowerCase() === selectedContact.company?.toLowerCase()) {
+              found = true
+              return { ...d, stage: selectedActionObj.stage, updated_at: new Date().toISOString() }
+            }
+            return d
+          })
+
+          if (!found) {
+            updatedDeals.unshift({
+              id: 'deal_' + Date.now(),
+              title: selectedContact.company || selectedContact.name,
+              contact_id: selectedContact.id,
+              stage: selectedActionObj.stage,
+              estimated_value: 0,
+              stage_entered_at: new Date().toISOString(),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              contact: {
+                id: selectedContact.id,
+                name: selectedContact.name,
+                company: selectedContact.company,
+                phone: selectedContact.phone,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }
+            })
+          }
+
+          localStorage.setItem('cp_crm_pipeline_deals', JSON.stringify(updatedDeals))
+          window.dispatchEvent(new Event('storage-deals-changed'))
+        } catch (e) {
+          console.error(e)
+        }
+      }
+    }
+
+    setIsSavedToast(true)
+    setTimeout(() => {
+      setIsSavedToast(false)
+      if (onSuccess) onSuccess()
+      onClose()
+    }, 1000)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[99999] flex flex-col justify-end lg:justify-center lg:items-center p-0 lg:p-4">
+      <div className="bg-[var(--charcoal)] border-t lg:border border-[var(--line)] rounded-t-3xl lg:rounded-3xl p-5 sm:p-6 flex flex-col gap-4 animate-fade-up max-w-lg mx-auto w-full max-h-[92vh] overflow-y-auto shadow-2xl">
+        
+        {/* Modal Header */}
+        <div className="flex justify-between items-center border-b border-[var(--line)] pb-3">
+          <div>
+            <h3 className="font-display text-base text-[var(--white)] font-bold tracking-tight">
+              Registrar Atividade Comercial
+            </h3>
+            <p className="text-[11px] text-[var(--gray)] font-mono mt-0.5">
+              Informe a ação efetuada e o canal de contato
+            </p>
+          </div>
+          <button 
+            type="button"
+            onClick={onClose}
+            className="p-1.5 px-3 rounded-lg bg-black/40 text-[var(--gray)] hover:text-white text-[10px] font-bold font-mono uppercase tracking-wider border border-[var(--line)] cursor-pointer"
+          >
+            Fechar
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 flex-1">
+          {/* 1. Cliente */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+              Cliente / Oportunidade *
+            </label>
+            <select
+              className="input w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[var(--lime)]/50"
+              required
+              value={selectedContactId}
+              onChange={(e) => setSelectedContactId(e.target.value)}
+            >
+              <option value="" className="bg-[var(--charcoal)]">Selecione o Cliente...</option>
+              {contactsList.map(c => (
+                <option key={c.id} value={c.id} className="bg-[var(--charcoal)]">
+                  {c.name} — {c.company} {c.city ? `(${c.city})` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 2. Como o Contato foi Feito (Meio / Canal) */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+              Como o Contato foi Feito? (Canal) *
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {CHANNEL_OPTIONS.map(ch => {
+                const Icon = ch.icon
+                const isSelected = channel === ch.id
+                return (
+                  <button
+                    type="button"
+                    key={ch.id}
+                    onClick={() => setChannel(ch.id)}
+                    className={`flex items-center gap-2 p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer ${
+                      isSelected 
+                        ? 'bg-[var(--black)] border-[var(--lime)] text-white shadow-[0_0_10px_rgba(180,217,50,0.15)] font-bold' 
+                        : 'bg-black/30 border-[var(--line)] text-[var(--gray)] hover:text-white hover:border-[var(--gray2)]'
+                    }`}
+                  >
+                    <Icon size={14} className={isSelected ? 'text-[var(--lime)]' : ch.color} />
+                    <span className="truncate">{ch.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* 3. Ação Comercial Efetiva Realizada */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+              Qual Ação Comercial foi Realizada? *
+            </label>
+            <select
+              className="input w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[var(--lime)]/50"
+              required
+              value={actionId}
+              onChange={(e) => setActionId(e.target.value)}
+            >
+              {ACTION_OPTIONS.map(act => (
+                <option key={act.id} value={act.id} className="bg-[var(--charcoal)]">
+                  {act.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 4. Relato Comercial (Digitado ou por Voz) */}
+          <div className="flex flex-col gap-1.5 border border-[var(--line)] rounded-xl p-4 bg-black/20">
+            <label className="text-[10px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider flex items-center justify-between">
+              <span>Relato da Interação (Digitado ou Por Voz)</span>
+              {isRecording && <span className="text-[var(--red)] animate-pulse font-mono">Gravando... {formatTimer(recordingTime)}</span>}
+            </label>
+            
+            <div className="flex flex-col items-center justify-center py-2 gap-3">
+              {isRecording ? (
+                <div className="flex items-center gap-1 justify-center h-8 w-full">
+                  {[...Array(9)].map((_, i) => (
+                    <div 
+                      key={i} 
+                      className="w-1.5 bg-[var(--lime)] rounded-full animate-pulse"
+                      style={{
+                        animationDelay: `${i * 0.1}s`,
+                        height: `${Math.floor(10 + Math.random() * 24)}px`
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-[11px] text-[var(--gray2)] font-mono text-center max-w-[290px]">
+                  Você pode digitar seu relato abaixo ou tocar no microfone para gravar por voz.
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={isRecording ? handleStopRecording : handleStartRecording}
+                className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 cursor-pointer ${
+                  isRecording 
+                    ? 'bg-[var(--red)] text-white hover:bg-[#ef4444] animate-pulse' 
+                    : 'bg-[var(--lime)] text-black hover:scale-105'
+                }`}
+              >
+                {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+              </button>
+            </div>
+
+            <textarea
+              className="input w-full min-h-[90px] text-xs font-mono bg-[var(--black)] border border-[var(--line)] rounded-xl p-3 text-white outline-none focus:border-[var(--lime)]/50"
+              placeholder="Escreva seu relato do contato aqui ou use o microfone acima..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          {/* 5. Foto / Anexo (Opcional) */}
+          <div className="flex flex-col gap-1.5 border border-[var(--line)] rounded-xl p-3 bg-black/20">
+            <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider flex items-center justify-between">
+              <span>Foto ou Comprovante (Opcional)</span>
+              <span className="text-[9px] text-[var(--gray)] font-normal">Fachada, print ou doc</span>
+            </label>
+            
+            <label className="flex items-center justify-center gap-2 p-3 border border-dashed border-[var(--line)] hover:border-[var(--lime)]/50 rounded-xl cursor-pointer bg-black/30 transition-colors">
+              <Camera size={16} className="text-[var(--lime)]" />
+              <span className="text-xs font-mono text-[var(--white)]">
+                {photoUrl ? '✓ Imagem Selecionada (Alterar)' : 'Tirar Foto ou Carregar Arquivo'}
+              </span>
+              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+            </label>
+
+            {photoUrl && (
+              <div className="mt-1 rounded-xl overflow-hidden border border-[var(--line)] h-24 relative bg-black">
+                <img src={photoUrl} alt="Comprovante" className="w-full h-full object-cover" />
+              </div>
+            )}
+          </div>
+
+          {/* Success Toast */}
+          {isSavedToast && (
+            <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-mono flex items-center gap-2 animate-fade-in">
+              <CheckCircle2 size={16} />
+              <span>Atividade registrada e oportunidade atualizada com sucesso!</span>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 btn btn-secondary py-3 text-xs font-bold uppercase tracking-wider cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isSavedToast}
+              className="flex-1 btn btn-primary py-3 text-xs font-black uppercase tracking-wider text-black cursor-pointer shadow-lg shadow-[rgba(180,217,50,0.2)]"
+            >
+              Salvar Registro
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}

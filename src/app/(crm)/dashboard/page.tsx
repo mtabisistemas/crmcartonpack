@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { CartonPackLogo } from '@/components/CartonPackLogo'
+import { RegisterActivityModal } from '@/components/RegisterActivityModal'
 import {
   TrendingUp,
   Package,
@@ -1236,165 +1237,14 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Check-in Modal Overlay */}
-        {showCheckinModal && (
-          <div className="fixed inset-0 bg-black/95 z-[99999] flex flex-col justify-end">
-            <div className="bg-[var(--charcoal)] border-t border-[var(--line)] rounded-t-3xl p-5 flex flex-col gap-4 animate-fade-up max-w-md mx-auto w-full h-[95vh] overflow-y-auto">
-              <div className="flex justify-between items-center border-b border-[var(--line)] pb-3">
-                <div>
-                  <h3 className="font-display text-sm text-[var(--white)] font-bold">Registrar Visita Presencial</h3>
-                </div>
-                <button 
-                  onClick={() => setShowCheckinModal(false)}
-                  className="p-1.5 px-3 rounded-lg bg-black/20 text-[var(--gray)] hover:text-white text-[10px] font-bold font-mono uppercase tracking-wider"
-                >
-                  Fechar
-                </button>
-              </div>
-
-              <form onSubmit={handleCheckinSubmit} className="flex flex-col gap-4 flex-1">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Cliente Visitado *</label>
-                  <select
-                    className="input w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[var(--lime)]/50"
-                    required
-                    value={selectedContactId}
-                    onChange={(e) => setSelectedContactId(e.target.value)}
-                  >
-                    <option value="" className="bg-[var(--charcoal)]">Selecione o Cliente...</option>
-                    {contacts.map(c => (
-                      <option key={c.id} value={c.id} className="bg-[var(--charcoal)]">{c.name} - {c.company} ({c.city})</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Etapa do Pipeline *</label>
-                  <select
-                    className="input w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[var(--lime)]/50"
-                    required
-                    value={selectedPipelineStage}
-                    onChange={(e) => setSelectedPipelineStage(e.target.value)}
-                  >
-                    <option value="leads" className="bg-[var(--charcoal)]">Leads</option>
-                    <option value="prospect" className="bg-[var(--charcoal)]">Prospect</option>
-                    <option value="dinamica" className="bg-[var(--charcoal)]">Dinâmica</option>
-                    <option value="potencial" className="bg-[var(--charcoal)]">Potencial</option>
-                    <option value="visita" className="bg-[var(--charcoal)]">Visita</option>
-                    <option value="briefing" className="bg-[var(--charcoal)]">Briefing</option>
-                    <option value="aprovacao" className="bg-[var(--charcoal)]">Aprovação</option>
-                    <option value="fechamento" className="bg-[var(--charcoal)]">Fechamento</option>
-                    <option value="pos_venda" className="bg-[var(--charcoal)]">Pós-Vendas</option>
-                    <option value="perdido" className="bg-[var(--charcoal)]">Perdido</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1.5 border border-[var(--line)] rounded-xl p-4 bg-black/20">
-                  <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider flex items-center justify-between">
-                    <span>Relato da Visita (Digitado ou Por Voz)</span>
-                    {isRecording && <span className="text-[var(--red)] animate-pulse">Gravando por voz... {formatTimer(recordingTime)}</span>}
-                  </label>
-                  
-                  <div className="flex flex-col items-center justify-center py-3 gap-3">
-                    {isRecording ? (
-                      <div className="flex items-center gap-1 justify-center h-10 w-full">
-                        {[...Array(9)].map((_, i) => (
-                          <div 
-                            key={i} 
-                            className="w-1.5 bg-[var(--lime)] rounded-full animate-pulse"
-                            style={{
-                              animationDelay: `${i * 0.1}s`,
-                              height: `${Math.floor(10 + Math.random() * 26)}px`
-                            }}
-                          />
-                        ))}
-                      </div>
-                    ) : isTranscribing ? (
-                      <div className="flex flex-col items-center gap-2 py-2">
-                        <div className="w-6 h-6 border-2 border-[var(--lime)] border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-[10px] text-[var(--gray)] font-mono animate-pulse">Processando áudio...</span>
-                      </div>
-                    ) : (
-                      <div className="text-[11px] text-[var(--gray2)] font-mono text-center max-w-[280px]">
-                        Você pode digitar seu relato abaixo ou tocar no microfone para gravar por voz.
-                      </div>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={isRecording ? handleStopRecording : handleStartRecording}
-                      className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${
-                        isRecording 
-                          ? 'bg-[var(--red)] text-white hover:bg-[#ef4444] animate-ping-slow' 
-                          : 'bg-[var(--lime)] text-black hover:scale-105'
-                      }`}
-                    >
-                      {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
-                    </button>
-                  </div>
-
-                  <textarea
-                    className="input w-full min-h-[100px] text-xs font-mono bg-[var(--black)] border border-[var(--line)] rounded-xl p-3 text-white outline-none focus:border-[var(--lime)]/50"
-                    placeholder="Escreva seu relato da visita aqui ou use a gravação de voz acima..."
-                    value={audioTranscription}
-                    onChange={(e) => setAudioTranscription(e.target.value)}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5 border border-[var(--line)] rounded-xl p-4 bg-black/20">
-                  <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider flex items-center justify-between">
-                    <span>Foto da Fachada / Visita</span>
-                    {photoUrl && <span className="text-[var(--lime)] font-mono text-[8px] uppercase">Carregada</span>}
-                  </label>
-                  
-                  <div className="flex items-center gap-3">
-                    <label className="flex-1 border border-dashed border-[var(--line)] rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 cursor-pointer bg-black/10 hover:bg-black/30 transition-colors">
-                      <Camera size={18} className="text-[var(--lime)]" />
-                      <span className="text-[10px] font-mono text-[var(--gray)]">Tirar Foto / Carregar</span>
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        capture="environment"
-                        className="hidden" 
-                        onChange={handlePhotoUpload}
-                      />
-                    </label>
-
-                    {photoUrl && (
-                      <div className="w-16 h-16 rounded-xl border border-[var(--line)] overflow-hidden shrink-0 relative bg-black/50">
-                        <img src={photoUrl} alt="Fachada" className="w-full h-full object-cover" />
-                        <button 
-                          type="button" 
-                          onClick={() => setPhotoUrl('')}
-                          className="absolute top-0 right-0 w-4 h-4 bg-black/80 rounded-bl text-[8px] font-bold text-red-500"
-                        >
-                          X
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex gap-3 border-t border-[var(--line)] pt-3 mt-auto">
-                  <button 
-                    type="button" 
-                    onClick={() => setShowCheckinModal(false)}
-                    className="btn btn-secondary py-3 flex-1 text-xs font-bold uppercase tracking-wider"
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={!selectedContactId}
-                    className="btn btn-primary py-3 flex-1 text-xs font-black uppercase tracking-wider text-black disabled:opacity-50"
-                  >
-                    Salvar Check-in
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        {/* Register Activity Modal */}
+        <RegisterActivityModal
+          isOpen={showCheckinModal}
+          onClose={() => setShowCheckinModal(false)}
+          onSuccess={() => setCompletedVisits(v => v + 1)}
+          contactsList={contacts}
+          preselectedContactId={selectedContactId}
+        />
       </div>
     )
   }

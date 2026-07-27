@@ -25,11 +25,13 @@ import {
   Save,
   Copy,
   Check,
+  CheckCircle,
   Globe
 } from 'lucide-react'
 import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString } from '@/lib/utils'
 import { supabase } from '@/services/supabase-client'
 import { ProspeccaoModal } from '@/components/ProspeccaoModal'
+import { RegisterActivityModal } from '@/components/RegisterActivityModal'
 
 const WhatsappIcon = ({ size = 15, className = "" }: { size?: number; className?: string }) => (
   <svg 
@@ -1600,6 +1602,8 @@ export default function ContactsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [showMapModal, setShowMapModal] = useState<boolean>(false)
   const [modalContact, setModalContact] = useState<MockContact | null>(null)
+  const [showActivityModal, setShowActivityModal] = useState(false)
+  const [selectedContactForActivity, setSelectedContactForActivity] = useState('')
 
   // Drawer / New Contact Modal states
   const [selectedContact, setSelectedContact] = useState<MockContact | null>(null)
@@ -1882,23 +1886,35 @@ export default function ContactsPage() {
           Carteira de Clientes
         </h1>
 
-        {/* Admin-only action buttons */}
-        {!isRep && (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowProspeccaoModal(true)}
-              className="btn btn-secondary text-xs py-2 px-4 flex items-center gap-2 cursor-pointer text-[var(--lime)] border-[var(--lime)]/30 hover:border-[var(--lime)] font-bold shadow-lg"
-            >
-              <UserPlus size={14} />
-              <span>Prospectar Novos Leads B2B</span>
-            </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setSelectedContactForActivity('')
+              setShowActivityModal(true)
+            }}
+            className="btn btn-primary text-xs py-2 px-4 flex items-center gap-2 cursor-pointer text-black font-bold shadow-lg"
+          >
+            <CheckCircle size={14} />
+            <span>Registrar Atividade</span>
+          </button>
 
-            <button onClick={() => setShowNewContactModal(true)} className="btn btn-primary text-xs py-2 px-4 flex items-center gap-2 cursor-pointer">
-              <Plus size={14} />
-              <span>Novo Cliente</span>
-            </button>
-          </div>
-        )}
+          {!isRep && (
+            <>
+              <button
+                onClick={() => setShowProspeccaoModal(true)}
+                className="btn btn-secondary text-xs py-2 px-4 flex items-center gap-2 cursor-pointer text-[var(--lime)] border-[var(--lime)]/30 hover:border-[var(--lime)] font-bold shadow-lg"
+              >
+                <UserPlus size={14} />
+                <span>Prospectar Novos Leads B2B</span>
+              </button>
+
+              <button onClick={() => setShowNewContactModal(true)} className="btn btn-primary text-xs py-2 px-4 flex items-center gap-2 cursor-pointer">
+                <Plus size={14} />
+                <span>Novo Cliente</span>
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Filters Bar */}
@@ -2008,6 +2024,18 @@ export default function ContactsPage() {
                 </div>
 
                 <div className="border-t border-[var(--line)] pt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedContactForActivity(contact.id)
+                      setShowActivityModal(true)
+                    }}
+                    className="flex-1 btn btn-secondary text-[11px] py-2 flex items-center justify-center gap-1.5 rounded-lg border-[var(--line)] hover:border-[var(--lime)] hover:text-[var(--lime)]"
+                  >
+                    <CheckCircle size={12} className="text-[var(--lime)]" />
+                    <span>Atividade</span>
+                  </button>
                   <a
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${contact.company || contact.name} ${contact.city}`)}`}
                     target="_blank"
@@ -2016,7 +2044,7 @@ export default function ContactsPage() {
                     className="flex-1 btn btn-secondary text-[11px] py-2 flex items-center justify-center gap-1.5 rounded-lg border-[var(--line)]"
                   >
                     <MapPin size={12} className="text-[var(--lime)]" />
-                    <span>Como Chegar</span>
+                    <span>Navegar</span>
                   </a>
                   {contact.phone && (
                     <a
@@ -2027,7 +2055,7 @@ export default function ContactsPage() {
                       className="flex-1 btn btn-secondary text-[11px] py-2 flex items-center justify-center gap-1.5 rounded-lg hover:border-green-500/50 hover:text-green-400"
                     >
                       <Phone size={12} />
-                      <span>WhatsApp</span>
+                      <span>Whats</span>
                     </a>
                   )}
                 </div>
@@ -2232,6 +2260,23 @@ export default function ContactsPage() {
             }
           }
         }}
+      />
+      {/* Register Activity Modal */}
+      <RegisterActivityModal
+        isOpen={showActivityModal}
+        onClose={() => setShowActivityModal(false)}
+        onSuccess={() => {
+          if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('crm_contacts')
+            if (saved) {
+              try {
+                setContacts(JSON.parse(saved))
+              } catch (e) {}
+            }
+          }
+        }}
+        contactsList={contacts}
+        preselectedContactId={selectedContactForActivity}
       />
     </div>
   )
