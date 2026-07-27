@@ -155,7 +155,8 @@ export default function UsersPage() {
   // Submit modal form
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
-    const isRep = role === 'representante' || role === 'vendedor'
+    // Only 'representante' has no real email. All other roles (vendedor, admin, financeiro) use the real email.
+    const isRep = role === 'representante'
     if (!name.trim() || (!isRep && !email.trim())) return
 
     const formattedName = capitalizeName(name)

@@ -50,9 +50,10 @@ export async function POST(req: Request) {
   try {
     const user = await req.json()
 
-    const isRep = user.role === 'representante' || user.role === 'vendedor'
+    // Only 'representante' role has no real email — all other roles (vendedor, admin, etc.) use the real email
+    const isRep = user.role === 'representante'
 
-    // Representatives don't have real email — generate internal one from username
+    // Representatives: generate internal email from username. Everyone else: use the real email typed.
     const username = user.username || user.name?.toLowerCase().replace(/\s+/g, '.').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     const emailForAuth = isRep
       ? `${username}@${REP_EMAIL_DOMAIN}`
