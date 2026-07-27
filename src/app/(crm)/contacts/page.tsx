@@ -1819,6 +1819,8 @@ export default function ContactsPage() {
           await supabase.from('contacts').update(payload).eq('id', updatedContact.id)
         } else if (updatedContact.cnpj) {
           await supabase.from('contacts').update(payload).eq('cnpj', updatedContact.cnpj)
+        } else if (updatedContact.company) {
+          await supabase.from('contacts').update(payload).ilike('company', updatedContact.company)
         }
         console.log('Successfully updated contact in Supabase!')
       } catch (err) {

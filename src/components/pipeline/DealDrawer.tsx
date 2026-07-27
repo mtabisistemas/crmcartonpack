@@ -132,7 +132,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const totalSuggested = productionCost / (1 - margin / 100)
   const unitPrice = totalSuggested / quantity
 
-  const handleSaveGeneral = () => {
+  const handleSaveGeneral = async () => {
     const updatedDeal: Deal = {
       ...deal,
       title,
@@ -145,12 +145,66 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
         name: contactName,
         phone: contactPhone,
         email: contactEmail,
-        company: contactCompany,
+        company: contactCompany || title,
         curve: curve,
         created_at: deal.contact?.created_at ?? new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
     }
+
+    const companyToFind = (contactCompany || title || '').trim()
+
+    if (companyToFind) {
+      // 1. Sincroniza cache local em crm_contacts
+      try {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('crm_contacts') : null
+        if (raw) {
+          const contactsList = JSON.parse(raw)
+          const updatedContacts = contactsList.map((c: any) => {
+            const matchesComp = c.company && c.company.trim().toLowerCase() === companyToFind.toLowerCase()
+            const matchesName = c.name && c.name.trim().toLowerCase() === companyToFind.toLowerCase()
+            if (matchesComp || matchesName) {
+              return {
+                ...c,
+                representative: representative || c.representative,
+                phone: contactPhone || c.phone,
+                email: contactEmail || c.email,
+                curve: curve || c.curve,
+              }
+            }
+            return c
+          })
+          localStorage.setItem('crm_contacts', JSON.stringify(updatedContacts))
+          window.dispatchEvent(new Event('storage-contacts-changed'))
+        }
+      } catch (e) {}
+
+      // 2. Sincroniza diretamente no banco de dados Supabase (tabela 'contacts')
+      try {
+        const { supabase } = await import('@/services/supabase-client')
+        if (supabase) {
+          const payload: any = {
+            updated_at: new Date().toISOString()
+          }
+          if (representative) payload.representative = representative
+          if (contactPhone) payload.phone = contactPhone
+          if (contactEmail) payload.email = contactEmail
+          if (curve) payload.curve = curve
+
+          if (deal.contact?.id && !deal.contact.id.startsWith('c-')) {
+            await supabase.from('contacts').update(payload).eq('id', deal.contact.id)
+          } else if ((deal.contact as any)?.cnpj) {
+            await supabase.from('contacts').update(payload).eq('cnpj', (deal.contact as any).cnpj)
+          } else {
+            await supabase.from('contacts').update(payload).ilike('company', companyToFind)
+          }
+          console.log('[DealDrawer] Contato sincronizado com sucesso no Supabase!')
+        }
+      } catch (err) {
+        console.error('[DealDrawer] Erro ao atualizar contato no Supabase:', err)
+      }
+    }
+
     onUpdateDeal(updatedDeal)
     setIsSavedSuccess(true)
     setTimeout(() => setIsSavedSuccess(false), 2500)
