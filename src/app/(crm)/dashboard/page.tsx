@@ -809,16 +809,19 @@ export default function DashboardPage() {
 
   // 2. Dynamic Team Performance (Performance dos Usuários do Sistema — Somente Fechamentos Reais)
   const TEAM_PERFORMANCE = useMemo(() => {
+    const normalize = (str: string) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ''
+
     const repMap: Record<string, { name: string; role: string; closedCount: number; sales: number; avatarColor: string }> = {}
     
     // Lista inicial de Usuários Oficiais do Sistema (SEM incluir nomes de contatos/clientes)
     const baseSystemUsers = [
-      { name: 'Mauricio Maciel', role: 'Administrador', avatarColor: '#B4D932' },
+      { name: 'Maurício Maciel', role: 'Administrador', avatarColor: '#B4D932' },
       { name: 'Representante Teste', role: 'Representante Comercial', avatarColor: '#38bdf8' }
     ]
 
     baseSystemUsers.forEach(u => {
-      repMap[u.name.toLowerCase().trim()] = { ...u, closedCount: 0, sales: 0 }
+      const key = normalize(u.name)
+      repMap[key] = { ...u, closedCount: 0, sales: 0 }
     })
 
     // Carrega usuários cadastrados na tela de Usuários (/users)
@@ -834,7 +837,7 @@ export default function DashboardPage() {
                 if (u.name) {
                   const cleanName = u.name.trim()
                   if (!cleanName.includes('Versapack')) {
-                    const mapKey = cleanName.toLowerCase()
+                    const mapKey = normalize(cleanName)
                     const formattedRole = 
                       u.role === 'admin' || u.role === 'administrador' ? 'Administrador' :
                       u.role === 'vendedor' ? 'Vendedor Comercial' :
@@ -860,14 +863,42 @@ export default function DashboardPage() {
       })
     }
 
+    // Carrega mapa de contatos para associar o cliente de fechamento ao seu representante correto da carteira
+    const contactsMap = new Map<string, string>()
+    if (typeof window !== 'undefined') {
+      try {
+        const rawC = localStorage.getItem('crm_contacts')
+        if (rawC) {
+          const cList = JSON.parse(rawC)
+          cList.forEach((c: any) => {
+            if (c.company && c.representative) {
+              contactsMap.set(normalize(c.company), c.representative)
+            }
+            if (c.name && c.representative) {
+              contactsMap.set(normalize(c.name), c.representative)
+            }
+            if (c.id && c.representative) {
+              contactsMap.set(c.id, c.representative)
+            }
+          })
+        }
+      } catch (e) {}
+    }
+
     // Processa APENAS vendas fechadas e credita unicamente se o responsável for um USUÁRIO DO SISTEMA válido
     pipelineDeals.forEach(d => {
       if (d.stage !== 'fechamento' && d.stage !== 'pos_venda') return
 
-      const assignedRep = (d.assigned_to || d.contact?.representative || '').toLowerCase().trim()
-      if (!assignedRep) return
+      const compName = normalize(d.contact?.company || d.title || '')
+      const contactId = d.contact_id || d.contact?.id || ''
 
-      const matchedUserKey = Object.keys(repMap).find(k => k === assignedRep || assignedRep.includes(k) || k.includes(assignedRep))
+      const repFromCarteira = contactsMap.get(contactId) || contactsMap.get(compName)
+      const assignedRepRaw = repFromCarteira || d.assigned_to || d.contact?.representative || ''
+      const assignedRepNorm = normalize(assignedRepRaw)
+
+      if (!assignedRepNorm) return
+
+      const matchedUserKey = Object.keys(repMap).find(k => k === assignedRepNorm || assignedRepNorm.includes(k) || k.includes(assignedRepNorm))
 
       if (matchedUserKey && repMap[matchedUserKey]) {
         repMap[matchedUserKey].closedCount += 1
