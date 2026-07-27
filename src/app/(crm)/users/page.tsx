@@ -41,7 +41,7 @@ export const DEFAULT_USERS: TeamUser[] = [
     email: 'mauricio@mtabi.com.br',
     role: 'admin',
     status: 'ativo',
-    phone: '(51) 99999-0000',
+    phone: '',
     createdAt: '26/07/2026',
     username: 'mauricio.maciel'
   },
@@ -53,67 +53,7 @@ export const DEFAULT_USERS: TeamUser[] = [
     status: 'ativo',
     phone: '(51) 98888-1111',
     createdAt: '26/07/2026',
-    username: 'rep.teste'
-  },
-  {
-    id: 'usr-rep-carlos',
-    name: 'Fausto Fleck',
-    email: 'fausto.fleck@cartonpack.com.br',
-    role: 'representante',
-    status: 'ativo',
-    phone: '(51) 99344-1234',
-    createdAt: '26/07/2026',
-    username: 'fausto.fleck'
-  },
-  {
-    id: 'usr-rep-juliana',
-    name: 'Ana Paula Nunes',
-    email: 'ana.nunes@cartonpack.com.br',
-    role: 'representante',
-    status: 'ativo',
-    phone: '(51) 98111-5555',
-    createdAt: '26/07/2026',
-    username: 'ana.nunes'
-  },
-  {
-    id: 'usr-rep-marcos',
-    name: 'Felipe Ribeiro',
-    email: 'felipe.ribeiro@cartonpack.com.br',
-    role: 'representante',
-    status: 'ativo',
-    phone: '(54) 99655-4433',
-    createdAt: '26/07/2026',
-    username: 'felipe.ribeiro'
-  },
-  {
-    id: 'usr-rep-fernanda',
-    name: 'Witalo Frota',
-    email: 'witalo.frota@cartonpack.com.br',
-    role: 'representante',
-    status: 'ativo',
-    phone: '(51) 99222-3344',
-    createdAt: '26/07/2026',
-    username: 'witalo.frota'
-  },
-  {
-    id: 'usr-sup-diessica',
-    name: 'Diéssica Hartmann',
-    email: 'diessica.hartmann@cartonpack.com.br',
-    role: 'vendedor',
-    status: 'ativo',
-    phone: '(51) 99344-1234',
-    createdAt: '26/07/2026',
-    username: 'diessica.hartmann'
-  },
-  {
-    id: 'usr-sup-thaiane',
-    name: 'Thaiane Antunes',
-    email: 'thaiane.antunes@cartonpack.com.br',
-    role: 'vendedor',
-    status: 'ativo',
-    phone: '(51) 98111-5555',
-    createdAt: '26/07/2026',
-    username: 'thaiane.antunes'
+    username: 'representante.teste'
   }
 ]
 
@@ -161,47 +101,29 @@ export default function UsersPage() {
 
   // Clean un-synced test users on init & Load users
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('cp_crm_v7_official_users')
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved)
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const cleaned = parsed.filter((u: any) => !u.name?.includes('Versapack') && !u.email?.includes('versapack'))
-            DEFAULT_USERS.forEach(du => {
-              if (!cleaned.some((u: any) => u.id === du.id || u.email === du.email || u.username === du.username)) {
-                cleaned.push(du)
-              }
-            })
-            localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(cleaned))
-            setUsers(cleaned)
-          } else {
-            localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(DEFAULT_USERS))
-            setUsers(DEFAULT_USERS)
-          }
-        } catch (e) {
-          setUsers(DEFAULT_USERS)
-        }
-      } else {
-        localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(DEFAULT_USERS))
-        setUsers(DEFAULT_USERS)
-      }
-    }
-
     async function syncUsers() {
       try {
         const fetched = await dbService.usuarios.list()
         if (fetched && fetched.length > 0) {
-          const cleaned = fetched.filter((u: any) => !u.name?.includes('Versapack') && !u.email?.includes('versapack'))
+          const cleaned = fetched.filter((u: any) => 
+            !u.name?.includes('Versapack') && 
+            !u.email?.includes('versapack') &&
+            !['fausto.fleck', 'ana.nunes', 'felipe.ribeiro', 'witalo.frota', 'diessica.hartmann', 'thaiane.antunes'].some(demo => u.email?.includes(demo) || u.username?.includes(demo))
+          )
           DEFAULT_USERS.forEach(du => {
-            if (!cleaned.some((u: any) => u.id === du.id || u.email === du.email || u.username === du.username)) {
+            if (!cleaned.some((u: any) => u.id === du.id || u.email === du.email)) {
               cleaned.push(du)
             }
           })
           setUsers(cleaned)
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(cleaned))
+          }
+        } else {
+          setUsers(DEFAULT_USERS)
         }
       } catch (e) {
-        console.error(e)
+        setUsers(DEFAULT_USERS)
       }
     }
     syncUsers()

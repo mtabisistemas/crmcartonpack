@@ -33,7 +33,11 @@ export const dbService = {
       if (typeof window !== 'undefined') {
         const saved = localStorage.getItem('cp_crm_v7_official_users');
         if (saved) {
-          try { localUsers = JSON.parse(saved); } catch (e) {}
+          try { 
+            localUsers = JSON.parse(saved).filter((u: any) => 
+              !['fausto.fleck', 'ana.nunes', 'felipe.ribeiro', 'witalo.frota', 'diessica.hartmann', 'thaiane.antunes'].some(demo => u.email?.includes(demo) || u.username?.includes(demo))
+            ); 
+          } catch (e) {}
         }
       }
 
@@ -41,17 +45,13 @@ export const dbService = {
         const res = await fetch('/api/users', { cache: 'no-store' });
         const json = await res.json();
         if (json.success && Array.isArray(json.users) && json.users.length > 0) {
-          const merged = [...json.users];
-          localUsers.forEach(lu => {
-            if (!merged.some(m => m.id === lu.id || (m.email && m.email === lu.email) || (m.username && m.username === lu.username))) {
-              merged.push(lu);
-            }
-          });
-
+          const filtered = json.users.filter((u: any) =>
+            !['fausto.fleck', 'ana.nunes', 'felipe.ribeiro', 'witalo.frota', 'diessica.hartmann', 'thaiane.antunes'].some(demo => u.email?.includes(demo) || u.username?.includes(demo))
+          );
           if (typeof window !== 'undefined') {
-            localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(merged));
+            localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(filtered));
           }
-          return merged;
+          return filtered;
         }
       } catch (err) {
         console.warn('[Users API Fetch Warning]:', err);
