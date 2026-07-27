@@ -34,7 +34,88 @@ interface TeamUser {
   isEmailConfirmed?: boolean
 }
 
-const DEFAULT_USERS: TeamUser[] = []
+export const DEFAULT_USERS: TeamUser[] = [
+  {
+    id: 'usr-admin-1',
+    name: 'Maurício Maciel',
+    email: 'mauricio@mtabi.com.br',
+    role: 'admin',
+    status: 'ativo',
+    phone: '(51) 99999-0000',
+    createdAt: '26/07/2026',
+    username: 'mauricio.maciel'
+  },
+  {
+    id: 'usr-rep-teste',
+    name: 'Representante Teste',
+    email: 'rep.teste@cartonpack.com.br',
+    role: 'representante',
+    status: 'ativo',
+    phone: '(51) 98888-1111',
+    createdAt: '26/07/2026',
+    username: 'rep.teste'
+  },
+  {
+    id: 'usr-rep-carlos',
+    name: 'Fausto Fleck',
+    email: 'fausto.fleck@cartonpack.com.br',
+    role: 'representante',
+    status: 'ativo',
+    phone: '(51) 99344-1234',
+    createdAt: '26/07/2026',
+    username: 'fausto.fleck'
+  },
+  {
+    id: 'usr-rep-juliana',
+    name: 'Ana Paula Nunes',
+    email: 'ana.nunes@cartonpack.com.br',
+    role: 'representante',
+    status: 'ativo',
+    phone: '(51) 98111-5555',
+    createdAt: '26/07/2026',
+    username: 'ana.nunes'
+  },
+  {
+    id: 'usr-rep-marcos',
+    name: 'Felipe Ribeiro',
+    email: 'felipe.ribeiro@cartonpack.com.br',
+    role: 'representante',
+    status: 'ativo',
+    phone: '(54) 99655-4433',
+    createdAt: '26/07/2026',
+    username: 'felipe.ribeiro'
+  },
+  {
+    id: 'usr-rep-fernanda',
+    name: 'Witalo Frota',
+    email: 'witalo.frota@cartonpack.com.br',
+    role: 'representante',
+    status: 'ativo',
+    phone: '(51) 99222-3344',
+    createdAt: '26/07/2026',
+    username: 'witalo.frota'
+  },
+  {
+    id: 'usr-sup-diessica',
+    name: 'Diéssica Hartmann',
+    email: 'diessica.hartmann@cartonpack.com.br',
+    role: 'vendedor',
+    status: 'ativo',
+    phone: '(51) 99344-1234',
+    createdAt: '26/07/2026',
+    username: 'diessica.hartmann'
+  },
+  {
+    id: 'usr-sup-thaiane',
+    name: 'Thaiane Antunes',
+    email: 'thaiane.antunes@cartonpack.com.br',
+    role: 'vendedor',
+    status: 'ativo',
+    phone: '(51) 98111-5555',
+    createdAt: '26/07/2026',
+    username: 'thaiane.antunes'
+  }
+]
 
 function formatPhoneBr(v: string) {
   const clean = v.replace(/\D/g, '')
@@ -85,10 +166,25 @@ export default function UsersPage() {
       if (saved) {
         try {
           const parsed = JSON.parse(saved)
-          const cleaned = parsed.filter((u: any) => !u.name?.includes('Versapack') && !u.email?.includes('versapack'))
-          localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(cleaned))
-          setUsers(cleaned)
-        } catch (e) {}
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const cleaned = parsed.filter((u: any) => !u.name?.includes('Versapack') && !u.email?.includes('versapack'))
+            DEFAULT_USERS.forEach(du => {
+              if (!cleaned.some((u: any) => u.id === du.id || u.email === du.email || u.username === du.username)) {
+                cleaned.push(du)
+              }
+            })
+            localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(cleaned))
+            setUsers(cleaned)
+          } else {
+            localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(DEFAULT_USERS))
+            setUsers(DEFAULT_USERS)
+          }
+        } catch (e) {
+          setUsers(DEFAULT_USERS)
+        }
+      } else {
+        localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(DEFAULT_USERS))
+        setUsers(DEFAULT_USERS)
       }
     }
 
@@ -97,6 +193,11 @@ export default function UsersPage() {
         const fetched = await dbService.usuarios.list()
         if (fetched && fetched.length > 0) {
           const cleaned = fetched.filter((u: any) => !u.name?.includes('Versapack') && !u.email?.includes('versapack'))
+          DEFAULT_USERS.forEach(du => {
+            if (!cleaned.some((u: any) => u.id === du.id || u.email === du.email || u.username === du.username)) {
+              cleaned.push(du)
+            }
+          })
           setUsers(cleaned)
         }
       } catch (e) {
