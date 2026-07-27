@@ -807,43 +807,60 @@ export default function DashboardPage() {
     })
   }, [pipelineDeals, selectedYear])
 
-  // 2. Dynamic Team Performance (Performance dos Usuários/Representantes — Somente Fechamentos Reais)
+  // 2. Dynamic Team Performance (Performance dos Usuários do Sistema — Somente Fechamentos Reais)
   const TEAM_PERFORMANCE = useMemo(() => {
     const repMap: Record<string, { name: string; role: string; closedCount: number; sales: number; avatarColor: string }> = {}
     
-    const standardReps = [
-      { name: 'Representante Teste', role: 'Representante Comercial', avatarColor: '#B4D932' },
-      { name: 'Eduarda Alves Talaska', role: 'Representante Comercial', avatarColor: '#38bdf8' },
-      { name: 'Pamela de Siqueira Garay', role: 'Vendedora Sênior', avatarColor: '#a855f7' },
-      { name: 'Andre Lazzari', role: 'Gerente Comercial', avatarColor: '#eab308' },
+    // Lista inicial de Usuários Oficiais do Sistema (SEM incluir nomes de contatos/clientes)
+    const baseSystemUsers = [
+      { name: 'Mauricio Maciel', role: 'Administrador', avatarColor: '#B4D932' },
+      { name: 'Representante Teste', role: 'Representante Comercial', avatarColor: '#38bdf8' }
     ]
 
-    standardReps.forEach(r => {
-      repMap[r.name.toLowerCase().trim()] = { ...r, closedCount: 0, sales: 0 }
+    baseSystemUsers.forEach(u => {
+      repMap[u.name.toLowerCase().trim()] = { ...u, closedCount: 0, sales: 0 }
     })
 
-    try {
-      const rawUsers = typeof window !== 'undefined' ? localStorage.getItem('crm_users') : null
-      if (rawUsers) {
-        const customUsers = JSON.parse(rawUsers)
-        customUsers.forEach((u: any) => {
-          if (u.name) {
-            const key = u.name.toLowerCase().trim()
-            if (!repMap[key]) {
-              repMap[key] = {
-                name: u.name,
-                role: u.role === 'vendedor' ? 'Vendedor Comercial' : u.role === 'representante' ? 'Representante Comercial' : 'Usuário',
-                closedCount: 0,
-                sales: 0,
-                avatarColor: '#B4D932'
-              }
-            }
-          }
-        })
-      }
-    } catch (e) {}
+    // Carrega usuários cadastrados na tela de Usuários (/users)
+    if (typeof window !== 'undefined') {
+      const keysToSearch = ['cp_crm_v7_official_users', 'crm_users']
+      keysToSearch.forEach(key => {
+        const raw = localStorage.getItem(key)
+        if (raw) {
+          try {
+            const list = JSON.parse(raw)
+            if (Array.isArray(list)) {
+              list.forEach((u: any) => {
+                if (u.name) {
+                  const cleanName = u.name.trim()
+                  if (!cleanName.includes('Versapack')) {
+                    const mapKey = cleanName.toLowerCase()
+                    const formattedRole = 
+                      u.role === 'admin' || u.role === 'administrador' ? 'Administrador' :
+                      u.role === 'vendedor' ? 'Vendedor Comercial' :
+                      u.role === 'representante' ? 'Representante Comercial' : 'Usuário do Sistema'
 
-    // Processa APENAS vendas fechadas e credita unicamente a USUÁRIOS VÁLIDOS (sem criar contatos como usuários)
+                    if (!repMap[mapKey]) {
+                      repMap[mapKey] = {
+                        name: cleanName,
+                        role: formattedRole,
+                        closedCount: 0,
+                        sales: 0,
+                        avatarColor: '#B4D932'
+                      }
+                    } else {
+                      repMap[mapKey].role = formattedRole
+                    }
+                  }
+                }
+              })
+            }
+          } catch (e) {}
+        }
+      })
+    }
+
+    // Processa APENAS vendas fechadas e credita unicamente se o responsável for um USUÁRIO DO SISTEMA válido
     pipelineDeals.forEach(d => {
       if (d.stage !== 'fechamento' && d.stage !== 'pos_venda') return
 
