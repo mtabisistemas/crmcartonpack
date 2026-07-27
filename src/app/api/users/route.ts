@@ -77,7 +77,8 @@ export async function POST(req: Request) {
           user_metadata: {
             full_name: user.name,
             role: user.role,
-            phone: user.phone
+            phone: user.phone,
+            isFirstAccess: true
           }
         })
       })

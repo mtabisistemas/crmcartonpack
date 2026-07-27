@@ -159,7 +159,10 @@ export default function LoginPage() {
     // 3. Fallback Supabase authentication
     try {
       const supabase = createClient()
-      const authPayload = cleanInput.includes('@') ? { email: cleanInput, password } : { email: `${cleanInput}@cartonpack.com`, password }
+      const authPayload = cleanInput.includes('@')
+        ? { email: cleanInput, password }
+        : { email: `${cleanInput}@crm.cartonpack.com.br`, password }
+
       const { error: sbError } = await supabase.auth.signInWithPassword(authPayload)
 
       if (sbError) {
@@ -170,13 +173,24 @@ export default function LoginPage() {
 
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        localStorage.setItem('crm_current_user', JSON.stringify({
+        const sessionData = {
           id: user.id,
-          name: user.user_metadata?.name || user.email?.split('@')[0],
-          email: user.email,
-          role: user.user_metadata?.role || 'admin',
+          name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0],
+          email: user.email?.endsWith('@crm.cartonpack.com.br') ? '' : user.email,
+          username: user.email?.split('@')[0],
+          role: user.user_metadata?.role || 'representante',
           status: 'ativo'
-        }))
+        }
+
+        // Check if this is the user's first access — force password change
+        if (user.user_metadata?.isFirstAccess === true) {
+          setTargetUser({ ...sessionData, supabaseUser: user })
+          setActiveStep('first-access')
+          setLoading(false)
+          return
+        }
+
+        localStorage.setItem('crm_current_user', JSON.stringify(sessionData))
       }
 
       router.push('/dashboard')
@@ -188,10 +202,10 @@ export default function LoginPage() {
   }
 
   // Handle first time password change
-  const handleSaveNewPassword = (e: React.FormEvent) => {
+  const handleSaveNewPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     setPasswordError('')
-    
+
     if (newPassword.length < 6) {
       setPasswordError('A nova senha deve ter pelo menos 6 caracteres.')
       return
@@ -201,53 +215,51 @@ export default function LoginPage() {
       return
     }
 
-    if (typeof window !== 'undefined' && targetUser) {
-      const savedUsers = localStorage.getItem('cp_crm_v7_official_users')
-      if (savedUsers) {
-        try {
-          const parsed = JSON.parse(savedUsers)
-          const isCarton = targetUser.email?.toLowerCase().endsWith('@cartonpack.com')
-          
-          const updated = parsed.map((u: any) => {
-            if (u.id === targetUser.id) {
-              return {
-                ...u,
-                password: newPassword,
-                isFirstAccess: false,
-                isEmailConfirmed: isCarton ? false : true
-              }
-            }
-            return u
-          })
-          
-          localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(updated))
-          
-          const updatedTargetUser = {
-            ...targetUser,
-            password: newPassword,
-            isFirstAccess: false,
-            isEmailConfirmed: isCarton ? false : true
-          }
-          setTargetUser(updatedTargetUser)
+    try {
+      const supabase = createClient()
 
-          if (isCarton && loginType === 'corporativo') {
-            setActiveStep('confirm-email')
-          } else {
-            localStorage.setItem('crm_current_user', JSON.stringify({
-              id: targetUser.id,
-              name: targetUser.name,
-              email: targetUser.email,
-              username: targetUser.username,
-              role: targetUser.role,
-              status: targetUser.status
-            }))
-            router.push('/dashboard')
-            router.refresh()
-          }
-        } catch (err) {
-          console.error(err)
-        }
+      // 1. Update password in Supabase Auth
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+        data: { isFirstAccess: false }
+      })
+
+      if (updateError) {
+        setPasswordError('Erro ao atualizar senha: ' + updateError.message)
+        return
       }
+
+      // 2. Update local state and save session
+      if (targetUser) {
+        // Also update localStorage users list if it exists
+        if (typeof window !== 'undefined') {
+          const savedUsers = localStorage.getItem('cp_crm_v7_official_users')
+          if (savedUsers) {
+            try {
+              const parsed = JSON.parse(savedUsers)
+              const updated = parsed.map((u: any) =>
+                u.id === targetUser.id ? { ...u, password: newPassword, isFirstAccess: false } : u
+              )
+              localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(updated))
+            } catch {}
+          }
+        }
+
+        const sessionData = {
+          id: targetUser.id,
+          name: targetUser.name,
+          email: targetUser.email,
+          username: targetUser.username,
+          role: targetUser.role,
+          status: targetUser.status
+        }
+        localStorage.setItem('crm_current_user', JSON.stringify(sessionData))
+      }
+
+      router.push('/dashboard')
+      router.refresh()
+    } catch (err: any) {
+      setPasswordError('Erro inesperado. Tente novamente.')
     }
   }
 
