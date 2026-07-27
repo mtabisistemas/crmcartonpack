@@ -43,6 +43,23 @@ import Link from 'next/link'
 
 declare let L: any
 
+const WhatsappIcon = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
+    <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" />
+  </svg>
+)
+
 interface DealMock {
   id: string
   title: string
@@ -1244,19 +1261,6 @@ export default function DashboardPage() {
                 <div className="w-full bg-black/40 rounded-full h-2 overflow-hidden border border-[var(--line)]">
                   <div className="bg-[var(--lime)] h-full transition-all duration-500 ease-out" style={{ width: `${(completedVisits / visitsGoal) * 100}%` }}></div>
                 </div>
-                
-                <button 
-                  onClick={() => {
-                    setSelectedContactId('')
-                    setAudioTranscription('')
-                    setPhotoUrl('')
-                    setShowCheckinModal(true)
-                  }}
-                  className="btn btn-primary py-3 text-xs font-black uppercase tracking-wider text-black flex items-center justify-center gap-2 rounded-xl shadow-lg shadow-[rgba(180,217,50,0.2)] mt-1 max-w-sm"
-                >
-                  <CheckCircle size={15} />
-                  <span>Registrar Atividade</span>
-                </button>
               </div>
 
               {/* Stats Grid */}
@@ -1401,35 +1405,76 @@ export default function DashboardPage() {
               {/* List Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {filteredMobileContacts.map(contact => {
-                  const isInactive = contact.status === 'inativo' || (contact.lastPurchaseDays && contact.lastPurchaseDays > 30)
                   return (
                     <div key={contact.id} className="card p-4 border border-[var(--line)] bg-[var(--card)] flex flex-col justify-between gap-3 hover:border-[var(--lime)]/30 transition-all">
                       <div className="flex justify-between items-start gap-2">
                         <div className="min-w-0">
                           <h4 className="text-sm font-bold text-[var(--white)] truncate">{contact.name}</h4>
                           <span className="text-[10px] font-mono text-[var(--gray)] block mt-0.5">{contact.company}</span>
-                          <span className="text-[10px] text-[var(--gray)] font-mono block">{contact.city} · {contact.state}</span>
+                          <span className="text-[10px] text-[var(--gray)] font-mono block">{contact.city}{contact.state ? ` · ${contact.state}` : ''}</span>
                         </div>
-                        <span className={`font-mono text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                          isInactive 
-                            ? 'bg-[rgba(239,68,68,0.15)] text-[var(--red)] border border-[rgba(239,68,68,0.25)]' 
-                            : 'bg-[rgba(34,197,94,0.15)] text-[var(--green)] border border-[rgba(34,197,94,0.25)]'
-                        }`}>
-                          {contact.lastPurchaseDays ? `${contact.lastPurchaseDays}d sem compra` : 'Inativo'}
-                        </span>
+                        {(() => {
+                          const s = contact.status || 'ativo'
+                          if (s === 'prospeccao') return (
+                            <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-400/15 text-amber-300 border border-amber-400/30 shrink-0">
+                              Prospecção
+                            </span>
+                          )
+                          if (s === 'inativo') return (
+                            <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-500/15 text-red-400 border border-red-500/30 shrink-0">
+                              Inativo
+                            </span>
+                          )
+                          return (
+                            <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-[var(--lime)]/15 text-[var(--lime)] border border-[var(--lime)]/30 shrink-0">
+                              Ativo
+                            </span>
+                          )
+                        })()}
                       </div>
 
-                      <div className="border-t border-[var(--line)] pt-3 flex gap-2">
+                      <div className="flex items-center justify-between text-[9px] font-mono text-[var(--gray2)] mt-1">
+                        <span>Última compra:</span>
+                        <span className="font-bold text-[var(--white)]">{contact.lastPurchaseDays ? `${contact.lastPurchaseDays}d sem comprar` : 'Sem compras'}</span>
+                      </div>
+
+                      <div className="border-t border-[var(--line)] pt-3 flex items-center justify-around gap-2">
+                        {/* Google Maps Navigation */}
                         <a 
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${contact.company || contact.name} ${contact.city}`)}`}
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${contact.company || contact.name} ${contact.city || ''}`)}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex-1 btn btn-secondary text-[11px] py-2 flex items-center justify-center gap-1.5 rounded-lg border-[var(--line)]"
+                          title="Navegar / Como chegar"
+                          className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[var(--lime)] text-[var(--lime)] transition-transform hover:scale-105"
                         >
-                          <Navigation size={12} className="text-[var(--lime)]" />
-                          <span>Como Chegar</span>
+                          <Navigation size={15} />
                         </a>
                         
+                        {/* Phone Call */}
+                        {contact.phone && (
+                          <a 
+                            href={`tel:${contact.phone.replace(/\D/g, '')}`}
+                            title="Ligar para o Cliente"
+                            className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-sky-500 text-sky-400 transition-transform hover:scale-105"
+                          >
+                            <Phone size={15} />
+                          </a>
+                        )}
+
+                        {/* WhatsApp (Original Green #25D366) */}
+                        {contact.phone && (
+                          <a 
+                            href={whatsappLink(contact.phone, `Olá ${contact.name}, tudo bem?`)}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Chamar no WhatsApp"
+                            className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[#25D366]/50 text-[#25D366] transition-transform hover:scale-105"
+                          >
+                            <WhatsappIcon size={16} className="text-[#25D366]" />
+                          </a>
+                        )}
+
+                        {/* Check-in / Registrar Atividade */}
                         <button 
                           onClick={() => {
                             setSelectedContactId(contact.id)
@@ -1437,10 +1482,10 @@ export default function DashboardPage() {
                             setPhotoUrl('')
                             setShowCheckinModal(true)
                           }}
-                          className="flex-1 btn btn-secondary text-[11px] py-2 flex items-center justify-center gap-1.5 rounded-lg hover:border-[var(--lime)] hover:text-[var(--lime)]"
+                          title="Registrar Atividade"
+                          className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[var(--lime)] text-[var(--lime)] transition-transform hover:scale-105"
                         >
-                          <CheckCircle size={12} />
-                          <span>Check-in</span>
+                          <CheckCircle size={15} />
                         </button>
                       </div>
                     </div>
@@ -1571,7 +1616,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between border-b border-[var(--line)] pb-2 mb-2">
                   <div className="flex items-center gap-2">
                     <Building size={13} className="text-[var(--lime)]" />
-                    <span className="text-xs font-bold font-display text-[var(--white)]">Meus Top Clientes & Embalagens</span>
+                    <span className="text-xs font-bold font-display text-[var(--white)]">Top Clientes</span>
                   </div>
                 </div>
 
@@ -1582,19 +1627,22 @@ export default function DashboardPage() {
                       <Building size={10} className="text-[var(--lime)]" /> Principais Clientes
                     </div>
                     <div className="space-y-1">
-                      {(filteredDeals.length > 0
-                        ? filteredDeals
+                      {(() => {
+                        const closedRepDeals = filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda')
+                        if (closedRepDeals.length > 0) {
+                          return closedRepDeals
                             .slice()
                             .sort((a, b) => b.value - a.value)
                             .slice(0, 5)
                             .map((cli, idx) => ({
                               rank: idx + 1,
                               name: cli.title,
-                              type: cli.curve ? `Curva ${cli.curve}` : 'Curva C',
+                              type: cli.curve ? `Curva ${cli.curve}` : 'Ativo',
                               value: cli.value
                             }))
-                        : TOP_CLIENTS
-                      ).map(cli => (
+                        }
+                        return TOP_CLIENTS
+                      })().map(cli => (
                         <div key={cli.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{cli.rank}</span>

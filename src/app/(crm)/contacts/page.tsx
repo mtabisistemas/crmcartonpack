@@ -2101,34 +2101,71 @@ export default function ContactsPage() {
                     <span className="text-[10px] font-mono text-[var(--gray)] block mt-0.5 truncate">{contact.company}</span>
                     <span className="text-[10px] text-[var(--gray)] font-mono block">{contact.city}{contact.state ? ` · ${contact.state}` : ''}</span>
                   </div>
-                  <span
-                    className="font-mono text-[10px] font-black px-2 py-0.5 rounded-md shrink-0"
-                    style={{
-                      background: contact.curve === 'A' ? 'rgba(180,217,50,0.12)' : contact.curve === 'B' ? 'rgba(240,196,25,0.1)' : 'rgba(255,255,255,0.05)',
-                      color: contact.curve === 'A' ? 'var(--lime)' : contact.curve === 'B' ? 'var(--yellow)' : 'var(--gray)',
-                      border: `1px solid ${contact.curve === 'A' ? 'rgba(180,217,50,0.25)' : contact.curve === 'B' ? 'rgba(240,196,25,0.2)' : 'var(--line)'}`
-                    }}
-                  >
-                    Curva {contact.curve}
-                  </span>
+                  {(() => {
+                    const s = contact.status || 'ativo'
+                    if (s === 'prospeccao') return (
+                      <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-400/15 text-amber-300 border border-amber-400/30 shrink-0">
+                        Prospecção
+                      </span>
+                    )
+                    if (s === 'inativo') return (
+                      <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-500/15 text-red-400 border border-red-500/30 shrink-0">
+                        Inativo
+                      </span>
+                    )
+                    return (
+                      <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-[var(--lime)]/15 text-[var(--lime)] border border-[var(--lime)]/30 shrink-0">
+                        Ativo
+                      </span>
+                    )
+                  })()}
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                      isInactive
-                        ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                        : 'bg-[var(--lime)]/10 text-[var(--lime)] border-[var(--lime)]/20'
-                    }`}
-                  >
-                    {isInactive ? '⚠ Atenção' : '● Ativo'}
-                  </span>
-                  {contact.lastPurchaseDays ? (
-                    <span className="text-[9px] text-[var(--gray)] font-mono">{contact.lastPurchaseDays}d sem comprar</span>
-                  ) : null}
+                <div className="flex items-center justify-between text-[9px] font-mono text-[var(--gray2)] mt-1">
+                  <span>Última compra:</span>
+                  <span className="font-bold text-[var(--white)]">{contact.lastPurchaseDays ? `${contact.lastPurchaseDays}d sem comprar` : 'Sem compras'}</span>
                 </div>
 
-                <div className="border-t border-[var(--line)] pt-3 flex gap-2">
+                <div className="border-t border-[var(--line)] pt-3 flex items-center justify-around gap-2">
+                  {/* Google Maps Navigation */}
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${contact.company || contact.name} ${contact.city || ''}`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    title="Navegar / Como chegar"
+                    className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[var(--lime)] text-[var(--lime)] transition-transform hover:scale-105"
+                  >
+                    <MapPin size={15} />
+                  </a>
+
+                  {/* Phone Call */}
+                  {contact.phone && (
+                    <a
+                      href={`tel:${contact.phone.replace(/\D/g, '')}`}
+                      onClick={(e) => e.stopPropagation()}
+                      title="Ligar para o Cliente"
+                      className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-sky-500 text-sky-400 transition-transform hover:scale-105"
+                    >
+                      <Phone size={15} />
+                    </a>
+                  )}
+
+                  {/* WhatsApp (Original Green #25D366) */}
+                  {contact.phone && (
+                    <a
+                      href={whatsappLink(contact.phone, `Olá ${contact.name}, tudo bem?`)}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      title="Chamar no WhatsApp"
+                      className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[#25D366]/50 text-[#25D366] transition-transform hover:scale-105"
+                    >
+                      <WhatsappIcon size={16} className="text-[#25D366]" />
+                    </a>
+                  )}
+
+                  {/* Registrar Atividade */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -2136,33 +2173,11 @@ export default function ContactsPage() {
                       setSelectedContactForActivity(contact.id)
                       setShowActivityModal(true)
                     }}
-                    className="flex-1 btn btn-secondary text-[11px] py-2 flex items-center justify-center gap-1.5 rounded-lg border-[var(--line)] hover:border-[var(--lime)] hover:text-[var(--lime)]"
+                    title="Registrar Atividade"
+                    className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[var(--lime)] text-[var(--lime)] transition-transform hover:scale-105"
                   >
-                    <CheckCircle size={12} className="text-[var(--lime)]" />
-                    <span>Atividade</span>
+                    <CheckCircle size={15} />
                   </button>
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${contact.company || contact.name} ${contact.city}`)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex-1 btn btn-secondary text-[11px] py-2 flex items-center justify-center gap-1.5 rounded-lg border-[var(--line)]"
-                  >
-                    <MapPin size={12} className="text-[var(--lime)]" />
-                    <span>Navegar</span>
-                  </a>
-                  {contact.phone && (
-                    <a
-                      href={whatsappLink(contact.phone, `Olá ${contact.name}, tudo bem?`)}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex-1 btn btn-secondary text-[11px] py-2 flex items-center justify-center gap-1.5 rounded-lg hover:border-green-500/50 hover:text-green-400"
-                    >
-                      <Phone size={12} />
-                      <span>Whats</span>
-                    </a>
-                  )}
                 </div>
               </div>
             )
