@@ -27,26 +27,64 @@ interface ProspeccaoModalProps {
 const PORTES = ['todos', 'MEI', 'Pequena', 'Média', 'Grande']
 
 const CITY_COORDS_MAP: Record<string, [number, number]> = {
-  'cachoeirinha-rs': [-29.9511, -51.0944],
+  // Mato Grosso (MT)
+  'lucas do rio verde-mt': [-13.0610, -55.9108],
+  'lucas do rio verde': [-13.0610, -55.9108],
+  'cuiaba-mt': [-15.6010, -56.0979],
+  'cuiaba': [-15.6010, -56.0979],
+  'varzea grande-mt': [-15.6464, -56.1325],
+  'sinop-mt': [-11.8608, -55.5094],
+  'sinop': [-11.8608, -55.5094],
+  'rondonopolis-mt': [-16.4674, -54.6370],
+  'sorriso-mt': [-12.5447, -55.7231],
+  'primavera do leste-mt': [-15.5583, -54.2981],
+
+  // Paraná (PR)
+  'londrina-pr': [-23.3045, -51.1696],
+  'londrina': [-23.3045, -51.1696],
+  'curitiba-pr': [-25.4284, -49.2733],
+  'curitiba': [-25.4284, -49.2733],
+  'maringa-pr': [-23.42099, -51.93305],
+  'maringa': [-23.42099, -51.93305],
+  'cascavel-pr': [-24.9578, -53.4590],
+  'ponta grossa-pr': [-25.0950, -50.1619],
+  'foz do iguacu-pr': [-25.5163, -54.5854],
+
+  // São Paulo (SP)
+  'sao paulo-sp': [-23.5505, -46.6333],
+  'campinas-sp': [-22.9099, -47.0626],
+  'ribeirao preto-sp': [-21.1704, -47.8103],
+  'sao jose dos campos-sp': [-23.1791, -45.8872],
+  'sorocaba-sp': [-23.5015, -47.4526],
+  'santos-sp': [-23.9608, -46.3331],
+
+  // Santa Catarina (SC)
+  'joinville-sc': [-26.3045, -48.8487],
+  'florianopolis-sc': [-27.5954, -48.5480],
+  'blumenau-sc': [-26.9194, -49.0661],
+  'chapecó-sc': [-27.1004, -52.6152],
+  'criciuma-sc': [-28.6775, -49.3703],
+
+  // Rio Grande do Sul (RS)
   'porto alegre-rs': [-30.0346, -51.2177],
   'caxias do sul-rs': [-29.1688, -51.1796],
   'canoas-rs': [-29.9178, -51.1841],
   'gravatai-rs': [-29.9430, -50.9934],
   'novo hamburgo-rs': [-29.6842, -51.1313],
   'sao leopoldo-rs': [-29.7592, -51.1472],
-  'varzea grande-mt': [-15.6464, -56.1325],
-  'cuiaba-mt': [-15.6010, -56.0979],
-  'sao paulo-sp': [-23.5505, -46.6333],
-  'campinas-sp': [-22.9099, -47.0626],
-  'curitiba-pr': [-25.4284, -49.2733],
-  'joinville-sc': [-26.3045, -48.8487],
-  'florianopolis-sc': [-27.5954, -48.5480],
+  'sapucaia do sul-rs': [-29.8197, -51.1608],
+  'esteio-rs': [-29.8622, -51.1578],
+
+  // Minas Gerais (MG)
   'belo horizonte-mg': [-19.9167, -43.9345],
+  'uberlandia-mg': [-18.9186, -48.2772],
+
+  // Rio de Janeiro (RJ)
   'rio de janeiro-rj': [-22.9068, -43.1729],
-  'salvador-ba': [-12.9777, -38.5016],
-  'recife-pe': [-8.0476, -34.8770],
-  'fortaleza-ce': [-3.7319, -38.5267],
+
+  // Goiás (GO) & DF
   'goiania-go': [-16.6869, -49.2648],
+  'brasilia-df': [-15.7975, -47.8919],
 }
 
 interface LeafletProspectMapProps {
@@ -64,37 +102,41 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
   const mapRef = React.useRef<HTMLDivElement>(null)
   const mapInstanceRef = React.useRef<any>(null)
   const markersRef = React.useRef<Record<string, any>>({})
-  const getCityCenter = (city?: string, uf?: string): [number, number] => {
-    const cleanStr = ((city || '') + ' ' + (uf || '')).toLowerCase().replace(/[^a-z0-9]/g, '')
-    if (cleanStr.includes('esteio')) return [-29.8622, -51.1578]
-    if (cleanStr.includes('sapucaia')) return [-29.8197, -51.1608]
-    if (cleanStr.includes('leopoldo')) return [-29.7592, -51.1472]
-    if (cleanStr.includes('hamburgo')) return [-29.6842, -51.1313]
-    if (cleanStr.includes('canoas')) return [-29.9178, -51.1841]
-    if (cleanStr.includes('portoalegre')) return [-30.0346, -51.2177]
-    if (cleanStr.includes('cachoeirinha')) return [-29.9511, -51.0944]
-    if (cleanStr.includes('gravatai')) return [-29.9430, -50.9934]
 
-    const matchedKey = Object.keys(CITY_COORDS_MAP).find(k => {
-      const cleanKey = k.replace(/[^a-z0-9]/g, '')
-      return cleanStr.includes(cleanKey) || cleanKey.includes(cleanStr)
-    })
-    if (matchedKey) return CITY_COORDS_MAP[matchedKey]
-    return [-29.8622, -51.1578]
+  const getCityCenter = (city?: string, uf?: string): [number, number] => {
+    const rawStr = ((city || '') + ' ' + (uf || '')).toLowerCase().trim()
+    const cleanStr = rawStr.replace(/[^a-z0-9]/g, '')
+
+    // 1. Check exact match in CITY_COORDS_MAP
+    for (const key of Object.keys(CITY_COORDS_MAP)) {
+      const cleanKey = key.replace(/[^a-z0-9]/g, '')
+      if (cleanStr.includes(cleanKey) || cleanKey.includes(cleanStr)) {
+        return CITY_COORDS_MAP[key]
+      }
+    }
+
+    // 2. Check state fallback
+    if (rawStr.includes('mt') || cleanStr.includes('mt')) return [-13.0610, -55.9108] // Mato Grosso (Lucas do Rio Verde / Cuiabá)
+    if (rawStr.includes('pr') || cleanStr.includes('pr')) return [-23.3045, -51.1696] // Paraná (Londrina / Curitiba)
+    if (rawStr.includes('sp') || cleanStr.includes('sp')) return [-23.5505, -46.6333] // São Paulo
+    if (rawStr.includes('sc') || cleanStr.includes('sc')) return [-27.0000, -50.0000] // Santa Catarina
+    if (rawStr.includes('mg') || cleanStr.includes('mg')) return [-18.9186, -48.2772] // Minas Gerais
+    if (rawStr.includes('go') || cleanStr.includes('go')) return [-16.6869, -49.2648] // Goiás
+    if (rawStr.includes('ms') || cleanStr.includes('ms')) return [-20.4428, -54.6464] // Mato Grosso do Sul
+
+    return [-29.8622, -51.1578] // Default RS
   }
 
   React.useEffect(() => {
     const L = (window as any).L
     if (!L || !mapRef.current) return
 
+    const firstLead = leads[0]
+    const center = getCityCenter(cidade || firstLead?.cidade, estado || firstLead?.estado)
+
     if (!mapInstanceRef.current) {
-      const center = getCityCenter(cidade || leads[0]?.cidade, estado || leads[0]?.estado)
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.setView(center, 13)
-    }
-      const map = L.map(mapRef.current, { zoomControl: false, attributionControl: false }).setView(center, 13)
+      const map = L.map(mapRef.current, { zoomControl: false, attributionControl: false }).setView(center, 12)
       
-      // MAPA NO MESMO ESTILO DO DASHBOARD (OpenStreetMap Standard com subdomínios válidos)
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         subdomains: 'abc',
@@ -105,9 +147,8 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     }
 
     const map = mapInstanceRef.current
-    const center = getCityCenter(cidade || leads[0]?.cidade, estado || leads[0]?.estado)
     if (map) {
-      map.setView(center, 13)
+      map.setView(center, 12)
       try { map.invalidateSize() } catch (e) {}
     }
     Object.values(markersRef.current).forEach((m: any) => {
@@ -381,24 +422,36 @@ export function ProspeccaoModal({
     })
     return () => { isMounted = false }
   }, [regiaoTexto])
+  const [allLeads, setAllLeads] = useState<ProspectLead[]>([])
+
   const fetchLeads = useCallback(async (p = 1) => {
     try {
       setLoading(true)
       setHasSearched(true)
       setSelectedCnpjs([])
-      const data = await prospectingService.searchLeads({
+
+      // Busca conjunto total de até 50 leads da região para o mapa completo
+      const dataAll = await prospectingService.searchLeads({
         setor_texto: setorTexto === 'Todos os setores' ? '' : setorTexto,
         regiao: regiaoTexto === 'Todo Brasil' ? '' : regiaoTexto,
         porte: porte === 'todos' ? '' : porte,
-        page: p,
-        limit: 10,
+        page: 1,
+        limit: 50,
       })
-      setResult(data)
-      setLeads(data.leads)
+      setAllLeads(dataAll.leads)
+
+      // Paginação visual de 10 em 10 na lista da esquerda
+      const startIdx = (p - 1) * 10
+      const pageLeads = dataAll.leads.slice(startIdx, startIdx + 10)
+      setLeads(pageLeads.length > 0 ? pageLeads : dataAll.leads.slice(0, 10))
+      
+      setResult(dataAll)
       setCurrentPage(p)
-      // Disparar enriquecimento autêntico em background apenas se não estiver enriquecido
-      data.leads
+
+      // Disparar enriquecimento em background
+      dataAll.leads
         .filter(l => !l.isDuplicate && !l.enriched)
+        .slice(0, 10)
         .forEach(lead => enrichLeadInBackground(lead.cnpj, lead.estado, lead.cidade, lead.cnae_codigo))
     } catch (e) {
       console.error(e)
@@ -937,7 +990,7 @@ export function ProspeccaoModal({
                 {/* Painel da Direita (12 ou 7 cols): Mapa Interativo Leaflet estilo Google Places */}
                 <div className={`${isMapExpanded ? 'lg:col-span-12' : 'lg:col-span-7'} h-full min-h-0 flex flex-col overflow-hidden transition-all duration-300`}>
                   <LeafletProspectMap
-                    leads={isMapExpanded ? (result?.leads || leads) : leads}
+                    leads={isMapExpanded ? (allLeads.length ? allLeads : (result?.leads || leads)) : leads}
                     selectedLeadCnpj={activeLeadMapCnpj}
                     onSelectLead={(l) => setActiveLeadMapCnpj(l.cnpj)}
                     onOpenDetails={(l) => setActiveLeadDetails(l)}
