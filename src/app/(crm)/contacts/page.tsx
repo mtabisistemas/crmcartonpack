@@ -245,10 +245,7 @@ function ContactDrawer({
       setLinkedin(contact.linkedin ?? '')
       setFacebook(contact.facebook ?? '')
 
-      setActivities([
-        { id: '1', type: 'nota', content: 'Ficha cadastral criada no CRM Carton Pack.', timestamp: '10/07/2026 09:00' },
-        { id: '2', type: 'whatsapp', content: 'WhatsApp enviado solicitando retorno sobre proposta de caixas acopladas.', timestamp: '14/07/2026 14:15' },
-      ])
+      setActivities(contact.activities || [])
     } else {
       setIsOpen(false)
     }
@@ -904,19 +901,25 @@ function ContactDrawer({
               </form>
 
               {/* Timeline list */}
-              <div className="relative pl-6 flex flex-col gap-6 border-l border-[var(--line)] ml-3 mt-2">
-                {activities.map(act => (
-                  <div key={act.id} className="relative">
-                    <div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center text-[var(--gray)]">
-                      {getActivityIcon(act.type)}
+              {activities.length === 0 ? (
+                <div className="card p-8 text-center text-xs text-[var(--gray2)] font-mono border-dashed">
+                  Nenhum histórico registrado até o momento. Utilize o formulário acima para lançar uma anotação ou atividade.
+                </div>
+              ) : (
+                <div className="relative pl-6 flex flex-col gap-6 border-l border-[var(--line)] ml-3 mt-2">
+                  {activities.map(act => (
+                    <div key={act.id} className="relative">
+                      <div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center text-[var(--gray)]">
+                        {getActivityIcon(act.type)}
+                      </div>
+                      <div className="text-[10px] text-[var(--gray2)] font-mono">{act.timestamp}</div>
+                      <div className="card p-3 border-[var(--line)] bg-[var(--card)] text-xs text-[var(--white)] mt-1 ml-1">
+                        {act.content}
+                      </div>
                     </div>
-                    <div className="text-[10px] text-[var(--gray2)] font-mono">{act.timestamp}</div>
-                    <div className="card p-3 border-[var(--line)] bg-[var(--card)] text-xs text-[var(--white)] mt-1 ml-1">
-                      {act.content}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1609,6 +1612,7 @@ export default function ContactsPage() {
   const [selectedContact, setSelectedContact] = useState<MockContact | null>(null)
   const [showNewContactModal, setShowNewContactModal] = useState(false)
   const [showProspeccaoModal, setShowProspeccaoModal] = useState(false)
+  const [duplicateModalData, setDuplicateModalData] = useState<MockContact | null>(null)
 
   // Dynamic representatives list from CRM Users in localStorage
   const [representativesList, setRepresentativesList] = useState<string[]>([])
@@ -1834,14 +1838,7 @@ export default function ContactsPage() {
     })
 
     if (existingDuplicate) {
-      alert(`⚠️ CLIENTE JÁ CADASTRADO NO SISTEMA!
-
-Razão Social / Empresa: ${existingDuplicate.company}
-CNPJ: ${existingDuplicate.cnpj || 'Não informado'}
-Representante Vinculado: ${existingDuplicate.representative || 'Sem representante'}
-Status Atual: ${existingDuplicate.status}
-
-Para evitar duplicidade, utilize o cadastro já existente.`)
+      setDuplicateModalData(existingDuplicate)
       return false
     }
 
@@ -2335,6 +2332,58 @@ Para evitar duplicidade, utilize o cadastro já existente.`)
         contactsList={filteredContacts}
         preselectedContactId={selectedContactForActivity}
       />
+
+      {/* ── DUPLICATE CLIENT WARNING MODAL (Padrão do Sistema) ── */}
+      {duplicateModalData && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[1000000] flex items-center justify-center p-4">
+          <div className="bg-[var(--charcoal)] border border-[var(--line)] rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 animate-fade-up">
+            <div className="flex items-center gap-3 border-b border-[var(--line)] pb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 className="font-display text-sm text-[var(--white)] font-bold">CLIENTE JÁ CADASTRADO!</h3>
+                <p className="text-xs text-[var(--gray2)] mt-0.5 font-mono">Já existe um cadastro com essa Razão Social/CNPJ.</p>
+              </div>
+            </div>
+
+            <div className="bg-[var(--card2)] border border-[var(--line)] rounded-xl p-3.5 flex flex-col gap-2.5 text-xs">
+              <div>
+                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase block">Razão Social / Empresa</span>
+                <span className="font-bold text-[var(--white)]">{duplicateModalData.company}</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase block">CNPJ</span>
+                <span className="font-mono text-[var(--lime)] font-bold">{duplicateModalData.cnpj || 'Não informado'}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[var(--line)]/50">
+                <div>
+                  <span className="text-[10px] font-mono text-[var(--gray2)] uppercase block">Representante</span>
+                  <span className="font-semibold text-slate-200">{duplicateModalData.representative || 'Sem representante'}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono text-[var(--gray2)] uppercase block">Status Atual</span>
+                  <span className="font-semibold capitalize text-amber-400">{duplicateModalData.status}</span>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-[var(--gray2)] leading-relaxed">
+              Para evitar registros duplicados na carteira, utilize o cadastro já existente ou acesse a ficha do cliente.
+            </p>
+
+            <div className="flex justify-end gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setDuplicateModalData(null)}
+                className="btn btn-primary py-2.5 px-6 text-xs font-bold uppercase tracking-wider text-[#060606] w-full rounded-xl"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
