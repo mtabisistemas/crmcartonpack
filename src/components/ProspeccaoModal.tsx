@@ -27,17 +27,105 @@ interface ProspeccaoModalProps {
 const PORTES = ['todos', 'MEI', 'Pequena', 'Média', 'Grande']
 
 const CITY_COORDS_MAP: Record<string, [number, number]> = {
-  // Mato Grosso (MT)
-  'lucas do rio verde-mt': [-13.0610, -55.9108],
-  'lucas do rio verde': [-13.0610, -55.9108],
-  'cuiaba-mt': [-15.6010, -56.0979],
-  'cuiaba': [-15.6010, -56.0979],
-  'varzea grande-mt': [-15.6464, -56.1325],
-  'sinop-mt': [-11.8608, -55.5094],
-  'sinop': [-11.8608, -55.5094],
-  'rondonopolis-mt': [-16.4674, -54.6370],
-  'sorriso-mt': [-12.5447, -55.7231],
-  'primavera do leste-mt': [-15.5583, -54.2981],
+  // Rondônia (RO)
+  'porto velho-ro': [-8.7619, -63.9039],
+  'porto velho': [-8.7619, -63.9039],
+  'ji-parana': [-10.8778, -61.9521],
+  'ariquemes': [-9.9133, -63.0408],
+
+  // Acre (AC)
+  'rio branco-ac': [-9.9754, -67.8249],
+  'rio branco': [-9.9754, -67.8249],
+
+  // Amazonas (AM)
+  'manaus-am': [-3.1190, -60.0217],
+  'manaus': [-3.1190, -60.0217],
+
+  // Roraima (RR)
+  'boa vista-rr': [2.8235, -60.6758],
+  'boa vista': [2.8235, -60.6758],
+
+  // Pará (PA)
+  'belem-pa': [-1.4558, -48.4902],
+  'belem': [-1.4558, -48.4902],
+  'ananindeua': [-1.3656, -48.3725],
+  'santarem': [-2.4431, -54.7083],
+
+  // Amapá (AP)
+  'macapa-ap': [0.0355, -51.0705],
+  'macapa': [0.0355, -51.0705],
+
+  // Tocantins (TO)
+  'palmas-to': [-10.2491, -48.3243],
+  'palmas': [-10.2491, -48.3243],
+  'araguaina': [-7.1917, -48.2072],
+
+  // Maranhão (MA)
+  'sao luis-ma': [-2.5307, -44.3068],
+  'sao luis': [-2.5307, -44.3068],
+  'imperatriz': [-5.5264, -47.4778],
+
+  // Piauí (PI)
+  'teresina-pi': [-5.0920, -42.8038],
+  'teresina': [-5.0920, -42.8038],
+
+  // Ceará (CE)
+  'fortaleza-ce': [-3.7319, -38.5267],
+  'fortaleza': [-3.7319, -38.5267],
+  'caucaia': [-3.7361, -38.6531],
+  'juazeiro do norte': [-7.2133, -39.3150],
+
+  // Rio Grande do Norte (RN)
+  'natal-rn': [-5.7945, -35.2110],
+  'natal': [-5.7945, -35.2110],
+  'mossoro': [-5.1878, -37.3442],
+
+  // Paraíba (PB)
+  'joao pessoa-pb': [-7.1195, -34.8450],
+  'joao pessoa': [-7.1195, -34.8450],
+  'campina grande': [-7.2306, -35.8811],
+
+  // Pernambuco (PE)
+  'recife-pe': [-8.0476, -34.8770],
+  'recife': [-8.0476, -34.8770],
+  'olinda': [-8.0089, -34.8553],
+  'caruaru': [-8.2839, -35.9761],
+
+  // Alagoas (AL)
+  'maceio-al': [-9.6658, -35.7350],
+  'maceio': [-9.6658, -35.7350],
+
+  // Sergipe (SE)
+  'aracaju-se': [-10.9472, -37.0731],
+  'aracaju': [-10.9472, -37.0731],
+
+  // Bahia (BA)
+  'salvador-ba': [-12.9777, -38.5016],
+  'salvador': [-12.9777, -38.5016],
+  'feira de santana': [-12.2667, -38.9667],
+
+  // Minas Gerais (MG)
+  'belo horizonte-mg': [-19.9167, -43.9345],
+  'belo horizonte': [-19.9167, -43.9345],
+  'uberlandia-mg': [-18.9186, -48.2772],
+  'uberlandia': [-18.9186, -48.2772],
+
+  // Espírito Santo (ES)
+  'vitoria-es': [-20.3155, -40.3128],
+  'vitoria': [-20.3155, -40.3128],
+  'vila velha': [-20.3297, -40.2925],
+
+  // Rio de Janeiro (RJ)
+  'rio de janeiro-rj': [-22.9068, -43.1729],
+  'rio de janeiro': [-22.9068, -43.1729],
+  'niteroi': [-22.8833, -43.1036],
+
+  // São Paulo (SP)
+  'sao paulo-sp': [-23.5505, -46.6333],
+  'sao paulo': [-23.5505, -46.6333],
+  'campinas-sp': [-22.9099, -47.0626],
+  'campinas': [-22.9099, -47.0626],
+  'ribeirao preto': [-21.1704, -47.8103],
 
   // Paraná (PR)
   'londrina-pr': [-23.3045, -51.1696],
@@ -47,44 +135,76 @@ const CITY_COORDS_MAP: Record<string, [number, number]> = {
   'maringa-pr': [-23.42099, -51.93305],
   'maringa': [-23.42099, -51.93305],
   'cascavel-pr': [-24.9578, -53.4590],
-  'ponta grossa-pr': [-25.0950, -50.1619],
-  'foz do iguacu-pr': [-25.5163, -54.5854],
-
-  // São Paulo (SP)
-  'sao paulo-sp': [-23.5505, -46.6333],
-  'campinas-sp': [-22.9099, -47.0626],
-  'ribeirao preto-sp': [-21.1704, -47.8103],
-  'sao jose dos campos-sp': [-23.1791, -45.8872],
-  'sorocaba-sp': [-23.5015, -47.4526],
-  'santos-sp': [-23.9608, -46.3331],
 
   // Santa Catarina (SC)
   'joinville-sc': [-26.3045, -48.8487],
   'florianopolis-sc': [-27.5954, -48.5480],
-  'blumenau-sc': [-26.9194, -49.0661],
-  'chapecó-sc': [-27.1004, -52.6152],
-  'criciuma-sc': [-28.6775, -49.3703],
+  'florianopolis': [-27.5954, -48.5480],
+  'blumenau': [-26.9194, -49.0661],
 
   // Rio Grande do Sul (RS)
   'porto alegre-rs': [-30.0346, -51.2177],
-  'caxias do sul-rs': [-29.1688, -51.1796],
+  'porto alegre': [-30.0346, -51.2177],
+  'caxias do sul': [-29.1688, -51.1796],
   'canoas-rs': [-29.9178, -51.1841],
-  'gravatai-rs': [-29.9430, -50.9934],
-  'novo hamburgo-rs': [-29.6842, -51.1313],
-  'sao leopoldo-rs': [-29.7592, -51.1472],
-  'sapucaia do sul-rs': [-29.8197, -51.1608],
-  'esteio-rs': [-29.8622, -51.1578],
+  'canoas': [-29.9178, -51.1841],
+  'gravatai': [-29.9430, -50.9934],
+  'novo hamburgo': [-29.6842, -51.1313],
+  'sao leopoldo': [-29.7592, -51.1472],
+  'sapucaia do sul': [-29.8197, -51.1608],
+  'esteio': [-29.8622, -51.1578],
 
-  // Minas Gerais (MG)
-  'belo horizonte-mg': [-19.9167, -43.9345],
-  'uberlandia-mg': [-18.9186, -48.2772],
+  // Mato Grosso do Sul (MS)
+  'campo grande-ms': [-20.4428, -54.6464],
+  'campo grande': [-20.4428, -54.6464],
+  'dourados': [-22.2231, -54.8064],
 
-  // Rio de Janeiro (RJ)
-  'rio de janeiro-rj': [-22.9068, -43.1729],
+  // Mato Grosso (MT)
+  'lucas do rio verde-mt': [-13.0610, -55.9108],
+  'lucas do rio verde': [-13.0610, -55.9108],
+  'cuiaba-mt': [-15.6010, -56.0979],
+  'cuiaba': [-15.6010, -56.0979],
+  'varzea grande': [-15.6464, -56.1325],
+  'sinop': [-11.8608, -55.5094],
+  'rondonopolis': [-16.4674, -54.6370],
+  'sorriso': [-12.5447, -55.7231],
 
-  // Goiás (GO) & DF
+  // Goiás (GO) & Distrito Federal (DF)
   'goiania-go': [-16.6869, -49.2648],
+  'goiania': [-16.6869, -49.2648],
   'brasilia-df': [-15.7975, -47.8919],
+  'brasilia': [-15.7975, -47.8919],
+}
+
+// Mapeamento oficial dos 27 Estados Brasileiros (Capitais)
+const STATE_CAPITALS_MAP: Record<string, [number, number]> = {
+  'RO': [-8.7619, -63.9039],  // Rondônia (Porto Velho)
+  'AC': [-9.9754, -67.8249],  // Acre (Rio Branco)
+  'AM': [-3.1190, -60.0217],  // Amazonas (Manaus)
+  'RR': [2.8235, -60.6758],   // Roraima (Boa Vista)
+  'PA': [-1.4558, -48.4902],  // Pará (Belém)
+  'AP': [0.0355, -51.0705],   // Amapá (Macapá)
+  'TO': [-10.2491, -48.3243], // Tocantins (Palmas)
+  'MA': [-2.5307, -44.3068],  // Maranhão (São Luís)
+  'PI': [-5.0920, -42.8038],  // Piauí (Teresina)
+  'CE': [-3.7319, -38.5267],  // Ceará (Fortaleza)
+  'RN': [-5.7945, -35.2110],  // Rio Grande do Norte (Natal)
+  'PB': [-7.1195, -34.8450],  // Paraíba (João Pessoa)
+  'PE': [-8.0476, -34.8770],  // Pernambuco (Recife)
+  'AL': [-9.6658, -35.7350],  // Alagoas (Maceió)
+  'SE': [-10.9472, -37.0731], // Sergipe (Aracaju)
+  'BA': [-12.9777, -38.5016], // Bahia (Salvador)
+  'MG': [-19.9167, -43.9345], // Minas Gerais (Belo Horizonte)
+  'ES': [-20.3155, -40.3128], // Espírito Santo (Vitória)
+  'RJ': [-22.9068, -43.1729], // Rio de Janeiro (Rio de Janeiro)
+  'SP': [-23.5505, -46.6333], // São Paulo (São Paulo)
+  'PR': [-23.3045, -51.1696], // Paraná (Londrina/Curitiba)
+  'SC': [-27.5954, -48.5480], // Santa Catarina (Florianópolis)
+  'RS': [-30.0346, -51.2177], // Rio Grande do Sul (Porto Alegre)
+  'MS': [-20.4428, -54.6464], // Mato Grosso do Sul (Campo Grande)
+  'MT': [-13.0610, -55.9108], // Mato Grosso (Lucas do Rio Verde/Cuiabá)
+  'GO': [-16.6869, -49.2648], // Goiás (Goiânia)
+  'DF': [-15.7975, -47.8919], // Distrito Federal (Brasília)
 }
 
 interface LeafletProspectMapProps {
@@ -107,24 +227,29 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     const rawStr = ((city || '') + ' ' + (uf || '')).toLowerCase().trim()
     const cleanStr = rawStr.replace(/[^a-z0-9]/g, '')
 
-    // 1. Check exact match in CITY_COORDS_MAP
+    // 1. Busca por nome da cidade no CITY_COORDS_MAP
     for (const key of Object.keys(CITY_COORDS_MAP)) {
       const cleanKey = key.replace(/[^a-z0-9]/g, '')
-      if (cleanStr.includes(cleanKey) || cleanKey.includes(cleanStr)) {
+      if (cleanStr.includes(cleanKey)) {
         return CITY_COORDS_MAP[key]
       }
     }
 
-    // 2. Check state fallback
-    if (rawStr.includes('mt') || cleanStr.includes('mt')) return [-13.0610, -55.9108] // Mato Grosso (Lucas do Rio Verde / Cuiabá)
-    if (rawStr.includes('pr') || cleanStr.includes('pr')) return [-23.3045, -51.1696] // Paraná (Londrina / Curitiba)
-    if (rawStr.includes('sp') || cleanStr.includes('sp')) return [-23.5505, -46.6333] // São Paulo
-    if (rawStr.includes('sc') || cleanStr.includes('sc')) return [-27.0000, -50.0000] // Santa Catarina
-    if (rawStr.includes('mg') || cleanStr.includes('mg')) return [-18.9186, -48.2772] // Minas Gerais
-    if (rawStr.includes('go') || cleanStr.includes('go')) return [-16.6869, -49.2648] // Goiás
-    if (rawStr.includes('ms') || cleanStr.includes('ms')) return [-20.4428, -54.6464] // Mato Grosso do Sul
+    // 2. Busca estrita por Sigla de Estado UF de 2 letras
+    const ufMatch = rawStr.match(/\b(ro|ac|am|rr|pa|ap|to|ma|pi|ce|rn|pb|pe|al|se|ba|mg|es|rj|sp|pr|sc|rs|ms|mt|go|df)\b/i)
+    if (ufMatch) {
+      const ufUpper = ufMatch[1].toUpperCase()
+      if (STATE_CAPITALS_MAP[ufUpper]) {
+        return STATE_CAPITALS_MAP[ufUpper]
+      }
+    }
 
-    return [-29.8622, -51.1578] // Default RS
+    // 3. Checagem direta pela prop estado
+    if (uf && STATE_CAPITALS_MAP[uf.toUpperCase()]) {
+      return STATE_CAPITALS_MAP[uf.toUpperCase()]
+    }
+
+    return [-29.8622, -51.1578] // RS Fallback
   }
 
   React.useEffect(() => {
