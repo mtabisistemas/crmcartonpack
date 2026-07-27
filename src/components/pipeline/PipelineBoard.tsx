@@ -261,16 +261,21 @@ function NewDealModal({
   onConfirm: (data: { title: string; contactName: string; company: string; value: number; stage: DealStage }) => void
   onCancel: () => void
 }) {
-  const [title, setTitle] = useState('')
+  const [clientName, setClientName] = useState('')
   const [contactName, setContactName] = useState('')
-  const [company, setCompany] = useState('')
   const [value, setValue] = useState(0)
   const [stage, setStage] = useState<DealStage>(initialStage)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title.trim() || !contactName.trim()) return
-    onConfirm({ title, contactName, company, value, stage })
+    if (!clientName.trim()) return
+    onConfirm({
+      title: clientName.trim(),
+      contactName: contactName.trim() || clientName.trim(),
+      company: clientName.trim(),
+      value,
+      stage
+    })
   }
 
   // Filter out Won/Lost stages from starting stages list
@@ -281,47 +286,33 @@ function NewDealModal({
       <form onSubmit={handleSubmit} className="bg-[var(--charcoal)] border border-[var(--line)] rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 animate-fade-up">
         <div>
           <h3 className="font-display text-base text-[var(--white)] font-bold">Novo Negócio</h3>
-          <p className="text-xs text-[var(--gray)] mt-1">Preencha as informações básicas do novo lead/oportunidade.</p>
+          <p className="text-xs text-[var(--gray)] mt-1">Preencha as informações básicas do novo negócio por cliente.</p>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="label">Título da Oportunidade *</label>
+          <label className="label">Nome do Cliente / Empresa *</label>
           <input 
             type="text" 
             required
-            className="input" 
-            placeholder="Ex: Embalagem Caixa Ovos Carton"
-            value={title} 
-            onChange={(e) => setTitle(e.target.value)}
+            className="input font-bold" 
+            placeholder="Ex: Madeireira Parisotto Ltda"
+            value={clientName} 
+            onChange={(e) => setClientName(e.target.value)}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="label">Nome do Contato *</label>
+            <label className="label">Nome do Contato</label>
             <input 
               type="text" 
-              required
               className="input" 
-              placeholder="Ex: Alberto Souza"
+              placeholder="Ex: Alberto Souza (opcional)"
               value={contactName} 
               onChange={(e) => setContactName(e.target.value)}
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="label">Empresa / Razão Social</label>
-            <input 
-              type="text" 
-              className="input" 
-              placeholder="Ex: Carton Distribuidora"
-              value={company} 
-              onChange={(e) => setCompany(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="label">Valor Estimado (R$)</label>
             <input 
@@ -332,19 +323,19 @@ function NewDealModal({
               onChange={(e) => setValue(Number(e.target.value) || 0)}
             />
           </div>
+        </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="label">Etapa Inicial</label>
-            <select 
-              className="input" 
-              value={stage} 
-              onChange={(e) => setStage(e.target.value as DealStage)}
-            >
-              {activeStages.map(s => (
-                <option key={s} value={s}>{STAGE_CONFIG[s].label}</option>
-              ))}
-            </select>
-          </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="label">Etapa Inicial</label>
+          <select 
+            className="input" 
+            value={stage} 
+            onChange={(e) => setStage(e.target.value as DealStage)}
+          >
+            {activeStages.map(s => (
+              <option key={s} value={s}>{STAGE_CONFIG[s].label}</option>
+            ))}
+          </select>
         </div>
 
         <div className="flex justify-end gap-3 mt-2">

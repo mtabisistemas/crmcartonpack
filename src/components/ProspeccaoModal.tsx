@@ -826,22 +826,19 @@ export function ProspeccaoModal({
         }
         contactList = [newContactObj, ...contactList.filter((c: any) => c.cnpj !== lead.cnpj)]
 
-        const newDealObj = {
-          id: 'deal_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-          clientName: lead.razao_social,
-          cnpj: lead.cnpj,
-          city: lead.cidade || '',
-          state: lead.estado || '',
+        // 2. Salva no Kanban Pipeline oficial (etapa 'leads' = Leads / Banco)
+        createPipelineDeal({
+          title: lead.razao_social,
+          company: lead.razao_social,
+          contactName: lead.contato_nome && lead.contato_nome !== 'Não Disponível' ? lead.contato_nome : lead.razao_social,
+          phone: lead.telefone,
+          email: lead.email,
           value: lead.porte === 'Grande' ? 150000 : lead.porte === 'Média' ? 45000 : 15000,
-          stage: 'leads_mapeados',
-          representative: targetLabel,
-          assignedTo: targetLabel,
-          assignedToId: targetUser?.id,
-          createdAt: new Date().toISOString(),
-          lastActivityDays: 0,
+          assignedToName: targetLabel,
+          stage: 'leads',
+          cnpj: lead.cnpj,
           notes: `Lead prospectado (${lead.setor} - ${lead.cidade}/${lead.estado}) distribuído para ${targetLabel}.`
-        }
-        dealsList = [newDealObj, ...dealsList.filter((d: any) => d.cnpj !== lead.cnpj)]
+        })
 
         // 3. Salva na tabela 'contacts' do Supabase (mesmo schema da página de Carteira)
         try {
@@ -1624,22 +1621,19 @@ function LeadDetailModal({ lead, usuariosDisponiveis, onClose, onLeadsImported }
       const existingDeals = typeof window !== 'undefined' ? localStorage.getItem('cp_crm_v7_official_deals') : null
       let dealsList = existingDeals ? JSON.parse(existingDeals) : []
 
-      const newDealObj = {
-        id: 'deal_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-        clientName: lead.razao_social,
-        cnpj: lead.cnpj,
-        city: lead.cidade || '',
-        state: lead.estado || '',
+      // 2. Salva no Kanban Pipeline oficial (etapa 'leads' = Leads / Banco)
+      createPipelineDeal({
+        title: lead.razao_social,
+        company: lead.razao_social,
+        contactName: lead.contato_nome && lead.contato_nome !== 'Não Disponível' ? lead.contato_nome : lead.razao_social,
+        phone: lead.telefone,
+        email: lead.email,
         value: lead.porte === 'Grande' ? 150000 : lead.porte === 'Média' ? 45000 : 15000,
-        stage: 'leads_mapeados',
-        representative: targetLabel,
-        assignedTo: targetLabel,
-        assignedToId: targetUser?.id,
-        createdAt: new Date().toISOString(),
-        lastActivityDays: 0,
+        assignedToName: targetLabel,
+        stage: 'leads',
+        cnpj: lead.cnpj,
         notes: `Lead prospectado (${lead.setor} - ${lead.cidade}/${lead.estado}) encaminhado para ${targetLabel}.`
-      }
-      dealsList = [newDealObj, ...dealsList.filter((d: any) => d.cnpj !== lead.cnpj)]
+      })
 
       if (typeof window !== 'undefined') {
         localStorage.setItem('crm_contacts', JSON.stringify(contactList))
