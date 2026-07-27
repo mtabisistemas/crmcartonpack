@@ -216,14 +216,15 @@ interface LeafletProspectMapProps {
   estado: string
   isMapExpanded?: boolean
   onToggleExpand?: () => void
+  geocodedCenter?: [number, number] | null
 }
 
-function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetails, cidade, estado, isMapExpanded, onToggleExpand }: LeafletProspectMapProps) {
+function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetails, cidade, estado, isMapExpanded, onToggleExpand, geocodedCenter }: LeafletProspectMapProps) {
   const mapRef = React.useRef<HTMLDivElement>(null)
   const mapInstanceRef = React.useRef<any>(null)
   const markersRef = React.useRef<Record<string, any>>({})
 
-  const getCityCenter = (city?: string, uf?: string): [number, number] => {
+  const getFallbackCenter = (city?: string, uf?: string): [number, number] => {
     const rawStr = ((city || '') + ' ' + (uf || '')).toLowerCase().trim()
     const cleanStr = rawStr.replace(/[^a-z0-9]/g, '')
 
@@ -249,7 +250,7 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
       return STATE_CAPITALS_MAP[uf.toUpperCase()]
     }
 
-    return [-29.8622, -51.1578] // RS Fallback
+    return [-15.7801, -47.9292] // Brasil fallback (centro geográfico)
   }
 
   React.useEffect(() => {
@@ -257,7 +258,8 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     if (!L || !mapRef.current) return
 
     const firstLead = leads[0]
-    const center = getCityCenter(cidade || firstLead?.cidade, estado || firstLead?.estado)
+    // Prefer geocodedCenter from Nominatim, fallback to hardcoded lookup
+    const center: [number, number] = geocodedCenter || getFallbackCenter(cidade || firstLead?.cidade, estado || firstLead?.estado)
 
     if (!mapInstanceRef.current) {
       const map = L.map(mapRef.current, { zoomControl: false, attributionControl: false }).setView(center, 12)
@@ -513,10 +515,13 @@ export function ProspeccaoModal({
       handleEnrichActiveLead(activeLeadDetails)
     }
   }, [activeLeadDetails?.cnpj])
-  // ── Seleá§á£o e Distribuição ──
+  // ── Seleção e Distribuição ──
   const [selectedCnpjs, setSelectedCnpjs] = useState<string[]>([])
   const [vendedorId, setVendedorId] = useState<string>(usuariosDisponiveis[0]?.id || '')
   const [importing, setImporting] = useState(false)
+  const [showConfirmDistribuir, setShowConfirmDistribuir] = useState(false)
+  // ── Geocoding (Nominatim) para posicionamento preciso no mapa ──
+  const [geocodedCenter, setGeocodedCenter] = useState<[number, number] | null>(null)
   // Autocomplete de Setores (Seção 1) quando digita
   const query = setorTexto.trim().toLowerCase()
   const qNorm = normalizeText(setorTexto)
@@ -554,6 +559,31 @@ export function ProspeccaoModal({
       setLoading(true)
       setHasSearched(true)
       setSelectedCnpjs([])
+
+      // ── Geocodifica a cidade pesquisada via Nominatim para posicionamento preciso no mapa ──
+      const cidadeParaGeocode = regiaoTexto && regiaoTexto !== 'Todo Brasil' ? regiaoTexto : ''
+      if (cidadeParaGeocode) {
+        try {
+          const geoQuery = encodeURIComponent(cidadeParaGeocode + ', Brasil')
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${geoQuery}&format=json&limit=1&countrycodes=br`, {
+            headers: { 'Accept-Language': 'pt-BR', 'User-Agent': 'CartonPackCRM/1.0' }
+          })
+          if (geoRes.ok) {
+            const geoData = await geoRes.json()
+            if (geoData && geoData.length > 0) {
+              const lat = parseFloat(geoData[0].lat)
+              const lon = parseFloat(geoData[0].lon)
+              if (!isNaN(lat) && !isNaN(lon)) {
+                setGeocodedCenter([lat, lon])
+              }
+            }
+          }
+        } catch (geoErr) {
+          console.warn('Nominatim geocoding failed, using fallback:', geoErr)
+        }
+      } else {
+        setGeocodedCenter(null)
+      }
 
       // Busca conjunto total de até 50 leads da região para o mapa completo
       const dataAll = await prospectingService.searchLeads({
@@ -635,29 +665,31 @@ export function ProspeccaoModal({
     const allSel = valid.every(c => selectedCnpjs.includes(c))
     setSelectedCnpjs(allSel ? [] : valid)
   }
+
   const handleDistribuir = async () => {
-    if (!selectedCnpjs.length) { toastService.warning('Selecione ao menos 1 lead.'); return }
     if (!vendedorId) { toastService.warning('Selecione o responsável.'); return }
+    
     const targetUser = usuariosDisponiveis.find(u => u.id === vendedorId)
     const targetLabel = targetUser?.nome || 'Responsável'
+
     try {
       setImporting(true)
       const toImport = leads
         .filter(l => selectedCnpjs.includes(l.cnpj))
         .map(l => getDisplayLead(l))
 
-      // 1. Atualiza a Carteira de Clientes (localStorage crm_contacts)
+      // 1. Salva em localStorage (Carteira de Clientes)
       const existingSaved = typeof window !== 'undefined' ? localStorage.getItem('crm_contacts') : null
       let contactList = existingSaved ? JSON.parse(existingSaved) : []
 
-      // 2. Atualiza o Kanban Pipeline (localStorage cp_crm_v7_official_deals)
+      // 2. Salva em localStorage (Kanban Pipeline)
       const existingDeals = typeof window !== 'undefined' ? localStorage.getItem('cp_crm_v7_official_deals') : null
       let dealsList = existingDeals ? JSON.parse(existingDeals) : []
 
       for (const lead of toImport) {
-        // Criar Cliente
+        const contactId = 'cli_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6)
         const newContactObj = {
-          id: 'cli_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          id: contactId,
           company: lead.razao_social,
           name: lead.contato_nome && lead.contato_nome !== 'Não Disponível' ? lead.contato_nome : lead.razao_social,
           cnpj: lead.cnpj,
@@ -678,7 +710,6 @@ export function ProspeccaoModal({
         }
         contactList = [newContactObj, ...contactList.filter((c: any) => c.cnpj !== lead.cnpj)]
 
-        // Criar Deal no Kanban
         const newDealObj = {
           id: 'deal_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
           clientName: lead.razao_social,
@@ -696,34 +727,39 @@ export function ProspeccaoModal({
         }
         dealsList = [newDealObj, ...dealsList.filter((d: any) => d.cnpj !== lead.cnpj)]
 
-        // Salva no Supabase se ativo
+        // 3. Salva na tabela 'contacts' do Supabase (mesmo schema da página de Carteira)
         try {
-          const novoCliente = await dbService.clientes.save({
-            razao_social: lead.razao_social,
-            cnpj: lead.cnpj,
-            cidade: lead.cidade,
-            estado: lead.estado,
-            segmento: lead.setor,
-            representante_id: targetUser?.papel === 'representante' ? targetUser.id : null,
-            vendedor_interno_id: targetUser?.papel === 'vendedor_interno' ? targetUser.id : null,
-            intervalo_medio_compras: null,
-            classificacao_potencial: lead.porte === 'Grande' ? 'A' : lead.porte === 'Média' ? 'B' : 'C',
-            volume_mensal: 0,
-            principais_produtos: [lead.setor],
-            exigencias_qualidade: `Prospecção B2B Real - CNAE: ${lead.cnae_codigo}`,
-          })
-          await dbService.orcamentos.save({
-            cliente_id: novoCliente.id,
-            responsavel_id: vendedorId,
-            etapa_atual: 'solicitacao_briefing',
-            probabilidade_fechamento: 3,
-            valor_aprovado: null,
-            data_fechamento: null,
-            motivo_perda: null,
-            justificativa_livre: `Lead prospectado (${lead.setor} - ${lead.cidade}/${lead.estado}) e atribuído a ${targetLabel}.`,
-          })
-        } catch (e) {
-          console.warn('Erro ao salvar Supabase:', e)
+          const { supabase } = await import('@/services/supabase-client')
+          if (supabase) {
+            const { error } = await supabase.from('contacts').insert([{
+              name: newContactObj.name,
+              company: newContactObj.company,
+              role: newContactObj.tradeName || newContactObj.company,
+              phone: newContactObj.phone,
+              email: newContactObj.email,
+              city: newContactObj.city,
+              state: newContactObj.state,
+              status: 'prospeccao',
+              curve: newContactObj.curve,
+              representative: targetLabel,
+              cnpj: newContactObj.cnpj,
+              address: newContactObj.address,
+              bairro: newContactObj.bairro,
+              cep: newContactObj.cep,
+              main_cnae: newContactObj.mainCnae,
+              registration_status: 'ATIVA',
+              tax_regime: lead.opcao_mei === 'Sim' ? 'MEI' : 'Simples Nacional',
+              special_situation: 'Nenhuma',
+              side_activities: JSON.stringify([]),
+            }])
+            if (error) {
+              console.warn('Aviso ao salvar no Supabase:', error.message)
+            } else {
+              console.log('Contato salvo no Supabase:', newContactObj.company)
+            }
+          }
+        } catch (supErr) {
+          console.warn('Erro Supabase (continuando com localStorage):', supErr)
         }
       }
 
@@ -735,7 +771,8 @@ export function ProspeccaoModal({
         window.dispatchEvent(new Event('storage'))
       }
 
-      toastService.success(`🚀 ${toImport.length} lead(s) encaminhado(s) com sucesso para ${targetLabel} e cadastrado(s) no Kanban/CRM!`)
+      toastService.success(`✅ ${toImport.length} lead(s) encaminhado(s) com sucesso para ${targetLabel}!`)
+      setShowConfirmDistribuir(false)
       if (onLeadsImported) onLeadsImported()
       await fetchLeads(currentPage)
     } catch (e) {

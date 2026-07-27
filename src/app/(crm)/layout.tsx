@@ -7,6 +7,8 @@ import { MobileNavBar } from '@/components/layout/MobileNavBar'
 import { MobileTopBar } from '@/components/layout/MobileTopBar'
 import { Loader2 } from 'lucide-react'
 
+import { ToastContainer } from '@/components/ToastContainer'
+
 export default function CRMLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -60,6 +62,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-layout">
+      <ToastContainer />
       <Sidebar />
       {/* Mobile Top Header Bar (admin/manager only — reps have their own header) */}
       <MobileTopBar />

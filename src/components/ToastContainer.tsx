@@ -33,7 +33,7 @@ export const ToastContainer: React.FC = () => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+    <div className="fixed top-4 right-4 z-[1000000] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
       {toasts.map(toast => {
         const bgClass = 
           toast.type === 'success' ? 'bg-[#18181B]/95 border-emerald-500/30 text-emerald-400' :
