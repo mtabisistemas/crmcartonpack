@@ -1761,7 +1761,7 @@ export default function ContactsPage() {
           try {
             const parsed = JSON.parse(savedUsers)
             const repsFromUsers = parsed
-              .filter((u: any) => u.role === 'representante' && u.status === 'ativo')
+              .filter((u: any) => u.status === 'ativo' || u.status !== 'inativo')
               .map((u: any) => u.name)
             if (repsFromUsers.length > 0) {
               setRepresentativesList(repsFromUsers)
@@ -1805,7 +1805,7 @@ export default function ContactsPage() {
         try {
           const parsed = JSON.parse(savedUsers)
           repsFromUsers = parsed
-            .filter((u: any) => u.role === 'representante' && u.status === 'ativo')
+            .filter((u: any) => u.status === 'ativo' || u.status !== 'inativo')
             .map((u: any) => u.name)
         } catch (e) {}
       }

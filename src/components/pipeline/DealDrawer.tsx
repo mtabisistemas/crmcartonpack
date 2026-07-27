@@ -608,15 +608,19 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="label">Representante / Vendedor</label>
+                  <div className="flex items-center justify-between">
+                    <label className="label">Representante / Vendedor</label>
+                    <span className="text-[10px] font-mono text-[var(--gray2)]">(Altere no cadastro do cliente)</span>
+                  </div>
                   <div className="relative flex items-center">
                     <Users size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                     <input 
                       type="text" 
-                      className="input w-full !pl-9" 
-                      placeholder="Ex: Representante Responsável"
-                      value={representative} 
-                      onChange={(e) => setRepresentative(e.target.value)}
+                      readOnly
+                      disabled
+                      className="input w-full !pl-9 bg-[var(--charcoal)] opacity-75 cursor-not-allowed text-[var(--gray)] font-medium" 
+                      placeholder="Não definido"
+                      value={representative || 'Não definido'} 
                     />
                   </div>
                 </div>
