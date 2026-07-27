@@ -29,10 +29,37 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
         const user = JSON.parse(currentUser)
         if (!user || !user.id || user.status === 'inativo') {
           localStorage.removeItem('crm_current_user')
+          document.cookie = 'cp_crm_session=; path=/; max-age=0'
           setIsAuthenticated(false)
-          router.replace('/login')
+          router.replace('/login?error=inactive')
           return
         }
+
+        // Live check against saved user accounts
+        const keysToSearch = ['crm_users', 'cp_crm_v7_official_users']
+        for (const key of keysToSearch) {
+          const raw = localStorage.getItem(key)
+          if (raw) {
+            try {
+              const list = JSON.parse(raw)
+              if (Array.isArray(list)) {
+                const match = list.find((u: any) => 
+                  u.id === user.id || 
+                  (u.email && user.email && u.email.toLowerCase() === user.email.toLowerCase()) ||
+                  (u.username && user.username && u.username.toLowerCase() === user.username.toLowerCase())
+                )
+                if (match && match.status === 'inativo') {
+                  localStorage.removeItem('crm_current_user')
+                  document.cookie = 'cp_crm_session=; path=/; max-age=0'
+                  setIsAuthenticated(false)
+                  router.replace('/login?error=inactive')
+                  return
+                }
+              }
+            } catch (e) {}
+          }
+        }
+
         setIsAuthenticated(true)
       } catch (e) {
         localStorage.removeItem('crm_current_user')

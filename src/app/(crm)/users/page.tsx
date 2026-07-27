@@ -94,9 +94,13 @@ export default function UsersPage() {
     syncUsers()
   }, [])
 
-  // Update local state only — source of truth is Supabase
+  // Update local state and local storage — synced with Supabase
   const saveUsers = (newUsers: TeamUser[]) => {
     setUsers(newUsers)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('crm_users', JSON.stringify(newUsers))
+      localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(newUsers))
+    }
   }
 
   const deriveUsername = (n: string) => {
@@ -137,6 +141,27 @@ export default function UsersPage() {
     setTempPassword(user.tempPassword || '')
     setUsername(user.username || '')
     setShowModal(true)
+  }
+
+  // Toggle user status quickly
+  const handleToggleStatus = async (user: TeamUser) => {
+    const newStatus: TeamUser['status'] = user.status === 'ativo' ? 'inativo' : 'ativo'
+    const updatedUser = { ...user, status: newStatus }
+    const updatedList = users.map(u => 
+      u.id === user.id ? updatedUser : u
+    )
+    saveUsers(updatedList)
+
+    try {
+      await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedUser)
+      })
+      setToastMessage(newStatus === 'inativo' ? `Acesso de ${user.name} suspenso com sucesso!` : `Acesso de ${user.name} reativado!`)
+    } catch (e) {
+      console.error('Failed to update user status on API', e)
+    }
   }
 
   const capitalizeName = (n: string) => {
@@ -253,15 +278,6 @@ export default function UsersPage() {
   // Delete user
   const handleDelete = (id: string) => {
     setUserToDelete(id)
-  }
-
-  // Toggle user status quickly
-  const handleToggleStatus = (user: TeamUser) => {
-    const newStatus: TeamUser['status'] = user.status === 'ativo' ? 'inativo' : 'ativo'
-    const updated = users.map(u => 
-      u.id === user.id ? { ...u, status: newStatus } : u
-    )
-    saveUsers(updated)
   }
 
   // Filter users list

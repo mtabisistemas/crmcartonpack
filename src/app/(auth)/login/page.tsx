@@ -27,6 +27,16 @@ export default function LoginPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwordError, setPasswordError] = useState('')
 
+  // Check for inactive error from URL on initial load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      if (urlParams.get('error') === 'inactive') {
+        setError('Seu usuário está inativo. O acesso ao sistema foi suspenso pelo administrador.')
+      }
+    }
+  }, [])
+
   // Clean old mock users on initial load if needed
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -46,8 +56,31 @@ export default function LoginPage() {
     const cleanInput = identifier.trim()
     const inputLower = cleanInput.toLowerCase()
 
-    // 0. AUTENTICAÇÃO EXCLUSIVA MASTER ADMIN (Maurício Maciel)
+    // Check if user is marked as inativo before any authentication step
     const isMasterUser = inputLower === 'mauricio@mtabi.com.br' || inputLower === 'mauricio'
+    if (typeof window !== 'undefined') {
+      const keysToSearch = ['crm_users', 'cp_crm_v7_official_users']
+      for (const key of keysToSearch) {
+        const raw = localStorage.getItem(key)
+        if (raw) {
+          try {
+            const list = JSON.parse(raw)
+            const matched = list.find((u: any) => 
+              (u.email && u.email.toLowerCase() === inputLower) ||
+              (u.username && u.username.toLowerCase() === inputLower) ||
+              (isMasterUser && (u.email?.toLowerCase() === 'mauricio@mtabi.com.br' || u.username === 'mauricio'))
+            )
+            if (matched && matched.status === 'inativo') {
+              setError('Seu usuário está inativo. Entre em contato com a administração para liberar o acesso.')
+              setLoading(false)
+              return
+            }
+          } catch (e) {}
+        }
+      }
+    }
+
+    // 0. AUTENTICAÇÃO EXCLUSIVA MASTER ADMIN (Maurício Maciel)
     if (isMasterUser) {
       if (password === '@Speni190868') {
         const masterSession = {
