@@ -350,8 +350,8 @@ export function RegisterActivityModal({
     : contactsList
 
   return (
-    <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[999999] flex flex-col justify-end lg:justify-center lg:items-center p-0 lg:p-4">
-      <div className="bg-[var(--charcoal)] border-t lg:border border-[var(--line)] rounded-t-3xl lg:rounded-3xl flex flex-col animate-fade-up max-w-lg mx-auto w-full max-h-[88vh] lg:max-h-[90vh] shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[999999] flex flex-col justify-start lg:justify-center lg:items-center p-0 lg:p-4">
+      <div className="bg-[var(--charcoal)] border-0 lg:border border-[var(--line)] rounded-none lg:rounded-3xl flex flex-col animate-fade-in max-w-lg mx-auto w-full h-full lg:h-auto lg:max-h-[90vh] shadow-2xl overflow-hidden">
         
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           {/* Modal Header */}
