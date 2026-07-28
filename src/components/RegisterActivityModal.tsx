@@ -60,6 +60,7 @@ export function RegisterActivityModal({
   const timerRef = useRef<any>(null)
   const finalTranscriptRef = useRef<string>('')
   const initialTextRef = useRef<string>('')
+  const isRecordingRef = useRef<boolean>(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -123,8 +124,6 @@ export function RegisterActivityModal({
 
     return result.join(' ').replace(/\s+/g, ' ').trim()
   }
-
-  const isRecordingRef = useRef<boolean>(false)
 
   const handleStartRecording = () => {
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {

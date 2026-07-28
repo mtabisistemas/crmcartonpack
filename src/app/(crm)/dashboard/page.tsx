@@ -1357,18 +1357,20 @@ export default function DashboardPage() {
           </h1>
           {/* Actions */}
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => {
-                setSelectedContactId('')
-                setAudioTranscription('')
-                setPhotoUrl('')
-                setShowCheckinModal(true)
-              }}
-              className="hidden lg:flex btn btn-secondary text-xs py-2 px-3 items-center gap-2 cursor-pointer text-white font-bold shadow-lg"
-            >
-              <CheckCircle size={14} />
-              <span>Registrar Atividade</span>
-            </button>
+            <div className="hidden lg:block">
+              <button
+                onClick={() => {
+                  setSelectedContactId('')
+                  setAudioTranscription('')
+                  setPhotoUrl('')
+                  setShowCheckinModal(true)
+                }}
+                className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-2 cursor-pointer text-white font-bold shadow-lg"
+              >
+                <CheckCircle size={14} />
+                <span>Registrar Atividade</span>
+              </button>
+            </div>
 
             <InstallPWAButton variant="mobile_header" className="lg:hidden" />
             <button
