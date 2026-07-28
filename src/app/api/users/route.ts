@@ -118,6 +118,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'E-mail do usuário é obrigatório' }, { status: 400 })
     }
 
+    // Corporate users MUST use @cartonpack.com.br domain
+    if (!isRep) {
+      if (!emailForAuth.endsWith('@cartonpack.com.br') && !emailForAuth.endsWith('@cartonpack.com')) {
+        return NextResponse.json({
+          success: false,
+          error: 'E-mail corporativo inválido. Usuários corporativos devem utilizar o e-mail oficial @cartonpack.com.br'
+        }, { status: 400 })
+      }
+    }
+
     let authUserId = isUUID(user.id) ? user.id : null
 
     // 1. Check in auth.users by email first

@@ -225,6 +225,16 @@ export default function UsersPage() {
     const isRep = role === 'representante'
     if (!name.trim() || (!isRep && !email.trim())) return
 
+    // Corporate users MUST use @cartonpack.com.br domain
+    if (!isRep) {
+      const cleanEmail = email.toLowerCase().trim()
+      if (!cleanEmail.endsWith('@cartonpack.com.br') && !cleanEmail.endsWith('@cartonpack.com')) {
+        setToastMessage('Atenção: E-mail corporativo inválido. É obrigatório utilizar o domínio @cartonpack.com.br')
+        setTimeout(() => setToastMessage(''), 4000)
+        return
+      }
+    }
+
     const formattedName = capitalizeName(name)
     const derivedUser = username || deriveUsername(formattedName)
     const isCarton = !isRep && email.includes('@')
@@ -631,7 +641,7 @@ export default function UsersPage() {
                       type="email"
                       required
                       className="input w-full !pl-9 font-mono text-xs"
-                      placeholder="Ex: joao.silva@suaempresa.com"
+                      placeholder="ex: joao.silva@cartonpack.com.br"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
