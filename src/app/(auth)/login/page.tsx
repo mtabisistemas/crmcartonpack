@@ -106,15 +106,10 @@ export default function LoginPage() {
       }
     }
 
-    // 1. VALIDAÇÃO DE ACESSO CORPORATIVO (Restrito a @cartonpack.com.br)
+    // 1. VALIDAÇÃO DE ACESSO CORPORATIVO E E-MAILS DE TESTE
     if (loginType === 'corporativo') {
       if (!cleanInput.includes('@')) {
-        setError('Acesso corporativo requer um e-mail válido (ex: nome@cartonpack.com.br).')
-        setLoading(false)
-        return
-      }
-      if (!inputLower.endsWith('@cartonpack.com') && !inputLower.endsWith('@cartonpack.com.br')) {
-        setError('Acesso corporativo restrito a e-mails autorizados da Carton Pack (@cartonpack.com.br).')
+        setError('Acesso corporativo requer um e-mail válido (ex: seuemail@dominio.com).')
         setLoading(false)
         return
       }
@@ -158,8 +153,8 @@ export default function LoginPage() {
                 return
               }
 
-              // Check if email confirmation is required (only for corporate cartonpack.com emails)
-              const isCarton = matchedUser.email?.toLowerCase().endsWith('@cartonpack.com')
+              // Check if email confirmation is required (for any corporate or test email)
+              const isCarton = !!matchedUser.email && matchedUser.email.includes('@')
               if (isCarton && matchedUser.isEmailConfirmed === false && loginType === 'corporativo') {
                 setActiveStep('confirm-email')
                 setLoading(false)
@@ -418,7 +413,7 @@ export default function LoginPage() {
                   )}
                   <input
                     type={loginType === 'representante' ? 'text' : 'email'}
-                    placeholder={loginType === 'representante' ? 'ex: fausto.fleck' : 'ex: roberto.carlos@cartonpack.com'}
+                    placeholder={loginType === 'representante' ? 'ex: fausto.fleck' : 'ex: seuemail@gmail.com ou corporativo'}
                     value={identifier}
                     onChange={e => setIdentifier(e.target.value)}
                     required

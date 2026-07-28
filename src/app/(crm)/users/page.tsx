@@ -194,7 +194,7 @@ export default function UsersPage() {
       console.error('Failed to sync temp password to API', e)
     }
 
-    const isCarton = user.email?.endsWith('@cartonpack.com') || user.email?.endsWith('@cartonpack.com.br')
+    const isCarton = !!user.email && user.email.includes('@')
     setCreatedUserCredentials({
       name: user.name,
       usernameOrEmail: user.role === 'representante' ? (user.username || user.name) : user.email,
@@ -227,7 +227,7 @@ export default function UsersPage() {
 
     const formattedName = capitalizeName(name)
     const derivedUser = username || deriveUsername(formattedName)
-    const isCarton = !isRep && (email.toLowerCase().endsWith('@cartonpack.com') || email.toLowerCase().endsWith('@cartonpack.com.br'))
+    const isCarton = !isRep && email.includes('@')
     const finalUsername = derivedUser
     // Representatives don't have real email — API generates internal email on the Supabase side
     const finalEmail = isRep ? '' : email
