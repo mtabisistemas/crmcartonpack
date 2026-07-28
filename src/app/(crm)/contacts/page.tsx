@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { 
   Search, 
   Filter, 
@@ -27,7 +27,8 @@ import {
   Copy,
   Check,
   CheckCircle,
-  Globe
+  Globe,
+  Users
 } from 'lucide-react'
 import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString } from '@/lib/utils'
 import { supabase } from '@/services/supabase-client'
@@ -1817,22 +1818,56 @@ export default function ContactsPage() {
 
   const isRep = currentUser?.role === 'representante' || currentUser?.role === 'vendedor'
 
+  // ── Pagination State ──
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 25
+
+  // ── Scoped Contacts for Metrics Calculation ──
+  const scopedContacts = useMemo(() => {
+    return contacts.filter(contact => {
+      if (isRep && contact.representative !== currentUser?.name) return false
+      return true
+    })
+  }, [contacts, isRep, currentUser?.name])
+
+  // ── Metrics Calculation (Total, Ativos, Inativos, Prospecção) ──
+  const metrics = useMemo(() => {
+    const total = scopedContacts.length
+    const ativos = scopedContacts.filter(c => c.status === 'ativo' || (!c.status && (!c.lastPurchaseDays || c.lastPurchaseDays <= 30))).length
+    const inativos = scopedContacts.filter(c => c.status === 'inativo' || (c.lastPurchaseDays && c.lastPurchaseDays > 30 && c.status !== 'prospeccao')).length
+    const prospeccao = scopedContacts.filter(c => c.status === 'prospeccao').length
+    return { total, ativos, inativos, prospeccao }
+  }, [scopedContacts])
+
   // Filtering logic — representatives only see their own clients
-  const filteredContacts = contacts.filter(contact => {
-    // Enforce rep scope: only own contacts
-    if (isRep && contact.representative !== currentUser?.name) return false
+  const filteredContacts = useMemo(() => {
+    return contacts.filter(contact => {
+      // Enforce rep scope: only own contacts
+      if (isRep && contact.representative !== currentUser?.name) return false
 
-    const matchesSearch = 
-      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.cnpj.includes(searchTerm)
-    
-    const matchesCurve = selectedCurve === 'all' || contact.curve === selectedCurve
-    const matchesRep = selectedRep === 'all' || contact.representative === selectedRep
-    const matchesStatus = selectedStatus === 'all' || contact.status === selectedStatus
+      const matchesSearch = 
+        contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contact.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contact.cnpj.includes(searchTerm)
+      
+      const matchesCurve = selectedCurve === 'all' || contact.curve === selectedCurve
+      const matchesRep = selectedRep === 'all' || contact.representative === selectedRep
+      const matchesStatus = selectedStatus === 'all' || contact.status === selectedStatus
 
-    return matchesSearch && matchesCurve && matchesRep && matchesStatus
-  })
+      return matchesSearch && matchesCurve && matchesRep && matchesStatus
+    })
+  }, [contacts, isRep, currentUser?.name, searchTerm, selectedCurve, selectedRep, selectedStatus])
+
+  // Reset pagination to page 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, selectedCurve, selectedRep, selectedStatus])
+
+  const totalPages = Math.ceil(filteredContacts.length / itemsPerPage) || 1
+  const paginatedContacts = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage
+    return filteredContacts.slice(start, start + itemsPerPage)
+  }, [filteredContacts, currentPage, itemsPerPage])
 
   function openMap(e: React.MouseEvent, contact: MockContact) {
     e.stopPropagation()
@@ -2038,6 +2073,73 @@ export default function ContactsPage() {
         </div>
       </div>
 
+      {/* ── KPI METRICS SUMMARY CARDS ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        {/* Card 1: Total de Clientes */}
+        <div 
+          onClick={() => setSelectedStatus('all')}
+          className={`card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedStatus === 'all' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-md' : 'border-[var(--line)] bg-[var(--card)]'
+          }`}
+        >
+          <div>
+            <span className="text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Total de Clientes</span>
+            <span className="text-2xl font-black text-[var(--white)] font-display mt-0.5 block">{metrics.total}</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+            <Users size={18} />
+          </div>
+        </div>
+
+        {/* Card 2: Clientes Ativos */}
+        <div 
+          onClick={() => setSelectedStatus('ativo')}
+          className={`card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedStatus === 'ativo' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-md' : 'border-[var(--line)] bg-[var(--card)]'
+          }`}
+        >
+          <div>
+            <span className="text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Clientes Ativos</span>
+            <span className="text-2xl font-black text-[var(--lime)] font-display mt-0.5 block">{metrics.ativos}</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-[var(--lime)]/10 border border-[var(--lime)]/20 text-[var(--lime)] flex items-center justify-center shrink-0">
+            <CheckCircle size={18} />
+          </div>
+        </div>
+
+        {/* Card 3: Inativos / Alerta */}
+        <div 
+          onClick={() => setSelectedStatus('inativo')}
+          className={`card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedStatus === 'inativo' ? 'border-red-500 bg-red-500/5 shadow-md' : 'border-[var(--line)] bg-[var(--card)]'
+          }`}
+        >
+          <div>
+            <span className="text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Inativos / Alerta</span>
+            <span className="text-2xl font-black text-red-400 font-display mt-0.5 block">{metrics.inativos}</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+            <AlertTriangle size={18} />
+          </div>
+        </div>
+
+        {/* Card 4: Em Prospecção */}
+        <div 
+          onClick={() => setSelectedStatus('prospeccao')}
+          className={`card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedStatus === 'prospeccao' ? 'border-amber-400 bg-amber-400/5 shadow-md' : 'border-[var(--line)] bg-[var(--card)]'
+          }`}
+        >
+          <div>
+            <span className="text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Em Prospecção</span>
+            <span className="text-2xl font-black text-amber-400 font-display mt-0.5 block">{metrics.prospeccao}</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center shrink-0">
+            <UserPlus size={18} />
+          </div>
+        </div>
+      </div>
+
       {/* Filters Bar */}
       <div className="card p-4 grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
         {/* Search — spans 2 cols */}
@@ -2101,7 +2203,7 @@ export default function ContactsPage() {
       {isRep ? (
         /* ── REPRESENTATIVE CARD GRID VIEW ── */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredContacts.map(contact => {
+          {paginatedContacts.map(contact => {
             const isInactive = contact.status === 'inativo' || (contact.lastPurchaseDays && contact.lastPurchaseDays > 30)
             return (
               <div
@@ -2210,9 +2312,9 @@ export default function ContactsPage() {
       ) : (
         /* ── ADMIN / MANAGER TABLE VIEW ── */
         <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
             <table className="w-full text-left border-collapse">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-[var(--charcoal)] shadow-sm">
                 <tr className="border-b border-[var(--line)] bg-[var(--charcoal)] font-mono text-[10px] text-[var(--gray)] uppercase tracking-wider">
                   <th className="p-4 pl-6">Cliente / CNPJ</th>
                   <th className="p-4 whitespace-nowrap">Curva</th>
@@ -2225,7 +2327,7 @@ export default function ContactsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--line)]">
-                {filteredContacts.map(contact => {
+                {paginatedContacts.map(contact => {
                   return (
                     <tr 
                       key={contact.id} 
@@ -2345,6 +2447,37 @@ export default function ContactsPage() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── PAGINATION CONTROLS BAR ── */}
+      {filteredContacts.length > 0 && (
+        <div className="card p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 border border-[var(--line)] bg-[var(--card)] shrink-0">
+          <div className="text-xs font-mono text-[var(--gray2)]">
+            Exibindo <span className="font-bold text-[var(--white)]">{(currentPage - 1) * itemsPerPage + 1}</span> a <span className="font-bold text-[var(--white)]">{Math.min(currentPage * itemsPerPage, filteredContacts.length)}</span> de <span className="font-bold text-[var(--white)]">{filteredContacts.length}</span> clientes
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              className="btn btn-secondary text-xs px-3.5 py-1.5 rounded-lg disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed font-mono font-bold"
+            >
+              &larr; Anterior
+            </button>
+
+            <span className="text-xs font-mono font-bold text-[var(--lime)] px-3">
+              Página {currentPage} de {totalPages}
+            </span>
+
+            <button
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              className="btn btn-secondary text-xs px-3.5 py-1.5 rounded-lg disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed font-mono font-bold"
+            >
+              Próxima &rarr;
+            </button>
           </div>
         </div>
       )}
