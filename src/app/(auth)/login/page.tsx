@@ -325,6 +325,14 @@ function translateAuthError(msg: string): string {
           role: targetUser.role,
           status: targetUser.status
         }
+
+        // If corporate or has email, force email confirmation step
+        const isCorporateOrEmailUser = loginType === 'corporativo' || (targetUser.email && targetUser.email.includes('@'))
+        if (isCorporateOrEmailUser && targetUser.isEmailConfirmed !== true) {
+          setActiveStep('confirm-email')
+          return
+        }
+
         localStorage.setItem('crm_current_user', JSON.stringify(sessionData))
       }
 
