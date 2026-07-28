@@ -350,6 +350,8 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
       const lng = baseCenter[1] + lngOffset
 
       const isSelected = selectedLeadCnpj === lead.cnpj
+      const isDuplicate = lead.isDuplicate || false
+      const pinColor = isSelected ? '#10b981' : isDuplicate ? '#f59e0b' : '#ea4335'
 
       // PIN LIMPO ESTILO GOOGLE MAPS (SEM TEXTO FIXO, APENAS O MARCADOR)
       const customIcon = L.divIcon({
@@ -358,7 +360,7 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
           <div style="
             width: 28px;
             height: 28px;
-            background-color: ${isSelected ? '#10b981' : '#ea4335'};
+            background-color: ${pinColor};
             border: 2px solid #ffffff;
             border-radius: 50% 50% 50% 0;
             transform: rotate(-45deg);
@@ -1270,17 +1272,17 @@ export function ProspeccaoModal({
                         </div>
 
                         <div>
-                          <h4 className="font-bold text-white text-sm font-display leading-tight hover:text-[var(--lime)] transition-colors">
+                          <h4 className="font-bold text-[var(--white)] text-sm font-display leading-tight hover:text-[var(--lime)] transition-colors">
                             {displayName}
                           </h4>
                           <p className="text-[11px] text-[var(--gray2)] mt-0.5 uppercase font-mono tracking-tight truncate">
                             {lead.razao_social}
                           </p>
-                          <div className="flex items-center gap-1.5 text-xs text-slate-300 mt-2 font-medium">
+                          <div className="flex items-center gap-1.5 text-xs text-[var(--white)] mt-2 font-medium">
                             <MapPin size={14} className="text-red-400 shrink-0" />
                             <span className="truncate">{lead.logradouro || `${lead.cidade}, ${lead.estado}`}</span>
                           </div>
-                          <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-2">
+                          <div className="text-[11px] text-[var(--gray)] mt-1 flex items-center gap-2">
                             <Building2 size={12} className="text-[var(--lime)] shrink-0" />
                             <span className="truncate">{lead.cnae_descricao || lead.setor}</span>
                           </div>
