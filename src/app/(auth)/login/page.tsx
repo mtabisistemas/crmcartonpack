@@ -227,6 +227,35 @@ export default function LoginPage() {
     }
   }
 
+function translateAuthError(msg: string): string {
+  if (!msg) return 'Erro ao atualizar senha. Tente novamente.'
+  const lower = msg.toLowerCase()
+
+  if (lower.includes('new password should be different from the old password') || lower.includes('same as old password')) {
+    return 'A nova senha deve ser diferente da senha temporária/anterior.'
+  }
+  if (lower.includes('password should be at least') || lower.includes('password is too short')) {
+    return 'A nova senha deve ter pelo menos 6 caracteres.'
+  }
+  if (lower.includes('invalid credentials') || lower.includes('invalid login credentials')) {
+    return 'Credenciais de acesso incorretas.'
+  }
+  if (lower.includes('user not found')) {
+    return 'Usuário não encontrado.'
+  }
+  if (lower.includes('email not confirmed')) {
+    return 'E-mail ainda não confirmado.'
+  }
+  if (lower.includes('session missing') || lower.includes('auth session missing')) {
+    return 'Sessão de autorização não encontrada. Redirecionando...'
+  }
+  if (lower.includes('rate limit') || lower.includes('too many requests')) {
+    return 'Muitas tentativas em pouco tempo. Por favor, aguarde alguns instantes.'
+  }
+
+  return msg
+}
+
   // Handle first time password change
   const handleSaveNewPassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -251,7 +280,8 @@ export default function LoginPage() {
       })
 
       if (updateError) {
-        setPasswordError('Erro ao atualizar senha: ' + updateError.message)
+        const ptMessage = translateAuthError(updateError.message)
+        setPasswordError('Erro ao atualizar senha: ' + ptMessage)
         return
       }
 
