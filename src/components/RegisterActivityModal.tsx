@@ -58,6 +58,8 @@ export function RegisterActivityModal({
 
   const recognitionRef = useRef<any>(null)
   const timerRef = useRef<any>(null)
+  const finalTranscriptRef = useRef<string>('')
+  const initialTextRef = useRef<string>('')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -99,12 +101,28 @@ export function RegisterActivityModal({
         recognition.interimResults = true
         recognition.lang = 'pt-BR'
 
+        // Preserve any text already present in description
+        initialTextRef.current = description ? description.trim() : ''
+        finalTranscriptRef.current = ''
+
         recognition.onresult = (event: any) => {
-          let currentTranscript = ''
-          for (let i = 0; i < event.results.length; i++) {
-            currentTranscript += event.results[i][0].transcript
+          let interimTranscript = ''
+
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript
+            if (event.results[i].isFinal) {
+              finalTranscriptRef.current += transcript + ' '
+            } else {
+              interimTranscript += transcript
+            }
           }
-          setDescription(currentTranscript)
+
+          const baseText = initialTextRef.current ? initialTextRef.current + ' ' : ''
+          const fullText = (baseText + finalTranscriptRef.current + interimTranscript)
+            .replace(/\s+/g, ' ')
+            .trim()
+
+          setDescription(fullText)
         }
 
         recognition.onerror = (event: any) => {
