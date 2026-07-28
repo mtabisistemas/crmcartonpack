@@ -318,6 +318,14 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     if (map) {
       map.setView(center, 12)
       try { map.invalidateSize() } catch (e) {}
+      // Clear all existing markers from map instance cleanly
+      try {
+        map.eachLayer((layer: any) => {
+          if (layer instanceof L.Marker) {
+            map.removeLayer(layer)
+          }
+        })
+      } catch (e) {}
     }
     Object.values(markersRef.current).forEach((m: any) => {
       try { m.remove() } catch {}
@@ -331,9 +339,10 @@ function LeafletProspectMap({ leads, selectedLeadCnpj, onSelectLead, onOpenDetai
     leads.forEach((lead, idx) => {
       // 1. Prefer exact address geocoordinates if found via Nominatim
       const exactCoords = leadCoordsMap?.[lead.cnpj]
-      // 2. Fallback to city dictionary lookup
+      // 2. Prefer geocoded center of the searched city
+      // 3. Fallback to dictionary lookup or capital
       const leadCityCoords = getFallbackCenter(lead.cidade, lead.estado)
-      const baseCenter = exactCoords || ((leadCityCoords[0] !== -15.7801) ? leadCityCoords : (geocodedCenter || center))
+      const baseCenter = exactCoords || geocodedCenter || ((leadCityCoords[0] !== -15.7801) ? leadCityCoords : center)
 
       const latOffset = exactCoords ? 0 : (Math.sin(idx * 2.3 + (lead.cnpj || '').length) * 0.004)
       const lngOffset = exactCoords ? 0 : (Math.cos(idx * 1.7 + (lead.cnpj || '').length) * 0.006)
@@ -564,7 +573,14 @@ export function ProspeccaoModal({
       handleEnrichActiveLead(activeLeadDetails)
     }
   }, [activeLeadDetails?.cnpj])
-  const isGestaoOuAdmin = (usuarioLogado as any)?.papel === 'admin' || (usuarioLogado as any)?.papel === 'gestor' || (usuarioLogado as any)?.papel === 'supervisor' || (usuarioLogado as any)?.role === 'admin' || (usuarioLogado as any)?.role === 'administrador' || (usuarioLogado as any)?.role === 'gestor' || (usuarioLogado as any)?.role === 'gestor_comercial'
+
+  const papelNorm = (usuarioLogado?.papel || (usuarioLogado as any)?.role || (usuarioLogado as any)?.papel_display || '').toString().toLowerCase().trim()
+  const isGestaoOuAdmin = 
+    papelNorm.includes('admin') || 
+    papelNorm.includes('gestor') || 
+    papelNorm.includes('supervisor') || 
+    papelNorm.includes('diretor') || 
+    papelNorm.includes('gerente')
   // ── Seleção e Distribuição ──
   const [selectedCnpjs, setSelectedCnpjs] = useState<string[]>([])
   const [vendedorId, setVendedorId] = useState<string>(usuarioLogado?.id || usuariosDisponiveis[0]?.id || '')
