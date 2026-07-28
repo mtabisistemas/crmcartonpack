@@ -2039,114 +2039,114 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-6">
+    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-3.5">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
           Carteira de Clientes
         </h1>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={() => {
               setSelectedContactForActivity('')
               setShowActivityModal(true)
             }}
-            className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-2 cursor-pointer text-white font-bold shadow-lg"
+            className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer text-white font-bold shadow-md"
           >
-            <CheckCircle size={14} />
+            <CheckCircle size={13} />
             <span>Registrar Atividade</span>
           </button>
 
           <button
             onClick={() => setShowProspeccaoModal(true)}
-            className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-2 cursor-pointer text-[var(--lime)] border-[var(--lime)]/30 hover:border-[var(--lime)] font-bold shadow-lg"
+            className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer text-[var(--lime)] border-[var(--lime)]/30 hover:border-[var(--lime)] font-bold shadow-md"
           >
-            <UserPlus size={14} />
+            <UserPlus size={13} />
             <span>Prospectar Leads</span>
           </button>
 
-          <button onClick={() => setShowNewContactModal(true)} className="btn btn-primary text-xs py-2 px-3 flex items-center gap-2 cursor-pointer">
-            <Plus size={14} />
+          <button onClick={() => setShowNewContactModal(true)} className="btn btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer">
+            <Plus size={13} />
             <span>Novo Cliente</span>
           </button>
         </div>
       </div>
 
       {/* ── KPI METRICS SUMMARY CARDS ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
         {/* Card 1: Total de Clientes */}
         <div 
           onClick={() => setSelectedStatus('all')}
-          className={`card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            selectedStatus === 'all' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-md' : 'border-[var(--line)] bg-[var(--card)]'
+          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedStatus === 'all' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
           }`}
         >
           <div>
-            <span className="text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Total de Clientes</span>
-            <span className="text-2xl font-black text-[var(--white)] font-display mt-0.5 block">{metrics.total}</span>
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Total de Clientes</span>
+            <span className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">{metrics.total}</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
-            <Users size={18} />
+          <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+            <Users size={15} />
           </div>
         </div>
 
         {/* Card 2: Clientes Ativos */}
         <div 
           onClick={() => setSelectedStatus('ativo')}
-          className={`card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            selectedStatus === 'ativo' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-md' : 'border-[var(--line)] bg-[var(--card)]'
+          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedStatus === 'ativo' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
           }`}
         >
           <div>
-            <span className="text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Clientes Ativos</span>
-            <span className="text-2xl font-black text-[var(--lime)] font-display mt-0.5 block">{metrics.ativos}</span>
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Clientes Ativos</span>
+            <span className="text-xl font-black text-[var(--lime)] font-display mt-0.5 block">{metrics.ativos}</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[var(--lime)]/10 border border-[var(--lime)]/20 text-[var(--lime)] flex items-center justify-center shrink-0">
-            <CheckCircle size={18} />
+          <div className="w-8 h-8 rounded-lg bg-[var(--lime)]/10 border border-[var(--lime)]/20 text-[var(--lime)] flex items-center justify-center shrink-0">
+            <CheckCircle size={15} />
           </div>
         </div>
 
         {/* Card 3: Inativos / Alerta */}
         <div 
           onClick={() => setSelectedStatus('inativo')}
-          className={`card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            selectedStatus === 'inativo' ? 'border-red-500 bg-red-500/5 shadow-md' : 'border-[var(--line)] bg-[var(--card)]'
+          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedStatus === 'inativo' ? 'border-red-500 bg-red-500/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
           }`}
         >
           <div>
-            <span className="text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Inativos / Alerta</span>
-            <span className="text-2xl font-black text-red-400 font-display mt-0.5 block">{metrics.inativos}</span>
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Inativos / Alerta</span>
+            <span className="text-xl font-black text-red-400 font-display mt-0.5 block">{metrics.inativos}</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center shrink-0">
-            <AlertTriangle size={18} />
+          <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+            <AlertTriangle size={15} />
           </div>
         </div>
 
         {/* Card 4: Em Prospecção */}
         <div 
           onClick={() => setSelectedStatus('prospeccao')}
-          className={`card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            selectedStatus === 'prospeccao' ? 'border-amber-400 bg-amber-400/5 shadow-md' : 'border-[var(--line)] bg-[var(--card)]'
+          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedStatus === 'prospeccao' ? 'border-amber-400 bg-amber-400/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
           }`}
         >
           <div>
-            <span className="text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Em Prospecção</span>
-            <span className="text-2xl font-black text-amber-400 font-display mt-0.5 block">{metrics.prospeccao}</span>
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Em Prospecção</span>
+            <span className="text-xl font-black text-amber-400 font-display mt-0.5 block">{metrics.prospeccao}</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center shrink-0">
-            <UserPlus size={18} />
+          <div className="w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center shrink-0">
+            <UserPlus size={15} />
           </div>
         </div>
       </div>
 
       {/* Filters Bar */}
-      <div className="card p-4 grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+      <div className="card p-3 grid grid-cols-1 md:grid-cols-5 gap-3 items-center">
         {/* Search — spans 2 cols */}
-        <div className={`${isRep ? 'md:col-span-3' : 'md:col-span-2'} flex items-center gap-2 input w-full`}>
-          <Search size={14} className="text-[var(--gray2)] shrink-0" />
+        <div className={`${isRep ? 'md:col-span-3' : 'md:col-span-2'} flex items-center gap-2 input w-full py-1.5 px-3`}>
+          <Search size={13} className="text-[var(--gray2)] shrink-0" />
           <input
-            className="bg-transparent border-none outline-none w-full text-sm text-[var(--white)] placeholder-[var(--gray2)]"
+            className="bg-transparent border-none outline-none w-full text-xs text-[var(--white)] placeholder-[var(--gray2)]"
             placeholder="Buscar razão social, CNPJ..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -2156,7 +2156,7 @@ export default function ContactsPage() {
         {/* Curva Filter */}
         <div>
           <select 
-            className="input w-full"
+            className="input w-full text-xs py-1.5 px-2.5"
             value={selectedCurve}
             onChange={(e) => setSelectedCurve(e.target.value)}
           >
@@ -2172,7 +2172,7 @@ export default function ContactsPage() {
         {!isRep && (
           <div>
             <select 
-              className="input w-full"
+              className="input w-full text-xs py-1.5 px-2.5"
               value={selectedRep}
               onChange={(e) => setSelectedRep(e.target.value)}
             >
@@ -2187,7 +2187,7 @@ export default function ContactsPage() {
         {/* Status Filter */}
         <div>
           <select 
-            className="input w-full"
+            className="input w-full text-xs py-1.5 px-2.5"
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
           >
@@ -2202,51 +2202,51 @@ export default function ContactsPage() {
       {/* List Container — Card Grid for reps, Table for admins */}
       {isRep ? (
         /* ── REPRESENTATIVE CARD GRID VIEW ── */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {paginatedContacts.map(contact => {
             const isInactive = contact.status === 'inativo' || (contact.lastPurchaseDays && contact.lastPurchaseDays > 30)
             return (
               <div
                 key={contact.id}
                 onClick={() => setSelectedContact(contact)}
-                className={`card p-4 border flex flex-col justify-between gap-3 cursor-pointer transition-all hover:border-[var(--lime)]/30 ${
+                className={`card p-3 border flex flex-col justify-between gap-2.5 cursor-pointer transition-all hover:border-[var(--lime)]/30 ${
                   isInactive ? 'border-red-500/30 bg-red-500/5' : 'border-[var(--line)] bg-[var(--card)]'
                 }`}
               >
                 <div className="flex justify-between items-start gap-2">
                   <div className="min-w-0">
-                    <h4 className="text-sm font-bold text-[var(--white)] truncate">{contact.company || contact.name}</h4>
+                    <h4 className="text-xs font-bold text-[var(--white)] truncate">{contact.company || contact.name}</h4>
                     {contact.company && contact.name && (
-                      <span className="text-[10px] font-mono text-[var(--gray)] block mt-0.5 truncate">Contato: {contact.name}</span>
+                      <span className="text-[9px] font-mono text-[var(--gray)] block mt-0.5 truncate">Contato: {contact.name}</span>
                     )}
-                    <span className="text-[10px] text-[var(--gray)] font-mono block">{contact.city}{contact.state ? ` · ${contact.state}` : ''}</span>
+                    <span className="text-[9px] text-[var(--gray)] font-mono block">{contact.city}{contact.state ? ` · ${contact.state}` : ''}</span>
                   </div>
                   {(() => {
                     const s = contact.status || 'ativo'
                     if (s === 'prospeccao') return (
-                      <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-400/15 text-amber-300 border border-amber-400/30 shrink-0">
+                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-400/15 text-amber-300 border border-amber-400/30 shrink-0">
                         Prospecção
                       </span>
                     )
                     if (s === 'inativo') return (
-                      <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-500/15 text-red-400 border border-red-500/30 shrink-0">
+                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30 shrink-0">
                         Inativo
                       </span>
                     )
                     return (
-                      <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-[var(--lime)]/15 text-[var(--lime)] border border-[var(--lime)]/30 shrink-0">
+                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--lime)]/15 text-[var(--lime)] border border-[var(--lime)]/30 shrink-0">
                         Ativo
                       </span>
                     )
                   })()}
                 </div>
 
-                <div className="flex items-center justify-between text-[9px] font-mono text-[var(--gray2)] mt-1">
+                <div className="flex items-center justify-between text-[9px] font-mono text-[var(--gray2)] mt-0.5">
                   <span>Última compra:</span>
                   <span className="font-bold text-[var(--white)]">{contact.lastPurchaseDays ? `${contact.lastPurchaseDays}d sem comprar` : 'Sem compras'}</span>
                 </div>
 
-                <div className="border-t border-[var(--line)] pt-3 flex items-center justify-around gap-2">
+                <div className="border-t border-[var(--line)] pt-2 flex items-center justify-around gap-1.5">
                   {/* Google Maps Navigation */}
                   <a
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${contact.company || contact.name} ${contact.city || ''}`)}`}
@@ -2254,9 +2254,9 @@ export default function ContactsPage() {
                     rel="noreferrer"
                     onClick={(e) => e.stopPropagation()}
                     title="Navegar / Como chegar"
-                    className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[var(--lime)] text-[var(--lime)] transition-transform hover:scale-105"
+                    className="btn btn-secondary p-1.5 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[var(--lime)] text-[var(--lime)] transition-transform hover:scale-105"
                   >
-                    <MapPin size={15} />
+                    <MapPin size={13} />
                   </a>
 
                   {/* Phone Call */}
@@ -2265,9 +2265,9 @@ export default function ContactsPage() {
                       href={`tel:${contact.phone.replace(/\D/g, '')}`}
                       onClick={(e) => e.stopPropagation()}
                       title="Ligar para o Cliente"
-                      className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-sky-500 text-sky-400 transition-transform hover:scale-105"
+                      className="btn btn-secondary p-1.5 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-sky-500 text-sky-400 transition-transform hover:scale-105"
                     >
-                      <Phone size={15} />
+                      <Phone size={13} />
                     </a>
                   )}
 
@@ -2279,9 +2279,9 @@ export default function ContactsPage() {
                       rel="noreferrer"
                       onClick={(e) => e.stopPropagation()}
                       title="Chamar no WhatsApp"
-                      className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[#25D366]/50 text-[#25D366] transition-transform hover:scale-105"
+                      className="btn btn-secondary p-1.5 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[#25D366]/50 text-[#25D366] transition-transform hover:scale-105"
                     >
-                      <WhatsappIcon size={16} className="text-[#25D366]" />
+                      <WhatsappIcon size={14} className="text-[#25D366]" />
                     </a>
                   )}
 
@@ -2294,9 +2294,9 @@ export default function ContactsPage() {
                       setShowActivityModal(true)
                     }}
                     title="Registrar Atividade"
-                    className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[var(--lime)] text-[var(--lime)] transition-transform hover:scale-105"
+                    className="btn btn-secondary p-1.5 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[var(--lime)] text-[var(--lime)] transition-transform hover:scale-105"
                   >
-                    <CheckCircle size={15} />
+                    <CheckCircle size={13} />
                   </button>
                 </div>
               </div>
@@ -2304,26 +2304,26 @@ export default function ContactsPage() {
           })}
 
           {filteredContacts.length === 0 && (
-            <div className="col-span-full card p-10 text-center text-sm text-[var(--gray2)] font-mono border-dashed">
+            <div className="col-span-full card p-8 text-center text-xs text-[var(--gray2)] font-mono border-dashed">
               Nenhum cliente encontrado na sua carteira.
             </div>
           )}
         </div>
       ) : (
-        /* ── ADMIN / MANAGER TABLE VIEW ── */
+        /* ── ADMIN / MANAGER COMPACT TABLE VIEW ── */
         <div className="card overflow-hidden">
-          <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto max-h-[68vh] overflow-y-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse text-xs">
               <thead className="sticky top-0 z-10 bg-[var(--charcoal)] shadow-sm">
-                <tr className="border-b border-[var(--line)] bg-[var(--charcoal)] font-mono text-[10px] text-[var(--gray)] uppercase tracking-wider">
-                  <th className="p-4 pl-6">Cliente / CNPJ</th>
-                  <th className="p-4 whitespace-nowrap">Curva</th>
-                  <th className="p-4">Cidade</th>
-                  <th className="p-4">UF</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Representante</th>
-                  <th className="p-4">Última Compra</th>
-                  <th className="p-4 pr-6 text-right">Localização</th>
+                <tr className="border-b border-[var(--line)] bg-[var(--charcoal)] font-mono text-[9px] text-[var(--gray)] uppercase tracking-wider">
+                  <th className="py-2.5 px-3 pl-4">Cliente / CNPJ</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Curva</th>
+                  <th className="py-2.5 px-3">Cidade</th>
+                  <th className="py-2.5 px-3">UF</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3">Representante</th>
+                  <th className="py-2.5 px-3">Última Compra</th>
+                  <th className="py-2.5 px-3 pr-4 text-right">Localização</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--line)]">
@@ -2335,30 +2335,30 @@ export default function ContactsPage() {
                       className={`transition-all duration-150 cursor-pointer ${contact.status === 'inativo' ? 'bg-[rgba(226,72,61,0.08)] hover:bg-[rgba(226,72,61,0.15)] border-l-4 border-l-[var(--red)]' : 'hover:bg-[var(--charcoal)]'}`}
                     >
                       {/* Cliente Info */}
-                      <td className="p-4 pl-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-[var(--line)] flex items-center justify-center text-[var(--white)] shrink-0">
-                            <Building2 size={16} />
+                      <td className="py-2 px-3 pl-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-[var(--line)] flex items-center justify-center text-[var(--white)] shrink-0">
+                            <Building2 size={14} />
                           </div>
-                          <div>
-                            <div className="text-sm font-bold text-[var(--white)] flex items-center gap-2">
-                              <span>{contact.company}</span>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-[var(--white)] flex items-center gap-2 truncate">
+                              <span className="truncate">{contact.company}</span>
                               {contact.status === 'inativo' && (
-                                <span className="font-mono text-[10px] text-[var(--gray)] flex items-center gap-1.5 font-normal">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-red-400/80 inline-block" />
+                                <span className="font-mono text-[9px] text-[var(--gray)] flex items-center gap-1 font-normal shrink-0">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
                                   Inativo
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-[var(--gray)] font-mono mt-0.5">{contact.cnpj}</div>
+                            <div className="text-[10px] text-[var(--gray)] font-mono leading-tight">{contact.cnpj}</div>
                           </div>
                         </div>
                       </td>
 
                       {/* Curva */}
-                      <td className="p-4 whitespace-nowrap">
+                      <td className="py-2 px-3 whitespace-nowrap">
                         <span 
-                          className="font-mono text-xs font-black px-2.5 py-1 rounded-md whitespace-nowrap inline-block shrink-0"
+                          className="font-mono text-[10px] font-black px-2 py-0.5 rounded whitespace-nowrap inline-block shrink-0"
                           style={{
                             background: contact.curve === 'A' ? 'rgba(180,217,50,0.12)' : contact.curve === 'B' ? 'rgba(240,196,25,0.1)' : 'rgba(255,255,255,0.05)',
                             color: contact.curve === 'A' ? 'var(--lime)' : contact.curve === 'B' ? 'var(--yellow)' : 'var(--gray)',
@@ -2370,33 +2370,33 @@ export default function ContactsPage() {
                       </td>
 
                       {/* Cidade */}
-                      <td className="p-4">
-                        <span className="text-xs text-[var(--white)] font-mono">{contact.city || <span className="text-[var(--gray2)]">-</span>}</span>
+                      <td className="py-2 px-3">
+                        <span className="text-[11px] text-[var(--white)] font-mono">{contact.city || <span className="text-[var(--gray2)]">-</span>}</span>
                       </td>
 
                       {/* UF */}
-                      <td className="p-4">
-                        <span className="text-xs font-bold text-[var(--gray)] font-mono uppercase">{contact.state || '-'}</span>
+                      <td className="py-2 px-3">
+                        <span className="text-[11px] font-bold text-[var(--gray)] font-mono uppercase">{contact.state || '-'}</span>
                       </td>
 
                       {/* Status */}
-                      <td className="p-4">
+                      <td className="py-2 px-3">
                         {(() => {
                           const s = contact.status || 'ativo'
                           if (s === 'prospeccao') return (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-amber-400/10 border border-amber-400/25 text-amber-300">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-amber-400/10 border border-amber-400/25 text-amber-300">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-pulse" />
                               Prospecção
                             </span>
                           )
                           if (s === 'inativo') return (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-red-500/10 border border-red-500/25 text-red-400">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-red-500/10 border border-red-500/25 text-red-400">
                               <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
                               Inativo
                             </span>
                           )
                           return (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-[var(--lime)]/10 border border-[var(--lime)]/25 text-[var(--lime)]">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-[var(--lime)]/10 border border-[var(--lime)]/25 text-[var(--lime)]">
                               <span className="w-1.5 h-1.5 rounded-full bg-[var(--lime)] inline-block" />
                               Ativo
                             </span>
@@ -2405,23 +2405,23 @@ export default function ContactsPage() {
                       </td>
 
                       {/* Representante */}
-                      <td className="p-4 text-xs font-semibold text-[var(--white)]">
-                        <div className="flex items-center gap-2">
-                          <User size={12} className="text-[var(--gray)]" />
-                          {contact.representative && !['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara'].includes(contact.representative) ? contact.representative : <span className="text-[var(--gray2)] font-normal italic">Sem representante</span>}
+                      <td className="py-2 px-3 text-xs font-semibold text-[var(--white)]">
+                        <div className="flex items-center gap-1.5">
+                          <User size={11} className="text-[var(--gray)] shrink-0" />
+                          <span className="truncate">{contact.representative && !['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara'].includes(contact.representative) ? contact.representative : <span className="text-[var(--gray2)] font-normal italic">Sem representante</span>}</span>
                         </div>
                       </td>
 
                       {/* Ultima compra */}
-                      <td className="p-4">
-                        <div className="flex flex-col gap-0.5">
+                      <td className="py-2 px-3">
+                        <div className="flex flex-col leading-tight">
                           <span className="text-xs font-bold text-[var(--white)] font-mono">{contact.lastPurchaseDays} dias</span>
-                          <span className="text-[10px] text-[var(--gray2)] uppercase tracking-wider font-mono">sem comprar</span>
+                          <span className="text-[9px] text-[var(--gray2)] uppercase tracking-wider font-mono">sem comprar</span>
                         </div>
                       </td>
 
                       {/* Localizacao — Google Maps icon */}
-                      <td className="p-4 pr-6 text-right">
+                      <td className="py-2 px-3 pr-4 text-right">
                         <button 
                           onClick={(e) => openMap(e, contact)}
                           title="Ver no Google Maps"
@@ -2431,7 +2431,7 @@ export default function ContactsPage() {
                               : 'text-[var(--gray2)] opacity-30 pointer-events-none'
                           }`}
                         >
-                          <MapPin size={18} />
+                          <MapPin size={15} />
                         </button>
                       </td>
                     </tr>
@@ -2440,7 +2440,7 @@ export default function ContactsPage() {
 
                 {filteredContacts.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="p-12 text-center text-sm text-[var(--gray2)] font-mono">
+                    <td colSpan={8} className="p-8 text-center text-xs text-[var(--gray2)] font-mono">
                       Nenhum cliente encontrado com os filtros selecionados.
                     </td>
                   </tr>
