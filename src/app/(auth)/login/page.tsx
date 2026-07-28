@@ -192,6 +192,46 @@ export default function LoginPage() {
       const { error: sbError } = await supabase.auth.signInWithPassword(authPayload)
 
       if (sbError) {
+        // Auto-repair: sync/create account in auth.users if created in profiles previously
+        try {
+          const repairRes = await fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'ensure-auth',
+              email: cleanInput,
+              password: password
+            })
+          })
+          const repairData = await repairRes.json()
+          if (repairData?.success) {
+            const { error: retryError } = await supabase.auth.signInWithPassword(authPayload)
+            if (!retryError) {
+              const { data: { user: retryUser } } = await supabase.auth.getUser()
+              if (retryUser) {
+                const sessionData = {
+                  id: retryUser.id,
+                  name: retryUser.user_metadata?.full_name || retryUser.user_metadata?.name || retryUser.email?.split('@')[0],
+                  email: retryUser.email?.endsWith('@crm.cartonpack.com.br') ? '' : retryUser.email,
+                  username: retryUser.email?.split('@')[0],
+                  role: retryUser.user_metadata?.role || 'representante',
+                  status: 'ativo'
+                }
+                if (retryUser.user_metadata?.isFirstAccess === true) {
+                  setTargetUser({ ...sessionData, supabaseUser: retryUser })
+                  setActiveStep('first-access')
+                  setLoading(false)
+                  return
+                }
+                localStorage.setItem('crm_current_user', JSON.stringify(sessionData))
+                router.push('/dashboard')
+                router.refresh()
+                return
+              }
+            }
+          }
+        } catch (repairErr) {}
+
         setError(loginType === 'representante' ? 'Nome de usuário ou senha incorretos.' : 'E-mail corporativo ou senha incorretos.')
         setLoading(false)
         return
