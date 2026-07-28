@@ -1517,10 +1517,10 @@ export function ProspeccaoModal({
                 <select
                   value={vendedorId}
                   onChange={e => setVendedorId(e.target.value)}
-                  className="bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[var(--lime)]/50 cursor-pointer min-w-[240px] max-w-[320px] w-auto"
+                  className="bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2 text-xs text-[var(--white)] outline-none focus:border-[var(--lime)]/50 cursor-pointer min-w-[240px] max-w-[320px] w-auto"
                 >
                   {usuariosDisponiveis.map(u => (
-                    <option key={u.id} value={u.id}>
+                    <option key={u.id} value={u.id} className="bg-[var(--card2)] text-[var(--white)]">
                       {u.nome} ({u.papel === 'representante' ? 'Representante' : u.papel === 'vendedor_interno' ? 'Vendedor Interno' : u.papel})
                     </option>
                   ))}
@@ -1548,7 +1548,7 @@ export function ProspeccaoModal({
                 <Users size={15} />
               </div>
               <div>
-                <div className="text-xs font-bold text-white font-display">Leads Selecionados</div>
+                <div className="text-xs font-bold text-[var(--white)] font-display">Leads Selecionados</div>
                 <div className="text-[10px] font-mono text-[var(--gray2)]">
                   {selectedCnpjs.length} lead(s) selecionado(s) para sua carteira
                 </div>
@@ -2136,12 +2136,12 @@ function LeadDetailModal({ lead, usuariosDisponiveis, usuarioLogado, isGestaoOuA
               <>
                 <span className="text-[10px] font-mono text-[var(--gray2)]">Encaminhar para:</span>
                 <select
-                  className="bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[var(--lime)]/50 cursor-pointer min-w-[200px]"
+                  className="bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2 text-xs text-[var(--white)] outline-none focus:border-[var(--lime)]/50 cursor-pointer min-w-[200px]"
                   value={encaminharVendedor}
                   onChange={(e) => setEncaminharVendedor(e.target.value)}
                 >
                   {usuariosDisponiveis.map(u => (
-                    <option key={u.id} value={u.id}>
+                    <option key={u.id} value={u.id} className="bg-[var(--card2)] text-[var(--white)]">
                       {u.nome} ({u.papel === 'representante' ? 'Representante' : u.papel === 'vendedor_interno' ? 'Vendedor' : u.papel})
                     </option>
                   ))}
