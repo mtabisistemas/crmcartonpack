@@ -564,7 +564,7 @@ export function ProspeccaoModal({
       handleEnrichActiveLead(activeLeadDetails)
     }
   }, [activeLeadDetails?.cnpj])
-  const isGestaoOuAdmin = usuarioLogado?.papel === 'admin' || usuarioLogado?.papel === 'supervisor' || (usuarioLogado as any)?.role === 'admin' || (usuarioLogado as any)?.role === 'administrador'
+  const isGestaoOuAdmin = (usuarioLogado as any)?.papel === 'admin' || (usuarioLogado as any)?.papel === 'gestor' || (usuarioLogado as any)?.papel === 'supervisor' || (usuarioLogado as any)?.role === 'admin' || (usuarioLogado as any)?.role === 'administrador' || (usuarioLogado as any)?.role === 'gestor' || (usuarioLogado as any)?.role === 'gestor_comercial'
   // ── Seleção e Distribuição ──
   const [selectedCnpjs, setSelectedCnpjs] = useState<string[]>([])
   const [vendedorId, setVendedorId] = useState<string>(usuarioLogado?.id || usuariosDisponiveis[0]?.id || '')
