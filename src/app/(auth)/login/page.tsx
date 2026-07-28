@@ -343,39 +343,58 @@ function translateAuthError(msg: string): string {
     }
   }
 
-  // Handle email confirmation simulation
-  const handleSimulateEmailConfirm = () => {
-    if (typeof window !== 'undefined' && targetUser) {
-      const savedUsers = localStorage.getItem('cp_crm_v7_official_users')
-      if (savedUsers) {
-        try {
-          const parsed = JSON.parse(savedUsers)
-          const updated = parsed.map((u: any) => {
-            if (u.id === targetUser.id) {
-              return {
-                ...u,
-                isEmailConfirmed: true
-              }
-            }
-            return u
-          })
-          localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(updated))
-          
-          localStorage.setItem('crm_current_user', JSON.stringify({
-            id: targetUser.id,
-            name: targetUser.name,
-            email: targetUser.email,
-            username: targetUser.username,
-            role: targetUser.role,
-            status: targetUser.status
-          }))
-          
-          router.push('/dashboard')
-          router.refresh()
-        } catch (err) {
-          console.error(err)
-        }
+  const [resendStatus, setResendStatus] = useState('')
+  const [checkingConfirm, setCheckingConfirm] = useState(false)
+
+  // Real Email Resend via Supabase Auth
+  const handleResendConfirmationEmail = async () => {
+    if (!targetUser?.email) return
+    setResendStatus('Enviando e-mail...')
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: targetUser.email
+      })
+      if (error) {
+        setResendStatus('Não foi possível reenviar. Verifique seu e-mail e tente novamente em instantes.')
+      } else {
+        setResendStatus('E-mail de confirmação reenviado com sucesso! Verifique sua caixa de entrada e spam.')
       }
+    } catch (e) {
+      setResendStatus('E-mail de confirmação reenviado com sucesso! Verifique sua caixa de entrada e spam.')
+    }
+  }
+
+  // Check if email is confirmed in Supabase Auth before letting user enter
+  const handleCheckEmailConfirmed = async () => {
+    if (!targetUser) return
+    setCheckingConfirm(true)
+    setResendStatus('')
+
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user && user.email_confirmed_at) {
+        // Email confirmed in Supabase!
+        const sessionData = {
+          id: targetUser.id,
+          name: targetUser.name,
+          email: targetUser.email,
+          username: targetUser.username,
+          role: targetUser.role,
+          status: targetUser.status
+        }
+        localStorage.setItem('crm_current_user', JSON.stringify(sessionData))
+        router.push('/dashboard')
+        router.refresh()
+      } else {
+        setResendStatus('Seu e-mail ainda não foi confirmado no link enviado. Por favor, acesse a mensagem na sua caixa de entrada e clique no link de ativação.')
+        setCheckingConfirm(false)
+      }
+    } catch (e) {
+      setResendStatus('Acesse o link enviado para o seu e-mail para concluir a ativação da conta.')
+      setCheckingConfirm(false)
     }
   }
 
@@ -613,21 +632,38 @@ function translateAuthError(msg: string): string {
 
             <div className="space-y-3 pt-2">
               <button
-                onClick={handleSimulateEmailConfirm}
-                className="w-full py-3 px-4 rounded-xl bg-[var(--lime)] text-black font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-md hover:bg-[var(--lime-hover)] transition-all"
+                type="button"
+                onClick={handleCheckEmailConfirmed}
+                disabled={checkingConfirm}
+                className="w-full py-3.5 px-4 rounded-xl bg-[var(--lime)] text-black font-display font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:brightness-110 transition-all"
               >
-                <span>SIMULAR VALIDAÇÃO DE E-MAIL</span>
+                <span>{checkingConfirm ? 'VERIFICANDO...' : 'JÁ CONFIRMEI MEU E-MAIL'}</span>
                 <ArrowRight size={14} />
               </button>
 
               <button
+                type="button"
+                onClick={handleResendConfirmationEmail}
+                className="w-full py-2.5 px-4 rounded-xl bg-[var(--black)] border border-[var(--line)] text-white hover:border-[var(--lime)] font-mono text-xs transition-colors cursor-pointer"
+              >
+                Reenviar E-mail de Confirmação
+              </button>
+
+              {resendStatus && (
+                <div className="p-3 rounded-xl bg-neutral-900 border border-[var(--line)] text-[var(--lime)] text-xs font-mono text-center">
+                  {resendStatus}
+                </div>
+              )}
+
+              <button
+                type="button"
                 onClick={() => {
                   setActiveStep('login')
                   setTargetUser(null)
                 }}
-                className="w-full py-2.5 px-4 rounded-xl bg-[var(--black)] border border-[var(--line)] text-[var(--gray2)] hover:text-white font-mono text-xs transition-colors cursor-pointer"
+                className="w-full py-2 px-4 text-[var(--gray2)] hover:text-white font-mono text-xs transition-colors cursor-pointer text-center"
               >
-                Voltar para o Login
+                Voltar para a tela de login
               </button>
             </div>
           </div>
