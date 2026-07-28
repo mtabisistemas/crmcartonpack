@@ -440,7 +440,7 @@ function translateAuthError(msg: string): string {
                   )}
                   <input
                     type={loginType === 'representante' ? 'text' : 'email'}
-                    placeholder={loginType === 'representante' ? 'ex: fausto.fleck' : 'ex: seuemail@gmail.com ou corporativo'}
+                    placeholder={loginType === 'representante' ? 'ex: fausto.fleck' : 'ex: seuemail@cartonpack.com.br'}
                     value={identifier}
                     onChange={e => setIdentifier(e.target.value)}
                     required
