@@ -153,14 +153,6 @@ export default function LoginPage() {
                 return
               }
 
-              // Check if email confirmation is required (for any corporate or test email)
-              const isCarton = !!matchedUser.email && matchedUser.email.includes('@')
-              if (isCarton && matchedUser.isEmailConfirmed === false && loginType === 'corporativo') {
-                setActiveStep('confirm-email')
-                setLoading(false)
-                return
-              }
-
               // Direct access! Save active session
               localStorage.setItem('crm_current_user', JSON.stringify({
                 id: matchedUser.id,
@@ -364,23 +356,6 @@ function translateAuthError(msg: string): string {
           username: targetUser.username,
           role: targetUser.role,
           status: targetUser.status
-        }
-
-        // If corporate or has email, send confirmation email and show pending screen
-        const isCorporateOrEmailUser = loginType === 'corporativo' || (targetUser.email && targetUser.email.includes('@'))
-        if (isCorporateOrEmailUser) {
-          fetch('/api/auth/send-confirmation', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: targetUser.email,
-              name: targetUser.name,
-              role: targetUser.role
-            })
-          }).catch(() => {})
-
-          setActiveStep('confirm-email')
-          return
         }
 
         localStorage.setItem('crm_current_user', JSON.stringify(sessionData))
