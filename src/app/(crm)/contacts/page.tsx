@@ -146,12 +146,14 @@ function ContactDrawer({
   contact, 
   onClose, 
   onUpdateContact,
-  representatives = []
+  representatives = [],
+  onOpenRegisterActivity
 }: { 
   contact: MockContact | null
   onClose: () => void
   onUpdateContact: (contact: MockContact) => void
   representatives?: string[]
+  onOpenRegisterActivity?: (contactId: string) => void
 }) {
   const representativesList = representatives
   const [isOpen, setIsOpen] = useState(false)
@@ -903,42 +905,32 @@ function ContactDrawer({
           {/* TAB 2: HISTÓRICO */}
           {activeTab === 'historico' && (
             <div className="flex flex-col gap-4 animate-fade-in">
-              <form onSubmit={handleAddActivity} className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-3">
-                <textarea
-                  className="input min-h-[90px] py-2 resize-none"
-                  placeholder="Escreva uma nova anotação ou registro..."
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                />
-                <div className="flex justify-between items-center gap-2">
-                  <div className="flex gap-1">
-                    {(['nota', 'whatsapp', 'ligacao', 'email', 'reuniao'] as const).map(type => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setActivityType(type)}
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded transition-colors uppercase ${
-                          activityType === type
-                            ? 'bg-neutral-800 text-[var(--lime)] border border-[rgba(180,217,50,0.2)]'
-                            : 'text-[var(--gray)] hover:text-[var(--white)] bg-transparent'
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-
-                  <button type="submit" className="btn btn-primary btn-sm flex items-center gap-1.5">
-                    <Send size={11} />
-                    <span>Lançar</span>
-                  </button>
+              <div className="card p-4 border border-[var(--line)] bg-[var(--card)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+                <div className="space-y-0.5">
+                  <h4 className="text-xs font-bold text-[var(--white)] flex items-center gap-1.5">
+                    <CheckCircle size={14} className="text-[var(--lime)]" />
+                    <span>Registrar Nova Atividade Padronizada</span>
+                  </h4>
+                  <p className="text-[11px] text-[var(--gray2)] leading-tight">
+                    Lance reuniões, ligações, conversas de WhatsApp, e-mails ou anotações comerciais.
+                  </p>
                 </div>
-              </form>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onOpenRegisterActivity) onOpenRegisterActivity(contact.id)
+                  }}
+                  className="btn btn-primary text-xs py-2 px-4 flex items-center gap-2 font-bold shadow-lg shrink-0 cursor-pointer w-full sm:w-auto justify-center"
+                >
+                  <CheckCircle size={15} />
+                  <span>Registrar Atividade</span>
+                </button>
+              </div>
 
               {/* Timeline list */}
               {activities.length === 0 ? (
                 <div className="card p-8 text-center text-xs text-[var(--gray2)] font-mono border-dashed">
-                  Nenhum histórico registrado até o momento. Utilize o formulário acima para lançar uma anotação ou atividade.
+                  Nenhum histórico registrado até o momento. Clique no botão acima para registrar uma nova atividade.
                 </div>
               ) : (
                 <div className="relative pl-6 flex flex-col gap-6 border-l border-[var(--line)] ml-3 mt-2">
@@ -2488,6 +2480,10 @@ export default function ContactsPage() {
         onClose={() => setSelectedContact(null)}
         onUpdateContact={handleUpdateContact}
         representatives={representativesList}
+        onOpenRegisterActivity={(contactId) => {
+          setSelectedContactForActivity(contactId)
+          setShowActivityModal(true)
+        }}
       />
 
       {/* New Contact Modal with CNPJ Autopopulate */}

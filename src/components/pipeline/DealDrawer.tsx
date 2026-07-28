@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { getAppointmentsByDeal, saveAppointment, updateAppointment, deleteAppointment } from '@/services/appointment-service'
+import { RegisterActivityModal } from '@/components/RegisterActivityModal'
 
 interface Activity {
   id: string
@@ -26,6 +27,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const [activeTab, setActiveTab] = useState<'geral' | 'historico' | 'agenda' | 'orcamento'>('geral')
   const [isOpen, setIsOpen] = useState(false)
   const [isSavedSuccess, setIsSavedSuccess] = useState(false)
+  const [showActivityModal, setShowActivityModal] = useState(false)
 
   // Deal fields (Geral Tab)
   const [title, setTitle] = useState('')
@@ -802,45 +804,31 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
           {activeTab === 'historico' && (
             <div className="flex flex-col gap-6">
               
-              {/* Inserir nova atividade */}
-              <form onSubmit={handleAddActivity} className="bg-[var(--card)] border border-[var(--line)] rounded-xl p-4 flex flex-col gap-3">
-                <textarea 
-                  className="input min-h-[70px] resize-none py-2"
-                  placeholder="Escreva uma nova anotação ou registro comercial..."
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                />
-                
-                <div className="flex items-center justify-between">
-                  {/* Activity Type Selection */}
-                  <div className="flex gap-1">
-                    {(['nota', 'whatsapp', 'ligacao', 'email', 'reuniao'] as const).map(type => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setActivityType(type)}
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded transition-colors uppercase ${
-                          activityType === type
-                            ? 'bg-neutral-800 text-[var(--lime)] border border-[rgba(180,217,50,0.2)]'
-                            : 'text-[var(--gray)] hover:text-[var(--white)] bg-transparent'
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-
-                  <button type="submit" className="btn btn-primary btn-sm flex items-center gap-1.5">
-                    <Send size={11} />
-                    <span>Lançar</span>
-                  </button>
+              {/* Registrar nova atividade */}
+              <div className="bg-[var(--card)] border border-[var(--line)] rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+                <div className="space-y-0.5">
+                  <h4 className="text-xs font-bold text-[var(--white)] flex items-center gap-1.5">
+                    <CheckCircle size={14} className="text-[var(--lime)]" />
+                    <span>Registrar Atividade Comercial</span>
+                  </h4>
+                  <p className="text-[11px] text-[var(--gray2)] leading-tight">
+                    Lance reuniões, ligações, conversas de WhatsApp, e-mails ou anotações nesta oportunidade.
+                  </p>
                 </div>
-              </form>
+                <button
+                  type="button"
+                  onClick={() => setShowActivityModal(true)}
+                  className="btn btn-primary text-xs py-2 px-4 flex items-center gap-2 font-bold shadow-lg shrink-0 cursor-pointer w-full sm:w-auto justify-center"
+                >
+                  <CheckCircle size={15} />
+                  <span>Registrar Atividade</span>
+                </button>
+              </div>
 
               {/* Timeline list */}
               {activities.length === 0 ? (
                 <div className="card p-8 text-center text-xs text-[var(--gray2)] font-mono border-dashed">
-                  Nenhum histórico registrado nesta oportunidade. Utilize o formulário acima para lançar um registro ou anotação.
+                  Nenhum histórico registrado nesta oportunidade. Clique no botão acima para registrar uma nova atividade.
                 </div>
               ) : (
                 <div className="relative pl-6 flex flex-col gap-6 border-l border-[var(--line)] ml-3 mt-2">
@@ -1051,6 +1039,18 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
           </div>
         </div>
       </div>
+
+      {showActivityModal && (
+        <RegisterActivityModal
+          isOpen={showActivityModal}
+          onClose={() => setShowActivityModal(false)}
+          contactsList={[]}
+          preselectedContactId={deal?.contact_id || (deal as any)?.contactId || deal?.id || ''}
+          onSuccess={() => {
+            setShowActivityModal(false)
+          }}
+        />
+      )}
     </>
   )
 }
