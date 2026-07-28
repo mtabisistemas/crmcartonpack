@@ -220,8 +220,13 @@ export function RegisterActivityModal({
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
-      const url = URL.createObjectURL(file)
-      setPhotoUrl(url)
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setPhotoUrl(event.target.result as string)
+        }
+      }
+      reader.readAsDataURL(file)
     }
   }
 
@@ -375,6 +380,14 @@ export function RegisterActivityModal({
 
           {/* Form Fields Body (Scrollable Card Area) */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+            {/* Success Toast Banner (Top position for 100% visibility) */}
+            {isSavedToast && (
+              <div className="p-3.5 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-mono font-bold flex items-center gap-2.5 animate-fade-in shadow-lg">
+                <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
+                <span>Atividade registrada e oportunidade atualizada com sucesso!</span>
+              </div>
+            )}
+
             {/* 1. Cliente */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
@@ -502,14 +515,6 @@ export function RegisterActivityModal({
                 </div>
               )}
             </div>
-
-            {/* Success Toast */}
-            {isSavedToast && (
-              <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-mono flex items-center gap-2 animate-fade-in">
-                <CheckCircle2 size={16} />
-                <span>Atividade registrada e oportunidade atualizada com sucesso!</span>
-              </div>
-            )}
           </div>
 
           {/* Actions (Outside the fields card in clean modal footer) */}

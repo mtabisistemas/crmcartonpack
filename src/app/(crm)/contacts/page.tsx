@@ -89,6 +89,7 @@ interface Activity {
   type: 'nota' | 'whatsapp' | 'ligacao' | 'email' | 'reuniao'
   content: string
   timestamp: string
+  photoUrl?: string
 }
 
 const MOCK_CONTACTS: MockContact[] = []
@@ -909,7 +910,7 @@ function ContactDrawer({
                 <div className="space-y-0.5">
                   <h4 className="text-xs font-bold text-[var(--white)] flex items-center gap-1.5">
                     <CheckCircle size={14} className="text-[var(--lime)]" />
-                    <span>Registrar Nova Atividade Padronizada</span>
+                    <span>Registrar Nova Atividade</span>
                   </h4>
                   <p className="text-[11px] text-[var(--gray2)] leading-tight">
                     Lance reuniões, ligações, conversas de WhatsApp, e-mails ou anotações comerciais.
@@ -936,12 +937,22 @@ function ContactDrawer({
                 <div className="relative pl-6 flex flex-col gap-6 border-l border-[var(--line)] ml-3 mt-2">
                   {activities.map(act => (
                     <div key={act.id} className="relative">
-                      <div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center text-[var(--gray)]">
+                      <div className="absolute -left-[33px] top-0 w-[22px] h-[22px] rounded-full bg-[var(--card)] border border-[var(--line)] flex items-center justify-center">
                         {getActivityIcon(act.type)}
                       </div>
                       <div className="text-[10px] text-[var(--gray2)] font-mono">{act.timestamp}</div>
-                      <div className="card p-3 border-[var(--line)] bg-[var(--card)] text-xs text-[var(--white)] mt-1 ml-1">
-                        {act.content}
+                      <div className="card p-3 border-[var(--line)] bg-[var(--card)] text-xs text-[var(--white)] mt-1 ml-1 space-y-2">
+                        <div>{act.content}</div>
+                        {act.photoUrl && (
+                          <div className="mt-2 rounded-xl overflow-hidden border border-[var(--line)] max-w-xs bg-black">
+                            <img 
+                              src={act.photoUrl} 
+                              alt="Anexo da Atividade" 
+                              className="w-full h-auto max-h-48 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => window.open(act.photoUrl, '_blank')}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

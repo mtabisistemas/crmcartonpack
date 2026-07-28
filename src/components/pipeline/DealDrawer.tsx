@@ -15,6 +15,7 @@ interface Activity {
   type: 'whatsapp' | 'ligacao' | 'email' | 'reuniao' | 'nota'
   content: string
   timestamp: string
+  photoUrl?: string
 }
 
 interface DealDrawerProps {
@@ -809,7 +810,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                 <div className="space-y-0.5">
                   <h4 className="text-xs font-bold text-[var(--white)] flex items-center gap-1.5">
                     <CheckCircle size={14} className="text-[var(--lime)]" />
-                    <span>Registrar Atividade Comercial</span>
+                    <span>Registrar Nova Atividade</span>
                   </h4>
                   <p className="text-[11px] text-[var(--gray2)] leading-tight">
                     Lance reuniões, ligações, conversas de WhatsApp, e-mails ou anotações nesta oportunidade.
@@ -845,8 +846,18 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                       </div>
 
                       {/* Content */}
-                      <div className="text-xs text-[var(--white)] bg-[var(--card)] border border-[var(--line)] rounded-lg p-3 leading-relaxed">
-                        {act.content}
+                      <div className="text-xs text-[var(--white)] bg-[var(--card)] border border-[var(--line)] rounded-lg p-3 leading-relaxed space-y-2">
+                        <div>{act.content}</div>
+                        {(act as any).photoUrl && (
+                          <div className="mt-2 rounded-xl overflow-hidden border border-[var(--line)] max-w-xs bg-black">
+                            <img 
+                              src={(act as any).photoUrl} 
+                              alt="Anexo da Atividade" 
+                              className="w-full h-auto max-h-48 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => window.open((act as any).photoUrl, '_blank')}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
