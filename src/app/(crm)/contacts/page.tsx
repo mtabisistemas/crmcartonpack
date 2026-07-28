@@ -2031,7 +2031,7 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-3.5">
+    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-2.5">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
@@ -2304,7 +2304,7 @@ export default function ContactsPage() {
       ) : (
         /* ── ADMIN / MANAGER COMPACT TABLE VIEW ── */
         <div className="card overflow-hidden">
-          <div className="overflow-x-auto max-h-[68vh] overflow-y-auto custom-scrollbar">
+          <div className="overflow-x-auto max-h-[76vh] overflow-y-auto custom-scrollbar">
             <table className="w-full text-left border-collapse text-xs">
               <thead className="sticky top-0 z-10 bg-[var(--charcoal)] shadow-sm">
                 <tr className="border-b border-[var(--line)] bg-[var(--charcoal)] font-mono text-[9px] text-[var(--gray)] uppercase tracking-wider">
@@ -2445,28 +2445,28 @@ export default function ContactsPage() {
 
       {/* ── PAGINATION CONTROLS BAR ── */}
       {filteredContacts.length > 0 && (
-        <div className="card p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 border border-[var(--line)] bg-[var(--card)] shrink-0">
-          <div className="text-xs font-mono text-[var(--gray2)]">
+        <div className="card py-1.5 px-3 sm:px-4 flex flex-col sm:flex-row items-center justify-between gap-2 border border-[var(--line)] bg-[var(--card)] shrink-0 mt-auto shadow-md">
+          <div className="text-[11px] font-mono text-[var(--gray2)]">
             Exibindo <span className="font-bold text-[var(--white)]">{(currentPage - 1) * itemsPerPage + 1}</span> a <span className="font-bold text-[var(--white)]">{Math.min(currentPage * itemsPerPage, filteredContacts.length)}</span> de <span className="font-bold text-[var(--white)]">{filteredContacts.length}</span> clientes
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              className="btn btn-secondary text-xs px-3.5 py-1.5 rounded-lg disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed font-mono font-bold"
+              className="btn btn-secondary text-[11px] px-2.5 py-1 rounded-md disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed font-mono font-bold"
             >
               &larr; Anterior
             </button>
 
-            <span className="text-xs font-mono font-bold text-[var(--lime)] px-3">
+            <span className="text-[11px] font-mono font-bold text-[var(--lime)] px-2">
               Página {currentPage} de {totalPages}
             </span>
 
             <button
               disabled={currentPage >= totalPages}
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              className="btn btn-secondary text-xs px-3.5 py-1.5 rounded-lg disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed font-mono font-bold"
+              className="btn btn-secondary text-[11px] px-2.5 py-1 rounded-md disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed font-mono font-bold"
             >
               Próxima &rarr;
             </button>
