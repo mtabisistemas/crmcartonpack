@@ -92,6 +92,38 @@ export function RegisterActivityModal({
 
   if (!isOpen) return null
 
+  // Helper to deduplicate repeating word/phrase cascades from speech engines (e.g. Chrome Android)
+  const cleanTranscribedText = (text: string): string => {
+    if (!text) return ''
+    const cleaned = text.replace(/\s+/g, ' ').trim()
+    const words = cleaned.split(' ')
+    const result: string[] = []
+
+    for (let i = 0; i < words.length; i++) {
+      let isDup = false
+
+      // Check for phrase repeats ranging from 1 to 8 words long
+      for (let len = 1; len <= 8; len++) {
+        if (result.length >= len) {
+          const prevPhrase = result.slice(result.length - len).join(' ').toLowerCase()
+          const nextPhrase = words.slice(i, i + len).join(' ').toLowerCase()
+
+          if (prevPhrase === nextPhrase && nextPhrase.length > 0) {
+            isDup = true
+            i += len - 1 // Skip the duplicate phrase block
+            break
+          }
+        }
+      }
+
+      if (!isDup) {
+        result.push(words[i])
+      }
+    }
+
+    return result.join(' ').replace(/\s+/g, ' ').trim()
+  }
+
   const handleStartRecording = () => {
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       try {
@@ -103,26 +135,26 @@ export function RegisterActivityModal({
 
         // Preserve any text already present in description
         initialTextRef.current = description ? description.trim() : ''
-        finalTranscriptRef.current = ''
 
         recognition.onresult = (event: any) => {
+          let finalTranscript = ''
           let interimTranscript = ''
 
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript
+          // Re-evaluate from 0 to event.results.length on each event without accumulating into state refs
+          for (let i = 0; i < event.results.length; i++) {
+            const transcript = event.results[i][0]?.transcript || ''
             if (event.results[i].isFinal) {
-              finalTranscriptRef.current += transcript + ' '
+              finalTranscript += transcript + ' '
             } else {
               interimTranscript += transcript
             }
           }
 
           const baseText = initialTextRef.current ? initialTextRef.current + ' ' : ''
-          const fullText = (baseText + finalTranscriptRef.current + interimTranscript)
-            .replace(/\s+/g, ' ')
-            .trim()
+          const rawText = baseText + finalTranscript + interimTranscript
+          const cleanedText = cleanTranscribedText(rawText)
 
-          setDescription(fullText)
+          setDescription(cleanedText)
         }
 
         recognition.onerror = (event: any) => {
