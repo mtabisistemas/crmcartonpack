@@ -124,23 +124,25 @@ export function RegisterActivityModal({
     return result.join(' ').replace(/\s+/g, ' ').trim()
   }
 
+  const isRecordingRef = useRef<boolean>(false)
+
   const handleStartRecording = () => {
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       try {
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
         const recognition = new SpeechRecognition()
-        recognition.continuous = true
+        // continuous = false prevents Chrome Android cumulative stream duplication bugs
+        recognition.continuous = false
         recognition.interimResults = true
         recognition.lang = 'pt-BR'
 
-        // Preserve any text already present in description
         initialTextRef.current = description ? description.trim() : ''
+        isRecordingRef.current = true
 
         recognition.onresult = (event: any) => {
-          let finalTranscript = ''
           let interimTranscript = ''
+          let finalTranscript = ''
 
-          // Re-evaluate from 0 to event.results.length on each event without accumulating into state refs
           for (let i = 0; i < event.results.length; i++) {
             const transcript = event.results[i][0]?.transcript || ''
             if (event.results[i].isFinal) {
@@ -150,20 +152,46 @@ export function RegisterActivityModal({
             }
           }
 
-          const baseText = initialTextRef.current ? initialTextRef.current + ' ' : ''
-          const rawText = baseText + finalTranscript + interimTranscript
-          const cleanedText = cleanTranscribedText(rawText)
-
-          setDescription(cleanedText)
+          if (finalTranscript) {
+            const base = initialTextRef.current ? initialTextRef.current + ' ' : ''
+            const newBase = cleanTranscribedText(base + finalTranscript)
+            initialTextRef.current = newBase
+            setDescription(newBase)
+          } else {
+            const base = initialTextRef.current ? initialTextRef.current + ' ' : ''
+            const rawText = base + interimTranscript
+            const cleanedText = cleanTranscribedText(rawText)
+            setDescription(cleanedText)
+          }
         }
 
         recognition.onerror = (event: any) => {
           console.error('Speech recognition error:', event.error)
-          setIsRecording(false)
+          if (event.error === 'no-speech' || event.error === 'audio-capture') {
+            // Silence restart
+            if (isRecordingRef.current) {
+              try { recognition.start() } catch (e) {}
+            } else {
+              setIsRecording(false)
+            }
+          } else {
+            isRecordingRef.current = false
+            setIsRecording(false)
+          }
         }
 
         recognition.onend = () => {
-          setIsRecording(false)
+          // Auto-restart while recording is active to capture continuous discrete sentences cleanly
+          if (isRecordingRef.current) {
+            try {
+              recognition.start()
+            } catch (e) {
+              isRecordingRef.current = false
+              setIsRecording(false)
+            }
+          } else {
+            setIsRecording(false)
+          }
         }
 
         recognitionRef.current = recognition
@@ -171,14 +199,17 @@ export function RegisterActivityModal({
         setIsRecording(true)
       } catch (e) {
         console.error('Speech recognition start failed:', e)
+        isRecordingRef.current = false
         setIsRecording(true)
       }
     } else {
+      isRecordingRef.current = false
       setIsRecording(true)
     }
   }
 
   const handleStopRecording = () => {
+    isRecordingRef.current = false
     setIsRecording(false)
     if (recognitionRef.current) {
       try {

@@ -1364,7 +1364,7 @@ export default function DashboardPage() {
                 setPhotoUrl('')
                 setShowCheckinModal(true)
               }}
-              className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-2 cursor-pointer text-white font-bold shadow-lg"
+              className="hidden lg:flex btn btn-secondary text-xs py-2 px-3 items-center gap-2 cursor-pointer text-white font-bold shadow-lg"
             >
               <CheckCircle size={14} />
               <span>Registrar Atividade</span>

@@ -13,20 +13,34 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  const [currentUser, setCurrentUser] = useState<any | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const session = localStorage.getItem('crm_current_user')
+      if (session) {
+        try {
+          setCurrentUser(JSON.parse(session))
+        } catch (e) {}
+      }
+    }
+  }, [])
+
+  const isRep = currentUser?.role === 'representante' || currentUser?.role === 'vendedor'
 
   useEffect(() => {
     function checkAuth() {
       if (typeof window === 'undefined') return
 
-      const currentUser = localStorage.getItem('crm_current_user')
-      if (!currentUser) {
+      const userSession = localStorage.getItem('crm_current_user')
+      if (!userSession) {
         setIsAuthenticated(false)
         router.replace('/login')
         return
       }
 
       try {
-        const user = JSON.parse(currentUser)
+        const user = JSON.parse(userSession)
         if (!user || !user.id || user.status === 'inativo') {
           localStorage.removeItem('crm_current_user')
           document.cookie = 'cp_crm_session=; path=/; max-age=0'
@@ -93,7 +107,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
       <Sidebar />
       {/* Mobile Top Header Bar (admin/manager only — reps have their own header) */}
       <MobileTopBar />
-      <main className="main-content lg:pt-0 pt-14">
+      <main className={`main-content lg:pt-0 ${isRep ? 'pt-2' : 'pt-14'}`}>
         {children}
       </main>
       <MobileNavBar />
