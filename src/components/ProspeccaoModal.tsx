@@ -897,9 +897,11 @@ export function ProspeccaoModal({
       setImporting(false)
     }
   }
-  // Estilo com centralizaá§á£o vertical perfeita dos á­cones nos inputs
-  const inputContainerCls = "relative flex items-center w-full bg-[var(--black)] border border-[var(--line)] rounded-xl h-11 focus-within:border-[var(--lime)]/60 transition-all overflow-hidden"
+
+  // Estilo com centralização vertical perfeita dos ícones nos inputs
+  const inputContainerCls = "relative flex items-center w-full bg-[var(--card2)] border border-[var(--line)] rounded-xl h-11 focus-within:border-[var(--lime)]/60 transition-all overflow-hidden"
   const activeDisplayLead = activeLeadDetails ? getDisplayLead(activeLeadDetails) : null
+  
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[99999] flex flex-col items-center justify-start p-3 sm:p-5 overflow-y-auto animate-fade-in print:hidden">
       <div className="w-full max-w-6xl bg-[var(--charcoal)] border border-[var(--line)] rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto relative max-h-[92vh]">
@@ -910,28 +912,28 @@ export function ProspeccaoModal({
               <Search size={20} />
             </div>
             <div>
-              <h3 className="font-display text-base sm:text-lg text-white font-bold tracking-tight">
+              <h3 className="font-display text-base sm:text-lg text-[var(--white)] font-bold tracking-tight">
                 Prospecção de Novos Clientes B2B
               </h3>
               <p className="text-[11px] text-[var(--gray2)] font-mono">
-                Busca por setor CNAE  Pesquisa por Região & Cidade
+                Busca por setor CNAE • Pesquisa por Região & Cidade
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl border border-[var(--line)] text-[var(--gray)] hover:text-white hover:border-red-500/50 transition-all cursor-pointer">
+          <button onClick={onClose} className="p-2 rounded-xl border border-[var(--line)] text-[var(--gray)] hover:text-[var(--white)] hover:border-red-500/50 transition-all cursor-pointer">
             <X size={18} />
           </button>
         </div>
-        {/* ── FILTROS (EXACT ECONODATA STYLE COM áCONES 100% CENTRALIZADOS) ── */}
-        <div className="p-5 bg-[var(--black)]/40 border-b border-[var(--line)] shrink-0">
+        {/* ── FILTROS (EXACT ECONODATA STYLE COM ÍCONES 100% CENTRALIZADOS) ── */}
+        <div className="p-5 bg-[var(--card)]/40 border-b border-[var(--line)] shrink-0">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
             {/* 1. Setor, palavra-chave ou CNAE (6 cols) */}
             <div className="md:col-span-6 relative">
-              <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">
+              <label className="text-[11px] font-semibold text-[var(--gray)] block mb-1.5">
                 Setor, palavra-chave ou CNAE
               </label>
               <div className={inputContainerCls}>
-                {/* ácone de Busca Perfeitamente Centralizado á  Esquerda */}
+                {/* Ícone de Busca Perfeitamente Centralizado à Esquerda */}
                 <div className="absolute left-3.5 inset-y-0 flex items-center pointer-events-none text-[var(--gray2)]">
                   <Search size={16} />
                 </div>
@@ -946,26 +948,26 @@ export function ProspeccaoModal({
                   onFocus={() => setShowSetorDropdown(true)}
                   onBlur={() => setTimeout(() => setShowSetorDropdown(false), 200)}
                   placeholder="Todos os setores"
-                  className="w-full bg-transparent border-none outline-none pl-10 pr-8 text-sm text-white placeholder-[var(--gray2)] h-full flex items-center leading-none py-0 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
+                  className="w-full bg-transparent border-none outline-none pl-10 pr-8 text-sm text-[var(--white)] placeholder-[var(--gray2)] h-full flex items-center leading-none py-0 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
                 />
                 {setorTexto && (
                   <div className="absolute right-3 inset-y-0 flex items-center">
                     <button
                       onClick={() => { setSetorTexto(''); setShowSetorDropdown(false) }}
-                      className="text-[var(--gray2)] hover:text-white transition-colors cursor-pointer"
+                      className="text-[var(--gray2)] hover:text-[var(--white)] transition-colors cursor-pointer"
                     >
                       <X size={14} />
                     </button>
                   </div>
                 )}
               </div>
-              {/* Dropdown de Autocomplete (3 Seá§áµes Agrupadas: Setor ℹ️, CNAEs ℹ️, Palavras-chave ℹ️) */}
+              {/* Dropdown de Autocomplete (3 Seções Agrupadas: Setor ℹ️, CNAEs ℹ️, Palavras-chave ℹ️) */}
               {showSetorDropdown && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--card)] border border-[var(--line)] rounded-xl shadow-2xl z-50 overflow-hidden max-h-72 overflow-y-auto animate-fade-in text-slate-200">
+                <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--card)] border border-[var(--line)] rounded-xl shadow-2xl z-50 overflow-hidden max-h-72 overflow-y-auto animate-fade-in text-[var(--white)]">
                   {/* QUANDO EM BRANCO: Exibe 'Setores mais buscados' */}
                   {!query ? (
                     <div>
-                      <div className="px-4 py-2 text-[11px] font-bold text-slate-400 border-b border-[var(--line)]/50 bg-[var(--black)]/50 flex items-center justify-between">
+                      <div className="px-4 py-2 text-[11px] font-bold text-[var(--gray)] border-b border-[var(--line)]/50 bg-[var(--card2)] flex items-center justify-between">
                         <span>Setores mais buscados</span>
                       </div>
                       {setoresPopulares.map((s, idx) => (
@@ -976,7 +978,7 @@ export function ProspeccaoModal({
                             setSetorTexto(s.label === 'Todos os setores' ? '' : s.label)
                             setShowSetorDropdown(false)
                           }}
-                          className="w-full text-left px-4 py-2.5 text-xs text-slate-200 hover:bg-[var(--lime)]/10 hover:text-white transition-colors border-b border-[var(--line)]/30 last:border-0 flex items-center gap-3 cursor-pointer"
+                          className="w-full text-left px-4 py-2.5 text-xs text-[var(--white)] hover:bg-[var(--lime)]/10 hover:text-[var(--white)] transition-colors border-b border-[var(--line)]/30 last:border-0 flex items-center gap-3 cursor-pointer"
                         >
                           <Circle size={14} className="text-[var(--gray2)] shrink-0" />
                           <span className="font-medium text-sm">{s.label}</span>
@@ -984,12 +986,12 @@ export function ProspeccaoModal({
                       ))}
                     </div>
                   ) : (
-                    /* QUANDO DIGITA: 3 SEá‡á•ES FIá‰IS AO ECONODATA (Setor ℹ️, CNAEs ℹ️, Palavras-chave ℹ️) */
+                    /* QUANDO DIGITA: 3 SEÇÕES FIÉIS AO ECONODATA (Setor ℹ️, CNAEs ℹ️, Palavras-chave ℹ️) */
                     <div className="divide-y divide-[var(--line)]/40">
-                      {/* SEá‡áƒO 1: Setor ℹ️ */}
+                      {/* SEÇÃO 1: Setor ℹ️ */}
                       {setorMatches.length > 0 && (
                         <div>
-                          <div className="px-4 py-2 text-[11px] font-bold text-slate-400 border-b border-[var(--line)]/50 bg-[var(--black)]/50 flex items-center gap-1.5">
+                          <div className="px-4 py-2 text-[11px] font-bold text-[var(--gray)] border-b border-[var(--line)]/50 bg-[var(--card2)] flex items-center gap-1.5">
                             <span>Setor</span>
                             <Info size={12} className="text-[var(--gray2)]" />
                           </div>
@@ -1001,18 +1003,18 @@ export function ProspeccaoModal({
                                 setSetorTexto(s.label)
                                 setShowSetorDropdown(false)
                               }}
-                              className="w-full text-left px-4 py-2.5 text-xs text-slate-200 hover:bg-[var(--lime)]/10 hover:text-white transition-colors flex items-center gap-3 cursor-pointer"
+                              className="w-full text-left px-4 py-2.5 text-xs text-[var(--white)] hover:bg-[var(--lime)]/10 hover:text-[var(--white)] transition-colors flex items-center gap-3 cursor-pointer"
                             >
-                              <Circle size={14} className="text-slate-400 shrink-0" />
+                              <Circle size={14} className="text-[var(--gray2)] shrink-0" />
                               <span className="font-semibold text-sm">{s.label}</span>
                             </button>
                           ))}
                         </div>
                       )}
-                      {/* SEá‡áƒO 2: CNAEs ℹ️ (Lista Oficial IBGE de Todos os CNAEs do Brasil) */}
+                      {/* SEÇÃO 2: CNAEs ℹ️ (Lista Oficial IBGE de Todos os CNAEs do Brasil) */}
                       {cnaeMatches.length > 0 && (
                         <div>
-                          <div className="px-4 py-2 text-[11px] font-bold text-slate-400 border-b border-[var(--line)]/50 bg-[var(--black)]/50 flex items-center gap-1.5">
+                          <div className="px-4 py-2 text-[11px] font-bold text-[var(--gray)] border-b border-[var(--line)]/50 bg-[var(--card2)] flex items-center gap-1.5">
                             <span>CNAEs</span>
                             <Info size={12} className="text-[var(--gray2)]" />
                           </div>
@@ -1024,27 +1026,27 @@ export function ProspeccaoModal({
                                 setSetorTexto(cnae.display)
                                 setShowSetorDropdown(false)
                               }}
-                              className="w-full text-left px-4 py-2.5 text-xs hover:bg-[var(--lime)]/10 hover:text-white transition-colors flex items-start gap-2.5 cursor-pointer"
+                              className="w-full text-left px-4 py-2.5 text-xs hover:bg-[var(--lime)]/10 hover:text-[var(--white)] transition-colors flex items-start gap-2.5 cursor-pointer text-[var(--white)]"
                             >
-                              <GitFork size={14} className="text-slate-400 shrink-0 mt-0.5" />
+                              <GitFork size={14} className="text-[var(--gray2)] shrink-0 mt-0.5" />
                               <div className="leading-tight">
-                                <span className="font-mono text-slate-300 font-bold">{cnae.display.split(') ')[0]}) </span>
-                                <span className="text-slate-200">{cnae.display.split(') ')[1]}</span>
+                                <span className="font-mono text-[var(--white)] font-bold">{cnae.display.split(') ')[0]}) </span>
+                                <span className="text-[var(--gray)]">{cnae.display.split(') ')[1]}</span>
                               </div>
                             </button>
                           ))}
                         </div>
                       )}
-                      {/* SEá‡áƒO 3: Palavras-chave ℹ️ */}
+                      {/* SEÇÃO 3: Palavras-chave ℹ️ */}
                       <div>
-                        <div className="px-4 py-2 text-[11px] font-bold text-slate-400 border-b border-[var(--line)]/50 bg-[var(--black)]/50 flex items-center gap-1.5">
+                        <div className="px-4 py-2 text-[11px] font-bold text-[var(--gray)] border-b border-[var(--line)]/50 bg-[var(--card2)] flex items-center gap-1.5">
                           <span>Palavras-chave</span>
                           <Info size={12} className="text-[var(--gray2)]" />
                         </div>
                         <button
                           type="button"
                           onMouseDown={() => { setShowSetorDropdown(false) }}
-                          className="w-full text-left px-4 py-2.5 text-xs hover:bg-[var(--lime)]/10 hover:text-white transition-colors flex items-center gap-2.5 cursor-pointer text-[var(--lime)] font-semibold"
+                          className="w-full text-left px-4 py-2.5 text-xs hover:bg-[var(--lime)]/10 hover:text-[var(--white)] transition-colors flex items-center gap-2.5 cursor-pointer text-[var(--lime)] font-semibold"
                         >
                           <Search size={14} className="text-[var(--lime)] shrink-0" />
                           <span>&quot;{setorTexto}&quot;</span>
@@ -1057,11 +1059,11 @@ export function ProspeccaoModal({
             </div>
             {/* 2. Região (Combobox Estado/Cidade - 4 cols) */}
             <div className="md:col-span-4 relative">
-              <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">
+              <label className="text-[11px] font-semibold text-[var(--gray)] block mb-1.5">
                 Região
               </label>
               <div className={inputContainerCls}>
-                {/* ácone de Mapa/Pin Perfeitamente Centralizado á  Esquerda */}
+                {/* Ícone de Mapa/Pin Perfeitamente Centralizado à Esquerda */}
                 <div className="absolute left-3.5 inset-y-0 flex items-center pointer-events-none text-[var(--gray2)]">
                   <MapPin size={16} />
                 </div>
@@ -1076,13 +1078,13 @@ export function ProspeccaoModal({
                   onFocus={() => setShowRegiaoDropdown(true)}
                   onBlur={() => setTimeout(() => setShowRegiaoDropdown(false), 200)}
                   placeholder="Digite Estado ou Cidade..."
-                  className="w-full bg-transparent border-none outline-none pl-10 pr-8 text-sm text-white placeholder-[var(--gray2)] h-full flex items-center leading-none py-0 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
+                  className="w-full bg-transparent border-none outline-none pl-10 pr-8 text-sm text-[var(--white)] placeholder-[var(--gray2)] h-full flex items-center leading-none py-0 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
                 />
                 {regiaoTexto && regiaoTexto !== 'Todo Brasil' && (
                   <div className="absolute right-3 inset-y-0 flex items-center">
                     <button
                       onClick={() => { setRegiaoTexto('Todo Brasil'); setShowRegiaoDropdown(false) }}
-                      className="text-[var(--gray2)] hover:text-white transition-colors cursor-pointer"
+                      className="text-[var(--gray2)] hover:text-[var(--white)] transition-colors cursor-pointer"
                     >
                       <X size={14} />
                     </button>
@@ -1101,17 +1103,17 @@ export function ProspeccaoModal({
                           setRegiaoTexto(r.label)
                           setShowRegiaoDropdown(false)
                         }}
-                        className="w-full text-left px-4 py-2.5 text-xs text-slate-200 hover:bg-[var(--lime)]/10 hover:text-white transition-colors border-b border-[var(--line)]/30 last:border-0 flex items-center justify-between gap-2 cursor-pointer"
+                        className="w-full text-left px-4 py-2.5 text-xs text-[var(--white)] hover:bg-[var(--lime)]/10 hover:text-[var(--white)] transition-colors border-b border-[var(--line)]/30 last:border-0 flex items-center justify-between gap-2 cursor-pointer"
                       >
                         <div className="flex items-center gap-2.5">
                           {r.tipo === 'Estado' ? (
-                            <Map size={14} className="text-slate-400 shrink-0" />
+                            <Map size={14} className="text-[var(--gray2)] shrink-0" />
                           ) : (
                             <MapPin size={14} className="text-[var(--lime)] shrink-0" />
                           )}
                           <span className="font-medium text-sm">{r.label}</span>
                         </div>
-                        <span className="text-[10px] font-mono text-[var(--gray2)] bg-[var(--black)]/60 px-2 py-0.5 rounded border border-[var(--line)]">
+                        <span className="text-[10px] font-mono text-[var(--gray2)] bg-[var(--card2)] px-2 py-0.5 rounded border border-[var(--line)]">
                           {r.tipo}
                         </span>
                       </button>
@@ -1122,7 +1124,7 @@ export function ProspeccaoModal({
                       onMouseDown={() => {
                         setShowRegiaoDropdown(false)
                       }}
-                      className="w-full text-left px-4 py-2.5 text-xs text-slate-200 hover:bg-[var(--lime)]/10 hover:text-white transition-colors flex items-center gap-2.5 cursor-pointer text-[var(--lime)]"
+                      className="w-full text-left px-4 py-2.5 text-xs text-[var(--white)] hover:bg-[var(--lime)]/10 hover:text-[var(--white)] transition-colors flex items-center gap-2.5 cursor-pointer text-[var(--lime)]"
                     >
                       <MapPin size={14} className="text-[var(--lime)] shrink-0" />
                       <span>{regiaoTexto}</span>
@@ -1145,7 +1147,7 @@ export function ProspeccaoModal({
           <div className="flex justify-end mt-2">
             <button
               onClick={() => { setSetorTexto(''); setRegiaoTexto(''); setHasSearched(false); setResult(null); setLeads([]) }}
-              className="text-xs font-mono text-[var(--gray2)] hover:text-white transition-all cursor-pointer underline underline-offset-2"
+              className="text-xs font-mono text-[var(--gray2)] hover:text-[var(--white)] transition-all cursor-pointer underline underline-offset-2"
             >
               Limpar filtros
             </button>
@@ -1335,12 +1337,12 @@ export function ProspeccaoModal({
               </div>
             ) : (
               /* Tabela Simples */
-              <div className="border border-[var(--line)] rounded-xl overflow-x-auto bg-[var(--black)]/60 shadow-xl">
+              <div className="border border-[var(--line)] rounded-xl overflow-x-auto bg-[var(--card)]/60 shadow-xl">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-[var(--line)] font-bold text-slate-300 bg-[var(--card)] text-sm">
+                    <tr className="border-b border-[var(--line)] font-bold text-[var(--white)] bg-[var(--card)] text-sm">
                       <th className="p-3 w-10 text-center">
-                        <button onClick={toggleSelectAll} className="text-[var(--lime)] hover:text-white cursor-pointer" title="Selecionar todos os válidos">
+                        <button onClick={toggleSelectAll} className="text-[var(--lime)] hover:text-[var(--white)] cursor-pointer" title="Selecionar todos os válidos">
                           <CheckSquare size={16} />
                         </button>
                       </th>
@@ -1368,7 +1370,7 @@ export function ProspeccaoModal({
                             <button
                               disabled={!!lead.isDuplicate}
                               onClick={() => toggleSelect(lead.cnpj, lead.isDuplicate)}
-                              className={`cursor-pointer ${lead.isDuplicate ? 'text-gray-600 cursor-not-allowed' : isSelected ? 'text-[var(--lime)]' : 'text-[var(--gray2)] hover:text-white'}`}
+                              className={`cursor-pointer ${lead.isDuplicate ? 'text-gray-600 cursor-not-allowed' : isSelected ? 'text-[var(--lime)]' : 'text-[var(--gray2)] hover:text-[var(--white)]'}`}
                             >
                               {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
                             </button>
@@ -1396,10 +1398,10 @@ export function ProspeccaoModal({
                             </div>
                           </td>
                           <td className="p-3">
-                            <div className="font-mono text-[11px] text-slate-300 font-semibold mb-0.5">
+                            <div className="font-mono text-[11px] text-[var(--white)] font-semibold mb-0.5">
                               {lead.cep || '93.804-504'}
                             </div>
-                            <div className="text-[11px] text-slate-200 max-w-xs truncate" title={lead.logradouro}>
+                            <div className="text-[11px] text-[var(--white)] max-w-xs truncate" title={lead.logradouro}>
                               {lead.logradouro || `Rua Nicolau Becker, 515 - ${lead.cidade}`}
                             </div>
                             <div className="text-[10px] text-[var(--gray2)] font-mono font-medium">
@@ -1407,10 +1409,10 @@ export function ProspeccaoModal({
                             </div>
                           </td>
                           <td className="p-3">
-                            <div className="font-mono text-xs font-bold text-slate-200 mb-0.5">
+                            <div className="font-mono text-xs font-bold text-[var(--white)] mb-0.5">
                               {formatCnaeCode(lead.cnae_codigo)}
                             </div>
-                            <div className="text-[11px] text-slate-300 font-medium leading-tight">
+                            <div className="text-[11px] text-[var(--gray)] font-medium leading-tight">
                               {lead.setor}
                             </div>
                             {lead.cnae_descricao && (
@@ -1428,7 +1430,7 @@ export function ProspeccaoModal({
                               )}
                               <button
                                 onClick={() => setActiveLeadDetails(lead)}
-                                className="text-[11px] text-blue-400 hover:text-white flex items-center gap-1 cursor-pointer font-medium underline underline-offset-2"
+                                className="text-[11px] text-blue-400 hover:text-[var(--white)] flex items-center gap-1 cursor-pointer font-medium underline underline-offset-2"
                               >
                                 <Eye size={12} /> Ver Ficha Completa
                               </button>
@@ -1444,9 +1446,9 @@ export function ProspeccaoModal({
           ) : hasSearched ? (
             <div className="py-10 text-center space-y-3">
               <Building2 size={36} className="mx-auto text-[var(--gray)] mb-2" />
-              <div className="text-sm font-semibold text-slate-300">Nenhuma empresa encontrada</div>
+              <div className="text-sm font-semibold text-[var(--white)]">Nenhuma empresa encontrada</div>
               <div className="text-xs text-[var(--gray2)] max-w-md mx-auto leading-relaxed">
-                A busca por <span className="text-white font-bold">{setorTexto || 'este setor'}</span>{regiaoTexto ? <> em <span className="text-white font-bold">{regiaoTexto}</span></> : ''} não retornou empresas reais cadastradas na Receita Federal para esses filtros.
+                A busca por <span className="text-[var(--white)] font-bold">{setorTexto || 'este setor'}</span>{regiaoTexto ? <> em <span className="text-[var(--white)] font-bold">{regiaoTexto}</span></> : ''} não retornou empresas reais cadastradas na Receita Federal para esses filtros.
               </div>
               <div className="text-[11px] text-[var(--gray2)] max-w-sm mx-auto space-y-1 pt-1">
                 <div>💡 <strong>Dicas para ampliar a busca:</strong></div>
