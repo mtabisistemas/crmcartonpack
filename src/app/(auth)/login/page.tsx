@@ -368,37 +368,6 @@ function translateAuthError(msg: string): string {
     }
   }
 
-  const [resendStatus, setResendStatus] = useState('')
-  const [isSending, setIsSending] = useState(false)
-
-  // Real Email Resend via Auth Confirmation API
-  const handleResendConfirmationEmail = async () => {
-    if (!targetUser?.email) return
-    setIsSending(true)
-    setResendStatus('Enviando e-mail de confirmação...')
-    try {
-      const res = await fetch('/api/auth/send-confirmation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: targetUser.email,
-          name: targetUser.name,
-          role: targetUser.role
-        })
-      })
-      const data = await res.json()
-      if (data?.success) {
-        setResendStatus(`E-mail de confirmação enviado para ${targetUser.email}! Acesse sua caixa de entrada ou spam.`)
-      } else {
-        setResendStatus('E-mail enviado! Verifique sua caixa de entrada e spam.')
-      }
-    } catch (e) {
-      setResendStatus('E-mail enviado! Verifique sua caixa de entrada e spam.')
-    } finally {
-      setIsSending(false)
-    }
-  }
-
   return (
     <div className="min-h-screen bg-[var(--bg-base)] flex items-center justify-center p-6 relative overflow-hidden select-none">
       {/* Dynamic Background Glow */}
@@ -614,51 +583,6 @@ function translateAuthError(msg: string): string {
                 SALVAR SENHA E CONTINUAR
               </button>
             </form>
-          </div>
-        )}
-
-        {/* STEP 3: CONFIRMAÇÃO DE E-MAIL (CORPORATIVO) */}
-        {activeStep === 'confirm-email' && targetUser && (
-          <div className="rounded-3xl border border-[var(--lime)]/40 bg-[var(--card)]/90 backdrop-blur-xl p-7 shadow-2xl space-y-5 animate-fade-up">
-            <div className="text-center space-y-2">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mx-auto">
-                <Mail size={24} />
-              </div>
-              <h3 className="text-base font-bold font-display text-white">Confirmação de E-mail Pendente</h3>
-              <p className="text-xs text-[var(--gray2)] leading-relaxed">
-                Foi enviado um link de validação para o e-mail corporativo: <br/>
-                <strong className="text-white font-mono text-xs">{targetUser.email}</strong>
-              </p>
-            </div>
-
-            <div className="space-y-3 pt-2">
-              <button
-                type="button"
-                onClick={handleResendConfirmationEmail}
-                disabled={isSending}
-                className="w-full py-3.5 px-4 rounded-xl bg-[var(--lime)] text-black font-display font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:brightness-110 transition-all disabled:opacity-50"
-              >
-                <span>{isSending ? 'ENVIANDO...' : 'REENVIAR E-MAIL DE CONFIRMAÇÃO'}</span>
-                <ArrowRight size={14} />
-              </button>
-
-              {resendStatus && (
-                <div className="p-3 rounded-xl bg-neutral-900 border border-[var(--line)] text-[var(--lime)] text-xs font-mono text-center">
-                  {resendStatus}
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveStep('login')
-                  setTargetUser(null)
-                }}
-                className="w-full py-2 px-4 text-[var(--gray2)] hover:text-white font-mono text-xs transition-colors cursor-pointer text-center"
-              >
-                Voltar para a tela de login
-              </button>
-            </div>
           </div>
         )}
 
