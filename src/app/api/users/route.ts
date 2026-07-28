@@ -73,7 +73,7 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           email: emailForAuth,
           password: user.tempPassword || '123456',
-          email_confirm: true,
+          email_confirm: false,
           user_metadata: {
             full_name: user.name,
             role: user.role,

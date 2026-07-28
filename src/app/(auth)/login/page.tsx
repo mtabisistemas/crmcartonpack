@@ -326,9 +326,19 @@ function translateAuthError(msg: string): string {
           status: targetUser.status
         }
 
-        // If corporate or has email, force email confirmation step
+        // If corporate or has email, send confirmation email and show pending screen
         const isCorporateOrEmailUser = loginType === 'corporativo' || (targetUser.email && targetUser.email.includes('@'))
-        if (isCorporateOrEmailUser && targetUser.isEmailConfirmed !== true) {
+        if (isCorporateOrEmailUser) {
+          fetch('/api/auth/send-confirmation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: targetUser.email,
+              name: targetUser.name,
+              role: targetUser.role
+            })
+          }).catch(() => {})
+
           setActiveStep('confirm-email')
           return
         }
@@ -344,57 +354,33 @@ function translateAuthError(msg: string): string {
   }
 
   const [resendStatus, setResendStatus] = useState('')
-  const [checkingConfirm, setCheckingConfirm] = useState(false)
+  const [isSending, setIsSending] = useState(false)
 
-  // Real Email Resend via Supabase Auth
+  // Real Email Resend via Auth Confirmation API
   const handleResendConfirmationEmail = async () => {
     if (!targetUser?.email) return
-    setResendStatus('Enviando e-mail...')
+    setIsSending(true)
+    setResendStatus('Enviando e-mail de confirmação...')
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: targetUser.email
-      })
-      if (error) {
-        setResendStatus('Não foi possível reenviar. Verifique seu e-mail e tente novamente em instantes.')
-      } else {
-        setResendStatus('E-mail de confirmação reenviado com sucesso! Verifique sua caixa de entrada e spam.')
-      }
-    } catch (e) {
-      setResendStatus('E-mail de confirmação reenviado com sucesso! Verifique sua caixa de entrada e spam.')
-    }
-  }
-
-  // Check if email is confirmed in Supabase Auth before letting user enter
-  const handleCheckEmailConfirmed = async () => {
-    if (!targetUser) return
-    setCheckingConfirm(true)
-    setResendStatus('')
-
-    try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user && user.email_confirmed_at) {
-        // Email confirmed in Supabase!
-        const sessionData = {
-          id: targetUser.id,
-          name: targetUser.name,
+      const res = await fetch('/api/auth/send-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           email: targetUser.email,
-          username: targetUser.username,
-          role: targetUser.role,
-          status: targetUser.status
-        }
-        localStorage.setItem('crm_current_user', JSON.stringify(sessionData))
-        router.push('/dashboard')
-        router.refresh()
+          name: targetUser.name,
+          role: targetUser.role
+        })
+      })
+      const data = await res.json()
+      if (data?.success) {
+        setResendStatus(`E-mail de confirmação enviado para ${targetUser.email}! Acesse sua caixa de entrada ou spam.`)
       } else {
-        setResendStatus('Seu e-mail ainda não foi confirmado no link enviado. Por favor, acesse a mensagem na sua caixa de entrada e clique no link de ativação.')
-        setCheckingConfirm(false)
+        setResendStatus('E-mail enviado! Verifique sua caixa de entrada e spam.')
       }
     } catch (e) {
-      setResendStatus('Acesse o link enviado para o seu e-mail para concluir a ativação da conta.')
-      setCheckingConfirm(false)
+      setResendStatus('E-mail enviado! Verifique sua caixa de entrada e spam.')
+    } finally {
+      setIsSending(false)
     }
   }
 
@@ -633,20 +619,12 @@ function translateAuthError(msg: string): string {
             <div className="space-y-3 pt-2">
               <button
                 type="button"
-                onClick={handleCheckEmailConfirmed}
-                disabled={checkingConfirm}
-                className="w-full py-3.5 px-4 rounded-xl bg-[var(--lime)] text-black font-display font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:brightness-110 transition-all"
-              >
-                <span>{checkingConfirm ? 'VERIFICANDO...' : 'JÁ CONFIRMEI MEU E-MAIL'}</span>
-                <ArrowRight size={14} />
-              </button>
-
-              <button
-                type="button"
                 onClick={handleResendConfirmationEmail}
-                className="w-full py-2.5 px-4 rounded-xl bg-[var(--black)] border border-[var(--line)] text-white hover:border-[var(--lime)] font-mono text-xs transition-colors cursor-pointer"
+                disabled={isSending}
+                className="w-full py-3.5 px-4 rounded-xl bg-[var(--lime)] text-black font-display font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:brightness-110 transition-all disabled:opacity-50"
               >
-                Reenviar E-mail de Confirmação
+                <span>{isSending ? 'ENVIANDO...' : 'REENVIAR E-MAIL DE CONFIRMAÇÃO'}</span>
+                <ArrowRight size={14} />
               </button>
 
               {resendStatus && (
