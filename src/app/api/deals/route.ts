@@ -14,6 +14,24 @@ const isUUID = (str: any) =>
 
 const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001'
 
+const VALID_DB_STAGES = new Set(['leads', 'dinamica', 'potencial', 'visita', 'fechamento', 'pos_venda', 'perdido'])
+
+const mapFrontendStageToDB = (stage: string): string => {
+  if (!stage) return 'leads'
+  const lower = stage.toLowerCase()
+  if (lower === 'pedido') return 'pos_venda'
+  if (lower === 'prospeccao') return 'leads'
+  if (lower === 'proposta') return 'fechamento'
+  if (VALID_DB_STAGES.has(lower)) return lower
+  return 'leads'
+}
+
+const mapDBStageToFrontend = (stage: string): string => {
+  if (!stage) return 'leads'
+  if (stage === 'pos_venda') return 'pedido'
+  return stage
+}
+
 export async function GET() {
   try {
     const { data: deals, error: dErr } = await supabaseAdmin
@@ -25,7 +43,12 @@ export async function GET() {
       return NextResponse.json({ success: false, error: dErr.message, deals: [] }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, deals: deals || [] })
+    const mappedDeals = (deals || []).map(d => ({
+      ...d,
+      stage: mapDBStageToFrontend(d.stage)
+    }))
+
+    return NextResponse.json({ success: true, deals: mappedDeals })
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message, deals: [] }, { status: 500 })
   }
@@ -53,10 +76,11 @@ export async function POST(req: Request) {
 
       if (!finalContactId && companyName) {
         // Search contact by company or name
+        const cleanName = companyName.replace(/[%_]/g, '')
         const { data: found } = await supabaseAdmin
           .from('contacts')
           .select('id')
-          .or(`company.ilike.%${companyName}%,name.ilike.%${companyName}%`)
+          .or(`company.ilike.%${cleanName}%,name.ilike.%${cleanName}%`)
           .limit(1)
 
         if (found && found.length > 0) {
@@ -85,10 +109,11 @@ export async function POST(req: Request) {
 
       let dealId = isUUID(d.id) ? d.id : null
       if (!dealId && d.title) {
+        const cleanTitle = d.title.trim().replace(/[%_]/g, '')
         const { data: existingDeal } = await supabaseAdmin
           .from('deals')
           .select('id')
-          .ilike('title', d.title.trim())
+          .ilike('title', cleanTitle)
           .limit(1)
 
         if (existingDeal && existingDeal.length > 0) {
@@ -104,12 +129,14 @@ export async function POST(req: Request) {
       if (isUUID(d.assigned_to)) validAssignedTo = d.assigned_to
       else if (isUUID(d.assignedTo)) validAssignedTo = d.assignedTo
 
+      const dbStage = mapFrontendStageToDB(d.stage)
+
       payloads.push({
         id: dealId,
         tenant_id: DEFAULT_TENANT_ID,
         title: d.title || d.contact?.company || d.contact?.name || 'Novo Negócio',
         contact_id: finalContactId,
-        stage: d.stage || 'leads',
+        stage: dbStage,
         assigned_to: validAssignedTo,
         estimated_value: parseFloat(d.estimated_value) || 0,
         final_value: parseFloat(d.final_value) || 0,
@@ -130,7 +157,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, deals: data })
+    const returnedDeals = (data || []).map(d => ({
+      ...d,
+      stage: mapDBStageToFrontend(d.stage)
+    }))
+
+    return NextResponse.json({ success: true, deals: returnedDeals })
   } catch (err: any) {
     console.error('[API /deals POST] Unexpected error:', err)
     return NextResponse.json({ success: false, error: err.message }, { status: 500 })

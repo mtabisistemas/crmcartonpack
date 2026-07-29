@@ -452,36 +452,31 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
         }
       } catch (e) {}
 
-      // 2. Sincroniza diretamente no banco de dados Supabase (tabela 'contacts')
+      // 2. Sincroniza no banco de dados Supabase via /api/contacts
       try {
-        const { supabase } = await import('@/services/supabase-client')
-        if (supabase) {
-          const payload: any = {
-            updated_at: new Date().toISOString()
-          }
-          if (representative) payload.representative = representative
-          if (contactPhone) payload.phone = contactPhone
-          if (contactEmail) payload.email = contactEmail
-          if (contactCnpj) payload.cnpj = contactCnpj
-          if (upperAddress) payload.address = upperAddress
-          if (upperBairro) payload.bairro = upperBairro
-          if (contactCep) payload.cep = contactCep
-          if (upperCity) payload.city = upperCity
-          if (upperState) payload.state = upperState
-          if (curve) payload.curve = curve
-          if (isClosedStage) payload.last_purchase_date = todayStr
-
-          if (deal.contact?.id && !deal.contact.id.startsWith('c-')) {
-            await supabase.from('contacts').update(payload).eq('id', deal.contact.id)
-          } else if ((deal.contact as any)?.cnpj || contactCnpj) {
-            await supabase.from('contacts').update(payload).eq('cnpj', (deal.contact as any)?.cnpj || contactCnpj)
-          } else {
-            await supabase.from('contacts').update(payload).ilike('company', companyToFind)
-          }
-          console.log('[DealDrawer] Contato sincronizado com sucesso no Supabase!')
-        }
+        await fetch('/api/contacts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: deal.contact?.id,
+            name: upperContactName,
+            company: companyToFind,
+            representative,
+            phone: contactPhone,
+            email: contactEmail,
+            cnpj: contactCnpj,
+            address: upperAddress,
+            bairro: upperBairro,
+            cep: contactCep,
+            city: upperCity,
+            state: upperState,
+            curve,
+            ...(isClosedStage ? { lastPurchaseDate: todayStr } : {})
+          })
+        })
+        console.log('[DealDrawer] Contato sincronizado com sucesso via /api/contacts!')
       } catch (err) {
-        console.error('[DealDrawer] Erro ao atualizar contato no Supabase:', err)
+        console.error('[DealDrawer] Erro ao atualizar contato:', err)
       }
     }
 
