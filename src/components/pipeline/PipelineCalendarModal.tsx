@@ -661,11 +661,11 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
               <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
                 <div className="flex items-center gap-2">
                   <Plus size={18} className="text-[var(--lime)]" />
-                  <h3 className="font-display text-sm font-bold text-white">Novo Agendamento Comercial</h3>
+                  <h3 className="font-display text-sm font-bold text-[var(--white)]">Novo Agendamento Comercial</h3>
                 </div>
                 <button
                   onClick={() => setIsCreating(false)}
-                  className="p-1 text-gray-400 hover:text-white rounded cursor-pointer"
+                  className="p-1 text-[var(--gray2)] hover:text-[var(--white)] rounded cursor-pointer"
                 >
                   <X size={16} />
                 </button>
@@ -676,7 +676,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                   <label className="label">Título / Assunto</label>
                   <input
                     type="text"
-                    className="input"
+                    className="input text-[var(--white)]"
                     placeholder="Ex: Reunião de Apresentação Comercial"
                     required
                     value={formTitle}
@@ -688,7 +688,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                   <label className="label">Empresa / Cliente (Opcional)</label>
                   <input
                     type="text"
-                    className="input"
+                    className="input text-[var(--white)]"
                     placeholder="Ex: CartonPack Embalagens"
                     value={formCompany}
                     onChange={(e) => setFormCompany(e.target.value)}
@@ -699,7 +699,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                   <div className="flex flex-col gap-1">
                     <label className="label">Tipo</label>
                     <select
-                      className="input bg-[var(--charcoal)] cursor-pointer"
+                      className="input bg-[var(--charcoal)] text-[var(--white)] cursor-pointer"
                       value={formType}
                       onChange={(e) => setFormType(e.target.value as any)}
                     >
@@ -715,7 +715,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                     <label className="label">Data</label>
                     <input
                       type="date"
-                      className="input bg-[var(--charcoal)] cursor-pointer"
+                      className="input bg-[var(--charcoal)] text-[var(--white)] cursor-pointer"
                       required
                       value={formDate}
                       onChange={(e) => setFormDate(e.target.value)}
@@ -726,7 +726,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                     <label className="label">Hora</label>
                     <input
                       type="time"
-                      className="input bg-[var(--charcoal)] cursor-pointer"
+                      className="input bg-[var(--charcoal)] text-[var(--white)] cursor-pointer"
                       required
                       value={formTime}
                       onChange={(e) => setFormTime(e.target.value)}
@@ -737,7 +737,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                 <div className="flex flex-col gap-1">
                   <label className="label">Observações</label>
                   <textarea
-                    className="input min-h-[60px] resize-none"
+                    className="input min-h-[60px] resize-none text-[var(--white)]"
                     placeholder="Notas ou pauta do compromisso..."
                     value={formNotes}
                     onChange={(e) => setFormNotes(e.target.value)}
@@ -777,11 +777,11 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                   <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-[var(--lime)]/10 text-[var(--lime)] border border-[var(--lime)]/30">
                     {activeApt.type}
                   </span>
-                  <h3 className="font-display text-sm font-bold text-white">Detalhes do Agendamento</h3>
+                  <h3 className="font-display text-sm font-bold text-[var(--white)]">Detalhes do Agendamento</h3>
                 </div>
                 <button
                   onClick={() => setActiveApt(null)}
-                  className="p-1 text-gray-400 hover:text-white rounded cursor-pointer"
+                  className="p-1 text-[var(--gray2)] hover:text-[var(--white)] rounded cursor-pointer"
                 >
                   <X size={16} />
                 </button>
@@ -792,27 +792,27 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                 <div className="flex flex-col gap-3">
                   <div>
                     <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Título / Assunto</span>
-                    <h4 className="text-sm font-bold text-white">{activeApt.title}</h4>
+                    <h4 className="text-sm font-bold text-[var(--white)] mt-0.5">{activeApt.title}</h4>
                   </div>
 
                   {activeApt.company_name && (
                     <div>
                       <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Empresa / Cliente</span>
-                      <p className="text-xs text-[var(--lime)] font-bold">{activeApt.company_name}</p>
+                      <p className="text-xs text-[var(--lime)] font-bold mt-0.5">{activeApt.company_name}</p>
                     </div>
                   )}
 
                   <div className="grid grid-cols-2 gap-3 bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
                     <div>
                       <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Data</span>
-                      <p className="text-xs font-mono font-bold text-white flex items-center gap-1.5 mt-0.5">
+                      <p className="text-xs font-mono font-bold text-[var(--white)] flex items-center gap-1.5 mt-0.5">
                         <CalendarIcon size={12} className="text-[var(--lime)]" />
                         {activeApt.date.split('-').reverse().join('/')}
                       </p>
                     </div>
                     <div>
                       <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Horário</span>
-                      <p className="text-xs font-mono font-bold text-white flex items-center gap-1.5 mt-0.5">
+                      <p className="text-xs font-mono font-bold text-[var(--white)] flex items-center gap-1.5 mt-0.5">
                         <Clock size={12} className="text-[var(--lime)]" />
                         {activeApt.time}
                       </p>
@@ -822,7 +822,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                   {activeApt.notes && (
                     <div>
                       <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Observações</span>
-                      <p className="text-xs text-gray-300 bg-black/30 p-2.5 rounded-xl border border-[var(--line)]/50 mt-1">
+                      <p className="text-xs text-[var(--white)] bg-[var(--charcoal)] p-2.5 rounded-xl border border-[var(--line)] mt-1">
                         {activeApt.notes}
                       </p>
                     </div>
@@ -832,7 +832,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                   <div className="flex items-center justify-between gap-3 pt-2 border-t border-[var(--line)]">
                     <button
                       onClick={handleDeleteAppointment}
-                      className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 text-red-400 border-red-500/20 hover:border-red-500 hover:bg-red-500/10 cursor-pointer font-bold"
+                      className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 text-red-500 border-red-500/30 hover:border-red-500 hover:bg-red-500/10 cursor-pointer font-bold"
                     >
                       <Trash2 size={14} />
                       <span>Cancelar Agenda</span>
