@@ -87,6 +87,22 @@ export function RegisterActivityModal({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // 🧹 LIMPEZA AUTOMÁTICA DOS CAMPOS AO ABRIR O FORMULÁRIO
+  useEffect(() => {
+    if (isOpen) {
+      setDescription('')
+      setPhotoUrl('')
+      setChannel('visita')
+      setActionId('prospeccao')
+      setIsRecording(false)
+      setRecordingTime(0)
+      setIsSavedToast(false)
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop() } catch (e) {}
+      }
+    }
+  }, [isOpen])
+
   useEffect(() => {
     if (preselectedContactId) {
       const found = contactsList.find(c => 

@@ -66,6 +66,19 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const [aptTime, setAptTime] = useState('09:00')
   const [aptNotes, setAptNotes] = useState('')
 
+  const [currentUser, setCurrentUser] = useState<any | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const session = localStorage.getItem('crm_current_user')
+      if (session) {
+        try {
+          setCurrentUser(JSON.parse(session))
+        } catch (e) {}
+      }
+    }
+  }, [])
+
   // Load deal details
   useEffect(() => {
     if (deal) {
@@ -363,19 +376,6 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
     setActivities(prev => [budgetLog, ...prev])
     setActiveTab('historico')
   }
-
-  const [currentUser, setCurrentUser] = useState<any | null>(null)
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const session = localStorage.getItem('crm_current_user')
-      if (session) {
-        try {
-          setCurrentUser(JSON.parse(session))
-        } catch (e) {}
-      }
-    }
-  }, [])
 
   const handleAddActivity = (e: React.FormEvent) => {
     e.preventDefault()
