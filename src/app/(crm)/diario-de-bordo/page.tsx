@@ -591,41 +591,41 @@ export default function DiarioDeBordoPage() {
 
           {/* Footer Metrics Row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-[var(--line)] text-xs font-mono">
-            <div>
-              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Esperado Hoje (Pacing)</span>
-              <span className="font-bold text-white">{formatCurrency(pacingMetrics.expectedSalesPacing)}</span>
+            <div className="bg-[#141517] p-2.5 rounded-xl border border-[#24262b]">
+              <span className="text-[10px] text-zinc-400 uppercase font-bold block">Esperado Hoje (Pacing)</span>
+              <span className="font-bold text-zinc-100">{formatCurrency(pacingMetrics.expectedSalesPacing)}</span>
             </div>
 
-            <div>
-              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Falta para 100%</span>
-              <span className="font-bold text-amber-400">{formatCurrency(pacingMetrics.remainingSalesR$)}</span>
+            <div className="bg-[#141517] p-2.5 rounded-xl border border-[#24262b]">
+              <span className="text-[10px] text-zinc-400 uppercase font-bold block">Falta para 100%</span>
+              <span className="font-bold text-zinc-100">{formatCurrency(pacingMetrics.remainingSalesR$)}</span>
             </div>
 
-            <div>
-              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Meta Diária Necessária</span>
-              <span className="font-bold text-[var(--lime)]">{formatCurrency(pacingMetrics.dailyPaceRequired)} / dia</span>
+            <div className="bg-[#141517] p-2.5 rounded-xl border border-[#24262b]">
+              <span className="text-[10px] text-zinc-400 uppercase font-bold block">Meta Diária Necessária</span>
+              <span className="font-bold text-zinc-100">{formatCurrency(pacingMetrics.dailyPaceRequired)} / dia</span>
             </div>
 
-            <div>
-              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Visitas no Mês</span>
-              <span className="font-bold text-sky-400">{pacingMetrics.currentMonthVisits} / {pacingMetrics.visitsTarget} realizados</span>
+            <div className="bg-[#141517] p-2.5 rounded-xl border border-[#24262b]">
+              <span className="text-[10px] text-zinc-400 uppercase font-bold block">Visitas no Mês</span>
+              <span className="font-bold text-zinc-100">{pacingMetrics.currentMonthVisits} / {pacingMetrics.visitsTarget} realizados</span>
             </div>
           </div>
 
         </div>
 
         {/* BLOCO DIREITA (4 Colunas): Alertas do Dia */}
-        <div className="lg:col-span-4 card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-lg hover:border-[var(--lime)]/30 transition-all relative">
+        <div className="lg:col-span-4 card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-lg hover:border-zinc-700 transition-all relative">
           
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertTriangle size={18} className="text-amber-400" />
+              <AlertTriangle size={16} className="text-zinc-400" />
               <h2 className="text-xs font-display font-bold text-white uppercase tracking-wider">
                 Alertas do Dia
               </h2>
             </div>
             {activeAlertPopover && (
-              <span className="text-[10px] font-mono text-[var(--gray2)] bg-black/40 px-2 py-0.5 rounded border border-[var(--line)]">
+              <span className="text-[10px] font-mono text-zinc-400 bg-black/40 px-2 py-0.5 rounded border border-[var(--line)]">
                 Clique no card para fechar
               </span>
             )}
@@ -641,19 +641,22 @@ export default function DiarioDeBordoPage() {
               }}
               className={`p-3 rounded-xl flex flex-col justify-between text-left transition-all cursor-pointer group ${
                 activeAlertPopover === 'recompra15'
-                  ? 'bg-amber-500/15 border-2 border-amber-500 shadow-lg shadow-amber-500/10'
-                  : 'bg-[var(--charcoal)] border border-amber-500/20 hover:border-amber-500/50 hover:bg-amber-500/5'
+                  ? 'bg-[#18191c] border-2 border-amber-500/60 shadow-lg'
+                  : 'bg-[#141517] border border-[#24262b] hover:border-zinc-700 hover:bg-[#18191c]'
               }`}
               title="Clique para ver os clientes com recompra prevista em até 15 dias"
             >
               <div className="flex items-center justify-between w-full">
-                <span className="text-[9px] font-mono font-bold text-amber-400 uppercase tracking-tight">Recompra 15d</span>
-                <span className={`text-[8px] font-mono text-amber-400 transition-transform ${activeAlertPopover === 'recompra15' ? 'rotate-180' : ''}`}>▼</span>
+                <span className="text-[9px] font-mono font-bold text-amber-400/90 uppercase tracking-tight flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  Recompra 15d
+                </span>
+                <span className={`text-[8px] font-mono text-zinc-400 transition-transform ${activeAlertPopover === 'recompra15' ? 'rotate-180' : ''}`}>▼</span>
               </div>
               <div className="my-1">
-                <span className="text-2xl font-mono font-black text-amber-400">{clientAlerts.upcoming15DaysRepurchaseCount}</span>
+                <span className="text-2xl font-mono font-black text-white">{clientAlerts.upcoming15DaysRepurchaseCount}</span>
               </div>
-              <span className="text-[9px] font-mono text-amber-300/80 font-bold uppercase group-hover:text-amber-300">clientes ↗</span>
+              <span className="text-[9px] font-mono text-zinc-400 font-bold uppercase group-hover:text-amber-400">clientes ↗</span>
             </button>
 
             {/* Card 2: Recompra Atrasada */}
@@ -665,19 +668,22 @@ export default function DiarioDeBordoPage() {
               }}
               className={`p-3 rounded-xl flex flex-col justify-between text-left transition-all cursor-pointer group ${
                 activeAlertPopover === 'recompraAtrasada'
-                  ? 'bg-red-500/15 border-2 border-red-500 shadow-lg shadow-red-500/10'
-                  : 'bg-[var(--charcoal)] border border-red-500/20 hover:border-red-500/50 hover:bg-red-500/5'
+                  ? 'bg-[#18191c] border-2 border-red-500/60 shadow-lg'
+                  : 'bg-[#141517] border border-[#24262b] hover:border-zinc-700 hover:bg-[#18191c]'
               }`}
               title="Clique para ver os clientes com recompra em atraso"
             >
               <div className="flex items-center justify-between w-full">
-                <span className="text-[9px] font-mono font-bold text-red-400 uppercase tracking-tight">Rec. Atrasada</span>
-                <span className={`text-[8px] font-mono text-red-400 transition-transform ${activeAlertPopover === 'recompraAtrasada' ? 'rotate-180' : ''}`}>▼</span>
+                <span className="text-[9px] font-mono font-bold text-red-400/90 uppercase tracking-tight flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                  Rec. Atrasada
+                </span>
+                <span className={`text-[8px] font-mono text-zinc-400 transition-transform ${activeAlertPopover === 'recompraAtrasada' ? 'rotate-180' : ''}`}>▼</span>
               </div>
               <div className="my-1">
-                <span className="text-2xl font-mono font-black text-red-400">{clientAlerts.overdueRepurchaseCount}</span>
+                <span className="text-2xl font-mono font-black text-white">{clientAlerts.overdueRepurchaseCount}</span>
               </div>
-              <span className="text-[9px] font-mono text-red-300/80 font-bold uppercase group-hover:text-red-300">clientes ↗</span>
+              <span className="text-[9px] font-mono text-zinc-400 font-bold uppercase group-hover:text-red-400">clientes ↗</span>
             </button>
 
             {/* Card 3: Risco Inativação */}
@@ -689,25 +695,28 @@ export default function DiarioDeBordoPage() {
               }}
               className={`p-3 rounded-xl flex flex-col justify-between text-left transition-all cursor-pointer group ${
                 activeAlertPopover === 'riscoInativacao'
-                  ? 'bg-rose-500/15 border-2 border-rose-500 shadow-lg shadow-rose-500/10'
-                  : 'bg-[var(--charcoal)] border border-rose-500/20 hover:border-rose-500/50 hover:bg-rose-500/5'
+                  ? 'bg-[#18191c] border-2 border-rose-500/60 shadow-lg'
+                  : 'bg-[#141517] border border-[#24262b] hover:border-zinc-700 hover:bg-[#18191c]'
               }`}
               title="Clique para ver os clientes prestes a inativar (faltando até 30 dias para inativação)"
             >
               <div className="flex items-center justify-between w-full">
-                <span className="text-[9px] font-mono font-bold text-rose-400 uppercase tracking-tight">Risco Inativação</span>
-                <span className={`text-[8px] font-mono text-rose-400 transition-transform ${activeAlertPopover === 'riscoInativacao' ? 'rotate-180' : ''}`}>▼</span>
+                <span className="text-[9px] font-mono font-bold text-rose-400/90 uppercase tracking-tight flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                  Risco Inativação
+                </span>
+                <span className={`text-[8px] font-mono text-zinc-400 transition-transform ${activeAlertPopover === 'riscoInativacao' ? 'rotate-180' : ''}`}>▼</span>
               </div>
               <div className="my-1">
-                <span className="text-2xl font-mono font-black text-rose-400">{clientAlerts.inactivationRiskCount}</span>
+                <span className="text-2xl font-mono font-black text-white">{clientAlerts.inactivationRiskCount}</span>
               </div>
-              <span className="text-[9px] font-mono text-rose-300/80 font-bold uppercase group-hover:text-rose-300">clientes ↗</span>
+              <span className="text-[9px] font-mono text-zinc-400 font-bold uppercase group-hover:text-rose-400">clientes ↗</span>
             </button>
           </div>
 
           {/* POPOVER/TOOLTIP SUSPENSO DE CLIENTES */}
           {activeAlertPopover && (
-            <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 bg-[#16171a] border border-[var(--line)] rounded-2xl shadow-2xl p-4 flex flex-col gap-3 animate-fade-in backdrop-blur-xl">
+            <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 bg-[#16171a] border border-[#292b30] rounded-2xl shadow-2xl p-4 flex flex-col gap-3 animate-fade-in backdrop-blur-xl">
               
               {/* Header do Popover */}
               <div className="flex items-center justify-between border-b border-[var(--line)] pb-2.5">
@@ -725,7 +734,7 @@ export default function DiarioDeBordoPage() {
                 <button
                   type="button"
                   onClick={() => setActiveAlertPopover(null)}
-                  className="text-[var(--gray2)] hover:text-white p-1 rounded-md hover:bg-white/10 transition-colors"
+                  className="text-zinc-400 hover:text-white p-1 rounded-md hover:bg-white/10 transition-colors"
                   title="Fechar"
                 >
                   <X size={14} />
@@ -734,13 +743,13 @@ export default function DiarioDeBordoPage() {
 
               {/* Campo de Busca Rápida no Popover */}
               <div className="relative">
-                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--gray2)]" />
+                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
                 <input
                   type="text"
-                  placeholder="Buscar por nome do cliente ou representante..."
+                  placeholder="Buscar por Empresa (Nome Fantasia), Contato ou Rep..."
                   value={alertSearchTerm}
                   onChange={(e) => setAlertSearchTerm(e.target.value)}
-                  className="input text-xs pl-8 py-1.5 w-full bg-[var(--charcoal)] border-[var(--line)] text-white focus:border-[var(--lime)]"
+                  className="input text-xs pl-8 py-1.5 w-full bg-[#111214] border-[#292b30] text-white focus:border-zinc-500"
                 />
               </div>
 
@@ -750,25 +759,29 @@ export default function DiarioDeBordoPage() {
                   let items: Array<{ contact: Contact; label: string; badgeBg: string; badgeText: string }> = []
                   const term = alertSearchTerm.toLowerCase().trim()
 
+                  const getCompanyName = (c: Contact) => {
+                    return c.company || (c as any).tradeName || (c as any).company_name || c.name || 'Cliente sem nome'
+                  }
+
                   if (activeAlertPopover === 'recompra15') {
                     items = clientAlerts.upcoming15DaysRepurchaseList.map(item => ({
                       contact: item.contact,
-                      label: (item.contact as any).company_name || item.contact.name || 'Cliente sem nome',
-                      badgeBg: 'bg-amber-500/15 border-amber-500/30 text-amber-300',
+                      label: getCompanyName(item.contact),
+                      badgeBg: 'bg-amber-500/10 border-amber-500/20 text-amber-300',
                       badgeText: item.daysToRepurchase === 0 ? 'Recompra HOJE' : `Faltam ${item.daysToRepurchase}d p/ recompra`
                     }))
                   } else if (activeAlertPopover === 'recompraAtrasada') {
                     items = clientAlerts.overdueRepurchaseList.map(item => ({
                       contact: item.contact,
-                      label: (item.contact as any).company_name || item.contact.name || 'Cliente sem nome',
-                      badgeBg: 'bg-red-500/15 border-red-500/30 text-red-300',
+                      label: getCompanyName(item.contact),
+                      badgeBg: 'bg-red-500/10 border-red-500/20 text-red-300',
                       badgeText: `${item.daysOverdue} dias em atraso`
                     }))
                   } else if (activeAlertPopover === 'riscoInativacao') {
                     items = clientAlerts.inactivationRiskList.map(item => ({
                       contact: item.contact,
-                      label: (item.contact as any).company_name || item.contact.name || 'Cliente sem nome',
-                      badgeBg: 'bg-rose-500/15 border-rose-500/30 text-rose-300',
+                      label: getCompanyName(item.contact),
+                      badgeBg: 'bg-rose-500/10 border-rose-500/20 text-rose-300',
                       badgeText: `${item.daysWithoutActivity}d s/ atividade (${item.daysUntilInactive}d p/ inativar)`
                     }))
                   }
@@ -776,13 +789,14 @@ export default function DiarioDeBordoPage() {
                   if (term) {
                     items = items.filter(it => 
                       it.label.toLowerCase().includes(term) ||
+                      (it.contact.name && it.contact.name.toLowerCase().includes(term)) ||
                       (it.contact.representative && it.contact.representative.toLowerCase().includes(term))
                     )
                   }
 
                   if (items.length === 0) {
                     return (
-                      <div className="py-6 text-center text-xs font-mono text-[var(--gray2)]">
+                      <div className="py-6 text-center text-xs font-mono text-zinc-400">
                         {term ? 'Nenhum cliente encontrado para a busca.' : 'Nenhum cliente neste cenário.'}
                       </div>
                     )
@@ -792,17 +806,20 @@ export default function DiarioDeBordoPage() {
                     <Link
                       key={it.contact.id || idx}
                       href={`/contacts?search=${encodeURIComponent(it.label)}`}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--charcoal)] hover:bg-[var(--card2)] border border-[var(--line)] hover:border-[var(--lime)]/50 transition-all group"
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-[#121316] hover:bg-[#181a1d] border border-[#24262b] hover:border-zinc-600 transition-all group"
                       onClick={() => setActiveAlertPopover(null)}
                     >
                       <div className="flex flex-col min-w-0 pr-2">
-                        <span className="text-xs font-bold text-white group-hover:text-[var(--lime)] truncate transition-colors flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-white group-hover:text-zinc-200 truncate transition-colors flex items-center gap-1.5">
                           {it.label}
-                          <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-[var(--lime)]" />
+                          <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-zinc-400" />
                         </span>
-                        <span className="text-[10px] font-mono text-[var(--gray2)] truncate flex items-center gap-1 mt-0.5">
+                        <span className="text-[10px] font-mono text-zinc-400 truncate flex items-center gap-1 mt-0.5">
                           <Users size={9} />
                           Rep: {it.contact.representative || 'Sem representante'}
+                          {it.contact.name && it.contact.name !== it.label && (
+                            <span> · Contato: {it.contact.name}</span>
+                          )}
                         </span>
                       </div>
 
@@ -817,7 +834,7 @@ export default function DiarioDeBordoPage() {
             </div>
           )}
 
-          <p className="text-[11px] font-mono text-[var(--gray2)]">
+          <p className="text-[11px] font-mono text-zinc-400">
             Mantenha contato regular com os clientes para garantir o fluxo de vendas e evitar inativação de carteiras.
           </p>
 
@@ -834,14 +851,14 @@ export default function DiarioDeBordoPage() {
         <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col gap-4 shadow-lg">
           <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
             <div className="flex items-center gap-2">
-              <CalendarIcon size={16} className="text-[var(--lime)]" />
+              <CalendarIcon size={16} className="text-zinc-400" />
               <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider">
                 Agenda de Hoje ({todayAppointments.length})
               </h3>
             </div>
             <button
               onClick={() => setCalendarOpen(true)}
-              className="text-xs font-mono font-bold text-[var(--lime)] hover:underline flex items-center gap-1 cursor-pointer"
+              className="text-xs font-mono font-bold text-zinc-300 hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
             >
               <span>Ver Grade Completa</span>
               <ChevronRight size={13} />
@@ -868,7 +885,7 @@ export default function DiarioDeBordoPage() {
                   className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all ${
                     apt.status === 'concluido'
                       ? 'bg-black/20 border-gray-800 opacity-60'
-                      : 'bg-[var(--charcoal)] border-[var(--line)] hover:border-[var(--lime)]/40'
+                      : 'bg-[#141517] border-[#24262b] hover:border-zinc-700'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -876,8 +893,8 @@ export default function DiarioDeBordoPage() {
                       onClick={() => handleToggleAptDone(apt)}
                       className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors cursor-pointer shrink-0 ${
                         apt.status === 'concluido'
-                          ? 'bg-[var(--lime)] border-[var(--lime)] text-black'
-                          : 'border-gray-600 hover:border-[var(--lime)]'
+                          ? 'bg-emerald-500 border-emerald-500 text-black'
+                          : 'border-zinc-600 hover:border-zinc-400'
                       }`}
                       title={apt.status === 'concluido' ? 'Marcar como pendente' : 'Concluir compromisso'}
                     >
@@ -886,18 +903,18 @@ export default function DiarioDeBordoPage() {
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-[var(--lime)]">{apt.time}</span>
+                        <span className="text-xs font-mono font-bold text-zinc-300">{apt.time}</span>
                         <span className="text-xs font-bold text-white truncate">{apt.title}</span>
                       </div>
                       {apt.company_name && (
-                        <span className="text-[10px] font-mono text-[var(--gray2)] truncate block mt-0.5">
+                        <span className="text-[10px] font-mono text-zinc-400 truncate block mt-0.5">
                           {apt.company_name}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-[var(--lime)]/10 text-[var(--lime)] border border-[var(--lime)]/20 shrink-0">
+                  <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700 shrink-0">
                     {apt.type}
                   </span>
                 </div>
@@ -910,10 +927,10 @@ export default function DiarioDeBordoPage() {
         <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col gap-4 shadow-lg">
           <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
             <div className="flex items-center gap-2">
-              <KanbanSquare size={16} className="text-purple-400" />
+              <KanbanSquare size={16} className="text-zinc-400" />
               <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                 <span>Negócios Parados (&gt;7 dias)</span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300">
                   {dealAlerts.stagnantDeals.length}
                 </span>
               </h3>
@@ -932,23 +949,23 @@ export default function DiarioDeBordoPage() {
                 <div
                   key={deal.id}
                   onClick={() => setSelectedDeal(deal)}
-                  className="p-3.5 rounded-xl bg-[var(--charcoal)] border border-purple-500/20 hover:border-purple-500/50 transition-all cursor-pointer flex items-center justify-between gap-3"
+                  className="p-3.5 rounded-xl bg-[#141517] border border-[#24262b] hover:border-zinc-600 transition-all cursor-pointer flex items-center justify-between gap-3"
                 >
                   <div className="min-w-0">
                     <h4 className="text-xs font-bold text-white truncate">{deal.title}</h4>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] font-mono text-purple-300 font-bold uppercase">
+                      <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase">
                         Etapa: {deal.stage}
                       </span>
-                      <span className="text-[10px] font-mono text-[var(--gray2)]">
+                      <span className="text-[10px] font-mono text-zinc-400">
                         · {formatCurrency(deal.estimated_value || deal.final_value || 0)}
                       </span>
                     </div>
                   </div>
 
                   <div className="text-right shrink-0">
-                    <span className="text-xs font-mono font-bold text-purple-400 block">{days}d sem mover</span>
-                    <span className="text-[9px] font-mono text-[var(--lime)] hover:underline flex items-center justify-end gap-0.5 mt-0.5">
+                    <span className="text-xs font-mono font-bold text-amber-400/90 block">{days}d sem mover</span>
+                    <span className="text-[9px] font-mono text-zinc-300 hover:underline flex items-center justify-end gap-0.5 mt-0.5">
                       <span>Abrir</span>
                       <ChevronRight size={10} />
                     </span>
