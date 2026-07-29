@@ -127,40 +127,47 @@ export default function UsersPage() {
     }
   }, [router])
 
-  // Load users from Supabase API + local storage merge
+  // Load users strictly from Supabase API (Deduplicated, zero mock fallback)
   useEffect(() => {
     async function syncUsers() {
-      let apiUserList: TeamUser[] = []
       try {
         const res = await fetch('/api/users', { cache: 'no-store' })
         const json = await res.json()
-        if (json.success && Array.isArray(json.users)) {
-          apiUserList = json.users
+        if (json.success && Array.isArray(json.users) && json.users.length > 0) {
+          const userMap = new Map<string, TeamUser>()
+          json.users.forEach((u: any) => {
+            const key = (u.email || u.id || u.name).trim().toLowerCase()
+            if (!userMap.has(key)) {
+              userMap.set(key, u)
+            }
+          })
+          const cleanUsers = Array.from(userMap.values())
+          setUsers(cleanUsers)
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('crm_users', JSON.stringify(cleanUsers))
+            localStorage.setItem('cp_crm_v7_official_users', JSON.stringify(cleanUsers))
+          }
+          return
         }
       } catch (e) {
         console.error('[UsersPage] Failed to load users from API', e)
       }
 
-      let localUserList: TeamUser[] = []
       if (typeof window !== 'undefined') {
         const raw = localStorage.getItem('cp_crm_v7_official_users') || localStorage.getItem('crm_users')
         if (raw) {
-          try { localUserList = JSON.parse(raw) } catch (e) {}
+          try {
+            const parsed = JSON.parse(raw)
+            const userMap = new Map<string, TeamUser>()
+            parsed.forEach((u: any) => {
+              const key = (u.email || u.id || u.name).trim().toLowerCase()
+              if (!userMap.has(key)) {
+                userMap.set(key, u)
+              }
+            })
+            setUsers(Array.from(userMap.values()))
+          } catch (e) {}
         }
-      }
-
-      // Merge API and Local users by ID / email / name
-      const userMap = new Map<string, TeamUser>()
-      localUserList.forEach(u => {
-        if (u.id || u.name) userMap.set(u.id || u.name.toLowerCase(), u)
-      })
-      apiUserList.forEach(u => {
-        userMap.set(u.id || u.name.toLowerCase(), u)
-      })
-
-      const combined = Array.from(userMap.values())
-      if (combined.length > 0) {
-        setUsers(combined)
       }
     }
     syncUsers()
