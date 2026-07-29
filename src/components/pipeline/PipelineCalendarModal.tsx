@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Appointment } from '@/types'
 import { getAppointments, updateAppointment, deleteAppointment, saveAppointment } from '@/services/appointment-service'
 import { 
-  X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Plus, Edit2, Trash2, CheckCircle, AlertCircle
+  X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Plus, Edit2, Trash2
 } from 'lucide-react'
 
 interface PipelineCalendarModalProps {
@@ -13,19 +13,33 @@ interface PipelineCalendarModalProps {
 }
 
 export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModalProps) {
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month')
   const [currentDate, setCurrentDate] = useState<Date>(new Date())
   const [appointments, setAppointments] = useState<Appointment[]>([])
   
-  // Selected appointment for detail / edit / cancel modal
+  // Selected appointment for detail / edit modal
   const [activeApt, setActiveApt] = useState<Appointment | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
 
-  // Edit form state
-  const [editTitle, setEditTitle] = useState('')
-  const [editType, setEditType] = useState<Appointment['type']>('visita')
-  const [editDate, setEditDate] = useState('')
-  const [editTime, setEditTime] = useState('')
-  const [editNotes, setEditNotes] = useState('')
+  // Day Popover for "Mais X" in Month View
+  const [dayPopover, setDayPopover] = useState<{
+    dateKey: string
+    dayNum: number
+    dayName: string
+    apts: Appointment[]
+  } | null>(null)
+
+  // Form state (for create / edit)
+  const [formTitle, setFormTitle] = useState('')
+  const [formType, setFormType] = useState<Appointment['type']>('visita')
+  const [formDate, setFormDate] = useState('')
+  const [formTime, setFormTime] = useState('')
+  const [formCompany, setFormCompany] = useState('')
+  const [formNotes, setFormNotes] = useState('')
+
+  // Scroll ref for week view
+  const weekGridRef = useRef<HTMLDivElement>(null)
 
   // Load appointments and listen for changes
   const loadApts = () => {
@@ -49,22 +63,41 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
     }
   }, [isOpen])
 
+  // Scroll to ~8 AM when switching to week view
+  useEffect(() => {
+    if (viewMode === 'week' && weekGridRef.current) {
+      // 8 AM is 8 * 56px per hour = 448px
+      weekGridRef.current.scrollTop = 448
+    }
+  }, [viewMode, isOpen])
+
   if (!isOpen) return null
 
-  // Month navigation
-  const prevMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
+  // Date Navigation
+  const prevPeriod = () => {
+    setDayPopover(null)
+    if (viewMode === 'month') {
+      setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
+    } else {
+      setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() - 7))
+    }
   }
 
-  const nextMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
+  const nextPeriod = () => {
+    setDayPopover(null)
+    if (viewMode === 'month') {
+      setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
+    } else {
+      setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() + 7))
+    }
   }
 
   const goToday = () => {
+    setDayPopover(null)
     setCurrentDate(new Date())
   }
 
-  // Days in month calculation
+  // Month navigation calculation
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
 
@@ -77,9 +110,14 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ]
 
-  const weekDays = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB']
+  const monthShortNames = [
+    'jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.',
+    'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'
+  ]
 
-  // Format date key: YYYY-MM-DD
+  const weekDays = ['DOM.', 'SEG.', 'TER.', 'QUA.', 'QUI.', 'SEX.', 'SÁB.']
+
+  // Helper date key formatter: YYYY-MM-DD
   const formatDateKey = (y: number, m: number, d: number) => {
     const monthStr = String(m + 1).padStart(2, '0')
     const dayStr = String(d).padStart(2, '0')
@@ -88,28 +126,94 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
 
   const todayStr = new Date().toISOString().split('T')[0]
 
+  // Week calculation (Sunday to Saturday)
+  const getWeekDays = (anchorDate: Date) => {
+    const dayOfWeek = anchorDate.getDay() // 0 = Sun, 6 = Sat
+    const sunday = new Date(anchorDate)
+    sunday.setDate(anchorDate.getDate() - dayOfWeek)
+
+    const days = []
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(sunday)
+      d.setDate(sunday.getDate() + i)
+      days.push(d)
+    }
+    return days
+  }
+
+  const weekDaysList = getWeekDays(currentDate)
+  const weekStart = weekDaysList[0]
+  const weekEnd = weekDaysList[6]
+
+  // Header Title Label
+  const getHeaderTitle = () => {
+    if (viewMode === 'month') {
+      return `${monthNames[month]} de ${year}`
+    } else {
+      const startMonth = monthShortNames[weekStart.getMonth()]
+      const endMonth = monthShortNames[weekEnd.getMonth()]
+      if (weekStart.getMonth() === weekEnd.getMonth()) {
+        return `${startMonth} ${year}`
+      }
+      return `${startMonth} – ${endMonth} ${weekEnd.getFullYear()}`
+    }
+  }
+
+  // Open creation modal
+  const handleOpenCreate = (presetDate?: string, presetTime?: string) => {
+    setIsCreating(true)
+    setActiveApt(null)
+    setFormTitle('')
+    setFormType('visita')
+    setFormDate(presetDate || todayStr)
+    setFormTime(presetTime || '09:00')
+    setFormCompany('')
+    setFormNotes('')
+  }
+
   // Open edit modal for an appointment
   const handleOpenAptDetails = (apt: Appointment) => {
+    setDayPopover(null)
+    setIsCreating(false)
     setActiveApt(apt)
-    setEditTitle(apt.title)
-    setEditType(apt.type)
-    setEditDate(apt.date)
-    setEditTime(apt.time)
-    setEditNotes(apt.notes || '')
+    setFormTitle(apt.title)
+    setFormType(apt.type)
+    setFormDate(apt.date)
+    setFormTime(apt.time)
+    setFormCompany(apt.company_name || '')
+    setFormNotes(apt.notes || '')
     setIsEditing(false)
   }
 
-  // Save changes
+  // Save new appointment
+  const handleSaveNew = (e: React.FormEvent) => {
+    e.preventDefault()
+    saveAppointment({
+      title: formTitle,
+      type: formType,
+      date: formDate,
+      time: formTime,
+      deal_id: '',
+      company_name: formCompany || undefined,
+      notes: formNotes || undefined,
+      status: 'agendado'
+    })
+    loadApts()
+    setIsCreating(false)
+  }
+
+  // Save edited appointment
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!activeApt) return
     const updated = updateAppointment({
       ...activeApt,
-      title: editTitle,
-      type: editType,
-      date: editDate,
-      time: editTime,
-      notes: editNotes
+      title: formTitle,
+      type: formType,
+      date: formDate,
+      time: formTime,
+      company_name: formCompany || undefined,
+      notes: formNotes || undefined
     })
     loadApts()
     setActiveApt(updated)
@@ -125,7 +229,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
     setIsEditing(false)
   }
 
-  // Build grid calendar cells
+  // Build grid calendar cells for Month View
   const gridCells = []
 
   // 1. Padding days from previous month
@@ -137,7 +241,9 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
     gridCells.push({
       dateKey,
       dayNum,
+      dayName: weekDays[(firstDayIndex - 1 - i) % 7],
       isCurrentMonth: false,
+      isToday: dateKey === todayStr,
       apts: appointments.filter(a => a.date === dateKey)
     })
   }
@@ -145,9 +251,11 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
   // 2. Current month days
   for (let d = 1; d <= daysInMonth; d++) {
     const dateKey = formatDateKey(year, month, d)
+    const dayName = weekDays[new Date(year, month, d).getDay()]
     gridCells.push({
       dateKey,
       dayNum: d,
+      dayName,
       isCurrentMonth: true,
       isToday: dateKey === todayStr,
       apts: appointments.filter(a => a.date === dateKey)
@@ -161,56 +269,105 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
     const nextMonthIdx = month === 11 ? 0 : month + 1
     const nextYear = month === 11 ? year + 1 : year
     const dateKey = formatDateKey(nextYear, nextMonthIdx, d)
+    const dayName = weekDays[new Date(nextYear, nextMonthIdx, d).getDay()]
     gridCells.push({
       dateKey,
       dayNum: d,
+      dayName,
       isCurrentMonth: false,
+      isToday: dateKey === todayStr,
       apts: appointments.filter(a => a.date === dateKey)
     })
   }
 
+  // Time slots for Week View (00:00 to 23:00)
+  const hoursOfDay = Array.from({ length: 24 }, (_, i) => i)
+
+  // Format hour label (e.g., "08:00" or "8 AM")
+  const formatHourLabel = (h: number) => {
+    if (h === 0) return '12 AM'
+    if (h < 12) return `${h} AM`
+    if (h === 12) return '12 PM'
+    return `${h - 12} PM`
+  }
+
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in">
-      {/* Calendar Window */}
-      <div className="card w-full max-w-5xl h-[90vh] flex flex-col bg-[#121314] border border-[var(--line)] rounded-2xl shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      {/* Calendar Window Container */}
+      <div className="card w-full max-w-6xl h-[92vh] flex flex-col bg-[#111214] border border-[var(--line)] rounded-2xl shadow-2xl overflow-hidden relative">
         
         {/* Header Bar */}
-        <div className="p-4 sm:px-6 border-b border-[var(--line)] flex flex-wrap items-center justify-between gap-4 bg-[var(--card)]">
+        <div className="p-3 sm:px-6 border-b border-[var(--line)] flex flex-wrap items-center justify-between gap-3 bg-[var(--card)] shrink-0">
+          
+          {/* Title & Date */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-lime-500/10 border border-lime-500/20 flex items-center justify-center text-[var(--lime)]">
-              <CalendarIcon size={20} />
-            </div>
-            <div>
-              <h2 className="font-display text-lg sm:text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                <span>Agenda Comercial</span>
-              </h2>
-              <p className="text-xs text-[var(--gray2)] font-mono">
-                {monthNames[month]} de {year}
-              </p>
-            </div>
-          </div>
-
-          {/* Controls */}
-          <div className="flex items-center gap-2">
             <button
               onClick={goToday}
-              className="btn btn-secondary text-xs px-3 py-1.5 font-bold font-mono border-[var(--line)] cursor-pointer hover:border-[var(--lime)]"
+              className="btn btn-secondary text-xs px-3 py-1.5 font-bold border-[var(--line)] cursor-pointer hover:border-[var(--lime)] hover:text-[var(--lime)] transition-colors"
             >
               Hoje
             </button>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={prevPeriod}
+                className="p-1.5 rounded-lg text-gray-300 hover:text-white bg-[var(--charcoal)] border border-[var(--line)] cursor-pointer hover:border-[var(--lime)] transition-colors"
+                title="Anterior"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                onClick={nextPeriod}
+                className="p-1.5 rounded-lg text-gray-300 hover:text-white bg-[var(--charcoal)] border border-[var(--line)] cursor-pointer hover:border-[var(--lime)] transition-colors"
+                title="Próximo"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <h2 className="font-display text-base sm:text-xl font-bold text-white tracking-tight ml-2">
+              {getHeaderTitle()}
+            </h2>
+          </div>
+
+          {/* Controls Right */}
+          <div className="flex items-center gap-3">
+            {/* View Selector (Mês / Semana) */}
+            <div className="flex items-center bg-[var(--charcoal)] border border-[var(--line)] p-1 rounded-xl gap-1">
+              <button
+                onClick={() => { setViewMode('month'); setDayPopover(null); }}
+                className={`px-3 py-1 text-xs font-bold rounded-lg cursor-pointer transition-all ${
+                  viewMode === 'month'
+                    ? 'bg-[var(--lime)] text-black shadow-md'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Mês
+              </button>
+              <button
+                onClick={() => { setViewMode('week'); setDayPopover(null); }}
+                className={`px-3 py-1 text-xs font-bold rounded-lg cursor-pointer transition-all ${
+                  viewMode === 'week'
+                    ? 'bg-[var(--lime)] text-black shadow-md'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Semana
+              </button>
+            </div>
+
+            {/* Novo Agendamento Button */}
             <button
-              onClick={prevMonth}
-              className="p-2 rounded-xl text-gray-300 hover:text-white bg-[var(--charcoal)] border border-[var(--line)] cursor-pointer hover:border-[var(--lime)]"
+              onClick={() => handleOpenCreate()}
+              className="btn btn-primary text-xs py-1.5 px-3 font-bold uppercase tracking-wider text-black flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(180,217,50,0.25)]"
             >
-              <ChevronLeft size={16} />
+              <Plus size={16} />
+              <span className="hidden sm:inline">Novo Agendamento</span>
             </button>
-            <button
-              onClick={nextMonth}
-              className="p-2 rounded-xl text-gray-300 hover:text-white bg-[var(--charcoal)] border border-[var(--line)] cursor-pointer hover:border-[var(--lime)]"
-            >
-              <ChevronRight size={16} />
-            </button>
-            <div className="h-6 w-[1px] bg-[var(--line)] mx-1" />
+
+            <div className="h-6 w-[1px] bg-[var(--line)]" />
+
+            {/* Close Button */}
             <button
               onClick={onClose}
               className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-[var(--line)] transition-colors cursor-pointer"
@@ -220,82 +377,404 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
           </div>
         </div>
 
-        {/* Calendar Grid Body */}
-        <div className="flex-1 min-h-0 flex flex-col p-3 sm:p-5 overflow-hidden">
+        {/* Calendar Body Content */}
+        <div className="flex-1 min-h-0 flex flex-col p-2 sm:p-4 overflow-hidden relative">
           
-          {/* Weekday headers */}
-          <div className="grid grid-cols-7 gap-1 text-center border-b border-[var(--line)] pb-2 mb-2 shrink-0">
-            {weekDays.map(w => (
-              <div key={w} className="text-[10px] sm:text-xs font-mono font-bold text-[var(--gray2)] uppercase tracking-wider">
-                {w}
+          {/* ========================================================
+              VIEW 1: MONTH VIEW (Visão de Mês)
+             ======================================================== */}
+          {viewMode === 'month' && (
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              
+              {/* Weekday Header Titles */}
+              <div className="grid grid-cols-7 gap-1.5 text-center border-b border-[var(--line)] pb-2 mb-2 shrink-0">
+                {weekDays.map(w => (
+                  <div key={w} className="text-[11px] font-mono font-bold text-[var(--gray2)] uppercase tracking-wider">
+                    {w}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* Day Cells Grid */}
-          <div className="flex-1 grid grid-cols-7 grid-rows-6 gap-1.5 min-h-0 overflow-y-auto">
-            {gridCells.map((cell, idx) => (
-              <div
-                key={idx}
-                className={`p-1 sm:p-2 rounded-xl border flex flex-col justify-start gap-1 overflow-hidden transition-all ${
-                  cell.isToday
-                    ? 'bg-lime-950/20 border-[var(--lime)]/60 shadow-[0_0_15px_rgba(180,217,50,0.15)]'
-                    : cell.isCurrentMonth
-                    ? 'bg-[var(--card)] border-[var(--line)]/60 hover:border-[var(--line)]'
-                    : 'bg-black/30 border-[var(--line)]/20 opacity-40'
-                }`}
-              >
-                {/* Day Header Number */}
-                <div className="flex items-center justify-between shrink-0">
-                  <span className={`text-xs font-mono font-bold rounded-md px-1.5 py-0.5 ${
-                    cell.isToday
-                      ? 'bg-[var(--lime)] text-black font-black'
-                      : 'text-[var(--white)]'
-                  }`}>
-                    {cell.dayNum}
-                  </span>
-                  {cell.apts.length > 0 && (
-                    <span className="text-[9px] font-mono font-bold text-[var(--lime)]">
-                      {cell.apts.length} {cell.apts.length === 1 ? 'evt' : 'evts'}
-                    </span>
-                  )}
-                </div>
+              {/* Month 7x6 Days Grid */}
+              <div className="flex-1 grid grid-cols-7 grid-rows-6 gap-1.5 min-h-0 overflow-y-auto custom-scrollbar">
+                {gridCells.map((cell, idx) => {
+                  const visibleApts = cell.apts.slice(0, 3)
+                  const hasMore = cell.apts.length > 3
+                  const extraCount = cell.apts.length - 3
 
-                {/* List of Appointment Chips in Cell */}
-                <div className="flex-1 flex flex-col gap-1 overflow-y-auto min-h-0 custom-scrollbar">
-                  {cell.apts.map(apt => (
-                    <button
-                      key={apt.id}
-                      onClick={() => handleOpenAptDetails(apt)}
-                      className={`w-full text-left text-[10px] p-1 sm:p-1.5 rounded-lg border font-mono truncate transition-transform hover:scale-[1.02] cursor-pointer flex items-center justify-between gap-1 ${
-                        apt.type === 'visita' ? 'bg-sky-500/15 border-sky-500/30 text-sky-300' :
-                        apt.type === 'reuniao' ? 'bg-purple-500/15 border-purple-500/30 text-purple-300' :
-                        apt.type === 'ligacao' ? 'bg-yellow-500/15 border-yellow-500/30 text-yellow-300' :
-                        'bg-lime-500/15 border-lime-500/30 text-lime-300'
+                  return (
+                    <div
+                      key={idx}
+                      className={`p-1.5 rounded-xl border flex flex-col justify-start gap-1 overflow-hidden transition-all relative ${
+                        cell.isToday
+                          ? 'bg-lime-950/20 border-[var(--lime)]/70 shadow-[0_0_15px_rgba(180,217,50,0.15)]'
+                          : cell.isCurrentMonth
+                          ? 'bg-[var(--card)] border-[var(--line)]/60 hover:border-[var(--line)]'
+                          : 'bg-black/30 border-[var(--line)]/20 opacity-35'
                       }`}
                     >
-                      <span className="truncate font-bold">{apt.time} · {apt.company_name || apt.title}</span>
-                    </button>
-                  ))}
+                      {/* Day Number Header */}
+                      <div className="flex items-center justify-between shrink-0">
+                        <button
+                          onClick={() => {
+                            if (cell.apts.length > 0) {
+                              setDayPopover({
+                                dateKey: cell.dateKey,
+                                dayNum: cell.dayNum,
+                                dayName: cell.dayName,
+                                apts: cell.apts
+                              })
+                            }
+                          }}
+                          className={`text-xs font-mono font-bold rounded-full w-6 h-6 flex items-center justify-center transition-colors ${
+                            cell.isToday
+                              ? 'bg-[var(--lime)] text-black font-black'
+                              : 'text-gray-200 hover:bg-white/10'
+                          }`}
+                        >
+                          {cell.dayNum}
+                        </button>
+                      </div>
+
+                      {/* Chips List (Max 3) */}
+                      <div className="flex-1 flex flex-col gap-1 overflow-hidden min-h-0 mt-0.5">
+                        {visibleApts.map(apt => (
+                          <button
+                            key={apt.id}
+                            onClick={() => handleOpenAptDetails(apt)}
+                            className="w-full text-left text-[10px] py-1 px-1.5 rounded-md border border-[var(--lime)]/30 bg-[var(--lime)]/15 text-[var(--lime)] font-mono truncate transition-all hover:bg-[var(--lime)]/25 hover:border-[var(--lime)]/60 cursor-pointer flex items-center gap-1.5"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--lime)] shrink-0" />
+                            <span className="truncate font-semibold">
+                              <strong className="font-bold">{apt.time}</strong> {apt.company_name || apt.title}
+                            </span>
+                          </button>
+                        ))}
+
+                        {/* "Mais X" Indicator Button */}
+                        {hasMore && (
+                          <button
+                            onClick={() => setDayPopover({
+                              dateKey: cell.dateKey,
+                              dayNum: cell.dayNum,
+                              dayName: cell.dayName,
+                              apts: cell.apts
+                            })}
+                            className="text-[10px] font-bold text-[var(--lime)] hover:text-white hover:bg-[var(--lime)]/20 px-1.5 py-0.5 rounded transition-colors text-left cursor-pointer flex items-center gap-1"
+                          >
+                            <span>Mais {extraCount}</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================
+              VIEW 2: WEEK VIEW (Visão de Semana)
+             ======================================================== */}
+          {viewMode === 'week' && (
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              
+              {/* Weekday Header Columns */}
+              <div className="grid grid-cols-[60px_1fr] border-b border-[var(--line)] pb-2 mb-1 shrink-0">
+                <div className="text-[10px] font-mono text-[var(--gray2)] text-center self-end">
+                  GMT-03
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-center">
+                  {weekDaysList.map((d, i) => {
+                    const dNum = d.getDate()
+                    const dateKey = d.toISOString().split('T')[0]
+                    const isToday = dateKey === todayStr
+                    const dayLabel = weekDays[d.getDay()]
+
+                    return (
+                      <div key={i} className="flex flex-col items-center">
+                        <span className="text-[10px] font-mono font-bold text-[var(--gray2)] uppercase">
+                          {dayLabel}
+                        </span>
+                        <span className={`text-sm font-mono font-bold w-7 h-7 rounded-full flex items-center justify-center mt-0.5 ${
+                          isToday
+                            ? 'bg-[var(--lime)] text-black font-black shadow-[0_0_10px_rgba(180,217,50,0.4)]'
+                            : 'text-white'
+                        }`}>
+                          {dNum}
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
-            ))}
-          </div>
+
+              {/* Scrollable 24-hour Week Timeline Grid */}
+              <div ref={weekGridRef} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+                <div className="grid grid-cols-[60px_1fr] relative min-h-[1344px]">
+                  
+                  {/* Hour labels left column */}
+                  <div className="flex flex-col">
+                    {hoursOfDay.map(h => (
+                      <div key={h} className="h-14 border-b border-[var(--line)]/30 text-[10px] font-mono text-[var(--gray2)] pr-2 text-right -translate-y-2">
+                        {formatHourLabel(h)}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 7 Columns for Days of the Week */}
+                  <div className="grid grid-cols-7 gap-1 relative border-l border-[var(--line)]/40">
+                    {weekDaysList.map((dayDate, dayIdx) => {
+                      const dateKey = dayDate.toISOString().split('T')[0]
+                      const dayApts = appointments.filter(a => a.date === dateKey)
+
+                      return (
+                        <div key={dayIdx} className="relative border-r border-[var(--line)]/30 h-[1344px]">
+                          {/* Hour slot background grid lines */}
+                          {hoursOfDay.map(h => (
+                            <div
+                              key={h}
+                              onClick={() => handleOpenCreate(dateKey, `${String(h).padStart(2, '0')}:00`)}
+                              className="h-14 border-b border-[var(--line)]/30 hover:bg-[var(--lime)]/5 transition-colors cursor-pointer"
+                              title={`Agendar para ${dateKey} às ${String(h).padStart(2, '0')}:00`}
+                            />
+                          ))}
+
+                          {/* Rendered Appointment Blocks */}
+                          {dayApts.map(apt => {
+                            const [hStr, mStr] = (apt.time || '09:00').split(':')
+                            const hourNum = parseInt(hStr, 10) || 9
+                            const minNum = parseInt(mStr, 10) || 0
+                            
+                            // 56px per hour
+                            const topPx = (hourNum + minNum / 60) * 56
+                            const heightPx = 52 // standard ~1 hour block height
+
+                            return (
+                              <button
+                                key={apt.id}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleOpenAptDetails(apt)
+                                }}
+                                style={{ top: `${topPx}px`, height: `${heightPx}px` }}
+                                className="absolute left-0.5 right-0.5 z-10 bg-[var(--lime)]/20 border-l-4 border-[var(--lime)] text-[var(--lime)] p-1.5 rounded-md text-[11px] font-mono text-left shadow-md hover:brightness-125 transition-all cursor-pointer overflow-hidden flex flex-col justify-between"
+                              >
+                                <div className="font-bold truncate text-white leading-tight">
+                                  {apt.title}
+                                </div>
+                                <div className="text-[10px] text-[var(--lime)] truncate font-semibold">
+                                  {apt.time} {apt.company_name ? `· ${apt.company_name}` : ''}
+                                </div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          )}
+
         </div>
 
-        {/* Appointment Details / Edit Modal Popup */}
-        {activeApt && (
-          <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+        {/* ========================================================
+            POPOVER FLUTUANTE DO DIA (Estilo Google Calendar)
+           ======================================================== */}
+        {dayPopover && (
+          <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+            <div className="card w-full max-w-sm bg-[#181a1d] border border-[var(--line)] rounded-2xl p-4 shadow-2xl flex flex-col gap-3">
+              
+              {/* Popover Header */}
+              <div className="flex items-center justify-between border-b border-[var(--line)] pb-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono font-bold text-[var(--gray2)] uppercase">
+                    {dayPopover.dayName}
+                  </span>
+                  <span className="text-xl font-mono font-bold text-white bg-[var(--lime)] text-black w-8 h-8 rounded-full flex items-center justify-center">
+                    {dayPopover.dayNum}
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => setDayPopover(null)}
+                  className="p-1 text-gray-400 hover:text-white rounded cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Popover Appointments List */}
+              <div className="max-h-[300px] overflow-y-auto custom-scrollbar flex flex-col gap-2 py-1">
+                {dayPopover.apts.map(apt => (
+                  <button
+                    key={apt.id}
+                    onClick={() => handleOpenAptDetails(apt)}
+                    className="w-full text-left p-2.5 rounded-xl border border-[var(--lime)]/30 bg-[var(--lime)]/10 hover:bg-[var(--lime)]/20 text-white transition-all cursor-pointer flex items-center justify-between gap-2"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[var(--lime)] shrink-0" />
+                      <div className="truncate">
+                        <div className="text-xs font-bold text-white truncate">{apt.title}</div>
+                        {apt.company_name && (
+                          <div className="text-[10px] text-[var(--lime)] font-mono truncate">{apt.company_name}</div>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-[var(--lime)] shrink-0">
+                      {apt.time}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Footer action to add appointment for this day */}
+              <div className="pt-2 border-t border-[var(--line)] flex justify-end">
+                <button
+                  onClick={() => {
+                    const dateKey = dayPopover.dateKey
+                    setDayPopover(null)
+                    handleOpenCreate(dateKey)
+                  }}
+                  className="btn btn-primary text-xs py-1.5 px-3 font-bold text-black flex items-center gap-1 uppercase cursor-pointer"
+                >
+                  <Plus size={14} />
+                  <span>Agendar neste dia</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            MODAL DE NOVO AGENDAMENTO (Create)
+           ======================================================== */}
+        {isCreating && (
+          <div className="fixed inset-0 z-[100001] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
             <div className="card w-full max-w-md bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col gap-4 shadow-2xl">
               
               <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
                 <div className="flex items-center gap-2">
-                  <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded ${
-                    activeApt.type === 'visita' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' :
-                    activeApt.type === 'reuniao' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
-                    activeApt.type === 'ligacao' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' :
-                    'bg-lime-500/10 text-lime-400 border border-lime-500/20'
-                  }`}>
+                  <Plus size={18} className="text-[var(--lime)]" />
+                  <h3 className="font-display text-sm font-bold text-white">Novo Agendamento Comercial</h3>
+                </div>
+                <button
+                  onClick={() => setIsCreating(false)}
+                  className="p-1 text-gray-400 hover:text-white rounded cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveNew} className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="label">Título / Assunto</label>
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder="Ex: Reunião de Apresentação Comercial"
+                    required
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="label">Empresa / Cliente (Opcional)</label>
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder="Ex: CartonPack Embalagens"
+                    value={formCompany}
+                    onChange={(e) => setFormCompany(e.target.value)}
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-col gap-1">
+                    <label className="label">Tipo</label>
+                    <select
+                      className="input bg-[var(--charcoal)] cursor-pointer"
+                      value={formType}
+                      onChange={(e) => setFormType(e.target.value as any)}
+                    >
+                      <option value="visita">Visita</option>
+                      <option value="reuniao">Reunião</option>
+                      <option value="ligacao">Ligação</option>
+                      <option value="email">E-mail</option>
+                      <option value="proposta">Proposta</option>
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="label">Data</label>
+                    <input
+                      type="date"
+                      className="input bg-[var(--charcoal)] cursor-pointer"
+                      required
+                      value={formDate}
+                      onChange={(e) => setFormDate(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="label">Hora</label>
+                    <input
+                      type="time"
+                      className="input bg-[var(--charcoal)] cursor-pointer"
+                      required
+                      value={formTime}
+                      onChange={(e) => setFormTime(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="label">Observações</label>
+                  <textarea
+                    className="input min-h-[60px] resize-none"
+                    placeholder="Notas ou pauta do compromisso..."
+                    value={formNotes}
+                    onChange={(e) => setFormNotes(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-[var(--line)]">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreating(false)}
+                    className="btn btn-secondary text-xs py-2 px-3 cursor-pointer font-bold"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary text-xs py-2 px-4 font-bold text-black uppercase cursor-pointer"
+                  >
+                    Salvar Compromisso
+                  </button>
+                </div>
+              </form>
+
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            MODAL DE DETALHES / EDIÇÃO (Edit / View)
+           ======================================================== */}
+        {activeApt && (
+          <div className="fixed inset-0 z-[100001] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+            <div className="card w-full max-w-md bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col gap-4 shadow-2xl">
+              
+              <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-[var(--lime)]/10 text-[var(--lime)] border border-[var(--lime)]/30">
                     {activeApt.type}
                   </span>
                   <h3 className="font-display text-sm font-bold text-white">Detalhes do Agendamento</h3>
@@ -369,7 +848,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                   </div>
                 </div>
               ) : (
-                /* Edit Mode */
+                /* Edit Form Mode */
                 <form onSubmit={handleSaveEdit} className="flex flex-col gap-3">
                   <div className="flex flex-col gap-1">
                     <label className="label">Título / Assunto</label>
@@ -377,8 +856,18 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                       type="text"
                       className="input"
                       required
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
+                      value={formTitle}
+                      onChange={(e) => setFormTitle(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="label">Empresa / Cliente</label>
+                    <input
+                      type="text"
+                      className="input"
+                      value={formCompany}
+                      onChange={(e) => setFormCompany(e.target.value)}
                     />
                   </div>
 
@@ -387,8 +876,8 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                       <label className="label">Tipo</label>
                       <select
                         className="input bg-[var(--charcoal)] cursor-pointer"
-                        value={editType}
-                        onChange={(e) => setEditType(e.target.value as any)}
+                        value={formType}
+                        onChange={(e) => setFormType(e.target.value as any)}
                       >
                         <option value="visita">Visita</option>
                         <option value="reuniao">Reunião</option>
@@ -404,8 +893,8 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                         type="date"
                         className="input bg-[var(--charcoal)] cursor-pointer"
                         required
-                        value={editDate}
-                        onChange={(e) => setEditDate(e.target.value)}
+                        value={formDate}
+                        onChange={(e) => setFormDate(e.target.value)}
                       />
                     </div>
 
@@ -415,8 +904,8 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                         type="time"
                         className="input bg-[var(--charcoal)] cursor-pointer"
                         required
-                        value={editTime}
-                        onChange={(e) => setEditTime(e.target.value)}
+                        value={formTime}
+                        onChange={(e) => setFormTime(e.target.value)}
                       />
                     </div>
                   </div>
@@ -425,8 +914,8 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                     <label className="label">Observações</label>
                     <textarea
                       className="input min-h-[60px] resize-none"
-                      value={editNotes}
-                      onChange={(e) => setEditNotes(e.target.value)}
+                      value={formNotes}
+                      onChange={(e) => setFormNotes(e.target.value)}
                     />
                   </div>
 
@@ -450,6 +939,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
             </div>
           </div>
         )}
+
       </div>
     </div>
   )

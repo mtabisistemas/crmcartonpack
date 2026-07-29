@@ -237,7 +237,7 @@ export const FINISHINGS = [
 
 export interface Appointment {
   id: string
-  deal_id: string
+  deal_id?: string
   deal_title?: string
   contact_name?: string
   company_name?: string
