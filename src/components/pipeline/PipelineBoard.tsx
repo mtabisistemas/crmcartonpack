@@ -756,42 +756,42 @@ export function PipelineBoard() {
   }
 
   return (
-    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-6 overflow-hidden">
+    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-2.5 overflow-hidden">
       {/* ── HEADER ROW: TÍTULO DA PÁGINA + BOTÕES DE AÇÃO ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
           Pipeline de Vendas
         </h1>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button 
             type="button"
-            className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-2 cursor-pointer text-white font-bold shadow-lg"
+            className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer text-white font-bold shadow-md"
             onClick={() => setShowCalendarModal(true)}
           >
-            <Calendar size={14} className="text-[var(--lime)]" />
+            <Calendar size={13} className="text-[var(--lime)]" />
             <span>Agenda</span>
           </button>
 
           <button 
             type="button"
-            className="btn btn-primary text-xs py-2 px-3 flex items-center gap-2 cursor-pointer font-bold text-[#060606]" 
+            className="btn btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer font-bold text-[#060606]" 
             onClick={() => handleOpenAddDeal('leads')}
           >
-            <Plus size={14} />
+            <Plus size={13} />
             <span>Novo Negócio</span>
           </button>
         </div>
       </div>
 
       {/* ── BARRA DE FILTROS DO PIPELINE (ESTILO IDÊNTICO A CONTATOS) ── */}
-      <div className="card p-4 grid grid-cols-1 md:grid-cols-6 gap-3 items-center shrink-0">
+      <div className="card p-3 grid grid-cols-1 md:grid-cols-6 gap-3 items-center shrink-0">
         {/* Busca — ocupa 2 colunas */}
-        <div className="md:col-span-2 flex items-center gap-2 input w-full">
-          <Search size={14} className="text-[var(--gray2)] shrink-0" />
+        <div className="md:col-span-2 flex items-center gap-2 input w-full py-1.5 px-3">
+          <Search size={13} className="text-[var(--gray2)] shrink-0" />
           <input
             type="text"
-            className="bg-transparent border-none outline-none w-full text-xs text-[var(--white)] placeholder-[var(--gray2)] font-medium"
+            className="bg-transparent border-none outline-none w-full text-xs text-[var(--white)] placeholder-[var(--gray2)]"
             placeholder="Buscar negócio..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -801,7 +801,7 @@ export function PipelineBoard() {
         {/* Ano */}
         <div>
           <select
-            className="input w-full text-xs cursor-pointer"
+            className="input w-full py-1.5 px-3 text-xs cursor-pointer"
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
           >
@@ -814,7 +814,7 @@ export function PipelineBoard() {
         {/* Mês */}
         <div>
           <select
-            className="input w-full text-xs cursor-pointer"
+            className="input w-full py-1.5 px-3 text-xs cursor-pointer"
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
           >
@@ -837,7 +837,7 @@ export function PipelineBoard() {
         {/* Representantes */}
         <div>
           <select
-            className="input w-full text-xs cursor-pointer truncate"
+            className="input w-full py-1.5 px-3 text-xs cursor-pointer truncate"
             value={selectedRep}
             onChange={(e) => setSelectedRep(e.target.value)}
           >
@@ -851,7 +851,7 @@ export function PipelineBoard() {
         {/* Curva ABC */}
         <div>
           <select
-            className="input w-full text-xs cursor-pointer"
+            className="input w-full py-1.5 px-3 text-xs cursor-pointer"
             value={selectedCurve}
             onChange={(e) => setSelectedCurve(e.target.value)}
           >

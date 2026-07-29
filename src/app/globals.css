@@ -522,7 +522,7 @@ a, button, input, select, textarea {
   flex: 1;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 12px 0 20px 0;
+  padding: 0;
 }
 
 .kanban-board {
