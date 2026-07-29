@@ -14,8 +14,13 @@ import {
   ChevronRight, 
   Filter, 
   Check, 
-  Zap
+  Zap,
+  Search,
+  X,
+  ExternalLink,
+  Users
 } from 'lucide-react'
+import Link from 'next/link'
 
 import { Contact, Deal, Appointment, UserGoal } from '@/types'
 import { getAppointments, updateAppointment } from '@/services/appointment-service'
@@ -98,6 +103,10 @@ export default function DiarioDeBordoPage() {
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null)
   const [selectedContactForActivity, setSelectedContactForActivity] = useState<Contact | null>(null)
   const [calendarOpen, setCalendarOpen] = useState(false)
+
+  // Popover state for Alertas do Dia cards
+  const [activeAlertPopover, setActiveAlertPopover] = useState<'recompra15' | 'recompraAtrasada' | 'riscoInativacao' | null>(null)
+  const [alertSearchTerm, setAlertSearchTerm] = useState('')
 
   // Fetch all data synchronously & from local storage
   const fetchData = async () => {
@@ -363,13 +372,15 @@ export default function DiarioDeBordoPage() {
     }
   }, [filteredDeals, currentMonthGoal, bizStats, appointments])
 
-  // 2. Client Status & Repurchase Overdue & Upcoming 15 Days Alerts
+  // 2. Client Status & Repurchase Overdue, Upcoming 15 Days & Inactivation Risk Alerts
   const clientAlerts = useMemo(() => {
     const now = new Date()
     const overdueRepurchaseList: Array<{ contact: Contact; daysOverdue: number }> = []
     const upcoming15DaysRepurchaseList: Array<{ contact: Contact; daysToRepurchase: number }> = []
+    const inactivationRiskList: Array<{ contact: Contact; daysWithoutActivity: number; daysUntilInactive: number }> = []
 
     filteredContacts.forEach(c => {
+      // 1. Repurchase Alerts
       let daysSincePurchase = (c as any).lastPurchaseDays
       if (daysSincePurchase === undefined && c.lastPurchaseDate) {
         const lastP = parseFlexibleDate(c.lastPurchaseDate)
@@ -393,14 +404,47 @@ export default function DiarioDeBordoPage() {
           })
         }
       }
+
+      // 2. Inactivation Risk Alerts
+      // Calculates last activity date from activity history, purchase date, or creation date
+      let lastActDate = parseFlexibleDate((c as any).last_activity_date || (c as any).lastActivityDate)
+      if (!lastActDate && c.lastPurchaseDate) {
+        lastActDate = parseFlexibleDate(c.lastPurchaseDate)
+      }
+      if (!lastActDate && c.created_at) {
+        lastActDate = parseFlexibleDate(c.created_at)
+      }
+
+      let daysWithoutActivity = 0
+      if (lastActDate) {
+        daysWithoutActivity = Math.max(0, Math.floor((now.getTime() - lastActDate.getTime()) / (1000 * 60 * 60 * 24)))
+      }
+
+      const threshold = c.inactivityThresholdDays ?? 90
+      const isAutoInactive = daysWithoutActivity > threshold
+      const daysUntilInactive = threshold - daysWithoutActivity
+
+      // Alert starts when client is active and there are 30 days or fewer remaining before automatic inactivation
+      if (!isAutoInactive && daysUntilInactive >= 0 && daysUntilInactive <= 30) {
+        inactivationRiskList.push({
+          contact: c,
+          daysWithoutActivity,
+          daysUntilInactive
+        })
+      }
     })
 
     overdueRepurchaseList.sort((a, b) => b.daysOverdue - a.daysOverdue)
+    upcoming15DaysRepurchaseList.sort((a, b) => a.daysToRepurchase - b.daysToRepurchase)
+    inactivationRiskList.sort((a, b) => a.daysUntilInactive - b.daysUntilInactive)
 
     return {
       overdueRepurchaseList,
       overdueRepurchaseCount: overdueRepurchaseList.length,
-      upcoming15DaysRepurchaseCount: upcoming15DaysRepurchaseList.length
+      upcoming15DaysRepurchaseList,
+      upcoming15DaysRepurchaseCount: upcoming15DaysRepurchaseList.length,
+      inactivationRiskList,
+      inactivationRiskCount: inactivationRiskList.length
     }
   }, [filteredContacts])
 
@@ -571,43 +615,210 @@ export default function DiarioDeBordoPage() {
         </div>
 
         {/* BLOCO DIREITA (4 Colunas): Alertas do Dia */}
-        <div className="lg:col-span-4 card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-lg hover:border-[var(--lime)]/30 transition-all">
+        <div className="lg:col-span-4 card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-lg hover:border-[var(--lime)]/30 transition-all relative">
           
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={18} className="text-amber-400" />
-            <h2 className="text-xs font-display font-bold text-white uppercase tracking-wider">
-              Alertas do Dia
-            </h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={18} className="text-amber-400" />
+              <h2 className="text-xs font-display font-bold text-white uppercase tracking-wider">
+                Alertas do Dia
+              </h2>
+            </div>
+            {activeAlertPopover && (
+              <span className="text-[10px] font-mono text-[var(--gray2)] bg-black/40 px-2 py-0.5 rounded border border-[var(--line)]">
+                Clique no card para fechar
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-2.5">
-            <div className="bg-[var(--charcoal)] border border-amber-500/20 p-3 rounded-xl flex flex-col justify-between">
-              <span className="text-[9px] font-mono font-bold text-amber-400/80 uppercase block">Recompra 15 Dias</span>
+            {/* Card 1: Recompra 15 Dias */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveAlertPopover(prev => prev === 'recompra15' ? null : 'recompra15')
+                setAlertSearchTerm('')
+              }}
+              className={`p-3 rounded-xl flex flex-col justify-between text-left transition-all cursor-pointer group ${
+                activeAlertPopover === 'recompra15'
+                  ? 'bg-amber-500/15 border-2 border-amber-500 shadow-lg shadow-amber-500/10'
+                  : 'bg-[var(--charcoal)] border border-amber-500/20 hover:border-amber-500/50 hover:bg-amber-500/5'
+              }`}
+              title="Clique para ver os clientes com recompra prevista em até 15 dias"
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[9px] font-mono font-bold text-amber-400 uppercase tracking-tight">Recompra 15d</span>
+                <span className={`text-[8px] font-mono text-amber-400 transition-transform ${activeAlertPopover === 'recompra15' ? 'rotate-180' : ''}`}>▼</span>
+              </div>
               <div className="my-1">
                 <span className="text-2xl font-mono font-black text-amber-400">{clientAlerts.upcoming15DaysRepurchaseCount}</span>
               </div>
-              <span className="text-[9px] font-mono text-amber-300 font-bold uppercase">clientes</span>
-            </div>
+              <span className="text-[9px] font-mono text-amber-300/80 font-bold uppercase group-hover:text-amber-300">clientes ↗</span>
+            </button>
 
-            <div className="bg-[var(--charcoal)] border border-red-500/20 p-3 rounded-xl flex flex-col justify-between">
-              <span className="text-[9px] font-mono font-bold text-red-400/80 uppercase block">Recompra Atrasada</span>
+            {/* Card 2: Recompra Atrasada */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveAlertPopover(prev => prev === 'recompraAtrasada' ? null : 'recompraAtrasada')
+                setAlertSearchTerm('')
+              }}
+              className={`p-3 rounded-xl flex flex-col justify-between text-left transition-all cursor-pointer group ${
+                activeAlertPopover === 'recompraAtrasada'
+                  ? 'bg-red-500/15 border-2 border-red-500 shadow-lg shadow-red-500/10'
+                  : 'bg-[var(--charcoal)] border border-red-500/20 hover:border-red-500/50 hover:bg-red-500/5'
+              }`}
+              title="Clique para ver os clientes com recompra em atraso"
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[9px] font-mono font-bold text-red-400 uppercase tracking-tight">Rec. Atrasada</span>
+                <span className={`text-[8px] font-mono text-red-400 transition-transform ${activeAlertPopover === 'recompraAtrasada' ? 'rotate-180' : ''}`}>▼</span>
+              </div>
               <div className="my-1">
                 <span className="text-2xl font-mono font-black text-red-400">{clientAlerts.overdueRepurchaseCount}</span>
               </div>
-              <span className="text-[9px] font-mono text-red-300 font-bold uppercase">clientes</span>
-            </div>
+              <span className="text-[9px] font-mono text-red-300/80 font-bold uppercase group-hover:text-red-300">clientes ↗</span>
+            </button>
 
-            <div className="bg-[var(--charcoal)] border border-purple-500/20 p-3 rounded-xl flex flex-col justify-between">
-              <span className="text-[9px] font-mono font-bold text-purple-400/80 uppercase block">Parados &gt; 7 Dias</span>
-              <div className="my-1">
-                <span className="text-2xl font-mono font-black text-purple-400">{dealAlerts.stagnantDeals.length}</span>
+            {/* Card 3: Risco Inativação */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveAlertPopover(prev => prev === 'riscoInativacao' ? null : 'riscoInativacao')
+                setAlertSearchTerm('')
+              }}
+              className={`p-3 rounded-xl flex flex-col justify-between text-left transition-all cursor-pointer group ${
+                activeAlertPopover === 'riscoInativacao'
+                  ? 'bg-rose-500/15 border-2 border-rose-500 shadow-lg shadow-rose-500/10'
+                  : 'bg-[var(--charcoal)] border border-rose-500/20 hover:border-rose-500/50 hover:bg-rose-500/5'
+              }`}
+              title="Clique para ver os clientes prestes a inativar (faltando até 30 dias para inativação)"
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[9px] font-mono font-bold text-rose-400 uppercase tracking-tight">Risco Inativação</span>
+                <span className={`text-[8px] font-mono text-rose-400 transition-transform ${activeAlertPopover === 'riscoInativacao' ? 'rotate-180' : ''}`}>▼</span>
               </div>
-              <span className="text-[9px] font-mono text-purple-300 font-bold uppercase">negócios</span>
-            </div>
+              <div className="my-1">
+                <span className="text-2xl font-mono font-black text-rose-400">{clientAlerts.inactivationRiskCount}</span>
+              </div>
+              <span className="text-[9px] font-mono text-rose-300/80 font-bold uppercase group-hover:text-rose-300">clientes ↗</span>
+            </button>
           </div>
 
+          {/* POPOVER/TOOLTIP SUSPENSO DE CLIENTES */}
+          {activeAlertPopover && (
+            <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 bg-[#16171a] border border-[var(--line)] rounded-2xl shadow-2xl p-4 flex flex-col gap-3 animate-fade-in backdrop-blur-xl">
+              
+              {/* Header do Popover */}
+              <div className="flex items-center justify-between border-b border-[var(--line)] pb-2.5">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${
+                    activeAlertPopover === 'recompra15' ? 'bg-amber-400' :
+                    activeAlertPopover === 'recompraAtrasada' ? 'bg-red-400' : 'bg-rose-400'
+                  }`} />
+                  <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-white">
+                    {activeAlertPopover === 'recompra15' && `Clientes com Recompra nos Próximos 15 Dias (${clientAlerts.upcoming15DaysRepurchaseCount})`}
+                    {activeAlertPopover === 'recompraAtrasada' && `Clientes com Recompra Atrasada (${clientAlerts.overdueRepurchaseCount})`}
+                    {activeAlertPopover === 'riscoInativacao' && `Clientes em Risco de Inativação (${clientAlerts.inactivationRiskCount})`}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveAlertPopover(null)}
+                  className="text-[var(--gray2)] hover:text-white p-1 rounded-md hover:bg-white/10 transition-colors"
+                  title="Fechar"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* Campo de Busca Rápida no Popover */}
+              <div className="relative">
+                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--gray2)]" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nome do cliente ou representante..."
+                  value={alertSearchTerm}
+                  onChange={(e) => setAlertSearchTerm(e.target.value)}
+                  className="input text-xs pl-8 py-1.5 w-full bg-[var(--charcoal)] border-[var(--line)] text-white focus:border-[var(--lime)]"
+                />
+              </div>
+
+              {/* Lista Scrollável de Clientes */}
+              <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto pr-1">
+                {(() => {
+                  let items: Array<{ contact: Contact; label: string; badgeBg: string; badgeText: string }> = []
+                  const term = alertSearchTerm.toLowerCase().trim()
+
+                  if (activeAlertPopover === 'recompra15') {
+                    items = clientAlerts.upcoming15DaysRepurchaseList.map(item => ({
+                      contact: item.contact,
+                      label: (item.contact as any).company_name || item.contact.name || 'Cliente sem nome',
+                      badgeBg: 'bg-amber-500/15 border-amber-500/30 text-amber-300',
+                      badgeText: item.daysToRepurchase === 0 ? 'Recompra HOJE' : `Faltam ${item.daysToRepurchase}d p/ recompra`
+                    }))
+                  } else if (activeAlertPopover === 'recompraAtrasada') {
+                    items = clientAlerts.overdueRepurchaseList.map(item => ({
+                      contact: item.contact,
+                      label: (item.contact as any).company_name || item.contact.name || 'Cliente sem nome',
+                      badgeBg: 'bg-red-500/15 border-red-500/30 text-red-300',
+                      badgeText: `${item.daysOverdue} dias em atraso`
+                    }))
+                  } else if (activeAlertPopover === 'riscoInativacao') {
+                    items = clientAlerts.inactivationRiskList.map(item => ({
+                      contact: item.contact,
+                      label: (item.contact as any).company_name || item.contact.name || 'Cliente sem nome',
+                      badgeBg: 'bg-rose-500/15 border-rose-500/30 text-rose-300',
+                      badgeText: `${item.daysWithoutActivity}d s/ atividade (${item.daysUntilInactive}d p/ inativar)`
+                    }))
+                  }
+
+                  if (term) {
+                    items = items.filter(it => 
+                      it.label.toLowerCase().includes(term) ||
+                      (it.contact.representative && it.contact.representative.toLowerCase().includes(term))
+                    )
+                  }
+
+                  if (items.length === 0) {
+                    return (
+                      <div className="py-6 text-center text-xs font-mono text-[var(--gray2)]">
+                        {term ? 'Nenhum cliente encontrado para a busca.' : 'Nenhum cliente neste cenário.'}
+                      </div>
+                    )
+                  }
+
+                  return items.map((it, idx) => (
+                    <Link
+                      key={it.contact.id || idx}
+                      href={`/contacts?search=${encodeURIComponent(it.label)}`}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--charcoal)] hover:bg-[var(--card2)] border border-[var(--line)] hover:border-[var(--lime)]/50 transition-all group"
+                      onClick={() => setActiveAlertPopover(null)}
+                    >
+                      <div className="flex flex-col min-w-0 pr-2">
+                        <span className="text-xs font-bold text-white group-hover:text-[var(--lime)] truncate transition-colors flex items-center gap-1.5">
+                          {it.label}
+                          <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-[var(--lime)]" />
+                        </span>
+                        <span className="text-[10px] font-mono text-[var(--gray2)] truncate flex items-center gap-1 mt-0.5">
+                          <Users size={9} />
+                          Rep: {it.contact.representative || 'Sem representante'}
+                        </span>
+                      </div>
+
+                      <span className={`px-2 py-1 rounded-lg text-[9px] font-mono font-bold border shrink-0 ${it.badgeBg}`}>
+                        {it.badgeText}
+                      </span>
+                    </Link>
+                  ))
+                })()}
+              </div>
+
+            </div>
+          )}
+
           <p className="text-[11px] font-mono text-[var(--gray2)]">
-            Mantenha contato regular com os clientes para garantir o fluxo de vendas e evitar estagnação de propostas.
+            Mantenha contato regular com os clientes para garantir o fluxo de vendas e evitar inativação de carteiras.
           </p>
 
         </div>
