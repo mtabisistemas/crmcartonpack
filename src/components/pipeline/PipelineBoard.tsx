@@ -774,6 +774,7 @@ export function PipelineBoard() {
   const [selectedRep, setSelectedRep] = useState<string>('all')
   const [selectedCurve, setSelectedCurve] = useState<string>('all')
   const [representativesList, setRepresentativesList] = useState<string[]>([])
+  const [currentUser, setCurrentUser] = useState<any | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -781,13 +782,18 @@ export function PipelineBoard() {
       if (session) {
         try {
           const user = JSON.parse(session)
-          if (user?.name && (user.role === 'representante' || user.role === 'vendedor')) {
+          setCurrentUser(user)
+          const role = (user?.role || '').toLowerCase()
+          if (user?.name && (role === 'representante' || role === 'vendedor')) {
             setSelectedRep(user.name)
           }
         } catch (e) {}
       }
     }
   }, [])
+
+  const roleLower = (currentUser?.role || '').toLowerCase()
+  const isRep = roleLower === 'representante' || roleLower === 'vendedor'
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -820,8 +826,9 @@ export function PipelineBoard() {
     if (!matchesSearch) return false
 
     // 2. Representative
-    const dealRep = d.assigned_to || d.contact?.representative || ''
-    const matchesRep = selectedRep === 'all' || dealRep.toLowerCase() === selectedRep.toLowerCase() || dealRep === selectedRep
+    const dealRep = (d.assigned_to || d.contact?.representative || '').trim().toLowerCase()
+    const targetRep = (isRep && currentUser?.name ? currentUser.name : selectedRep).trim().toLowerCase()
+    const matchesRep = targetRep === 'all' || dealRep === targetRep || (dealRep && targetRep && dealRep.includes(targetRep))
     if (!matchesRep) return false
 
     // 3. Curve ABC
@@ -1137,14 +1144,27 @@ export function PipelineBoard() {
         {/* Representantes */}
         <div>
           <select
-            className="input w-full py-1.5 px-3 text-xs cursor-pointer truncate"
-            value={selectedRep}
-            onChange={(e) => setSelectedRep(e.target.value)}
+            disabled={isRep}
+            className={`input w-full py-1.5 px-3 text-xs truncate ${
+              isRep 
+                ? 'opacity-85 bg-[var(--charcoal)] border-[var(--lime)]/40 text-[var(--lime)] font-bold cursor-not-allowed shadow-inner' 
+                : 'cursor-pointer'
+            }`}
+            value={isRep && currentUser?.name ? currentUser.name : selectedRep}
+            onChange={(e) => !isRep && setSelectedRep(e.target.value)}
           >
-            <option value="all" className="bg-[var(--charcoal)] text-white">Todos os Reps</option>
-            {representativesList.map((r, idx) => (
-              <option key={idx} value={r} className="bg-[var(--charcoal)] text-white">{r}</option>
-            ))}
+            {isRep && currentUser?.name ? (
+              <option value={currentUser.name} className="bg-[var(--charcoal)] text-[var(--lime)] font-bold">
+                🔒 {currentUser.name}
+              </option>
+            ) : (
+              <>
+                <option value="all" className="bg-[var(--charcoal)] text-white">Todos os Reps</option>
+                {representativesList.map((r, idx) => (
+                  <option key={idx} value={r} className="bg-[var(--charcoal)] text-white">{r}</option>
+                ))}
+              </>
+            )}
           </select>
         </div>
 
