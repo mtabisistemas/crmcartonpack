@@ -89,8 +89,10 @@ export interface MockContact {
   projectedPurchaseValue?: number
   purchaseFrequencyDays?: number
   lastPurchaseDate?: string
+  inactivityThresholdDays?: number
   planningNotes?: string
   history?: Array<{ id: string; date: string; author: string; action: string; details: string }>
+  created_at?: string
 }
 
 interface Activity {
@@ -132,6 +134,70 @@ function formatDateBr(isoDateStr: string | null | undefined) {
 
 function capitalizeString(str: string) {
   return str.toLowerCase().replace(/(^\w|\s\w)/g, m => m.toUpperCase())
+}
+
+export function getContactActivityAndRepurchaseInfo(contact: MockContact) {
+  let lastActivityDate: Date | null = null
+  if (contact.activities && contact.activities.length > 0) {
+    const sorted = [...contact.activities].sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
+    if (sorted[0]?.timestamp) {
+      const parsed = new Date(sorted[0].timestamp)
+      if (!isNaN(parsed.getTime())) lastActivityDate = parsed
+    }
+  }
+
+  if (!lastActivityDate && contact.created_at) {
+    const parsed = new Date(contact.created_at)
+    if (!isNaN(parsed.getTime())) lastActivityDate = parsed
+  }
+
+  const now = new Date()
+  const inactivityThreshold = contact.inactivityThresholdDays ?? 90
+
+  let daysSinceLastActivity = 0
+  if (lastActivityDate) {
+    const diffMs = now.getTime() - lastActivityDate.getTime()
+    daysSinceLastActivity = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
+  }
+
+  const isAutoInactive = daysSinceLastActivity > inactivityThreshold
+  const computedStatus = isAutoInactive ? 'inativo' : (contact.status === 'prospeccao' ? 'prospeccao' : 'ativo')
+
+  let daysToRepurchase = 9999
+  let isOverdue = false
+  let daysOverdue = 0
+  let nextPurchaseDateStr = '-'
+
+  if (contact.lastPurchaseDate) {
+    const cleanDate = contact.lastPurchaseDate.split('T')[0]
+    const lastDate = new Date(cleanDate + 'T00:00:00')
+    if (!isNaN(lastDate.getTime())) {
+      const freq = contact.purchaseFrequencyDays || 30
+      const nextDate = new Date(lastDate)
+      nextDate.setDate(nextDate.getDate() + freq)
+
+      nextPurchaseDateStr = `${String(nextDate.getDate()).padStart(2, '0')}/${String(nextDate.getMonth() + 1).padStart(2, '0')}/${nextDate.getFullYear()}`
+
+      const diffMs = nextDate.getTime() - now.getTime()
+      daysToRepurchase = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+
+      if (daysToRepurchase < 0) {
+        isOverdue = true
+        daysOverdue = Math.abs(daysToRepurchase)
+      }
+    }
+  }
+
+  return {
+    lastActivityDate,
+    daysSinceLastActivity,
+    isAutoInactive,
+    computedStatus,
+    daysToRepurchase,
+    isOverdue,
+    daysOverdue,
+    nextPurchaseDateStr
+  }
 }
 
 // Helper to construct full address
@@ -205,6 +271,7 @@ function ContactDrawer({
   const [projectedValueInput, setProjectedValueInput] = useState<string>('')
   const [purchaseFrequencyDays, setPurchaseFrequencyDays] = useState<number>(30)
   const [lastPurchaseDate, setLastPurchaseDate] = useState<string>('')
+  const [inactivityThresholdDays, setInactivityThresholdDays] = useState<number>(90)
   const [planningNotes, setPlanningNotes] = useState<string>('')
   const [historyList, setHistoryList] = useState<Array<{ id: string; date: string; author: string; action: string; details: string }>>([])
 
@@ -277,6 +344,7 @@ function ContactDrawer({
       setProjectedValueInput(formatNumberToCurrencyStr(pVal))
       setPurchaseFrequencyDays((contact as any).purchaseFrequencyDays ?? (contact as any).purchase_frequency_days ?? 30)
       setLastPurchaseDate((contact as any).lastPurchaseDate ?? (contact as any).last_purchase_date ?? '')
+      setInactivityThresholdDays((contact as any).inactivityThresholdDays ?? (contact as any).inactivity_threshold_days ?? 90)
       setPlanningNotes((contact as any).planningNotes ?? (contact as any).planning_notes ?? '')
       
       let parsedHist: any[] = []
@@ -409,6 +477,11 @@ function ContactDrawer({
         changes.push(`Data da Última Compra: "${oldLastDate || '-'}" ➔ "${lastPurchaseDate}"`)
       }
 
+      const oldInactThreshold = (contact as any).inactivityThresholdDays ?? (contact as any).inactivity_threshold_days ?? 90
+      if (oldInactThreshold !== inactivityThresholdDays) {
+        changes.push(`Tempo para Inativação: ${oldInactThreshold} dias ➔ ${inactivityThresholdDays} dias`)
+      }
+
       const oldNotes = (contact as any).planningNotes ?? (contact as any).planning_notes ?? ''
       if (oldNotes !== planningNotes) {
         changes.push(`Observações de planejamento atualizadas`)
@@ -462,6 +535,7 @@ function ContactDrawer({
       projectedPurchaseValue,
       purchaseFrequencyDays,
       lastPurchaseDate,
+      inactivityThresholdDays,
       planningNotes,
       history: updatedHistory,
       activities,
@@ -2120,9 +2194,11 @@ export default function ContactsPage() {
               projectedPurchaseValue: notesObj.projectedPurchaseValue ?? item.projected_purchase_value ?? 0,
               purchaseFrequencyDays: notesObj.purchaseFrequencyDays ?? item.purchase_frequency_days ?? 30,
               lastPurchaseDate: notesObj.lastPurchaseDate || item.last_purchase_date || '',
+              inactivityThresholdDays: notesObj.inactivityThresholdDays ?? item.inactivity_threshold_days ?? 90,
               planningNotes: notesObj.planningNotes || item.planning_notes || '',
               history: loadedHistory,
-              activities: loadedActs
+              activities: loadedActs,
+              created_at: item.created_at || new Date().toISOString()
             }
           })
           setContacts(mapped)

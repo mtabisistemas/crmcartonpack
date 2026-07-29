@@ -136,6 +136,7 @@ export async function POST(req: Request) {
       projectedPurchaseValue: contact.projectedPurchaseValue ?? existingNotesObj.projectedPurchaseValue ?? 0,
       purchaseFrequencyDays: contact.purchaseFrequencyDays ?? existingNotesObj.purchaseFrequencyDays ?? 30,
       lastPurchaseDate: contact.lastPurchaseDate || existingNotesObj.lastPurchaseDate || '',
+      inactivityThresholdDays: contact.inactivityThresholdDays ?? existingNotesObj.inactivityThresholdDays ?? 90,
       planningNotes: contact.planningNotes || existingNotesObj.planningNotes || '',
       history: contact.history || existingNotesObj.history || [],
       activities: mergedActivities

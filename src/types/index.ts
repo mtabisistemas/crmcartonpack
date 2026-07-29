@@ -72,6 +72,7 @@ export interface Contact {
   projectedPurchaseValue?: number
   purchaseFrequencyDays?: number
   lastPurchaseDate?: string
+  inactivityThresholdDays?: number
   planningNotes?: string
   
   // Histórico de Alterações Auditado

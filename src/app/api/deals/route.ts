@@ -47,17 +47,50 @@ export async function GET() {
   try {
     const { data: deals, error: dErr } = await supabaseAdmin
       .from('deals')
-      .select('*')
+      .select('*, contacts(id, name, company, representative, phone, email, cnpj, address, bairro, cep, city, state, curve, notes)')
       .order('created_at', { ascending: false })
 
     if (dErr) {
       return NextResponse.json({ success: false, error: dErr.message, deals: [] }, { status: 500 })
     }
 
-    const mappedDeals = (deals || []).map(d => ({
-      ...d,
-      stage: mapDBStageToFrontend(d.stage)
-    }))
+    const mappedDeals = (deals || []).map(d => {
+      const c = d.contacts as any
+      let contactObj = null
+      if (c) {
+        let parsedNotes: any = {}
+        if (c.notes) {
+          try {
+            parsedNotes = typeof c.notes === 'string' ? JSON.parse(c.notes) : c.notes
+          } catch (e) {}
+        }
+        contactObj = {
+          id: c.id,
+          name: c.name || d.title,
+          company: c.company || d.title,
+          representative: c.representative || '',
+          phone: c.phone || '',
+          email: c.email || '',
+          cnpj: c.cnpj || '',
+          address: c.address || '',
+          bairro: c.bairro || '',
+          cep: c.cep || '',
+          city: c.city || '',
+          state: c.state || '',
+          curve: c.curve || 'C',
+          activities: parsedNotes.activities || [],
+          history: parsedNotes.history || []
+        }
+      }
+      const assignedToName = (isUUID(d.assigned_to) ? null : d.assigned_to) || c?.representative || ''
+
+      return {
+        ...d,
+        stage: mapDBStageToFrontend(d.stage),
+        assigned_to: assignedToName,
+        contact: contactObj
+      }
+    })
 
     return NextResponse.json({ success: true, deals: mappedDeals })
   } catch (err: any) {
@@ -118,6 +151,14 @@ export async function POST(req: Request) {
         finalContactId = fallbackContactId
       }
 
+      const repName = d.assigned_to || d.contact?.representative
+      if (finalContactId && repName && typeof repName === 'string' && !isUUID(repName)) {
+        await supabaseAdmin
+          .from('contacts')
+          .update({ representative: repName })
+          .eq('id', finalContactId)
+      }
+
       let dealId = isUUID(d.id) ? d.id : crypto.randomUUID()
 
       let validAssignedTo: string | null = null
@@ -145,17 +186,37 @@ export async function POST(req: Request) {
     const { data, error } = await supabaseAdmin
       .from('deals')
       .upsert(payloads, { onConflict: 'id' })
-      .select()
+      .select('*, contacts(id, name, company, representative, phone, email, cnpj, address, bairro, cep, city, state, curve, notes)')
 
     if (error) {
       console.error('[API /deals POST] Error:', error)
       return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 
-    const returnedDeals = (data || []).map(d => ({
-      ...d,
-      stage: mapDBStageToFrontend(d.stage)
-    }))
+    const returnedDeals = (data || []).map(d => {
+      const c = d.contacts as any
+      const assignedToName = (isUUID(d.assigned_to) ? null : d.assigned_to) || c?.representative || ''
+      return {
+        ...d,
+        stage: mapDBStageToFrontend(d.stage),
+        assigned_to: assignedToName,
+        contact: c ? {
+          id: c.id,
+          name: c.name || d.title,
+          company: c.company || d.title,
+          representative: c.representative || '',
+          phone: c.phone || '',
+          email: c.email || '',
+          cnpj: c.cnpj || '',
+          address: c.address || '',
+          bairro: c.bairro || '',
+          cep: c.cep || '',
+          city: c.city || '',
+          state: c.state || '',
+          curve: c.curve || 'C'
+        } : null
+      }
+    })
 
     return NextResponse.json({ success: true, deals: returnedDeals })
   } catch (err: any) {
