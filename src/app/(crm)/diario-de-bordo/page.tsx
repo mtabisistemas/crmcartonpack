@@ -363,10 +363,11 @@ export default function DiarioDeBordoPage() {
     }
   }, [filteredDeals, currentMonthGoal, bizStats, appointments])
 
-  // 2. Client Status & Repurchase Overdue Alerts
+  // 2. Client Status & Repurchase Overdue & Upcoming 15 Days Alerts
   const clientAlerts = useMemo(() => {
     const now = new Date()
     const overdueRepurchaseList: Array<{ contact: Contact; daysOverdue: number }> = []
+    const upcoming15DaysRepurchaseList: Array<{ contact: Contact; daysToRepurchase: number }> = []
 
     filteredContacts.forEach(c => {
       let daysSincePurchase = (c as any).lastPurchaseDays
@@ -378,11 +379,19 @@ export default function DiarioDeBordoPage() {
       }
       
       const freq = c.purchaseFrequencyDays || 30
-      if (daysSincePurchase !== undefined && daysSincePurchase > freq) {
-        overdueRepurchaseList.push({
-          contact: c,
-          daysOverdue: daysSincePurchase - freq
-        })
+      if (daysSincePurchase !== undefined) {
+        const daysToRepurchase = freq - daysSincePurchase
+        if (daysSincePurchase > freq) {
+          overdueRepurchaseList.push({
+            contact: c,
+            daysOverdue: daysSincePurchase - freq
+          })
+        } else if (daysToRepurchase >= 0 && daysToRepurchase <= 15) {
+          upcoming15DaysRepurchaseList.push({
+            contact: c,
+            daysToRepurchase
+          })
+        }
       }
     })
 
@@ -390,7 +399,8 @@ export default function DiarioDeBordoPage() {
 
     return {
       overdueRepurchaseList,
-      overdueRepurchaseCount: overdueRepurchaseList.length
+      overdueRepurchaseCount: overdueRepurchaseList.length,
+      upcoming15DaysRepurchaseCount: upcoming15DaysRepurchaseList.length
     }
   }, [filteredContacts])
 
@@ -571,12 +581,12 @@ export default function DiarioDeBordoPage() {
           </div>
 
           <div className="grid grid-cols-3 gap-2.5">
-            <div className="bg-[var(--charcoal)] border border-[var(--line)] p-3 rounded-xl flex flex-col justify-between">
-              <span className="text-[9px] font-mono font-bold text-[var(--gray2)] uppercase block">Agenda Hoje</span>
+            <div className="bg-[var(--charcoal)] border border-amber-500/20 p-3 rounded-xl flex flex-col justify-between">
+              <span className="text-[9px] font-mono font-bold text-amber-400/80 uppercase block">Recompra 15 Dias</span>
               <div className="my-1">
-                <span className="text-2xl font-mono font-black text-white">{todayAppointments.length}</span>
+                <span className="text-2xl font-mono font-black text-amber-400">{clientAlerts.upcoming15DaysRepurchaseCount}</span>
               </div>
-              <span className="text-[9px] font-mono text-purple-400 font-bold uppercase">eventos</span>
+              <span className="text-[9px] font-mono text-amber-300 font-bold uppercase">clientes</span>
             </div>
 
             <div className="bg-[var(--charcoal)] border border-red-500/20 p-3 rounded-xl flex flex-col justify-between">
