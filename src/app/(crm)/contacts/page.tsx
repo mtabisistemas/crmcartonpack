@@ -2140,24 +2140,54 @@ export default function ContactsPage() {
     }
   }
 
-  // Update representatives list when contacts change to include any custom reps in existing contacts
+  // Fetch strictly registered active system users for Representatives dropdown
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedUsers = localStorage.getItem('crm_users')
-      let repsFromUsers: string[] = []
-      if (savedUsers) {
-        try {
-          const parsed = JSON.parse(savedUsers)
-          repsFromUsers = parsed
-            .filter((u: any) => u.status === 'ativo' || u.status !== 'inativo')
-            .map((u: any) => u.name)
-        } catch (e) {}
+    const fetchRegisteredUsers = async () => {
+      let registeredNames: string[] = []
+
+      try {
+        const res = await fetch('/api/users')
+        if (res.ok) {
+          const apiUsers = await res.json()
+          if (Array.isArray(apiUsers) && apiUsers.length > 0) {
+            registeredNames = apiUsers
+              .filter((u: any) => u.status !== 'inativo')
+              .map((u: any) => u.name.trim())
+              .filter(Boolean)
+          }
+        }
+      } catch (e) {}
+
+      if (registeredNames.length === 0 && typeof window !== 'undefined') {
+        const savedUsers = localStorage.getItem('crm_users')
+        if (savedUsers) {
+          try {
+            const parsed = JSON.parse(savedUsers)
+            registeredNames = parsed
+              .filter((u: any) => u.status !== 'inativo')
+              .map((u: any) => u.name.trim())
+              .filter(Boolean)
+          } catch (e) {}
+        }
       }
-      const repsFromContacts = Array.from(new Set(contacts.map(c => c.representative).filter(r => r && !['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara'].includes(r))))
-      const combined = Array.from(new Set([...repsFromUsers, ...repsFromContacts].filter(Boolean)))
-      setRepresentativesList(combined)
+
+      if (registeredNames.length > 0) {
+        const unique = Array.from(new Set(registeredNames))
+        setRepresentativesList(unique)
+      }
     }
-  }, [contacts])
+
+    fetchRegisteredUsers()
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage-users-changed', fetchRegisteredUsers)
+      window.addEventListener('storage', fetchRegisteredUsers)
+      return () => {
+        window.removeEventListener('storage-users-changed', fetchRegisteredUsers)
+        window.removeEventListener('storage', fetchRegisteredUsers)
+      }
+    }
+  }, [])
 
   const isRep = currentUser?.role === 'representante' || currentUser?.role === 'vendedor'
 
