@@ -127,17 +127,40 @@ export default function UsersPage() {
     }
   }, [router])
 
-  // Load users from Supabase API
+  // Load users from Supabase API + local storage merge
   useEffect(() => {
     async function syncUsers() {
+      let apiUserList: TeamUser[] = []
       try {
         const res = await fetch('/api/users', { cache: 'no-store' })
         const json = await res.json()
         if (json.success && Array.isArray(json.users)) {
-          setUsers(json.users)
+          apiUserList = json.users
         }
       } catch (e) {
         console.error('[UsersPage] Failed to load users from API', e)
+      }
+
+      let localUserList: TeamUser[] = []
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('cp_crm_v7_official_users') || localStorage.getItem('crm_users')
+        if (raw) {
+          try { localUserList = JSON.parse(raw) } catch (e) {}
+        }
+      }
+
+      // Merge API and Local users by ID / email / name
+      const userMap = new Map<string, TeamUser>()
+      localUserList.forEach(u => {
+        if (u.id || u.name) userMap.set(u.id || u.name.toLowerCase(), u)
+      })
+      apiUserList.forEach(u => {
+        userMap.set(u.id || u.name.toLowerCase(), u)
+      })
+
+      const combined = Array.from(userMap.values())
+      if (combined.length > 0) {
+        setUsers(combined)
       }
     }
     syncUsers()
@@ -221,52 +244,25 @@ export default function UsersPage() {
       tempPassword: newTempPassword,
       isFirstAccess: true
     }
-
-    const updatedList = users.map(u => u.id === user.id ? updatedUser : u)
+    const updatedList = users.map(u => 
+      u.id === user.id ? updatedUser : u
+    )
     saveUsers(updatedList)
-
-    if (selectedUserForFicha?.id === user.id) {
-      setSelectedUserForFicha(updatedUser)
-    }
 
     try {
       await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...updatedUser,
-          resetFirstAccess: true
-        })
+        body: JSON.stringify(updatedUser)
       })
+      setToastMessage(`Senha temporária redefinida para ${user.name}: ${newTempPassword}`)
+      setTimeout(() => setToastMessage(''), 6000)
     } catch (e) {
-      console.error('Failed to sync temp password to API', e)
+      console.error('Failed to reset temp password on API', e)
     }
-
-    const isCarton = !!user.email && user.email.includes('@')
-    setCreatedUserCredentials({
-      name: user.name,
-      usernameOrEmail: user.role === 'representante' ? (user.username || user.name) : user.email,
-      tempPassword: newTempPassword,
-      type: isCarton ? 'cartonpack' : 'externo'
-    })
-    setShowCopyModal(true)
   }
 
-  // Capitalize name helper
-  const capitalizeName = (str: string) => {
-    return str
-      .trim()
-      .split(/\s+/)
-      .map(word => {
-        if (word.length === 0) return ''
-        const lower = word.toLowerCase()
-        if (['de', 'do', 'da', 'dos', 'das', 'e'].includes(lower)) return lower
-        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-      })
-      .join(' ')
-  }
-
-  // Submit modal form
+  // Save Modal (Create or Edit)
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
     const isRep = role === 'representante'
@@ -277,16 +273,6 @@ export default function UsersPage() {
       setToastMessage('Gestores Comerciais não possuem permissão para criar usuários Administradores.')
       setTimeout(() => setToastMessage(''), 4000)
       return
-    }
-
-    // Corporate users MUST use @cartonpack.com.br domain
-    if (!isRep) {
-      const cleanEmail = email.toLowerCase().trim()
-      if (!cleanEmail.endsWith('@cartonpack.com.br') && !cleanEmail.endsWith('@cartonpack.com')) {
-        setToastMessage('Atenção: E-mail corporativo inválido. É obrigatório utilizar o domínio @cartonpack.com.br')
-        setTimeout(() => setToastMessage(''), 4000)
-        return
-      }
     }
 
     const formattedName = name.trim().toUpperCase()
@@ -374,17 +360,43 @@ export default function UsersPage() {
     }
   }
 
+  // Capitalize name helper
+  const capitalizeName = (str: string) => {
+    return str
+      .trim()
+      .split(/\s+/)
+      .map(word => {
+        if (word.length === 0) return ''
+        const lower = word.toLowerCase()
+        if (['de', 'do', 'da', 'dos', 'das', 'e'].includes(lower)) return lower
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+      })
+      .join(' ')
+  }
+
   // Delete user
   const handleDelete = (id: string) => {
     setUserToDelete(id)
   }
 
-  // Filter users list by role & search
+  const confirmDelete = () => {
+    if (!userToDelete) return
+    const updated = users.filter(u => u.id !== userToDelete)
+    saveUsers(updated)
+
+    dbService.usuarios.delete(userToDelete).catch(e => console.error('Failed to delete user from API', e))
+
+    setToastMessage('Usuário excluído com sucesso!')
+    setTimeout(() => setToastMessage(''), 3000)
+    setUserToDelete(null)
+  }
+
+  // Filter users list by role & search (Gestor sees Vendedor, Representante and Gestor)
   const roleFilteredUsers = useMemo(() => {
     return users.filter(u => {
       if (isGestor) {
-        // Manager can only see Vendedor and Representante
-        return u.role === 'vendedor' || u.role === 'representante'
+        const r = (u.role || '').toLowerCase()
+        return r.includes('vend') || r.includes('rep') || r.includes('gestor')
       }
       return true
     })
@@ -397,7 +409,8 @@ export default function UsersPage() {
         u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         u.phone.includes(searchTerm)
         
-      const matchesRole = selectedRole === 'all' || u.role === selectedRole
+      const uRoleLower = (u.role || '').toLowerCase()
+      const matchesRole = selectedRole === 'all' || uRoleLower === selectedRole.toLowerCase() || uRoleLower.includes(selectedRole.toLowerCase())
       const matchesStatus = selectedStatus === 'all' || u.status === selectedStatus
 
       return matchesSearch && matchesRole && matchesStatus
@@ -409,9 +422,9 @@ export default function UsersPage() {
     const list = roleFilteredUsers
     return {
       total: list.length,
-      gestores: list.filter(u => u.role === 'gestor').length,
-      vendedores: list.filter(u => u.role === 'vendedor').length,
-      representantes: list.filter(u => u.role === 'representante').length
+      gestores: list.filter(u => (u.role || '').toLowerCase().includes('gestor')).length,
+      vendedores: list.filter(u => (u.role || '').toLowerCase().includes('vend')).length,
+      representantes: list.filter(u => (u.role || '').toLowerCase().includes('rep')).length
     }
   }, [roleFilteredUsers])
 
