@@ -345,15 +345,6 @@ function OrderCelebrationModal({
 }
 
 // ─── Lost Reason Modal ─────────────────────────────────────────
-const LOSS_REASON_OPTIONS = [
-  'Preço alto / Orçamento excedido',
-  'Prazo de entrega não atende',
-  'Concorrência ganhou o pedido',
-  'Cliente desistiu / Sem demanda',
-  'Especificação técnica incompatível',
-  'Outro motivo'
-]
-
 function LostReasonModal({ 
   deal, 
   onConfirm, 
@@ -363,12 +354,41 @@ function LostReasonModal({
   onConfirm: (reason: string, notes: string) => void 
   onCancel: () => void 
 }) {
-  const [reason, setReason] = useState(LOSS_REASON_OPTIONS[0])
+  const [availableReasons, setAvailableReasons] = useState<string[]>([])
+  const [reason, setReason] = useState('')
   const [customReason, setCustomReason] = useState('')
   const [notes, setNotes] = useState('')
 
+  useEffect(() => {
+    let list: string[] = []
+    if (typeof window !== 'undefined') {
+      const raw = localStorage.getItem('cp_crm_loss_reasons')
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw)
+          if (Array.isArray(parsed)) {
+            list = parsed.filter((r: any) => r.active !== false).map((r: any) => r.label)
+          }
+        } catch (e) {}
+      }
+    }
+    if (list.length === 0) {
+      list = [
+        'Preço alto / Orçamento excedido',
+        'Prazo de entrega não atende',
+        'Concorrência ganhou o pedido',
+        'Cliente desistiu / Sem demanda',
+        'Especificação técnica incompatível',
+        'Sem orçamento/verba',
+        'Outro motivo'
+      ]
+    }
+    setAvailableReasons(list)
+    setReason(list[0] || 'Outro motivo')
+  }, [])
+
   const handleSave = () => {
-    const finalReason = reason === 'Outro motivo' && customReason.trim() ? customReason.trim() : reason
+    const finalReason = (reason.includes('Outro') || reason === 'Outro motivo') && customReason.trim() ? customReason.trim() : reason
     onConfirm(finalReason, notes)
   }
 
@@ -397,7 +417,7 @@ function LostReasonModal({
             value={reason} 
             onChange={(e) => setReason(e.target.value)}
           >
-            {LOSS_REASON_OPTIONS.map(r => (
+            {availableReasons.map(r => (
               <option key={r} value={r}>{r}</option>
             ))}
           </select>

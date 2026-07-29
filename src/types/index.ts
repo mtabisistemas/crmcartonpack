@@ -220,3 +220,39 @@ export interface Appointment {
   created_at: string
   updated_at?: string
 }
+
+export interface UserGoal {
+  id: string
+  userId?: string
+  userName: string
+  year: string
+  month: string // "01" - "12"
+  salesGoal: number // R$
+  visitsGoal: number // Qtd
+  newClientsGoal: number // Qtd novos clientes com pedido fechado
+  customWeeklySalesGoal?: number
+  customDailySalesGoal?: number
+  customWeeklyVisitsGoal?: number
+  customDailyVisitsGoal?: number
+  customWeeklyNewClientsGoal?: number
+  customDailyNewClientsGoal?: number
+  updatedAt?: string
+}
+
+export interface LossReason {
+  id: string
+  label: string
+  description?: string
+  active: boolean
+  order: number
+}
+
+export const DEFAULT_LOSS_REASONS: LossReason[] = [
+  { id: '1', label: 'Preço alto', description: 'Orçamento do cliente foi superior à concorrência ou verba', active: true, order: 1 },
+  { id: '2', label: 'Prazo longo de entrega', description: 'Prazo industrial incompatível com a necessidade do cliente', active: true, order: 2 },
+  { id: '3', label: 'Concorrência venceu', description: 'Cliente optou por outro fornecedor de embalagens', active: true, order: 3 },
+  { id: '4', label: 'Cliente desistiu do projeto', description: 'Projeto de embalagem/produto cancelado pelo cliente', active: true, order: 4 },
+  { id: '5', label: 'Especificação técnica não atende', description: 'Incompatibilidade técnica de faca, cartão ou acabamento', active: true, order: 5 },
+  { id: '6', label: 'Sem orçamento/verba', description: 'Cliente sem verba aprovada no momento', active: true, order: 6 },
+  { id: '7', label: 'Outro motivo', description: 'Outras razões comerciais ou operacionais', active: true, order: 7 },
+]

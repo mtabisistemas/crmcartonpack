@@ -88,6 +88,7 @@ export function Sidebar() {
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Contatos', icon: Users },
     { href: '/users', label: 'Usuários', icon: UserCog },
+    { href: '/metas', label: 'Metas & Parâmetros', icon: Target },
   ]
 
   const items = currentUser?.role === 'representante'

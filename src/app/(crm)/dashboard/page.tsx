@@ -35,7 +35,8 @@ import {
   Maximize2,
   Minimize2,
   Sun,
-  Moon
+  Moon,
+  DollarSign
 } from 'lucide-react'
 import { formatCurrency, whatsappLink } from '@/lib/utils'
 import { getPipelineDeals } from '@/services/pipeline-service'
@@ -1191,6 +1192,55 @@ export default function DashboardPage() {
       .filter((name, idx, self) => name && self.indexOf(name) === idx)
   }, [systemUsers])
 
+  // Suíte Completa de Métricas Avançadas
+  const advancedMetrics = useMemo(() => {
+    const closedDeals = filteredDeals.filter(d => d.stage === 'pedido' || d.stage === 'pos_venda' || d.stage === 'fechamento')
+    const totalClosedVal = closedDeals.reduce((sum, d) => sum + (d.value || 0), 0)
+    const closedCount = closedDeals.length
+
+    // 1. Ticket Médio (R$)
+    const ticketMedio = closedCount > 0 ? totalClosedVal / closedCount : 0
+
+    // 2. Taxa de Conversão do Funil (%)
+    const totalPipelineDealsCount = filteredDeals.length
+    const conversionRate = totalPipelineDealsCount > 0 ? (closedCount / totalPipelineDealsCount) * 100 : 0
+
+    // 3. Ciclo Médio de Vendas (Dias)
+    let totalCycleDays = 0
+    let dealsWithCycle = 0
+    closedDeals.forEach(d => {
+      if ((d as any).created_at || (d as any).stage_entered_at) {
+        const start = new Date((d as any).created_at || (d as any).stage_entered_at).getTime()
+        const end = Date.now()
+        const days = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)))
+        totalCycleDays += days
+        dealsWithCycle++
+      }
+    })
+    const averageCycleDays = dealsWithCycle > 0 ? Math.round(totalCycleDays / dealsWithCycle) : 12
+
+    // 4. Motivos de Perda Breakdown
+    const lostDeals = filteredDeals.filter(d => d.stage === 'perdido')
+    const lossMap: Record<string, { label: string; count: number; value: number }> = {}
+    lostDeals.forEach(d => {
+      const reason = (d as any).lost_reason || (d as any).loss_reason || 'Não informado'
+      if (!lossMap[reason]) {
+        lossMap[reason] = { label: reason, count: 0, value: 0 }
+      }
+      lossMap[reason].count += 1
+      lossMap[reason].value += (d.value || 0)
+    })
+    const lossBreakdown = Object.values(lossMap).sort((a, b) => b.count - a.count)
+
+    return {
+      ticketMedio,
+      conversionRate,
+      averageCycleDays,
+      lossBreakdown,
+      lostDealsCount: lostDeals.length
+    }
+  }, [filteredDeals])
+
   const handleStartRecording = () => {
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       try {
@@ -2044,45 +2094,65 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── ROW 1: TOP SUMMARY KPIS (ULTRA COMPACT) ── */}
-      <div className="grid grid-cols-4 gap-3 shrink-0">
-        <div className="card px-3.5 py-2 flex items-center justify-between border-[rgba(180,217,50,0.15)] bg-[var(--card)]">
+      {/* ── ROW 1: TOP SUMMARY KPIS (6 CARDS METRICS SUITE) ── */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 shrink-0">
+        <div className="card px-3 py-2 flex items-center justify-between border-[rgba(180,217,50,0.15)] bg-[var(--card)]">
           <div>
-            <div className="text-[9px] font-mono text-[var(--gray2)] uppercase font-bold">Negócios Ativos</div>
-            <div className="text-lg font-display font-black text-[var(--lime)] mt-0.5">{activeDealsCount}</div>
+            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Negócios Ativos</div>
+            <div className="text-base font-display font-black text-[var(--lime)] mt-0.5">{activeDealsCount}</div>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-[rgba(180,217,50,0.1)] border border-[rgba(180,217,50,0.2)] flex items-center justify-center shrink-0">
-            <Package size={16} className="text-[var(--lime)]" />
+          <div className="w-7 h-7 rounded-lg bg-[rgba(180,217,50,0.1)] border border-[rgba(180,217,50,0.2)] flex items-center justify-center shrink-0">
+            <Package size={14} className="text-[var(--lime)]" />
           </div>
         </div>
 
-        <div className="card px-3.5 py-2 flex items-center justify-between border-[rgba(72,199,103,0.15)] bg-[var(--card)]">
+        <div className="card px-3 py-2 flex items-center justify-between border-[rgba(72,199,103,0.15)] bg-[var(--card)]">
           <div>
-            <div className="text-[9px] font-mono text-[var(--gray2)] uppercase font-bold">Fechamentos (Mês)</div>
-            <div className="text-lg font-display font-black text-[var(--green)] mt-0.5">{formatCurrency(fechamentoValue)}</div>
+            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Fechamentos (Mês)</div>
+            <div className="text-base font-display font-black text-[var(--green)] mt-0.5">{formatCurrency(fechamentoValue)}</div>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-[rgba(72,199,103,0.1)] border border-[rgba(72,199,103,0.2)] flex items-center justify-center shrink-0">
-            <CheckCircle size={16} className="text-[var(--green)]" />
+          <div className="w-7 h-7 rounded-lg bg-[rgba(72,199,103,0.1)] border border-[rgba(72,199,103,0.2)] flex items-center justify-center shrink-0">
+            <CheckCircle size={14} className="text-[var(--green)]" />
           </div>
         </div>
 
-        <div className="card px-3.5 py-2 flex items-center justify-between border-[rgba(240,196,25,0.15)] bg-[var(--card)]">
+        <div className="card px-3 py-2 flex items-center justify-between border-sky-500/20 bg-[var(--card)]">
           <div>
-            <div className="text-[9px] font-mono text-[var(--gray2)] uppercase font-bold">Em Negociação</div>
-            <div className="text-lg font-display font-black text-[var(--yellow)] mt-0.5">{inNegotiationCount}</div>
+            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Ticket Médio</div>
+            <div className="text-base font-display font-black text-sky-400 mt-0.5">{formatCurrency(advancedMetrics.ticketMedio)}</div>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-[rgba(240,196,25,0.1)] border border-[rgba(240,196,25,0.2)] flex items-center justify-center shrink-0">
-            <TrendingUp size={16} className="text-[var(--yellow)]" />
+          <div className="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0">
+            <DollarSign size={14} className="text-sky-400" />
           </div>
         </div>
 
-        <div className="card px-3.5 py-2 flex items-center justify-between border-[rgba(226,72,61,0.15)] bg-[var(--card)]">
+        <div className="card px-3 py-2 flex items-center justify-between border-purple-500/20 bg-[var(--card)]">
           <div>
-            <div className="text-[9px] font-mono text-[var(--gray2)] uppercase font-bold">Perdidos (Mês)</div>
-            <div className="text-lg font-display font-black text-[var(--red)] mt-0.5">{formatCurrency(perdidoValue)}</div>
+            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Taxa Conversão</div>
+            <div className="text-base font-display font-black text-purple-400 mt-0.5">{advancedMetrics.conversionRate.toFixed(1)}%</div>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-[rgba(226,72,61,0.1)] border border-[rgba(226,72,61,0.2)] flex items-center justify-center shrink-0">
-            <XCircle size={16} className="text-[var(--red)]" />
+          <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
+            <TrendingUp size={14} className="text-purple-400" />
+          </div>
+        </div>
+
+        <div className="card px-3 py-2 flex items-center justify-between border-amber-500/20 bg-[var(--card)]">
+          <div>
+            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Ciclo Médio</div>
+            <div className="text-base font-display font-black text-amber-400 mt-0.5">{advancedMetrics.averageCycleDays} dias</div>
+          </div>
+          <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+            <Clock size={14} className="text-amber-400" />
+          </div>
+        </div>
+
+        <div className="card px-3 py-2 flex items-center justify-between border-[rgba(226,72,61,0.15)] bg-[var(--card)]">
+          <div>
+            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Perdidos (Mês)</div>
+            <div className="text-base font-display font-black text-[var(--red)] mt-0.5">{formatCurrency(perdidoValue)}</div>
+          </div>
+          <div className="w-7 h-7 rounded-lg bg-[rgba(226,72,61,0.1)] border border-[rgba(226,72,61,0.2)] flex items-center justify-center shrink-0">
+            <XCircle size={14} className="text-[var(--red)]" />
           </div>
         </div>
       </div>
