@@ -1112,24 +1112,27 @@ export function PipelineBoard() {
     const userRaw = typeof window !== 'undefined' ? localStorage.getItem('crm_current_user') : null
     const currentUser = userRaw ? JSON.parse(userRaw) : null
 
-    let rep = data.representative
-    if (!rep) {
-      try {
-        const rawContacts = localStorage.getItem('crm_contacts')
-        if (rawContacts) {
-          const contacts = JSON.parse(rawContacts)
-          const comp = (data.company || data.title).trim().toLowerCase()
-          const matched = contacts.find((c: any) => (c.company || c.name || '').trim().toLowerCase() === comp)
-          if (matched && matched.representative) {
-            rep = matched.representative
-          }
-        }
-      } catch (e) {}
-    }
+    let matchedContact: any = null
+    try {
+      const rawContacts = localStorage.getItem('crm_contacts')
+      if (rawContacts) {
+        const contacts = JSON.parse(rawContacts)
+        const comp = (data.company || data.title).trim().toLowerCase()
+        const name = (data.contactName || '').trim().toLowerCase()
+        matchedContact = contacts.find((c: any) => 
+          (data.contactId && c.id === data.contactId) ||
+          (comp && (c.company || c.name || '').trim().toLowerCase() === comp) ||
+          (name && (c.name || '').trim().toLowerCase() === name)
+        )
+      }
+    } catch (e) {}
 
+    let rep = data.representative || matchedContact?.representative
     if (!rep && currentUser?.name) {
       rep = currentUser.name
     }
+
+    const targetContactId = data.contactId || matchedContact?.id || `c-${Date.now()}`
 
     const newDeal: Deal = {
       id: `d-${Date.now()}`,
@@ -1137,15 +1140,21 @@ export function PipelineBoard() {
       stage: data.stage,
       estimated_value: data.value,
       assigned_to: rep,
-      contact_id: data.contactId || `c-${Date.now()}`,
+      contact_id: targetContactId,
       contact: {
-        id: data.contactId || `c-${Date.now()}`,
-        name: data.contactName,
-        company: data.company,
+        id: targetContactId,
+        name: data.contactName || matchedContact?.name || data.company,
+        company: data.company || matchedContact?.company || data.title,
+        phone: matchedContact?.phone || '',
+        email: matchedContact?.email || '',
+        cnpj: matchedContact?.cnpj || '',
+        address: matchedContact?.address || matchedContact?.city || '',
+        city: matchedContact?.city || '',
+        curve: matchedContact?.curve || 'C',
         representative: rep,
-        created_at: new Date().toISOString(),
+        created_at: matchedContact?.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString()
-      },
+      } as any,
       stage_entered_at: new Date().toISOString(),
       position: deals.filter(d => d.stage === data.stage).length,
       created_at: new Date().toISOString(),

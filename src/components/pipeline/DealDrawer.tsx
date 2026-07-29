@@ -145,7 +145,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
           const match = contacts.find((c: any) => {
             const cComp = (c.company || c.name || '').trim().toLowerCase()
             const cName = (c.name || '').trim().toLowerCase()
-            return (searchCompany && cComp === searchCompany) || (searchName && cName === searchName)
+            return (deal.contact_id && c.id === deal.contact_id) || (searchCompany && cComp === searchCompany) || (searchName && cName === searchName)
           })
           if (match) {
             if (match.company && !initialContactCompany) initialContactCompany = match.company
