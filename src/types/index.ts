@@ -277,11 +277,12 @@ export interface LossReason {
 }
 
 export const DEFAULT_LOSS_REASONS: LossReason[] = [
-  { id: '1', label: 'Preço alto', description: 'Orçamento do cliente foi superior à concorrência ou verba', active: true, order: 1, isDefinitive: true },
-  { id: '2', label: 'Prazo longo de entrega', description: 'Prazo industrial incompatível com a necessidade do cliente', active: true, order: 2, isDefinitive: false },
-  { id: '3', label: 'Concorrência venceu', description: 'Cliente optou por outro fornecedor de embalagens', active: true, order: 3, isDefinitive: true },
-  { id: '4', label: 'Cliente desistiu do projeto', description: 'Projeto de embalagem/produto cancelado pelo cliente', active: true, order: 4, isDefinitive: true },
-  { id: '5', label: 'Especificação técnica não atende', description: 'Incompatibilidade técnica de faca, cartão ou acabamento', active: true, order: 5, isDefinitive: false },
-  { id: '6', label: 'Sem orçamento/verba', description: 'Cliente sem verba aprovada no momento', active: true, order: 6, isDefinitive: false },
-  { id: '7', label: 'Outro motivo', description: 'Outras razões comerciais ou operacionais', active: true, order: 7, isDefinitive: true },
+  { id: '1', label: 'Preço alto', description: 'Orçamento pontual superior à verba do cliente (permite novo contato no futuro)', active: true, order: 1, isDefinitive: false },
+  { id: '2', label: 'Prazo longo de entrega', description: 'Prazo industrial incompatível com esta negociação (permite novo contato no futuro)', active: true, order: 2, isDefinitive: false },
+  { id: '3', label: 'Concorrência venceu', description: 'Cliente optou por outro fornecedor nesta cotação (permite novo contato no futuro)', active: true, order: 3, isDefinitive: false },
+  { id: '4', label: 'Cliente desistiu do projeto', description: 'Projeto específico cancelado pelo cliente (permite novo contato no futuro)', active: true, order: 4, isDefinitive: false },
+  { id: '5', label: 'Especificação técnica não atende', description: 'Incompatibilidade técnica para este lote (permite novo contato no futuro)', active: true, order: 5, isDefinitive: false },
+  { id: '6', label: 'Sem orçamento/verba', description: 'Cliente sem verba no momento (permite novo contato no futuro)', active: true, order: 6, isDefinitive: false },
+  { id: '7', label: 'Cliente é concorrente', description: 'Empresa concorrente ou incompatível (NÃO voltar a contatar comercialmente)', active: true, order: 7, isDefinitive: true },
+  { id: '8', label: 'Outro motivo', description: 'Outras razões comerciais ou operacionais', active: true, order: 8, isDefinitive: false },
 ]

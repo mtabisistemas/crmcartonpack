@@ -17,6 +17,7 @@ import {
   ToggleLeft,
   ToggleRight,
   GripVertical,
+  RefreshCw,
   X
 } from 'lucide-react'
 import { UserGoal, LossReason, DEFAULT_LOSS_REASONS } from '@/types'
@@ -670,7 +671,7 @@ export default function MetasPage() {
                   setReasonLabel(reason.label)
                   setReasonDesc(reason.description || '')
                   setReasonActive(reason.active ?? true)
-                  setReasonDefinitive(reason.isDefinitive ?? true)
+                  setReasonDefinitive(reason.isDefinitive ?? false)
                   setShowReasonModal(true)
                 }}
                 className={`card p-4 border transition-all flex flex-col justify-between gap-3 cursor-pointer group hover:border-[var(--lime)] hover:scale-[1.01] ${
@@ -678,7 +679,7 @@ export default function MetasPage() {
                 } ${
                   reason.active 
                     ? 'bg-[var(--card)] border-[var(--line)]' 
-                    : 'bg-black/40 border-red-500/20 opacity-70'
+                    : 'bg-black/40 border-red-500/20 opacity-60'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -699,21 +700,31 @@ export default function MetasPage() {
                   </p>
                 )}
 
-                {/* Badges de Status & Tipo de Perda */}
-                <div className="border-t border-[var(--line)]/60 pt-3 flex items-center justify-between text-xs font-mono">
-                  <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                    reason.active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                  }`}>
-                    {reason.active ? '🟢 Ativo' : '⚫ Inativo'}
-                  </span>
+                {/* Badges de Status & Tipo de Perda (Estilo Limpo Nativo) */}
+                <div className="border-t border-[var(--line)]/50 pt-3 flex items-center justify-between text-xs font-mono">
+                  {reason.active ? (
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-emerald-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      Ativo
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-[var(--gray2)]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--gray2)]" />
+                      Inativo
+                    </span>
+                  )}
 
-                  <span className={`text-[9px] font-mono font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
-                    reason.isDefinitive !== false 
-                      ? 'bg-red-500/15 text-red-400 border border-red-500/30' 
-                      : 'bg-amber-400/15 text-amber-300 border border-amber-400/30'
-                  }`}>
-                    {reason.isDefinitive !== false ? '🔴 Perda Definitiva' : '🔄 Perda Temporária'}
-                  </span>
+                  {reason.isDefinitive ? (
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-rose-400">
+                      <XCircle size={12} className="text-rose-400" />
+                      Perda Definitiva
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-amber-400">
+                      <RefreshCw size={12} className="text-amber-400" />
+                      Perda Temporária
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -767,47 +778,49 @@ export default function MetasPage() {
                 />
               </div>
 
-              {/* Toggles Grandes de Status & Perda Definitiva */}
-              <div className="flex flex-col gap-3.5 p-4 border border-[var(--line)] rounded-xl bg-[var(--card2)]">
+              {/* Toggles de Status e Tipo de Perda (Estilo Limpo e Direto) */}
+              <div className="flex flex-col gap-4 border-t border-[var(--line)] pt-4">
                 
-                {/* Toggle 1: Status (Ativo / Inativo) */}
-                <div className="flex items-center justify-between gap-3">
+                {/* Toggle 1: Status */}
+                <div className="flex items-center justify-between gap-4">
                   <div>
                     <span className="text-xs font-bold text-[var(--white)] block">Status do Motivo</span>
-                    <span className="text-[10px] text-[var(--gray2)] font-mono">
-                      {reasonActive ? '🟢 Motivo ativo (visível no pipeline)' : '⚫ Motivo desativado (oculto no pipeline)'}
-                    </span>
+                    <p className="text-[11px] text-[var(--gray2)] font-mono mt-0.5">
+                      {reasonActive ? 'Motivo ativo e visível no pipeline' : 'Motivo inativo (oculto para os vendedores)'}
+                    </p>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => setReasonActive(v => !v)}
-                    className={`w-14 h-7 rounded-full p-1 transition-colors cursor-pointer shrink-0 flex items-center ${
-                      reasonActive ? 'bg-emerald-500 justify-end' : 'bg-gray-700 justify-start'
+                    className={`w-12 h-6.5 rounded-full p-0.5 transition-colors cursor-pointer shrink-0 flex items-center ${
+                      reasonActive ? 'bg-emerald-500 justify-end' : 'bg-neutral-800 justify-start border border-[var(--line)]'
                     }`}
                   >
-                    <div className="w-5 h-5 rounded-full bg-white shadow-md transition-transform" />
+                    <div className="w-5.5 h-5.5 rounded-full bg-white shadow-md transition-transform" />
                   </button>
                 </div>
 
-                <div className="border-t border-[var(--line)]/60 pt-3">
-                  {/* Toggle 2: Perda Definitiva / Temporária */}
-                  <div className="flex items-center justify-between gap-3">
+                <div className="border-t border-[var(--line)]/50 pt-4">
+                  {/* Toggle 2: Tipo de Perda */}
+                  <div className="flex items-center justify-between gap-4">
                     <div>
                       <span className="text-xs font-bold text-[var(--white)] block">Tipo de Perda</span>
-                      <span className="text-[10px] text-[var(--gray2)] font-mono">
-                        {reasonDefinitive ? '🔴 Perda Definitiva (negócio encerrado)' : '🔄 Perda Temporária (oportunidade de retorno)'}
-                      </span>
+                      <p className="text-[11px] text-[var(--gray2)] font-mono mt-0.5">
+                        {reasonDefinitive 
+                          ? 'Perda Definitiva: Cliente é concorrente / incompatível (NÃO voltar a contatar)' 
+                          : 'Perda Temporária: Perda pontual desta negociação (permite contatar em novas oportunidades)'}
+                      </p>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setReasonDefinitive(v => !v)}
-                      className={`w-14 h-7 rounded-full p-1 transition-colors cursor-pointer shrink-0 flex items-center ${
-                        reasonDefinitive ? 'bg-red-500 justify-end' : 'bg-amber-500 justify-start'
+                      className={`w-12 h-6.5 rounded-full p-0.5 transition-colors cursor-pointer shrink-0 flex items-center ${
+                        reasonDefinitive ? 'bg-rose-500 justify-end' : 'bg-amber-500 justify-start'
                       }`}
                     >
-                      <div className="w-5 h-5 rounded-full bg-white shadow-md transition-transform" />
+                      <div className="w-5.5 h-5.5 rounded-full bg-white shadow-md transition-transform" />
                     </button>
                   </div>
                 </div>
