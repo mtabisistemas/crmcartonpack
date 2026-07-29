@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react'
 import { Deal, DealStage, STAGE_CONFIG, Appointment } from '@/types'
 import { 
   X, User, Mail, Phone, Building, Calendar, DollarSign, Tag,
-  MessageSquare, FileText, Send, PhoneCall, Users, CheckCircle, ArrowRight, Save, Clock, Trash2, Edit2, Plus
+  MessageSquare, FileText, Send, PhoneCall, Users, CheckCircle, ArrowRight, Save, Clock, Trash2, Edit2, Plus,
+  Copy, Check, MapPin, ExternalLink
 } from 'lucide-react'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, whatsappLink } from '@/lib/utils'
 import { getAppointmentsByDeal, saveAppointment, updateAppointment, deleteAppointment } from '@/services/appointment-service'
 import { RegisterActivityModal } from '@/components/RegisterActivityModal'
 
@@ -29,15 +30,19 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isSavedSuccess, setIsSavedSuccess] = useState(false)
   const [showActivityModal, setShowActivityModal] = useState(false)
+  const [copiedEmailToast, setCopiedEmailToast] = useState(false)
 
   // Deal fields (Geral Tab)
   const [title, setTitle] = useState('')
   const [estimatedValue, setEstimatedValue] = useState<number | undefined>(undefined)
+  const [estimatedValueInput, setEstimatedValueInput] = useState('')
   const [stage, setStage] = useState<DealStage>('leads')
   const [contactName, setContactName] = useState('')
   const [contactPhone, setContactPhone] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [contactCompany, setContactCompany] = useState('')
+  const [contactCnpj, setContactCnpj] = useState('')
+  const [contactAddress, setContactAddress] = useState('')
   const [curve, setCurve] = useState<'A' | 'B' | 'C' | 'D'>('C')
 
   // Timeline fields (Histórico Tab)
@@ -79,12 +84,26 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
     }
   }, [])
 
+  const parseCurrencyToNumber = (val: string): number => {
+    if (!val) return 0
+    const clean = val.replace(/\./g, '').replace(',', '.')
+    const parsed = parseFloat(clean)
+    return isNaN(parsed) ? 0 : parsed
+  }
+
+  const formatNumberToCurrencyStr = (num: number | undefined | null): string => {
+    if (num == null || isNaN(num) || num === 0) return ''
+    return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  }
+
   // Load deal details
   useEffect(() => {
     if (deal) {
       setIsOpen(true)
       setTitle(deal.title)
-      setEstimatedValue(deal.final_value ?? deal.estimated_value)
+      const val = deal.final_value ?? deal.estimated_value
+      setEstimatedValue(val)
+      setEstimatedValueInput(formatNumberToCurrencyStr(val))
       setStage(deal.stage)
       setContactName(deal.contact?.name ?? '')
       setContactCompany(deal.contact?.company ?? deal.title ?? '')
@@ -92,9 +111,11 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
 
       let phone = deal.contact?.phone ?? ''
       let email = deal.contact?.email ?? ''
+      let cnpj = (deal.contact as any)?.cnpj ?? ''
+      let address = (deal.contact as any)?.address ?? (deal.contact as any)?.city ?? ''
       let rep = deal.assigned_to ?? (deal as any).assignedTo ?? (deal as any).assignedToName ?? (deal as any).representative ?? ''
 
-      // Auto-populate Phone, Email, and Representative from saved contacts database
+      // Auto-populate Phone, Email, CNPJ, Address, and Representative from saved contacts database
       const searchCompany = (deal.contact?.company || deal.title || '').trim().toLowerCase()
       const searchName = (deal.contact?.name || '').trim().toLowerCase()
 
@@ -110,6 +131,9 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
           if (match) {
             if (match.phone && !phone) phone = match.phone
             if (match.email && !email) email = match.email
+            if (match.cnpj && !cnpj) cnpj = match.cnpj
+            if (match.address && !address) address = match.address
+            if (match.city && !address) address = match.city
             if (match.representative && !rep) rep = match.representative
           }
         }
@@ -117,6 +141,8 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
 
       setContactPhone(phone)
       setContactEmail(email)
+      setContactCnpj(cnpj)
+      setContactAddress(address)
       setRepresentative(rep)
 
       // Load activities combining deal and matched contact from crm_contacts
@@ -260,10 +286,25 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const totalSuggested = productionCost / (1 - margin / 100)
   const unitPrice = totalSuggested / quantity
 
+  const handleEstimatedValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value
+    const cleanRaw = raw.replace(/[^\d.,]/g, '')
+    setEstimatedValueInput(cleanRaw)
+    const num = parseCurrencyToNumber(cleanRaw)
+    setEstimatedValue(num > 0 ? num : undefined)
+  }
+
+  const handleEstimatedValueBlur = () => {
+    if (estimatedValue) {
+      setEstimatedValueInput(formatNumberToCurrencyStr(estimatedValue))
+    }
+  }
+
   const handleSaveGeneral = async () => {
     const upperTitle = title.trim().toUpperCase()
     const upperContactName = contactName.trim().toUpperCase()
     const upperCompany = (contactCompany || title).trim().toUpperCase()
+    const upperAddress = contactAddress.trim().toUpperCase()
 
     const updatedDeal: Deal = {
       ...deal,
@@ -280,9 +321,12 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
         company: upperCompany,
         curve: curve,
         representative: representative,
+        cnpj: contactCnpj,
+        address: upperAddress,
+        city: upperAddress,
         created_at: deal.contact?.created_at ?? new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      }
+      } as any
     }
 
     const companyToFind = upperCompany
@@ -302,6 +346,9 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                 representative: representative || c.representative,
                 phone: contactPhone || c.phone,
                 email: contactEmail || c.email,
+                cnpj: contactCnpj || c.cnpj,
+                address: upperAddress || c.address,
+                city: upperAddress || c.city,
                 curve: curve || c.curve,
               }
             }
@@ -322,12 +369,17 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
           if (representative) payload.representative = representative
           if (contactPhone) payload.phone = contactPhone
           if (contactEmail) payload.email = contactEmail
+          if (contactCnpj) payload.cnpj = contactCnpj
+          if (upperAddress) {
+            payload.address = upperAddress
+            payload.city = upperAddress
+          }
           if (curve) payload.curve = curve
 
           if (deal.contact?.id && !deal.contact.id.startsWith('c-')) {
             await supabase.from('contacts').update(payload).eq('id', deal.contact.id)
-          } else if ((deal.contact as any)?.cnpj) {
-            await supabase.from('contacts').update(payload).eq('cnpj', (deal.contact as any).cnpj)
+          } else if ((deal.contact as any)?.cnpj || contactCnpj) {
+            await supabase.from('contacts').update(payload).eq('cnpj', (deal.contact as any)?.cnpj || contactCnpj)
           } else {
             await supabase.from('contacts').update(payload).ilike('company', companyToFind)
           }
@@ -529,12 +581,16 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                   <div className="flex flex-col gap-1.5">
                     <label className="label">Valor Estimado</label>
                     <div className="relative flex items-center">
-                      <DollarSign size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
+                      <span className="absolute left-3 text-xs font-mono font-bold text-[var(--lime)] select-none pointer-events-none">
+                        R$
+                      </span>
                       <input 
-                        type="number" 
-                        className="input w-full !pl-9" 
-                        value={estimatedValue || ''} 
-                        onChange={(e) => setEstimatedValue(Number(e.target.value) || undefined)}
+                        type="text" 
+                        className="input w-full !pl-9 font-mono text-xs font-bold text-[var(--lime)]" 
+                        placeholder="0,00"
+                        value={estimatedValueInput} 
+                        onChange={handleEstimatedValueChange}
+                        onBlur={handleEstimatedValueBlur}
                       />
                     </div>
                   </div>
@@ -590,46 +646,101 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="label">Curva ABC</label>
-                    <select 
-                      className="input font-bold" 
-                      value={curve}
-                      onChange={(e) => setCurve(e.target.value as any)}
-                      style={{
-                        color: curve === 'A' ? 'var(--lime)' : curve === 'B' ? 'var(--yellow)' : 'var(--gray)'
-                      }}
-                    >
-                      <option value="A">Curva A (Alta)</option>
-                      <option value="B">Curva B (Média)</option>
-                      <option value="C">Curva C (Baixa)</option>
-                      <option value="D">Curva D (Prospecção)</option>
-                    </select>
+                    <label className="label">CNPJ</label>
+                    <div className="relative flex items-center">
+                      <FileText size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
+                      <input 
+                        type="text" 
+                        className="input w-full !pl-9 font-mono text-xs" 
+                        placeholder="00.000.000/0000-00"
+                        value={contactCnpj} 
+                        onChange={(e) => setContactCnpj(e.target.value)}
+                      />
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
                     <label className="label">Telefone (WhatsApp)</label>
-                    <div className="relative flex items-center">
-                      <Phone size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
-                      <input 
-                        type="text" 
-                        className="input w-full !pl-9" 
-                        value={contactPhone} 
-                        onChange={(e) => setContactPhone(e.target.value)}
-                      />
+                    <div className="relative flex items-center gap-1.5">
+                      <div className="relative flex-1 flex items-center">
+                        <Phone size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
+                        <input 
+                          type="text" 
+                          className="input w-full !pl-9 font-mono text-xs" 
+                          placeholder="(00) 00000-0000"
+                          value={contactPhone} 
+                          onChange={(e) => setContactPhone(e.target.value)}
+                        />
+                      </div>
+                      {contactPhone && (
+                        <a
+                          href={whatsappLink(contactPhone)}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Abrir WhatsApp"
+                          className="p-2.5 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/40 text-[#25D366] transition-all flex items-center justify-center shrink-0 cursor-pointer"
+                        >
+                          <MessageSquare size={15} />
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="label">Email</label>
-                  <div className="relative flex items-center">
-                    <Mail size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
-                    <input 
-                      type="email" 
-                      className="input w-full !pl-9" 
-                      value={contactEmail} 
-                      onChange={(e) => setContactEmail(e.target.value)}
-                    />
+                  <label className="label">E-mail</label>
+                  <div className="relative flex items-center gap-1.5">
+                    <div className="relative flex-1 flex items-center">
+                      <Mail size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
+                      <input 
+                        type="email" 
+                        className="input w-full !pl-9 font-mono text-xs" 
+                        placeholder="email@empresa.com.br"
+                        value={contactEmail} 
+                        onChange={(e) => setContactEmail(e.target.value)}
+                      />
+                    </div>
+                    {contactEmail && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(contactEmail)
+                          setCopiedEmailToast(true)
+                          setTimeout(() => setCopiedEmailToast(false), 2500)
+                        }}
+                        title="Copiar E-mail"
+                        className="p-2.5 rounded-xl bg-[var(--charcoal)] hover:bg-[var(--line)] border border-[var(--line)] text-[var(--gray)] hover:text-white transition-all flex items-center justify-center shrink-0 cursor-pointer"
+                      >
+                        {copiedEmailToast ? <Check size={15} className="text-[var(--lime)]" /> : <Copy size={15} />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="label">Endereço Completo</label>
+                  <div className="relative flex items-center gap-1.5">
+                    <div className="relative flex-1 flex items-center">
+                      <MapPin size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
+                      <input 
+                        type="text" 
+                        className="input w-full !pl-9 uppercase text-xs font-mono" 
+                        placeholder="RUA / AVENIDA, NÚMERO, BAIRRO, CIDADE - UF"
+                        value={contactAddress} 
+                        onChange={(e) => setContactAddress(e.target.value.toUpperCase())}
+                      />
+                    </div>
+                    {contactAddress && (
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contactAddress)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Ver Endereço no Google Maps"
+                        className="p-2.5 rounded-xl bg-[var(--lime)]/10 hover:bg-[var(--lime)]/20 border border-[var(--lime)]/40 text-[var(--lime)] transition-all flex items-center justify-center shrink-0 cursor-pointer"
+                      >
+                        <MapPin size={15} />
+                      </a>
+                    )}
                   </div>
                 </div>
 
