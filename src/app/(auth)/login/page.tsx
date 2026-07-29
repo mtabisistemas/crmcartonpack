@@ -107,150 +107,78 @@ export default function LoginPage() {
     }
 
     // 1. VALIDAÇÃO DE ACESSO CORPORATIVO E E-MAILS DE TESTE
+    // Domain validation for corporate logins
     if (loginType === 'corporativo') {
-      if (!cleanInput.includes('@')) {
-        setError('Acesso corporativo requer um e-mail válido (ex: seuemail@dominio.com).')
+      if (!cleanInput.includes('@') || (!cleanInput.endsWith('@cartonpack.com.br') && !cleanInput.endsWith('@cartonpack.com'))) {
+        setError('Apenas e-mails corporativos @cartonpack.com.br são permitidos no login corporativo.')
         setLoading(false)
         return
       }
     }
 
-    // 2. Try local storage mockup login intercept
-    if (typeof window !== 'undefined') {
-      const savedUsers = localStorage.getItem('cp_crm_v7_official_users')
-      if (savedUsers) {
-        try {
-          const parsed = JSON.parse(savedUsers)
-          const matchedUser = parsed.find((u: any) => {
-            const inputLower = cleanInput.toLowerCase()
-            const isEmailMatch = u.email && u.email.toLowerCase() === inputLower
-            const isUsernameMatch = u.username && u.username.toLowerCase() === inputLower
-            return isEmailMatch || isUsernameMatch
-          })
-
-          if (matchedUser) {
-            // Check role match if strictly enforcing representative username vs email
-            if (loginType === 'representante' && matchedUser.role !== 'representante' && matchedUser.role !== 'vendedor') {
-              setError('Este acesso é exclusivo para Representantes Comerciais. Use o login Corporativo.')
-              setLoading(false)
-              return
-            }
-
-            const currentPassword = matchedUser.password || matchedUser.tempPassword
-            if (password === currentPassword) {
-              if (matchedUser.status === 'inativo') {
-                setError('Este usuário está inativo. Acesso bloqueado pelo administrador.')
-                setLoading(false)
-                return
-              }
-
-              setTargetUser(matchedUser)
-
-              // Check if first access (needs password change)
-              if (matchedUser.isFirstAccess !== false) {
-                setActiveStep('first-access')
-                setLoading(false)
-                return
-              }
-
-              // Direct access! Save active session
-              localStorage.setItem('crm_current_user', JSON.stringify({
-                id: matchedUser.id,
-                name: matchedUser.name,
-                email: matchedUser.email,
-                username: matchedUser.username,
-                role: matchedUser.role,
-                status: matchedUser.status
-              }))
-              
-              router.push('/dashboard')
-              router.refresh()
-              return
-            }
-          }
-        } catch (err) {
-          console.error(err)
-        }
-      }
-    }
-
-    // 3. Fallback Supabase authentication
     try {
       const supabase = createClient()
-      const authPayload = cleanInput.includes('@')
-        ? { email: cleanInput, password }
-        : { email: `${cleanInput}@crm.cartonpack.com.br`, password }
 
-      const { error: sbError } = await supabase.auth.signInWithPassword(authPayload)
+      // Representatives log in with username mapped to internal domain @crm.cartonpack.com.br
+      const authEmail = cleanInput.includes('@')
+        ? cleanInput
+        : `${cleanInput}@crm.cartonpack.com.br`
+
+      // 1. STRICT SUPABASE AUTHENTICATION
+      const { error: sbError } = await supabase.auth.signInWithPassword({
+        email: authEmail,
+        password: password
+      })
 
       if (sbError) {
-        // Auto-repair: sync/create account in auth.users if created in profiles previously
-        try {
-          const repairRes = await fetch('/api/users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'ensure-auth',
-              email: cleanInput,
-              password: password
-            })
-          })
-          const repairData = await repairRes.json()
-          if (repairData?.success) {
-            const { error: retryError } = await supabase.auth.signInWithPassword(authPayload)
-            if (!retryError) {
-              const { data: { user: retryUser } } = await supabase.auth.getUser()
-              if (retryUser) {
-                const sessionData = {
-                  id: retryUser.id,
-                  name: retryUser.user_metadata?.full_name || retryUser.user_metadata?.name || retryUser.email?.split('@')[0],
-                  email: retryUser.email?.endsWith('@crm.cartonpack.com.br') ? '' : retryUser.email,
-                  username: retryUser.email?.split('@')[0],
-                  role: retryUser.user_metadata?.role || 'representante',
-                  status: 'ativo'
-                }
-                if (retryUser.user_metadata?.isFirstAccess === true) {
-                  setTargetUser({ ...sessionData, supabaseUser: retryUser })
-                  setActiveStep('first-access')
-                  setLoading(false)
-                  return
-                }
-                localStorage.setItem('crm_current_user', JSON.stringify(sessionData))
-                router.push('/dashboard')
-                router.refresh()
-                return
-              }
-            }
-          }
-        } catch (repairErr) {}
-
         setError(loginType === 'representante' ? 'Nome de usuário ou senha incorretos.' : 'E-mail corporativo ou senha incorretos.')
         setLoading(false)
         return
       }
 
+      // 2. Fetch authenticated Supabase user profile & metadata
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const sessionData = {
-          id: user.id,
-          name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0],
-          email: user.email?.endsWith('@crm.cartonpack.com.br') ? '' : user.email,
-          username: user.email?.split('@')[0],
-          role: user.user_metadata?.role || 'representante',
-          status: 'ativo'
-        }
 
-        // Check if this is the user's first access — force password change
-        if (user.user_metadata?.isFirstAccess === true) {
-          setTargetUser({ ...sessionData, supabaseUser: user })
-          setActiveStep('first-access')
-          setLoading(false)
-          return
-        }
-
-        localStorage.setItem('crm_current_user', JSON.stringify(sessionData))
+      if (!user) {
+        setError('Sessão inválida. Tente novamente.')
+        setLoading(false)
+        return
       }
 
+      const userRole = user.user_metadata?.role || 'representante'
+      const isFirstAccess = user.user_metadata?.isFirstAccess === true
+
+      // Enforce role separation between Corporate and Representative login tabs
+      if (loginType === 'corporativo' && authEmail.endsWith('@crm.cartonpack.com.br')) {
+        setError('Representantes comerciais devem utilizar a aba "Representante".')
+        setLoading(false)
+        return
+      }
+      if (loginType === 'representante' && !authEmail.endsWith('@crm.cartonpack.com.br') && userRole !== 'representante') {
+        setError('Usuários corporativos devem utilizar a aba "Corporativo".')
+        setLoading(false)
+        return
+      }
+
+      const sessionData = {
+        id: user.id,
+        name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0],
+        email: user.email?.endsWith('@crm.cartonpack.com.br') ? '' : user.email,
+        username: user.email?.split('@')[0],
+        role: userRole,
+        status: 'ativo'
+      }
+
+      // 3. Handle First Access Password Reset
+      if (isFirstAccess) {
+        setTargetUser({ ...sessionData, supabaseUser: user })
+        setActiveStep('first-access')
+        setLoading(false)
+        return
+      }
+
+      // 4. Direct access granted! Save active session
+      localStorage.setItem('crm_current_user', JSON.stringify(sessionData))
       router.push('/dashboard')
       router.refresh()
     } catch (err) {

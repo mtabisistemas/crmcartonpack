@@ -17,7 +17,6 @@ const isUUID = (str: string) =>
 
 export async function GET() {
   try {
-    // 1. Fetch profiles
     const { data: profiles, error: pErr } = await supabaseAdmin
       .from('profiles')
       .select('*')
@@ -48,65 +47,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-
-    // Special action: ensure-auth (auto-repair user in auth.users if missing)
-    if (body.action === 'ensure-auth') {
-      const email = body.email?.toLowerCase().trim()
-      const password = body.password || '123456'
-      if (!email) {
-        return NextResponse.json({ success: false, error: 'E-mail inválido' }, { status: 400 })
-      }
-
-      const emailForAuth = email.includes('@') ? email : `${email}@${REP_EMAIL_DOMAIN}`
-
-      // Check if user exists in auth.users
-      const { data: authList } = await supabaseAdmin.auth.admin.listUsers()
-      let existingAuth = authList?.users?.find(
-        (u: any) => u.email?.toLowerCase() === emailForAuth.toLowerCase()
-      )
-
-      if (!existingAuth) {
-        // Create user in auth.users
-        const { data: newAuth, error: createErr } = await supabaseAdmin.auth.admin.createUser({
-          email: emailForAuth,
-          password: password,
-          email_confirm: true,
-          user_metadata: {
-            full_name: email.split('@')[0],
-            isFirstAccess: true
-          }
-        })
-        if (createErr) {
-          return NextResponse.json({ success: false, error: createErr.message }, { status: 400 })
-        }
-        existingAuth = newAuth?.user
-      } else {
-        // Update password for existing auth user
-        await supabaseAdmin.auth.admin.updateUserById(existingAuth.id, {
-          password: password,
-          user_metadata: { ...existingAuth.user_metadata, isFirstAccess: true }
-        })
-      }
-
-      // Sync profile ID to match auth user ID
-      if (existingAuth?.id) {
-        await supabaseAdmin.from('profiles').upsert({
-          id: existingAuth.id,
-          tenant_id: '00000000-0000-0000-0000-000000000001',
-          email: emailForAuth,
-          full_name: existingAuth.user_metadata?.full_name || email.split('@')[0],
-          role: existingAuth.user_metadata?.role || 'vendedor',
-          active: true,
-          updated_at: new Date().toISOString()
-        })
-      }
-
-      return NextResponse.json({ success: true, userId: existingAuth?.id })
-    }
-
-    // Normal user creation / update
-    const user = body
+    const user = await req.json()
     const isRep = user.role === 'representante'
 
     const username = user.username || user.name?.toLowerCase().replace(/\s+/g, '.').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -118,7 +59,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'E-mail do usuário é obrigatório' }, { status: 400 })
     }
 
-    // Corporate users MUST use @cartonpack.com.br domain
+    // Corporate users MUST use @cartonpack.com.br or @cartonpack.com domain
     if (!isRep) {
       if (!emailForAuth.endsWith('@cartonpack.com.br') && !emailForAuth.endsWith('@cartonpack.com')) {
         return NextResponse.json({
@@ -143,11 +84,11 @@ export async function POST(req: Request) {
     const tempPass = user.tempPassword || user.password || '123456'
 
     if (!authUserId) {
-      // 2. Create in auth.users with email_confirm: true so login works instantly
+      // 2. Create in auth.users with email_confirm: false for corporate users (requiring email verification link)
       const { data: createdAuth, error: createErr } = await supabaseAdmin.auth.admin.createUser({
         email: emailForAuth,
         password: tempPass,
-        email_confirm: true,
+        email_confirm: isRep ? true : false,
         user_metadata: {
           full_name: user.name,
           role: user.role || 'representante',
@@ -168,7 +109,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Erro ao gerar ID de autenticação do usuário' }, { status: 400 })
     }
 
-    // 3. Always ensure password & metadata in auth.users match
+    // 3. Always ensure metadata & status in auth.users match
     const updateMetadata: any = {
       full_name: user.name,
       role: user.role || 'representante',
