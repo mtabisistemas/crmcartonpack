@@ -64,7 +64,7 @@ interface DealMock {
   id: string
   title: string
   representative: string
-  stage: 'leads' | 'prospect' | 'dinamica' | 'potencial' | 'visita' | 'briefing' | 'aprovacao' | 'fechamento' | 'pos_venda' | 'perdido'
+  stage: 'leads' | 'prospect' | 'dinamica' | 'potencial' | 'visita' | 'briefing' | 'aprovacao' | 'fechamento' | 'pedido' | 'pos_venda' | 'perdido'
   value: number
   curve: 'A' | 'B' | 'C' | 'D'
   daysInactive: number
@@ -87,6 +87,53 @@ export default function DashboardPage() {
   const [isSessionLoaded, setIsSessionLoaded] = useState(false)
   const [contacts, setContacts] = useState<any[]>([])
   const [pipelineDeals, setPipelineDeals] = useState<any[]>([])
+  const [systemUsers, setSystemUsers] = useState<Array<{ id: string; name: string; role: string; status?: string }>>([])
+
+  // Load real registered users from API/Supabase/localStorage
+  useEffect(() => {
+    async function loadRegisteredUsers() {
+      let loaded: any[] = []
+      try {
+        const res = await fetch('/api/users', { cache: 'no-store' })
+        const json = await res.json()
+        if (json.success && Array.isArray(json.users) && json.users.length > 0) {
+          loaded = json.users
+        }
+      } catch (e) {}
+
+      if (loaded.length === 0 && typeof window !== 'undefined') {
+        const keys = ['cp_crm_v7_official_users', 'crm_users']
+        for (const k of keys) {
+          const raw = localStorage.getItem(k)
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw)
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                loaded = parsed
+                break
+              }
+            } catch (e) {}
+          }
+        }
+      }
+
+      if (loaded.length > 0) {
+        setSystemUsers(loaded.filter(u => u.status !== 'inativo'))
+      }
+    }
+
+    loadRegisteredUsers()
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage-user-changed', loadRegisteredUsers)
+      window.addEventListener('storage', loadRegisteredUsers)
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage-user-changed', loadRegisteredUsers)
+        window.removeEventListener('storage', loadRegisteredUsers)
+      }
+    }
+  }, [])
 
   // Theme state (for mobile toggle)
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
@@ -960,61 +1007,33 @@ export default function DashboardPage() {
     })
   }, [repFilteredDeals, selectedYear])
 
-  // 2. Dynamic Team Performance (Performance dos Usuários do Sistema — Somente Fechamentos Reais)
+  // 2. Dynamic Team Performance (Performance APENAS dos Usuários Cadastrados na Tela de Usuários /users)
   const TEAM_PERFORMANCE = useMemo(() => {
     const normalize = (str: string) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ''
 
     const repMap: Record<string, { name: string; role: string; closedCount: number; sales: number; avatarColor: string }> = {}
     
-    // Lista inicial de Usuários Oficiais do Sistema (SEM incluir nomes de contatos/clientes)
-    const baseSystemUsers = [
-      { name: 'Maurício Maciel', role: 'Administrador', avatarColor: '#B4D932' },
-      { name: 'Representante Teste', role: 'Representante Comercial', avatarColor: '#38bdf8' }
-    ]
+    // Popula repMap UNICAMENTE com os usuários reais cadastrados no sistema (/users)
+    const activeRegisteredUsers = systemUsers.filter(u => u.status !== 'inativo')
 
-    baseSystemUsers.forEach(u => {
-      const key = normalize(u.name)
-      repMap[key] = { ...u, closedCount: 0, sales: 0 }
+    activeRegisteredUsers.forEach(u => {
+      if (!u.name) return
+      const cleanName = u.name.trim()
+      const key = normalize(cleanName)
+      const formattedRole = 
+        u.role === 'admin' || u.role === 'administrador' ? 'Administrador' :
+        u.role === 'gestor' || u.role === 'gestor comercial' ? 'Gestor Comercial' :
+        u.role === 'vendedor' ? 'Vendedor Comercial' :
+        u.role === 'representante' ? 'Representante Comercial' : 'Usuário Comercial'
+
+      repMap[key] = {
+        name: cleanName,
+        role: formattedRole,
+        closedCount: 0,
+        sales: 0,
+        avatarColor: u.role === 'representante' ? '#38bdf8' : u.role === 'vendedor' ? '#48c767' : '#B4D932'
+      }
     })
-
-    // Carrega usuários cadastrados na tela de Usuários (/users)
-    if (typeof window !== 'undefined') {
-      const keysToSearch = ['cp_crm_v7_official_users', 'crm_users']
-      keysToSearch.forEach(key => {
-        const raw = localStorage.getItem(key)
-        if (raw) {
-          try {
-            const list = JSON.parse(raw)
-            if (Array.isArray(list)) {
-              list.forEach((u: any) => {
-                if (u.name) {
-                  const cleanName = u.name.trim()
-                  if (!cleanName.includes('Versapack')) {
-                    const mapKey = normalize(cleanName)
-                    const formattedRole = 
-                      u.role === 'admin' || u.role === 'administrador' ? 'Administrador' :
-                      u.role === 'vendedor' ? 'Vendedor Comercial' :
-                      u.role === 'representante' ? 'Representante Comercial' : 'Usuário do Sistema'
-
-                    if (!repMap[mapKey]) {
-                      repMap[mapKey] = {
-                        name: cleanName,
-                        role: formattedRole,
-                        closedCount: 0,
-                        sales: 0,
-                        avatarColor: '#B4D932'
-                      }
-                    } else {
-                      repMap[mapKey].role = formattedRole
-                    }
-                  }
-                }
-              })
-            }
-          } catch (e) {}
-        }
-      })
-    }
 
     // Carrega mapa de contatos para associar o cliente de fechamento ao seu representante correto da carteira
     const contactsMap = new Map<string, string>()
@@ -1038,7 +1057,7 @@ export default function DashboardPage() {
       } catch (e) {}
     }
 
-    // Processa APENAS vendas fechadas e credita unicamente se o responsável for um USUÁRIO DO SISTEMA válido
+    // Processa APENAS vendas fechadas e credita unicamente se o responsável for um USUÁRIO CADASTRADO válido
     pipelineDeals.forEach(d => {
       if (d.stage !== 'pedido' && d.stage !== 'pos_venda') return
 
@@ -1059,15 +1078,16 @@ export default function DashboardPage() {
       }
     })
 
-    // Exibe no indicador da equipe apenas os representantes/vendedores comerciais ou usuários com vendas fechadas
+    // Exibe no indicador da equipe apenas os representantes/vendedores comerciais ou gestores cadastrados
     const commercialTeam = Object.values(repMap).filter(r => {
-      const isCommercial = r.role !== 'Administrador' && r.role !== 'admin'
+      const roleNorm = r.role.toLowerCase()
+      const isCommercial = roleNorm.includes('vendedor') || roleNorm.includes('representante') || roleNorm.includes('gestor')
       const hasSales = r.closedCount > 0 || r.sales > 0
       return isCommercial || hasSales
     })
 
     return commercialTeam.map((r, idx) => ({ id: `rep-${idx}`, ...r }))
-  }, [pipelineDeals])
+  }, [systemUsers, pipelineDeals])
 
   // 3. Dynamic Top Clients (Principais Clientes do Rep Selecionado — Somente Fechamentos Reais)
   const TOP_CLIENTS = useMemo(() => {
@@ -1089,14 +1109,9 @@ export default function DashboardPage() {
     return sorted.map((cli, idx) => ({ rank: idx + 1, ...cli }))
   }, [repFilteredDeals])
 
-  // 4. Dynamic Top Embalagens (Products do Rep Selecionado — Somente Fechamentos Reais)
+  // Dynamic Top Products
   const TOP_PRODUCTS = useMemo(() => {
-    const closedDeals = repFilteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda')
-
-    if (closedDeals.length === 0) {
-      return []
-    }
-
+    const closedDeals = repFilteredDeals.filter(d => d.stage === 'pedido' || d.stage === 'pos_venda')
     const productMap: Record<string, { name: string; quantityCount: number; value: number }> = {}
 
     closedDeals.forEach(d => {
@@ -1148,7 +1163,7 @@ export default function DashboardPage() {
   const inNegotiationCount = filteredDeals.filter(d => ['dinamica', 'potencial', 'visita', 'briefing', 'aprovacao'].includes(d.stage)).length
   
   const fechamentoValue = filteredDeals
-    .filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda')
+    .filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda' || d.stage === 'pedido')
     .reduce((acc, d) => acc + d.value, 0)
     
   const perdidoValue = filteredDeals
@@ -1164,13 +1179,17 @@ export default function DashboardPage() {
     { key: 'visita', stage: 'Visita', count: filteredDeals.filter(d => d.stage === 'visita').length, value: filteredDeals.filter(d => d.stage === 'visita').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-visita)' },
     { key: 'briefing', stage: 'Briefing', count: filteredDeals.filter(d => d.stage === 'briefing').length, value: filteredDeals.filter(d => d.stage === 'briefing').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-briefing)' },
     { key: 'aprovacao', stage: 'Aprovação', count: filteredDeals.filter(d => d.stage === 'aprovacao').length, value: filteredDeals.filter(d => d.stage === 'aprovacao').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-aprovacao)' },
-    { key: 'fechamento', stage: 'Fechamento', count: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda').length, value: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-fechamento)' },
+    { key: 'fechamento', stage: 'Fechamento', count: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda' || d.stage === 'pedido').length, value: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda' || d.stage === 'pedido').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-fechamento)' },
   ]
 
-  const representatives = Array.from(new Set([
-    ...mappedDeals.map(d => d.representative).filter(Boolean),
-    ...contacts.map(c => c.representative).filter(Boolean)
-  ]))
+  // Lista dos Usuários REAIS Cadastrados no Sistema
+  const representatives = useMemo(() => {
+    if (systemUsers.length === 0) return []
+    return systemUsers
+      .filter(u => u.status !== 'inativo')
+      .map(u => u.name.trim())
+      .filter((name, idx, self) => name && self.indexOf(name) === idx)
+  }, [systemUsers])
 
   const handleStartRecording = () => {
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
