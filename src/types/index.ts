@@ -55,6 +55,34 @@ export interface Contact {
   assigned_to?: string
   representative?: string
   assigned_profile?: Profile
+  status?: string
+  cnpj?: string
+  street?: string
+  neighborhood?: string
+  cep?: string
+  cnae?: string
+  taxRegime?: string
+  stateRegistration?: string
+  website?: string
+  instagram?: string
+  linkedin?: string
+  facebook?: string
+  
+  // Planejamento & Recompra
+  projectedPurchaseValue?: number
+  purchaseFrequencyDays?: number
+  lastPurchaseDate?: string
+  planningNotes?: string
+  
+  // Histórico de Alterações Auditado
+  history?: Array<{
+    id: string
+    date: string
+    author: string
+    action: string
+    details: string
+  }>
+  
   created_at: string
   updated_at: string
 }

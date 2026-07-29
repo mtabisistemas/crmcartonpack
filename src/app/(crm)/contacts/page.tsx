@@ -28,7 +28,9 @@ import {
   Check,
   CheckCircle,
   Globe,
-  Users
+  Users,
+  DollarSign,
+  Calendar
 } from 'lucide-react'
 import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString } from '@/lib/utils'
 import { supabase } from '@/services/supabase-client'
@@ -82,6 +84,13 @@ export interface MockContact {
   facebook?: string // Inscrição Estadual
   sideActivities?: {id: string; text: string}[]
   activities?: Activity[]
+  
+  // Planejamento & Recompra
+  projectedPurchaseValue?: number
+  purchaseFrequencyDays?: number
+  lastPurchaseDate?: string
+  planningNotes?: string
+  history?: Array<{ id: string; date: string; author: string; action: string; details: string }>
 }
 
 interface Activity {
@@ -158,7 +167,7 @@ function ContactDrawer({
 }) {
   const representativesList = representatives
   const [isOpen, setIsOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<'geral' | 'historico'>('geral')
+  const [activeTab, setActiveTab] = useState<'geral' | 'planejamento' | 'historico'>('geral')
 
   // Form states
   const [name, setName] = useState('')
@@ -190,6 +199,13 @@ function ContactDrawer({
   const [linkedin, setLinkedin] = useState('')
   const [facebook, setFacebook] = useState('')
   const [loadingSocial, setLoadingSocial] = useState(false)
+
+  // Planejamento & Recompra states
+  const [projectedPurchaseValue, setProjectedPurchaseValue] = useState<number>(0)
+  const [purchaseFrequencyDays, setPurchaseFrequencyDays] = useState<number>(30)
+  const [lastPurchaseDate, setLastPurchaseDate] = useState<string>('')
+  const [planningNotes, setPlanningNotes] = useState<string>('')
+  const [historyList, setHistoryList] = useState<Array<{ id: string; date: string; author: string; action: string; details: string }>>([])
 
   // History states
   const [isSaving, setIsSaving] = useState(false)
@@ -226,6 +242,21 @@ function ContactDrawer({
       setCity(contact.city)
       setState(contact.state)
       setStatus(contact.status)
+      
+      // Load planning and history fields
+      setProjectedPurchaseValue((contact as any).projectedPurchaseValue ?? (contact as any).projected_purchase_value ?? 0)
+      setPurchaseFrequencyDays((contact as any).purchaseFrequencyDays ?? (contact as any).purchase_frequency_days ?? 30)
+      setLastPurchaseDate((contact as any).lastPurchaseDate ?? (contact as any).last_purchase_date ?? '')
+      setPlanningNotes((contact as any).planningNotes ?? (contact as any).planning_notes ?? '')
+      
+      let parsedHist: any[] = []
+      const rawHist = (contact as any).history
+      if (typeof rawHist === 'string') {
+        try { parsedHist = JSON.parse(rawHist) } catch (e) {}
+      } else if (Array.isArray(rawHist)) {
+        parsedHist = rawHist
+      }
+      setHistoryList(parsedHist)
       
       // Fallback address parsing if bairro and cep are empty in state
       let parsedAddress = contact.address ?? ''
@@ -321,6 +352,56 @@ function ContactDrawer({
     const cleanOverrides = overrides && !(overrides as any).nativeEvent 
       ? (overrides as Partial<MockContact>) 
       : {}
+
+    // Audit trail calculation for history
+    const changes: string[] = []
+    if (contact) {
+      if (company && company !== contact.company) changes.push(`Razão Social: "${contact.company || '-'}" ➔ "${company}"`)
+      if (name && name !== contact.name) changes.push(`Responsável: "${contact.name || '-'}" ➔ "${name}"`)
+      if (phone && phone !== contact.phone) changes.push(`Telefone atualizado`)
+      if (email && email !== contact.email) changes.push(`E-mail: "${email || '-'}" ➔ "${email}"`)
+      if (representative && representative !== contact.representative) changes.push(`Representante: "${contact.representative || '-'}" ➔ "${representative}"`)
+      if (status && status !== contact.status) changes.push(`Status: "${contact.status || '-'}" ➔ "${status}"`)
+      if (curve && curve !== contact.curve) changes.push(`Curva: "${contact.curve || '-'}" ➔ "${curve}"`)
+      
+      const oldVal = (contact as any).projectedPurchaseValue ?? (contact as any).projected_purchase_value ?? 0
+      if (oldVal !== projectedPurchaseValue) {
+        changes.push(`Valor Projetado de Compra: R$ ${oldVal.toLocaleString('pt-BR')} ➔ R$ ${projectedPurchaseValue.toLocaleString('pt-BR')}`)
+      }
+
+      const oldFreq = (contact as any).purchaseFrequencyDays ?? (contact as any).purchase_frequency_days ?? 30
+      if (oldFreq !== purchaseFrequencyDays) {
+        changes.push(`Frequência de Compra: ${oldFreq} dias ➔ ${purchaseFrequencyDays} dias`)
+      }
+
+      const oldLastDate = (contact as any).lastPurchaseDate ?? (contact as any).last_purchase_date ?? ''
+      if (oldLastDate !== lastPurchaseDate) {
+        changes.push(`Data da Última Compra: "${oldLastDate || '-'}" ➔ "${lastPurchaseDate}"`)
+      }
+
+      const oldNotes = (contact as any).planningNotes ?? (contact as any).planning_notes ?? ''
+      if (oldNotes !== planningNotes) {
+        changes.push(`Observações de planejamento atualizadas`)
+      }
+    }
+
+    let updatedHistory = historyList
+    if (changes.length > 0) {
+      const now = new Date()
+      const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+      const authorName = currentUser?.name || currentUser?.nome || 'Usuário'
+
+      const newAudit = {
+        id: `hist_${Date.now()}`,
+        date: dateStr,
+        author: authorName,
+        action: 'Atualização do Cadastro',
+        details: changes.join(' • ')
+      }
+      updatedHistory = [newAudit, ...historyList]
+      setHistoryList(updatedHistory)
+    }
+
     await onUpdateContact({
       ...contact,
       name,
@@ -348,6 +429,11 @@ function ContactDrawer({
       instagram,
       linkedin,
       facebook,
+      projectedPurchaseValue,
+      purchaseFrequencyDays,
+      lastPurchaseDate,
+      planningNotes,
+      history: updatedHistory,
       activities,
       ...cleanOverrides
     })
@@ -386,6 +472,90 @@ function ContactDrawer({
       })
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('storage-deals-changed'))
+      }
+    }
+  }
+
+  const getRepurchaseStatusInfo = () => {
+    if (!lastPurchaseDate || !purchaseFrequencyDays || purchaseFrequencyDays <= 0) {
+      return {
+        status: 'sem_dados',
+        label: 'Frequência de Compra Não Definida',
+        color: 'var(--gray2)',
+        badgeBg: 'bg-[var(--card2)] border-[var(--line)] text-[var(--gray2)]',
+        daysRemaining: 0,
+        nextDateStr: 'Não informada'
+      }
+    }
+
+    try {
+      let lastDate: Date
+      if (lastPurchaseDate.includes('/')) {
+        const parts = lastPurchaseDate.split('/')
+        lastDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
+      } else if (lastPurchaseDate.includes('-')) {
+        const parts = lastPurchaseDate.split('-')
+        lastDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]))
+      } else {
+        lastDate = new Date(lastPurchaseDate)
+      }
+
+      if (isNaN(lastDate.getTime())) {
+        return {
+          status: 'sem_dados',
+          label: 'Data da Última Compra Inválida',
+          color: 'var(--gray2)',
+          badgeBg: 'bg-[var(--card2)] border-[var(--line)] text-[var(--gray2)]',
+          daysRemaining: 0,
+          nextDateStr: '-'
+        }
+      }
+
+      const nextDate = new Date(lastDate.getTime() + purchaseFrequencyDays * 24 * 60 * 60 * 1000)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      nextDate.setHours(0, 0, 0, 0)
+
+      const diffTime = nextDate.getTime() - today.getTime()
+      const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      const nextDateStr = nextDate.toLocaleDateString('pt-BR')
+
+      if (daysRemaining < 0) {
+        return {
+          status: 'atrasado',
+          label: `🔴 RECOMPRA ATRASADA (${Math.abs(daysRemaining)} dias em atraso)`,
+          color: 'var(--red)',
+          badgeBg: 'bg-red-500/15 border-red-500/30 text-red-400',
+          daysRemaining,
+          nextDateStr
+        }
+      } else if (daysRemaining <= 15) {
+        return {
+          status: 'proximo',
+          label: `🟡 PRÓXIMO DA RECOMPRA (Faltam ${daysRemaining} dias)`,
+          color: 'var(--yellow)',
+          badgeBg: 'bg-amber-400/15 border-amber-400/30 text-amber-300',
+          daysRemaining,
+          nextDateStr
+        }
+      } else {
+        return {
+          status: 'no_prazo',
+          label: `🟢 NO PRAZO (Faltam ${daysRemaining} dias)`,
+          color: 'var(--green)',
+          badgeBg: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400',
+          daysRemaining,
+          nextDateStr
+        }
+      }
+    } catch (e) {
+      return {
+        status: 'sem_dados',
+        label: 'Erro no cálculo',
+        color: 'var(--gray2)',
+        badgeBg: 'bg-[var(--card2)] border-[var(--line)] text-[var(--gray2)]',
+        daysRemaining: 0,
+        nextDateStr: '-'
       }
     }
   }
@@ -940,17 +1110,121 @@ function ContactDrawer({
             </div>
           )}
 
-          {/* TAB 2: HISTÓRICO */}
+          {/* TAB 2: PLANEJAMENTO E RECOMPRA */}
+          {activeTab === 'planejamento' && (
+            <div className="flex flex-col gap-4 animate-fade-in pb-12">
+              
+              {/* Banner de Status de Recompra */}
+              {(() => {
+                const repInfo = getRepurchaseStatusInfo()
+                return (
+                  <div className={`p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${repInfo.badgeBg}`}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center bg-black/20 text-current font-bold shrink-0">
+                        <Clock size={20} />
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-mono uppercase font-extrabold tracking-wider">Status do Ciclo de Recompra</div>
+                        <div className="text-sm font-bold font-display mt-0.5">{repInfo.label}</div>
+                      </div>
+                    </div>
+
+                    <div className="sm:text-right shrink-0 font-mono">
+                      <div className="text-[9px] uppercase font-bold opacity-80">Próxima Compra Prevista</div>
+                      <div className="text-sm font-black mt-0.5">{repInfo.nextDateStr}</div>
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Grid de Campos: Valor Projetado, Frequência, Última Compra */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                
+                {/* Valor Projetado R$ */}
+                <div className="card p-3.5 border-[var(--line)] bg-[var(--card)] flex flex-col gap-1.5">
+                  <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider flex items-center gap-1">
+                    <DollarSign size={12} /> Valor Projetado de Compra
+                  </label>
+                  <div className="flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-3 py-2 focus-within:border-[var(--lime)]">
+                    <span className="text-xs font-bold text-[var(--gray2)] font-mono">R$</span>
+                    <input
+                      type="number"
+                      step="100"
+                      className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] font-mono w-full"
+                      placeholder="0,00"
+                      value={projectedPurchaseValue || ''}
+                      onChange={e => setProjectedPurchaseValue(parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                  <span className="text-[9px] text-[var(--gray2)] font-mono">Estimativa de faturamento por ciclo de compra</span>
+                </div>
+
+                {/* Frequência de Compra (Dias) */}
+                <div className="card p-3.5 border-[var(--line)] bg-[var(--card)] flex flex-col gap-1.5">
+                  <label className="text-[9px] font-bold text-sky-400 uppercase font-mono tracking-wider flex items-center gap-1">
+                    <Calendar size={12} /> Frequência de Compra (Dias)
+                  </label>
+                  <div className="flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-3 py-2 focus-within:border-sky-400">
+                    <input
+                      type="number"
+                      min="1"
+                      className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] font-mono w-full"
+                      placeholder="Ex: 30, 45, 60"
+                      value={purchaseFrequencyDays || ''}
+                      onChange={e => setPurchaseFrequencyDays(parseInt(e.target.value) || 0)}
+                    />
+                    <span className="text-xs font-bold text-[var(--gray2)] font-mono">dias</span>
+                  </div>
+                  <span className="text-[9px] text-[var(--gray2)] font-mono">Intervalo numérico em dias (ex: 30, 45, 60)</span>
+                </div>
+
+                {/* Data da Última Compra */}
+                <div className="card p-3.5 border-[var(--line)] bg-[var(--card)] flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
+                  <label className="text-[9px] font-bold text-amber-400 uppercase font-mono tracking-wider flex items-center gap-1">
+                    <Clock size={12} /> Data da Última Compra
+                  </label>
+                  <div className="flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-3 py-2 focus-within:border-amber-400">
+                    <input
+                      type="date"
+                      className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] font-mono w-full cursor-pointer"
+                      value={lastPurchaseDate}
+                      onChange={e => setLastPurchaseDate(e.target.value)}
+                    />
+                  </div>
+                  <span className="text-[9px] text-[var(--gray2)] font-mono">Data do último pedido fechado</span>
+                </div>
+
+              </div>
+
+              {/* Observações e Perfil de Compra */}
+              <div className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2">
+                <label className="text-[10px] font-bold text-[var(--white)] uppercase font-mono tracking-wider flex items-center gap-1.5">
+                  <FileText size={14} className="text-[var(--lime)]" />
+                  <span>Observações & Perfil de Compra do Cliente</span>
+                </label>
+                <textarea
+                  rows={4}
+                  className="w-full bg-[var(--charcoal)] border border-[var(--line)] rounded-xl p-3 text-xs text-[var(--white)] outline-none focus:border-[var(--lime)] resize-none font-mono"
+                  placeholder="Particularidades de compra, pico de sazonalidade, preferências de cartão/embalagem..."
+                  value={planningNotes}
+                  onChange={e => setPlanningNotes(e.target.value)}
+                />
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB 3: HISTÓRICO */}
           {activeTab === 'historico' && (
             <div className="flex flex-col gap-4 animate-fade-in">
               <div className="card p-4 border border-[var(--line)] bg-[var(--card)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
                 <div className="space-y-0.5">
                   <h4 className="text-xs font-bold text-[var(--white)] flex items-center gap-1.5">
                     <CheckCircle size={14} className="text-[var(--lime)]" />
-                    <span>Registrar Nova Atividade</span>
+                    <span>Registrar Nova Atividade Comercial</span>
                   </h4>
                   <p className="text-[11px] text-[var(--gray2)] leading-tight">
-                    Lance reuniões, ligações, conversas de WhatsApp, e-mails ou anotações comerciais.
+                    Lance reuniões, ligações, conversas de WhatsApp, e-mails ou anotações.
                   </p>
                 </div>
                 <button
@@ -965,10 +1239,37 @@ function ContactDrawer({
                 </button>
               </div>
 
-              {/* Timeline list */}
+              {/* Seção Audit Trail de Alterações no Cadastro */}
+              {historyList.length > 0 && (
+                <div className="card p-4 border border-[var(--line)] bg-[var(--card)] flex flex-col gap-3">
+                  <h4 className="text-[10px] font-mono uppercase font-bold text-[var(--lime)] tracking-wider flex items-center gap-1.5">
+                    <Clock size={12} />
+                    <span>Histórico Auditado de Edições no Cadastro ({historyList.length})</span>
+                  </h4>
+
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {historyList.map(h => (
+                      <div key={h.id} className="p-3 rounded-xl bg-[var(--charcoal)] border border-[var(--line)]/70 flex flex-col gap-1 text-xs font-mono">
+                        <div className="flex justify-between items-center text-[10px] text-[var(--gray2)]">
+                          <span className="font-bold text-[var(--white)]">{h.action || 'Edição no Cadastro'}</span>
+                          <span>{h.date}</span>
+                        </div>
+                        <div className="text-[11px] text-[var(--lime)] font-semibold mt-0.5">
+                          {h.details}
+                        </div>
+                        <div className="text-[9px] text-[var(--gray2)] text-right">
+                          Por: {h.author}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Timeline list de Atividades */}
               {activities.length === 0 ? (
                 <div className="card p-8 text-center text-xs text-[var(--gray2)] font-mono border-dashed">
-                  Nenhum histórico registrado até o momento. Clique no botão acima para registrar uma nova atividade.
+                  Nenhuma atividade registrada até o momento. Clique no botão acima para registrar.
                 </div>
               ) : (
                 <div className="relative pl-6 flex flex-col gap-6 border-l border-[var(--line)] ml-3 mt-2">
