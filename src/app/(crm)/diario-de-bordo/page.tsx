@@ -22,17 +22,19 @@ import {
   FileText,
   AlertCircle,
   Filter,
-  Check
+  Check,
+  Zap,
+  Activity
 } from 'lucide-react'
 
 import { Contact, Deal, Appointment, UserGoal } from '@/types'
 import { getAppointments, updateAppointment } from '@/services/appointment-service'
+import { getPipelineDeals } from '@/services/pipeline-service'
 import { DealDrawer } from '@/components/pipeline/DealDrawer'
-
 import { PipelineCalendarModal } from '@/components/pipeline/PipelineCalendarModal'
 import { RegisterActivityModal } from '@/components/RegisterActivityModal'
 
-// Format Portuguese Currency
+// Helper format currency
 function formatCurrency(val: number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
 }
@@ -63,7 +65,6 @@ function getBusinessDaysStats() {
     }
   }
 
-  // Include today if it's a business day
   if (remainingBusinessDays === 0) remainingBusinessDays = 1
 
   return {
@@ -75,9 +76,10 @@ function getBusinessDaysStats() {
   }
 }
 
-// Helper date parser
-function parseFlexibleDate(dateStr?: string | null): Date | null {
+// Flexible Date Parser
+function parseFlexibleDate(dateStr?: string | number | null): Date | null {
   if (!dateStr) return null
+  if (typeof dateStr === 'number') return new Date(dateStr)
   if (dateStr.includes('T')) {
     const d = new Date(dateStr)
     return isNaN(d.getTime()) ? null : d
@@ -99,57 +101,111 @@ export default function DiarioDeBordoPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [deals, setDeals] = useState<Deal[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [userGoal, setUserGoal] = useState<UserGoal | null>(null)
+  const [goalsMap, setGoalsMap] = useState<Record<string, UserGoal>>({})
   const [loading, setLoading] = useState(true)
 
-  // Drawer / Modal states
+  // Modals & Drawers
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null)
-
   const [selectedContactForActivity, setSelectedContactForActivity] = useState<Contact | null>(null)
   const [calendarOpen, setCalendarOpen] = useState(false)
 
-  // Load initial data
+  // Fetch all data synchronously & from local storage
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Current User
-      let userObj = null
+      // 1. Current User Session
+      let userObj: any = null
       if (typeof window !== 'undefined') {
         const session = localStorage.getItem('crm_current_user')
         if (session) {
-          userObj = JSON.parse(session)
-          setCurrentUser(userObj)
+          try {
+            userObj = JSON.parse(session)
+            setCurrentUser(userObj)
+          } catch (e) {}
         }
       }
 
-      // Fetch contacts, deals, users, metas
-      const [resContacts, resDeals, resUsers, resMetas] = await Promise.all([
-        fetch('/api/contacts').then(r => r.ok ? r.json() : []),
-        fetch('/api/deals').then(r => r.ok ? r.json() : []),
-        fetch('/api/users').then(r => r.ok ? r.json() : []),
-        fetch('/api/metas').then(r => r.ok ? r.json() : [])
-      ])
+      // 2. Fetch Users
+      let usersData: any[] = []
+      try {
+        const resUsers = await fetch('/api/users', { cache: 'no-store' })
+        const jsonUsers = await resUsers.json()
+        if (jsonUsers.success && Array.isArray(jsonUsers.users)) {
+          usersData = jsonUsers.users
+        }
+      } catch (e) {}
+      if (usersData.length === 0 && typeof window !== 'undefined') {
+        const rawU = localStorage.getItem('cp_crm_v7_official_users') || localStorage.getItem('crm_users')
+        if (rawU) {
+          try { usersData = JSON.parse(rawU) } catch (e) {}
+        }
+      }
+      setUsersList(usersData.filter(u => u.status !== 'inativo'))
 
-      const contactsData = Array.isArray(resContacts) ? resContacts : (resContacts.data || [])
-      const dealsData = Array.isArray(resDeals) ? resDeals : (resDeals.data || [])
-      const usersData = Array.isArray(resUsers) ? resUsers : (resUsers.data || [])
-      const metasData = Array.isArray(resMetas) ? resMetas : (resMetas.data || [])
-
-      setContacts(contactsData)
-      setDeals(dealsData)
-      setUsersList(usersData)
-
-      // Get current month goal
-      const now = new Date()
-      const currentYearStr = String(now.getFullYear())
-      const currentMonthStr = String(now.getMonth() + 1).padStart(2, '0')
+      // 3. Fetch Pipeline Deals (combining localStorage cp_crm_pipeline_deals & /api/deals)
+      let loadedDeals: Deal[] = []
+      try {
+        const resDeals = await fetch('/api/deals', { cache: 'no-store' })
+        if (resDeals.ok) {
+          const jsonDeals = await resDeals.json()
+          loadedDeals = Array.isArray(jsonDeals) ? jsonDeals : (jsonDeals.data || [])
+        }
+      } catch (e) {}
       
-      const foundGoal = metasData.find((m: UserGoal) => 
-        m.year === currentYearStr && m.month === currentMonthStr
-      ) || { salesGoal: 100000, visitsGoal: 20 }
-      setUserGoal(foundGoal)
+      const dealsFromService = getPipelineDeals(loadedDeals)
+      setDeals(dealsFromService)
 
-      // Load appointments
+      // 4. Fetch Contacts (combining /api/contacts & localStorage crm_contacts)
+      let loadedContacts: Contact[] = []
+      try {
+        const resContacts = await fetch('/api/contacts', { cache: 'no-store' })
+        if (resContacts.ok) {
+          const jsonContacts = await resContacts.json()
+          loadedContacts = Array.isArray(jsonContacts) ? jsonContacts : (jsonContacts.data || [])
+        }
+      } catch (e) {}
+
+      if (typeof window !== 'undefined') {
+        const rawC = localStorage.getItem('crm_contacts')
+        if (rawC) {
+          try {
+            const localContacts = JSON.parse(rawC)
+            if (Array.isArray(localContacts) && localContacts.length > 0) {
+              // Merge API and local contacts without duplicates
+              const mapById = new Map<string, any>()
+              localContacts.forEach(c => mapById.set(c.id, c))
+              loadedContacts.forEach(c => mapById.set(c.id, c))
+              loadedContacts = Array.from(mapById.values())
+            }
+          } catch (e) {}
+        }
+      }
+      setContacts(loadedContacts)
+
+      // 5. Fetch Metas / Goals Map
+      let loadedGoalsMap: Record<string, UserGoal> = {}
+      try {
+        const resMetas = await fetch('/api/metas', { cache: 'no-store' })
+        if (resMetas.ok) {
+          const jsonMetas = await resMetas.json()
+          if (jsonMetas.success && jsonMetas.goalsMap) {
+            loadedGoalsMap = jsonMetas.goalsMap
+          }
+        }
+      } catch (e) {}
+
+      if (typeof window !== 'undefined') {
+        const rawGoals = localStorage.getItem('cp_crm_user_goals')
+        if (rawGoals) {
+          try {
+            const parsedG = JSON.parse(rawGoals)
+            loadedGoalsMap = { ...parsedG, ...loadedGoalsMap }
+          } catch (e) {}
+        }
+      }
+      setGoalsMap(loadedGoalsMap)
+
+      // 6. Appointments
       const apts = getAppointments()
       setAppointments(apts)
 
@@ -162,17 +218,23 @@ export default function DiarioDeBordoPage() {
 
   useEffect(() => {
     fetchData()
+
+    const handleStorageChange = () => fetchData()
     if (typeof window !== 'undefined') {
-      window.addEventListener('storage-appointments-changed', fetchData)
+      window.addEventListener('storage-deals-changed', handleStorageChange)
+      window.addEventListener('storage-contacts-changed', handleStorageChange)
+      window.addEventListener('storage-appointments-changed', handleStorageChange)
     }
     return () => {
       if (typeof window !== 'undefined') {
-        window.removeEventListener('storage-appointments-changed', fetchData)
+        window.removeEventListener('storage-deals-changed', handleStorageChange)
+        window.removeEventListener('storage-contacts-changed', handleStorageChange)
+        window.removeEventListener('storage-appointments-changed', handleStorageChange)
       }
     }
   }, [])
 
-  // Greeting & Date formatting
+  // Today Date & Greeting
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
   const formattedTodayDate = useMemo(() => {
     const d = new Date()
@@ -191,28 +253,36 @@ export default function DiarioDeBordoPage() {
     return 'Boa noite'
   }, [])
 
-  // Admin filter options
-  const isAdminOrManager = currentUser?.role === 'admin' || currentUser?.role === 'gestor'
+  // Admin / Gestor check
+  const isAdminOrManager = (currentUser?.role || '').toLowerCase().includes('admin') || 
+                           (currentUser?.role || '').toLowerCase().includes('gestor')
 
-  // Filtered contacts based on user selection
+  // Filtered contacts based on selected user filter
   const filteredContacts = useMemo(() => {
     if (userFilter === 'all') return contacts
-    return contacts.filter(c => 
-      c.representative?.toLowerCase() === userFilter.toLowerCase() ||
-      c.assigned_to === userFilter
-    )
-  }, [contacts, userFilter])
+    const selUser = usersList.find(u => u.id === userFilter || u.name === userFilter)
+    const targetName = (selUser?.name || userFilter).toLowerCase()
 
-  // Filtered deals
+    return contacts.filter(c => 
+      (c.representative || '').toLowerCase().includes(targetName) ||
+      c.assigned_to === userFilter ||
+      c.id === userFilter
+    )
+  }, [contacts, userFilter, usersList])
+
+  // Filtered deals based on selected user filter
   const filteredDeals = useMemo(() => {
     if (userFilter === 'all') return deals
+    const selUser = usersList.find(u => u.id === userFilter || u.name === userFilter)
+    const targetName = (selUser?.name || userFilter).toLowerCase()
+
     return deals.filter(d => 
       d.assigned_to === userFilter ||
-      d.contact?.representative?.toLowerCase() === userFilter.toLowerCase()
+      (d.contact?.representative || '').toLowerCase().includes(targetName)
     )
-  }, [deals, userFilter])
+  }, [deals, userFilter, usersList])
 
-  // Filtered appointments
+  // Appointments today
   const todayAppointments = useMemo(() => {
     return appointments.filter(a => a.date === todayStr)
   }, [appointments, todayStr])
@@ -220,7 +290,46 @@ export default function DiarioDeBordoPage() {
   // Business Days Stats
   const bizStats = useMemo(() => getBusinessDaysStats(), [])
 
-  // 1. Goal & Pacing Calculation
+  // Calculate Meta & Sales Goal for selected Month/Year (e.g. 2026_07)
+  const currentMonthGoal = useMemo(() => {
+    const now = new Date()
+    const yearStr = String(now.getFullYear())
+    const monthStr = String(now.getMonth() + 1).padStart(2, '0')
+
+    let salesGoalSum = 0
+    let visitsGoalSum = 0
+
+    if (userFilter === 'all') {
+      // Sum sales goals for all registered users for current month
+      Object.keys(goalsMap).forEach(key => {
+        if (key.startsWith(`${yearStr}_${monthStr}_`) || key.startsWith(`EQUIPE_${yearStr}_${monthStr}`)) {
+          const g = goalsMap[key]
+          salesGoalSum += Number(g?.salesGoal || 0)
+          visitsGoalSum += Number(g?.visitsGoal || 0)
+        }
+      })
+      if (salesGoalSum === 0) salesGoalSum = 150000
+      if (visitsGoalSum === 0) visitsGoalSum = 40
+    } else {
+      const selUser = usersList.find(u => u.id === userFilter || u.name === userFilter)
+      const uId = selUser?.id || userFilter
+      const uName = selUser?.name || userFilter
+
+      const goalKey1 = `${yearStr}_${monthStr}_${uId}`
+      const goalKey2 = `${yearStr}_${monthStr}_${uName}`
+
+      const foundGoal = goalsMap[goalKey1] || goalsMap[goalKey2]
+      salesGoalSum = Number(foundGoal?.salesGoal || 50000)
+      visitsGoalSum = Number(foundGoal?.visitsGoal || 20)
+    }
+
+    return {
+      salesGoal: salesGoalSum,
+      visitsGoal: visitsGoalSum
+    }
+  }, [goalsMap, userFilter, usersList])
+
+  // 1. Pacing & Goal Calculations
   const pacingMetrics = useMemo(() => {
     const now = new Date()
     const currentMonth = now.getMonth()
@@ -236,11 +345,11 @@ export default function DiarioDeBordoPage() {
     })
 
     const totalSalesAchieved = wonDeals.reduce((sum, d) => sum + (d.final_value || d.estimated_value || 0), 0)
-    const salesTarget = userGoal?.salesGoal || 100000
-    const salesProgressPct = Math.min(100, Math.round((totalSalesAchieved / salesTarget) * 100))
+    const salesTarget = currentMonthGoal.salesGoal
+    const salesProgressPct = Math.min(100, Math.round((totalSalesAchieved / Math.max(1, salesTarget)) * 100))
 
     // Pacing calculation
-    const expectedSalesPacing = (salesTarget / bizStats.totalBusinessDays) * bizStats.elapsedBusinessDays
+    const expectedSalesPacing = (salesTarget / Math.max(1, bizStats.totalBusinessDays)) * bizStats.elapsedBusinessDays
     const isPacingAhead = totalSalesAchieved >= expectedSalesPacing
 
     const remainingSalesR$ = Math.max(0, salesTarget - totalSalesAchieved)
@@ -252,7 +361,6 @@ export default function DiarioDeBordoPage() {
       const dt = new Date(a.date)
       return dt.getMonth() === currentMonth && dt.getFullYear() === currentYear
     }).length
-    const visitsTarget = userGoal?.visitsGoal || 20
 
     return {
       totalSalesAchieved,
@@ -263,31 +371,37 @@ export default function DiarioDeBordoPage() {
       remainingSalesR$,
       dailyPaceRequired,
       currentMonthVisits,
-      visitsTarget
+      visitsTarget: currentMonthGoal.visitsGoal
     }
-  }, [filteredDeals, userGoal, bizStats, appointments])
+  }, [filteredDeals, currentMonthGoal, bizStats, appointments])
 
-  // 2. Client Status & Inactivation Alert (30 to 90 Days)
+  // 2. Client Status, Repurchase & Inactivation Alerts (30 to 90 Days)
   const clientAlerts = useMemo(() => {
     const now = new Date()
     
-    // Clients with 30-90 days of inactivity
     const inactThreshold = 90
     const inactRiskList: Array<{ contact: Contact; days: number; lastDateStr: string }> = []
-    
-    let overdueRepurchaseCount = 0
+    const overdueRepurchaseList: Array<{ contact: Contact; daysOverdue: number }> = []
 
     filteredContacts.forEach(c => {
-      // Repurchase overdue calculation
-      if (c.lastPurchaseDate && c.purchaseFrequencyDays) {
+      // 1. Repurchase Overdue Check
+      let daysSincePurchase = (c as any).lastPurchaseDays
+      if (daysSincePurchase === undefined && c.lastPurchaseDate) {
         const lastP = parseFlexibleDate(c.lastPurchaseDate)
         if (lastP) {
-          const nextP = new Date(lastP.getTime() + c.purchaseFrequencyDays * 86400000)
-          if (nextP < now) overdueRepurchaseCount++
+          daysSincePurchase = Math.floor((now.getTime() - lastP.getTime()) / (1000 * 60 * 60 * 24))
         }
       }
+      
+      const freq = c.purchaseFrequencyDays || 30
+      if (daysSincePurchase !== undefined && daysSincePurchase > freq) {
+        overdueRepurchaseList.push({
+          contact: c,
+          daysOverdue: daysSincePurchase - freq
+        })
+      }
 
-      // Activity threshold
+      // 2. Inactivation Risk (30 to 90 days without activity)
       let lastActDate: Date | null = null
       if (c.history && c.history.length > 0) {
         const parsedHist = c.history
@@ -308,7 +422,6 @@ export default function DiarioDeBordoPage() {
         const diffDays = Math.floor((now.getTime() - lastActDate.getTime()) / (1000 * 60 * 60 * 24))
         const threshold = c.inactivityThresholdDays || inactThreshold
 
-        // Inactivation Risk: Between 30 days and threshold (e.g. 90)
         if (diffDays >= 30 && diffDays <= threshold) {
           inactRiskList.push({
             contact: c,
@@ -319,12 +432,13 @@ export default function DiarioDeBordoPage() {
       }
     })
 
-    // Sort by most critical (highest days)
     inactRiskList.sort((a, b) => b.days - a.days)
+    overdueRepurchaseList.sort((a, b) => b.daysOverdue - a.daysOverdue)
 
     return {
       inactRiskList,
-      overdueRepurchaseCount
+      overdueRepurchaseList,
+      overdueRepurchaseCount: overdueRepurchaseList.length
     }
   }, [filteredContacts])
 
@@ -366,39 +480,32 @@ export default function DiarioDeBordoPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#0d0e0f] text-[var(--white)] p-4 sm:p-6 lg:p-8 gap-6 animate-fade-in pb-24 lg:pb-12">
+    <div className="flex flex-col min-h-screen bg-[#0d0e0f] text-[var(--white)] p-4 sm:p-6 lg:p-8 gap-5 animate-fade-in pb-24 lg:pb-12 max-w-[1600px] mx-auto w-full">
       
       {/* ========================================================
-          1. HEADER & GREETING BAR
+          1. HEADER DE BOAS-VINDAS CLEAN & ELEGANTE
          ======================================================== */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl shadow-xl relative overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden">
         
-        {/* Glow accent */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-lime-500/5 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex flex-col gap-1.5 z-10">
+        <div className="flex flex-col gap-1 z-10">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-lime-500/10 border border-lime-500/20 text-[var(--lime)] text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5">
               <Compass size={12} />
-              Diário de Bordo Comercial
+              Diário de Bordo
             </span>
-            <span className="text-xs text-[var(--gray2)] font-mono">
+            <span className="text-xs text-[var(--gray2)] font-mono capitalize">
               {formattedTodayDate}
             </span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tight flex items-center gap-2">
-            <span>{greetingTime}, {currentUser?.name || 'Vendedor'}!</span>
+            <span>{greetingTime}, <strong className="text-[var(--lime)] font-black">{currentUser?.name || 'Vendedor'}</strong>!</span>
             <span className="text-xl">☀️</span>
           </h1>
-
-          <p className="text-xs text-[var(--gray2)] max-w-2xl font-mono">
-            Seu cockpit diário de vendas: acompanhe metas, ritmo de pacing, agenda do dia e alertas de recompra e inativação.
-          </p>
         </div>
 
-        {/* Right Actions & Admin User Filter */}
-        <div className="flex flex-wrap items-center gap-3 z-10">
+        {/* Right Actions & Filter Selector */}
+        <div className="flex items-center gap-3 z-10 shrink-0">
           {isAdminOrManager && (
             <div className="flex items-center gap-2 bg-[var(--charcoal)] border border-[var(--line)] px-3 py-1.5 rounded-xl">
               <Filter size={14} className="text-[var(--lime)]" />
@@ -409,7 +516,7 @@ export default function DiarioDeBordoPage() {
               >
                 <option value="all" className="bg-[#181a1d]">Toda a Equipe</option>
                 {usersList.map((u: any) => (
-                  <option key={u.id} value={u.name} className="bg-[#181a1d]">
+                  <option key={u.id || u.name} value={u.id || u.name} className="bg-[#181a1d]">
                     {u.name} ({u.role || 'Usuário'})
                   </option>
                 ))}
@@ -421,170 +528,164 @@ export default function DiarioDeBordoPage() {
             onClick={() => setCalendarOpen(true)}
             className="btn btn-secondary text-xs py-2 px-3.5 flex items-center gap-2 font-bold cursor-pointer hover:border-[var(--lime)]"
           >
-            <CalendarIcon size={16} className="text-[var(--lime)]" />
+            <CalendarIcon size={15} className="text-[var(--lime)]" />
             <span>Abrir Agenda</span>
           </button>
         </div>
       </div>
 
       {/* ========================================================
-          2. HERO SECTION: META, RESULTADO & PACING CARD
+          2. HERO SECTION: 4 CARDS KPI EXECUTIVOS EM LINHA
          ======================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* Card 1: Meta x Resultado & Pacing (Col Span 2) */}
-        <div className="lg:col-span-2 card bg-gradient-to-br from-[#15171a] to-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl flex flex-col justify-between gap-5 shadow-2xl relative overflow-hidden">
-          
-          <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-lime-500/10 border border-lime-500/20 flex items-center justify-center text-[var(--lime)]">
-                <Target size={20} />
+        {/* Card 1: Meta do Mês & Realizado */}
+        <div className="card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl flex flex-col justify-between gap-3 shadow-md hover:border-[var(--lime)]/30 transition-all">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-lime-500/10 border border-lime-500/20 flex items-center justify-center text-[var(--lime)]">
+                <Target size={16} />
               </div>
-              <div>
-                <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
-                  <span>Resultado x Meta do Mês</span>
-                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                    pacingMetrics.isPacingAhead 
-                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' 
-                      : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-                  }`}>
-                    {pacingMetrics.isPacingAhead ? '▲ Acima do Pacing' : '▼ Ritmo Abaixo do Pacing'}
-                  </span>
-                </h3>
-                <p className="text-[11px] font-mono text-[var(--gray2)]">
-                  Dia {bizStats.todayDate} de {bizStats.totalDays} · {bizStats.elapsedBusinessDays} de {bizStats.totalBusinessDays} dias úteis transcorridos
-                </p>
-              </div>
+              <span className="text-xs font-mono font-bold text-gray-300 uppercase">Meta do Mês</span>
             </div>
 
-            <div className="text-right">
-              <span className="text-[10px] font-mono text-[var(--gray2)] uppercase block">Progresso da Meta</span>
-              <span className="text-2xl font-mono font-black text-[var(--lime)]">{pacingMetrics.salesProgressPct}%</span>
-            </div>
+            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+              pacingMetrics.isPacingAhead 
+                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' 
+                : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+            }`}>
+              {pacingMetrics.isPacingAhead ? '▲ No Pacing' : '▼ Abaixo'}
+            </span>
           </div>
 
-          {/* Main Progress Bar */}
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between items-center text-xs font-mono">
-              <span className="text-white font-bold">
-                Realizado: <strong className="text-[var(--lime)]">{formatCurrency(pacingMetrics.totalSalesAchieved)}</strong>
-              </span>
-              <span className="text-[var(--gray2)]">
-                Meta: <strong className="text-white">{formatCurrency(pacingMetrics.salesTarget)}</strong>
-              </span>
+          <div>
+            <div className="flex items-baseline justify-between">
+              <span className="text-xl font-mono font-black text-white">{formatCurrency(pacingMetrics.totalSalesAchieved)}</span>
+              <span className="text-xs font-mono font-bold text-[var(--lime)]">{pacingMetrics.salesProgressPct}%</span>
             </div>
-
-            <div className="w-full h-3.5 bg-black/40 border border-[var(--line)] rounded-full p-0.5 relative overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-lime-600 to-[var(--lime)] rounded-full transition-all duration-700 shadow-[0_0_12px_rgba(180,217,50,0.5)]"
-                style={{ width: `${pacingMetrics.salesProgressPct}%` }}
-              />
-            </div>
+            <span className="text-[10px] font-mono text-[var(--gray2)] block mt-0.5">
+              Meta: {formatCurrency(pacingMetrics.salesTarget)}
+            </span>
           </div>
 
-          {/* Pacing Details Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[var(--charcoal)]/60 p-3.5 rounded-xl border border-[var(--line)]">
-            <div>
-              <span className="text-[10px] font-mono text-[var(--gray2)] uppercase block">Esperado Hoje (Pacing)</span>
-              <span className="text-xs font-mono font-bold text-gray-200 mt-0.5 block">
-                {formatCurrency(pacingMetrics.expectedSalesPacing)}
-              </span>
-            </div>
-
-            <div>
-              <span className="text-[10px] font-mono text-[var(--gray2)] uppercase block">Falta para 100%</span>
-              <span className="text-xs font-mono font-bold text-amber-400 mt-0.5 block">
-                {formatCurrency(pacingMetrics.remainingSalesR$)}
-              </span>
-            </div>
-
-            <div>
-              <span className="text-[10px] font-mono text-[var(--gray2)] uppercase block">Meta Diária Necessária</span>
-              <span className="text-xs font-mono font-bold text-[var(--lime)] mt-0.5 block">
-                {formatCurrency(pacingMetrics.dailyPaceRequired)} / dia
-              </span>
-            </div>
-
-            <div>
-              <span className="text-[10px] font-mono text-[var(--gray2)] uppercase block">Visitas no Mês</span>
-              <span className="text-xs font-mono font-bold text-sky-400 mt-0.5 block">
-                {pacingMetrics.currentMonthVisits} / {pacingMetrics.visitsTarget} realizados
-              </span>
-            </div>
+          {/* Mini Progress Bar */}
+          <div className="w-full h-2 bg-black/40 border border-[var(--line)] rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-[var(--lime)] rounded-full transition-all duration-500"
+              style={{ width: `${pacingMetrics.salesProgressPct}%` }}
+            />
           </div>
-
         </div>
 
-        {/* Card 2: Central de Alertas Críticos (Col Span 1) */}
-        <div className="card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-xl">
-          <div className="flex items-center gap-2 border-b border-[var(--line)] pb-3">
-            <AlertTriangle size={18} className="text-[var(--lime)]" />
-            <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider">
-              Alertas do Dia
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2.5">
-            {/* Box 1: Agenda Hoje */}
-            <div className="bg-[var(--charcoal)] border border-[var(--line)] p-3 rounded-xl flex flex-col justify-between">
-              <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Agenda Hoje</span>
-              <div className="flex items-baseline justify-between mt-1">
-                <span className="text-xl font-mono font-black text-white">{todayAppointments.length}</span>
-                <span className="text-[10px] font-mono text-[var(--lime)] font-bold">eventos</span>
+        {/* Card 2: Pacing & Meta Diária Necessária */}
+        <div className="card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl flex flex-col justify-between gap-3 shadow-md hover:border-[var(--lime)]/30 transition-all">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                <Zap size={16} />
               </div>
+              <span className="text-xs font-mono font-bold text-gray-300 uppercase">Meta Diária</span>
             </div>
-
-            {/* Box 2: Recompra Atrasada */}
-            <div className="bg-[var(--charcoal)] border border-red-500/20 p-3 rounded-xl flex flex-col justify-between">
-              <span className="text-[10px] font-mono text-red-400 uppercase font-bold">Recompra Atrasada</span>
-              <div className="flex items-baseline justify-between mt-1">
-                <span className="text-xl font-mono font-black text-red-400">{clientAlerts.overdueRepurchaseCount}</span>
-                <span className="text-[10px] font-mono text-red-400/80 font-bold">clientes</span>
-              </div>
-            </div>
-
-            {/* Box 3: Inativação Iminente */}
-            <div className="bg-[var(--charcoal)] border border-amber-500/20 p-3 rounded-xl flex flex-col justify-between">
-              <span className="text-[10px] font-mono text-amber-400 uppercase font-bold">Risco Inativação</span>
-              <div className="flex items-baseline justify-between mt-1">
-                <span className="text-xl font-mono font-black text-amber-400">{clientAlerts.inactRiskList.length}</span>
-                <span className="text-[10px] font-mono text-amber-400/80 font-bold">30 a 90d</span>
-              </div>
-            </div>
-
-            {/* Box 4: Negócios Estagnados */}
-            <div className="bg-[var(--charcoal)] border border-purple-500/20 p-3 rounded-xl flex flex-col justify-between">
-              <span className="text-[10px] font-mono text-purple-400 uppercase font-bold">Parados &gt; 7 Dias</span>
-              <div className="flex items-baseline justify-between mt-1">
-                <span className="text-xl font-mono font-black text-purple-400">{dealAlerts.stagnantDeals.length}</span>
-                <span className="text-[10px] font-mono text-purple-400/80 font-bold">negócios</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-2 text-center">
-            <span className="text-[11px] font-mono text-[var(--gray2)]">
-              Mantenha contato regular para evitar perda de clientes ativos.
+            <span className="text-[10px] font-mono text-gray-400">
+              {bizStats.remainingBusinessDays} dias úteis
             </span>
+          </div>
+
+          <div>
+            <span className="text-xl font-mono font-black text-[var(--lime)]">{formatCurrency(pacingMetrics.dailyPaceRequired)}</span>
+            <span className="text-[10px] font-mono text-[var(--gray2)] block mt-0.5">
+              Esperado hoje: {formatCurrency(pacingMetrics.expectedSalesPacing)}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] font-mono pt-1 border-t border-[var(--line)]">
+            <span className="text-gray-400">Visitas:</span>
+            <span className="font-bold text-sky-400">{pacingMetrics.currentMonthVisits} / {pacingMetrics.visitsTarget}</span>
+          </div>
+        </div>
+
+        {/* Card 3: Compromissos Hoje */}
+        <div className="card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl flex flex-col justify-between gap-3 shadow-md hover:border-[var(--lime)]/30 transition-all">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                <CalendarIcon size={16} />
+              </div>
+              <span className="text-xs font-mono font-bold text-gray-300 uppercase">Agenda Hoje</span>
+            </div>
+
+            <button
+              onClick={() => setCalendarOpen(true)}
+              className="text-[10px] font-mono font-bold text-[var(--lime)] hover:underline flex items-center gap-0.5"
+            >
+              <span>Ver</span>
+              <ChevronRight size={12} />
+            </button>
+          </div>
+
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-mono font-black text-white">{todayAppointments.length}</span>
+              <span className="text-xs font-mono text-purple-400 font-bold">compromissos</span>
+            </div>
+            <span className="text-[10px] font-mono text-[var(--gray2)] block mt-0.5">
+              {todayAppointments.filter(a => a.status === 'concluido').length} concluídos hoje
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] font-mono pt-1 border-t border-[var(--line)]">
+            <span className="text-gray-400">Status:</span>
+            <span className="font-bold text-purple-300">
+              {todayAppointments.length > 0 ? 'Eventos Pendentes' : 'Dia Livre'}
+            </span>
+          </div>
+        </div>
+
+        {/* Card 4: Alertas da Carteira (Recompra & Inativação) */}
+        <div className="card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl flex flex-col justify-between gap-3 shadow-md hover:border-red-500/30 transition-all">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+                <AlertTriangle size={16} />
+              </div>
+              <span className="text-xs font-mono font-bold text-gray-300 uppercase">Alertas Carteira</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-red-500/10 border border-red-500/20 p-2 rounded-xl text-center">
+              <span className="text-base font-mono font-black text-red-400 block">{clientAlerts.overdueRepurchaseCount}</span>
+              <span className="text-[9px] font-mono text-red-300 font-bold uppercase block">Recompra</span>
+            </div>
+
+            <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl text-center">
+              <span className="text-base font-mono font-black text-amber-400 block">{clientAlerts.inactRiskList.length}</span>
+              <span className="text-[9px] font-mono text-amber-300 font-bold uppercase block">Inativação</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] font-mono pt-1 border-t border-[var(--line)]">
+            <span className="text-gray-400">Inativação:</span>
+            <span className="font-bold text-amber-400">30 a 90 dias sem contato</span>
           </div>
         </div>
 
       </div>
 
       {/* ========================================================
-          3. MAIN 2-COLUMN GRID (AGENDA & CLIENTES vs FUNIL)
+          3. GRADE PRINCIPAL DE 2 COLUNAS (COMPACTA)
          ======================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         
-        {/* LEFT COLUMN: Agenda Comercial & Risco de Inativação */}
-        <div className="flex flex-col gap-6">
+        {/* COLUNA ESQUERDA: Agenda Comercial & Alerta de Inativação */}
+        <div className="flex flex-col gap-5">
           
           {/* Section 1: Agenda Comercial do Dia */}
-          <div className="card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col gap-4 shadow-xl">
-            <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
+          <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-lg">
+            <div className="flex items-center justify-between border-b border-[var(--line)] pb-2.5">
               <div className="flex items-center gap-2">
-                <CalendarIcon size={18} className="text-[var(--lime)]" />
-                <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider">
+                <CalendarIcon size={16} className="text-[var(--lime)]" />
+                <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider">
                   Agenda de Hoje ({todayAppointments.length})
                 </h3>
               </div>
@@ -593,24 +694,24 @@ export default function DiarioDeBordoPage() {
                 className="text-xs font-mono font-bold text-[var(--lime)] hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <span>Ver Grade Completa</span>
-                <ChevronRight size={14} />
+                <ChevronRight size={13} />
               </button>
             </div>
 
             {todayAppointments.length === 0 ? (
-              <div className="py-8 text-center flex flex-col items-center gap-2 bg-black/20 rounded-xl border border-[var(--line)]/50">
-                <CheckCircle2 size={28} className="text-gray-500" />
+              <div className="py-6 text-center flex flex-col items-center gap-2 bg-black/20 rounded-xl border border-[var(--line)]/50">
+                <CheckCircle2 size={24} className="text-gray-500" />
                 <p className="text-xs font-mono text-gray-400">Nenhum compromisso agendado para hoje.</p>
                 <button
                   onClick={() => setCalendarOpen(true)}
-                  className="btn btn-secondary text-xs py-1.5 px-3 mt-1 font-bold cursor-pointer"
+                  className="btn btn-secondary text-xs py-1.5 px-3 font-bold cursor-pointer"
                 >
                   <Plus size={14} />
                   <span>Agendar Compromisso</span>
                 </button>
               </div>
             ) : (
-              <div className="flex flex-col gap-2.5 max-h-[320px] overflow-y-auto custom-scrollbar">
+              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar">
                 {todayAppointments.map(apt => (
                   <div
                     key={apt.id}
@@ -623,14 +724,14 @@ export default function DiarioDeBordoPage() {
                     <div className="flex items-center gap-3 min-w-0">
                       <button
                         onClick={() => handleToggleAptDone(apt)}
-                        className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors cursor-pointer ${
+                        className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors cursor-pointer shrink-0 ${
                           apt.status === 'concluido'
                             ? 'bg-[var(--lime)] border-[var(--lime)] text-black'
                             : 'border-gray-600 hover:border-[var(--lime)]'
                         }`}
                         title={apt.status === 'concluido' ? 'Marcar como pendente' : 'Concluir compromisso'}
                       >
-                        {apt.status === 'concluido' && <Check size={14} strokeWidth={3} />}
+                        {apt.status === 'concluido' && <Check size={13} strokeWidth={3} />}
                       </button>
 
                       <div className="min-w-0">
@@ -655,15 +756,15 @@ export default function DiarioDeBordoPage() {
             )}
           </div>
 
-          {/* Section 2: Alerta de Inativação Iminente (30 a 90 Dias) */}
-          <div className="card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col gap-4 shadow-xl">
-            <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
+          {/* Section 2: Alerta de Inativação (30 a 90 Dias) */}
+          <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-lg">
+            <div className="flex items-center justify-between border-b border-[var(--line)] pb-2.5">
               <div className="flex items-center gap-2">
-                <Clock size={18} className="text-amber-400" />
-                <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <Clock size={16} className="text-amber-400" />
+                <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                   <span>Risco de Inativação</span>
                   <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400">
-                    30 a 90 dias sem contato ({clientAlerts.inactRiskList.length})
+                    30 a 90d sem contato ({clientAlerts.inactRiskList.length})
                   </span>
                 </h3>
               </div>
@@ -676,7 +777,7 @@ export default function DiarioDeBordoPage() {
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto custom-scrollbar">
+              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar">
                 {clientAlerts.inactRiskList.slice(0, 6).map(({ contact, days, lastDateStr }) => (
                   <div
                     key={contact.id}
@@ -710,16 +811,16 @@ export default function DiarioDeBordoPage() {
 
         </div>
 
-        {/* RIGHT COLUMN: Funil de Negociações & Parados */}
-        <div className="flex flex-col gap-6">
+        {/* COLUNA DIREITA: Negócios do Pipeline & Funil */}
+        <div className="flex flex-col gap-5">
           
-          {/* Section 3: Negócios Parados há mais de 7 Dias */}
-          <div className="card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col gap-4 shadow-xl">
-            <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
+          {/* Section 3: Negócios Estagnados (>7 dias) */}
+          <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-lg">
+            <div className="flex items-center justify-between border-b border-[var(--line)] pb-2.5">
               <div className="flex items-center gap-2">
-                <KanbanSquare size={18} className="text-purple-400" />
-                <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                  <span>Negócios Estagnados (&gt;7 dias)</span>
+                <KanbanSquare size={16} className="text-purple-400" />
+                <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <span>Negócios Parados (&gt;7 dias)</span>
                   <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400">
                     {dealAlerts.stagnantDeals.length}
                   </span>
@@ -734,7 +835,7 @@ export default function DiarioDeBordoPage() {
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto custom-scrollbar">
+              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar">
                 {dealAlerts.stagnantDeals.slice(0, 6).map(({ deal, days }) => (
                   <div
                     key={deal.id}
@@ -766,29 +867,50 @@ export default function DiarioDeBordoPage() {
             )}
           </div>
 
-          {/* Section 4: Resumo do Funil de Vendas */}
-          <div className="card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col gap-4 shadow-xl">
-            <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
+          {/* Section 4: Visão Geral do Funil de Negócios */}
+          <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-lg">
+            <div className="flex items-center justify-between border-b border-[var(--line)] pb-2.5">
               <div className="flex items-center gap-2">
-                <TrendingUp size={18} className="text-[var(--lime)]" />
-                <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider">
-                  Visão Geral do Funil
+                <TrendingUp size={16} className="text-[var(--lime)]" />
+                <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider">
+                  Visão Geral do Funil de Negócios
                 </h3>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
               <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
-                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Negócios Ativos</span>
-                <span className="text-lg font-mono font-bold text-white block mt-1">
-                  {filteredDeals.filter(d => d.stage !== 'fechamento' && d.stage !== 'perdido').length}cards
+                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Leads</span>
+                <span className="text-lg font-mono font-bold text-white block mt-0.5">
+                  {filteredDeals.filter(d => d.stage === 'leads').length} cards
                 </span>
               </div>
 
               <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
-                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Orçamentos Pendentes</span>
-                <span className="text-lg font-mono font-bold text-[var(--lime)] block mt-1">
-                  {dealAlerts.pendingBriefingCount} em orçamento
+                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Visita</span>
+                <span className="text-lg font-mono font-bold text-sky-400 block mt-0.5">
+                  {filteredDeals.filter(d => d.stage === 'visita').length} cards
+                </span>
+              </div>
+
+              <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
+                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Briefing/Orçamento</span>
+                <span className="text-lg font-mono font-bold text-[var(--lime)] block mt-0.5">
+                  {filteredDeals.filter(d => d.stage === 'briefing' || d.stage === 'aprovacao').length} cards
+                </span>
+              </div>
+
+              <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
+                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Proposta</span>
+                <span className="text-lg font-mono font-bold text-amber-400 block mt-0.5">
+                  {filteredDeals.filter(d => d.stage === 'fechamento' && !d.closed_at).length} cards
+                </span>
+              </div>
+
+              <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-emerald-500/20 col-span-2 sm:col-span-2">
+                <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold">Fechados no Mês</span>
+                <span className="text-lg font-mono font-bold text-emerald-400 block mt-0.5">
+                  {filteredDeals.filter(d => d.stage === 'fechamento').length} negócios ({formatCurrency(pacingMetrics.totalSalesAchieved)})
                 </span>
               </div>
             </div>
