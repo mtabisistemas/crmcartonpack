@@ -2314,8 +2314,8 @@ export default function ContactsPage() {
         </div>
       ) : (
         /* ── ADMIN / MANAGER COMPACT TABLE VIEW ── */
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto max-h-[76vh] overflow-y-auto custom-scrollbar">
+        <div className="card overflow-hidden flex flex-col flex-1">
+          <div className="overflow-x-auto flex-1 overflow-y-auto custom-scrollbar">
             <table className="w-full text-left border-collapse text-xs">
               <thead className="sticky top-0 z-10 bg-[var(--charcoal)] shadow-sm">
                 <tr className="border-b border-[var(--line)] bg-[var(--charcoal)] font-mono text-[9px] text-[var(--gray)] uppercase tracking-wider">
@@ -2451,37 +2451,37 @@ export default function ContactsPage() {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
 
-      {/* ── PAGINATION CONTROLS BAR ── */}
-      {filteredContacts.length > 0 && (
-        <div className="card py-1.5 px-3 sm:px-4 flex flex-col sm:flex-row items-center justify-between gap-2 border border-[var(--line)] bg-[var(--card)] shrink-0 mt-auto shadow-md">
-          <div className="text-[11px] font-mono text-[var(--gray2)]">
-            Exibindo <span className="font-bold text-[var(--white)]">{(currentPage - 1) * itemsPerPage + 1}</span> a <span className="font-bold text-[var(--white)]">{Math.min(currentPage * itemsPerPage, filteredContacts.length)}</span> de <span className="font-bold text-[var(--white)]">{filteredContacts.length}</span> clientes
-          </div>
+          {/* ── PAGINATION CONTROLS BAR INTEGRATED AT BOTTOM OF TABLE CARD ── */}
+          {filteredContacts.length > 0 && (
+            <div className="py-2 px-4 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-[var(--line)] bg-[var(--charcoal)]/80 shrink-0">
+              <div className="text-[11px] font-mono text-[var(--gray2)]">
+                Exibindo <span className="font-bold text-[var(--white)]">{(currentPage - 1) * itemsPerPage + 1}</span> a <span className="font-bold text-[var(--white)]">{Math.min(currentPage * itemsPerPage, filteredContacts.length)}</span> de <span className="font-bold text-[var(--white)]">{filteredContacts.length}</span> clientes
+              </div>
 
-          <div className="flex items-center gap-1.5">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              className="btn btn-secondary text-[11px] px-2.5 py-1 rounded-md disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed font-mono font-bold"
-            >
-              &larr; Anterior
-            </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  className="btn btn-secondary text-[11px] px-2.5 py-1 rounded-md disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed font-mono font-bold"
+                >
+                  &larr; Anterior
+                </button>
 
-            <span className="text-[11px] font-mono font-bold text-[var(--lime)] px-2">
-              Página {currentPage} de {totalPages}
-            </span>
+                <span className="text-[11px] font-mono font-bold text-[var(--lime)] px-2">
+                  Página {currentPage} de {totalPages}
+                </span>
 
-            <button
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              className="btn btn-secondary text-[11px] px-2.5 py-1 rounded-md disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed font-mono font-bold"
-            >
-              Próxima &rarr;
-            </button>
-          </div>
+                <button
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  className="btn btn-secondary text-[11px] px-2.5 py-1 rounded-md disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed font-mono font-bold"
+                >
+                  Próxima &rarr;
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

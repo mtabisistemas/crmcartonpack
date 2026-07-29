@@ -438,7 +438,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-6">
+    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-3.5">
       
       {/* Toast Notification */}
       {toastMessage && (
