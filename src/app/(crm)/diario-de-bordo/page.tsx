@@ -480,12 +480,12 @@ export default function DiarioDeBordoPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--black)] text-[var(--white)] p-4 sm:p-6 lg:p-8 gap-6 animate-fade-in pb-24 lg:pb-12 max-w-[1600px] mx-auto w-full">
+    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-5 max-w-[1400px] mx-auto px-4 sm:px-6 py-6 pb-24 select-none overflow-y-auto custom-scrollbar bg-[var(--black)] text-[var(--white)]">
       
       {/* ========================================================
-          1. CABEÇALHO DE BOAS-VINDAS (MANTIDO EXACTAMENTE O NOVO)
+          1. CABEÇALHO DE BOAS-VINDAS
          ======================================================== */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden shrink-0">
         
         <div className="flex flex-col gap-1 z-10">
           <div className="flex items-center gap-2">
@@ -498,7 +498,7 @@ export default function DiarioDeBordoPage() {
             </span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-display font-black text-[var(--white)] tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-display font-black text-[var(--white)] tracking-tight flex items-center gap-2 mt-0.5">
             <span>{greetingTime}, <strong className="text-[var(--lime)] font-black">{currentUser?.name || 'Vendedor'}</strong>!</span>
             <span className="text-xl">☀️</span>
           </h1>
