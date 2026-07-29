@@ -294,7 +294,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
       {/* Calendar Window Container */}
-      <div className="card w-full max-w-6xl h-[92vh] flex flex-col bg-[#111214] border border-[var(--line)] rounded-2xl shadow-2xl overflow-hidden relative">
+      <div className="card w-full max-w-6xl h-[92vh] flex flex-col bg-[var(--card)] border border-[var(--line)] rounded-2xl shadow-2xl overflow-hidden relative">
         
         {/* Header Bar */}
         <div className="p-3 sm:px-6 border-b border-[var(--line)] flex flex-wrap items-center justify-between gap-3 bg-[var(--card)] shrink-0">
@@ -311,21 +311,21 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
             <div className="flex items-center gap-1">
               <button
                 onClick={prevPeriod}
-                className="p-1.5 rounded-lg text-gray-300 hover:text-white bg-[var(--charcoal)] border border-[var(--line)] cursor-pointer hover:border-[var(--lime)] transition-colors"
+                className="p-1.5 rounded-lg text-[var(--white)] hover:text-[var(--lime)] bg-[var(--charcoal)] border border-[var(--line)] cursor-pointer hover:border-[var(--lime)] transition-colors"
                 title="Anterior"
               >
                 <ChevronLeft size={18} />
               </button>
               <button
                 onClick={nextPeriod}
-                className="p-1.5 rounded-lg text-gray-300 hover:text-white bg-[var(--charcoal)] border border-[var(--line)] cursor-pointer hover:border-[var(--lime)] transition-colors"
+                className="p-1.5 rounded-lg text-[var(--white)] hover:text-[var(--lime)] bg-[var(--charcoal)] border border-[var(--line)] cursor-pointer hover:border-[var(--lime)] transition-colors"
                 title="Próximo"
               >
                 <ChevronRight size={18} />
               </button>
             </div>
 
-            <h2 className="font-display text-base sm:text-xl font-bold text-white tracking-tight ml-2">
+            <h2 className="font-display text-base sm:text-xl font-bold text-[var(--white)] tracking-tight ml-2">
               {getHeaderTitle()}
             </h2>
           </div>
@@ -338,8 +338,8 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                 onClick={() => { setViewMode('month'); setDayPopover(null); }}
                 className={`px-3 py-1 text-xs font-bold rounded-lg cursor-pointer transition-all ${
                   viewMode === 'month'
-                    ? 'bg-[var(--lime)] text-black shadow-md'
-                    : 'text-gray-400 hover:text-white'
+                    ? 'bg-[var(--lime)] text-black shadow-md font-black'
+                    : 'text-[var(--gray2)] hover:text-[var(--white)]'
                 }`}
               >
                 Mês
@@ -348,8 +348,8 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                 onClick={() => { setViewMode('week'); setDayPopover(null); }}
                 className={`px-3 py-1 text-xs font-bold rounded-lg cursor-pointer transition-all ${
                   viewMode === 'week'
-                    ? 'bg-[var(--lime)] text-black shadow-md'
-                    : 'text-gray-400 hover:text-white'
+                    ? 'bg-[var(--lime)] text-black shadow-md font-black'
+                    : 'text-[var(--gray2)] hover:text-[var(--white)]'
                 }`}
               >
                 Semana
@@ -370,7 +370,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-[var(--line)] transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-[var(--gray2)] hover:text-[var(--white)] hover:bg-[var(--line)] transition-colors cursor-pointer"
             >
               <X size={20} />
             </button>
@@ -407,10 +407,10 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                       key={idx}
                       className={`p-1.5 rounded-xl border flex flex-col justify-start gap-1 overflow-hidden transition-all relative ${
                         cell.isToday
-                          ? 'bg-lime-950/20 border-[var(--lime)]/70 shadow-[0_0_15px_rgba(180,217,50,0.15)]'
+                          ? 'bg-lime-500/10 border-[var(--lime)] shadow-[0_0_15px_rgba(180,217,50,0.15)]'
                           : cell.isCurrentMonth
-                          ? 'bg-[var(--card)] border-[var(--line)]/60 hover:border-[var(--line)]'
-                          : 'bg-black/30 border-[var(--line)]/20 opacity-35'
+                          ? 'bg-[var(--card)] border-[var(--line)] hover:border-[var(--lime)]/50'
+                          : 'bg-[var(--charcoal)]/40 border-[var(--line)]/40 opacity-40'
                       }`}
                     >
                       {/* Day Number Header */}
@@ -429,7 +429,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                           className={`text-xs font-mono font-bold rounded-full w-6 h-6 flex items-center justify-center transition-colors ${
                             cell.isToday
                               ? 'bg-[var(--lime)] text-black font-black'
-                              : 'text-gray-200 hover:bg-white/10'
+                              : 'text-[var(--white)] hover:bg-[var(--charcoal)]'
                           }`}
                         >
                           {cell.dayNum}
@@ -442,11 +442,11 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                           <button
                             key={apt.id}
                             onClick={() => handleOpenAptDetails(apt)}
-                            className="w-full text-left text-[10px] py-1 px-1.5 rounded-md border border-[var(--lime)]/30 bg-[var(--lime)]/15 text-[var(--lime)] font-mono truncate transition-all hover:bg-[var(--lime)]/25 hover:border-[var(--lime)]/60 cursor-pointer flex items-center gap-1.5"
+                            className="w-full text-left text-[10px] py-1 px-1.5 rounded-md border border-[var(--lime)]/40 bg-[var(--lime)]/15 text-[var(--white)] font-mono truncate transition-all hover:bg-[var(--lime)]/30 hover:border-[var(--lime)] cursor-pointer flex items-center gap-1.5"
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-[var(--lime)] shrink-0" />
-                            <span className="truncate font-semibold">
-                              <strong className="font-bold">{apt.time}</strong> {apt.company_name || apt.title}
+                            <span className="truncate font-semibold text-[var(--white)]">
+                              <strong className="font-bold text-[var(--lime)]">{apt.time}</strong> {apt.company_name || apt.title}
                             </span>
                           </button>
                         ))}
@@ -460,7 +460,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                               dayName: cell.dayName,
                               apts: cell.apts
                             })}
-                            className="text-[10px] font-bold text-[var(--lime)] hover:text-white hover:bg-[var(--lime)]/20 px-1.5 py-0.5 rounded transition-colors text-left cursor-pointer flex items-center gap-1"
+                            className="text-[10px] font-bold text-[var(--lime)] hover:text-[var(--white)] hover:bg-[var(--lime)]/20 px-1.5 py-0.5 rounded transition-colors text-left cursor-pointer flex items-center gap-1"
                           >
                             <span>Mais {extraCount}</span>
                           </button>
@@ -499,7 +499,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                         <span className={`text-sm font-mono font-bold w-7 h-7 rounded-full flex items-center justify-center mt-0.5 ${
                           isToday
                             ? 'bg-[var(--lime)] text-black font-black shadow-[0_0_10px_rgba(180,217,50,0.4)]'
-                            : 'text-white'
+                            : 'text-[var(--white)]'
                         }`}>
                           {dNum}
                         </span>
@@ -558,9 +558,9 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                                   handleOpenAptDetails(apt)
                                 }}
                                 style={{ top: `${topPx}px`, height: `${heightPx}px` }}
-                                className="absolute left-0.5 right-0.5 z-10 bg-[var(--lime)]/20 border-l-4 border-[var(--lime)] text-[var(--lime)] p-1.5 rounded-md text-[11px] font-mono text-left shadow-md hover:brightness-125 transition-all cursor-pointer overflow-hidden flex flex-col justify-between"
+                                className="absolute left-0.5 right-0.5 z-10 bg-[var(--lime)]/15 border-l-4 border-[var(--lime)] p-1.5 rounded-md text-[11px] font-mono text-left shadow-md hover:bg-[var(--lime)]/25 transition-all cursor-pointer overflow-hidden flex flex-col justify-between"
                               >
-                                <div className="font-bold truncate text-white leading-tight">
+                                <div className="font-bold truncate text-[var(--white)] leading-tight">
                                   {apt.title}
                                 </div>
                                 <div className="text-[10px] text-[var(--lime)] truncate font-semibold">
@@ -587,7 +587,7 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
            ======================================================== */}
         {dayPopover && (
           <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-            <div className="card w-full max-w-sm bg-[#181a1d] border border-[var(--line)] rounded-2xl p-4 shadow-2xl flex flex-col gap-3">
+            <div className="card w-full max-w-sm bg-[var(--card)] border border-[var(--line)] rounded-2xl p-4 shadow-2xl flex flex-col gap-3">
               
               {/* Popover Header */}
               <div className="flex items-center justify-between border-b border-[var(--line)] pb-2.5">
@@ -595,14 +595,14 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                   <span className="text-xs font-mono font-bold text-[var(--gray2)] uppercase">
                     {dayPopover.dayName}
                   </span>
-                  <span className="text-xl font-mono font-bold text-white bg-[var(--lime)] text-black w-8 h-8 rounded-full flex items-center justify-center">
+                  <span className="text-xl font-mono font-bold text-[var(--white)] bg-[var(--lime)] text-black w-8 h-8 rounded-full flex items-center justify-center">
                     {dayPopover.dayNum}
                   </span>
                 </div>
 
                 <button
                   onClick={() => setDayPopover(null)}
-                  className="p-1 text-gray-400 hover:text-white rounded cursor-pointer"
+                  className="p-1 text-[var(--gray2)] hover:text-[var(--white)] rounded cursor-pointer"
                 >
                   <X size={18} />
                 </button>
@@ -614,12 +614,12 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                   <button
                     key={apt.id}
                     onClick={() => handleOpenAptDetails(apt)}
-                    className="w-full text-left p-2.5 rounded-xl border border-[var(--lime)]/30 bg-[var(--lime)]/10 hover:bg-[var(--lime)]/20 text-white transition-all cursor-pointer flex items-center justify-between gap-2"
+                    className="w-full text-left p-2.5 rounded-xl border border-[var(--lime)]/30 bg-[var(--lime)]/10 hover:bg-[var(--lime)]/20 text-[var(--white)] transition-all cursor-pointer flex items-center justify-between gap-2"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="w-2.5 h-2.5 rounded-full bg-[var(--lime)] shrink-0" />
                       <div className="truncate">
-                        <div className="text-xs font-bold text-white truncate">{apt.title}</div>
+                        <div className="text-xs font-bold text-[var(--white)] truncate">{apt.title}</div>
                         {apt.company_name && (
                           <div className="text-[10px] text-[var(--lime)] font-mono truncate">{apt.company_name}</div>
                         )}

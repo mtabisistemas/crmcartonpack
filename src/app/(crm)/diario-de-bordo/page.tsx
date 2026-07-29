@@ -743,13 +743,13 @@ export default function DiarioDeBordoPage() {
 
               {/* Campo de Busca Rápida no Popover */}
               <div className="relative">
-                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--gray2)]" />
+                <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--gray2)] pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Buscar por Empresa (Nome Fantasia), Contato ou Rep..."
+                  placeholder="Buscar cliente..."
                   value={alertSearchTerm}
                   onChange={(e) => setAlertSearchTerm(e.target.value)}
-                  className="input text-xs pl-8 py-1.5 w-full bg-[var(--charcoal)] border-[var(--line)] text-[var(--white)] focus:border-[var(--lime)]"
+                  className="input text-xs pl-9 pr-3 py-1.5 w-full bg-[var(--charcoal)] border border-[var(--line)] text-[var(--white)] focus:border-[var(--lime)] outline-none"
                 />
               </div>
 
