@@ -16,6 +16,7 @@ import {
   Award,
   ToggleLeft,
   ToggleRight,
+  GripVertical,
   X
 } from 'lucide-react'
 import { UserGoal, LossReason, DEFAULT_LOSS_REASONS } from '@/types'
@@ -63,6 +64,9 @@ export default function MetasPage() {
   const [editingReason, setEditingReason] = useState<LossReason | null>(null)
   const [reasonLabel, setReasonLabel] = useState('')
   const [reasonDesc, setReasonDesc] = useState('')
+  const [reasonActive, setReasonActive] = useState(true)
+  const [reasonDefinitive, setReasonDefinitive] = useState(true)
+  const [draggedReasonIndex, setDraggedReasonIndex] = useState<number | null>(null)
 
   // Toast e Mensagem de Sucesso
   const [toastMessage, setToastMessage] = useState('')
@@ -216,7 +220,13 @@ export default function MetasPage() {
 
     if (editingReason) {
       const updated = lossReasons.map(r => 
-        r.id === editingReason.id ? { ...r, label: reasonLabel.trim(), description: reasonDesc.trim() } : r
+        r.id === editingReason.id ? { 
+          ...r, 
+          label: reasonLabel.trim(), 
+          description: reasonDesc.trim(),
+          active: reasonActive,
+          isDefinitive: reasonDefinitive
+        } : r
       )
       handleSaveLossReasons(updated)
       showToast('Motivo de perda atualizado!')
@@ -225,7 +235,8 @@ export default function MetasPage() {
         id: Date.now().toString(),
         label: reasonLabel.trim(),
         description: reasonDesc.trim(),
-        active: true,
+        active: reasonActive,
+        isDefinitive: reasonDefinitive,
         order: lossReasons.length + 1
       }
       const updated = [...lossReasons, newReason]
@@ -239,16 +250,32 @@ export default function MetasPage() {
     setReasonDesc('')
   }
 
-  const handleToggleReasonActive = (id: string) => {
-    const updated = lossReasons.map(r => r.id === id ? { ...r, active: !r.active } : r)
-    handleSaveLossReasons(updated)
-    showToast('Status do motivo alterado!')
-  }
-
   const handleDeleteReason = (id: string) => {
     const updated = lossReasons.filter(r => r.id !== id)
     handleSaveLossReasons(updated)
     showToast('Motivo de perda excluído!')
+  }
+
+  // HTML5 Drag and Drop handlers for reordering reasons
+  const handleDragStartReason = (e: React.DragEvent, index: number) => {
+    e.dataTransfer.setData('text/plain', index.toString())
+    setDraggedReasonIndex(index)
+  }
+
+  const handleDragOverReason = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const handleDropReason = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault()
+    if (draggedReasonIndex === null || draggedReasonIndex === dropIndex) return
+    const updated = [...lossReasons]
+    const [moved] = updated.splice(draggedReasonIndex, 1)
+    updated.splice(dropIndex, 0, moved)
+    updated.forEach((r, i) => { r.order = i + 1 })
+    handleSaveLossReasons(updated)
+    setDraggedReasonIndex(null)
+    showToast('Ordem dos motivos atualizada!')
   }
 
   const showToast = (msg: string) => {
@@ -591,7 +618,7 @@ export default function MetasPage() {
                 <span>Cadastro de Motivos de Perda de Oportunidades</span>
               </h3>
               <p className="text-xs font-mono text-[var(--gray2)] mt-0.5">
-                Defina os motivos obrigatórios exibidos quando um representante move um card para a etapa 'Perdido' no pipeline.
+                Arraste os cards para reordenar a sequência de motivos exibida no pipeline. Clique no card para editar.
               </p>
             </div>
 
@@ -600,6 +627,8 @@ export default function MetasPage() {
                 setEditingReason(null)
                 setReasonLabel('')
                 setReasonDesc('')
+                setReasonActive(true)
+                setReasonDefinitive(true)
                 setShowReasonModal(true)
               }}
               className="btn btn-primary text-xs py-2 px-4 flex items-center gap-2 cursor-pointer font-bold shadow-lg shrink-0"
@@ -609,68 +638,64 @@ export default function MetasPage() {
             </button>
           </div>
 
-          {/* Lista de Motivos */}
+          {/* Lista de Motivos de Perda (Arrastáveis & Clicáveis) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {lossReasons.map((reason, idx) => (
               <div 
                 key={reason.id} 
-                className={`card p-4 border transition-all flex flex-col justify-between gap-3 ${
+                draggable
+                onDragStart={(e) => handleDragStartReason(e, idx)}
+                onDragOver={handleDragOverReason}
+                onDrop={(e) => handleDropReason(e, idx)}
+                onClick={() => {
+                  setEditingReason(reason)
+                  setReasonLabel(reason.label)
+                  setReasonDesc(reason.description || '')
+                  setReasonActive(reason.active ?? true)
+                  setReasonDefinitive(reason.isDefinitive ?? true)
+                  setShowReasonModal(true)
+                }}
+                className={`card p-4 border transition-all flex flex-col justify-between gap-3 cursor-pointer group hover:border-[var(--lime)] hover:scale-[1.01] ${
+                  draggedReasonIndex === idx ? 'opacity-40 border-dashed border-[var(--lime)]' : ''
+                } ${
                   reason.active 
-                    ? 'bg-[var(--card)] border-[var(--line)] hover:border-red-500/40' 
-                    : 'bg-black/30 border-red-500/10 opacity-60'
+                    ? 'bg-[var(--card)] border-[var(--line)]' 
+                    : 'bg-black/40 border-red-500/20 opacity-70'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
+                    <div className="text-[var(--gray2)] group-hover:text-[var(--lime)] cursor-grab active:cursor-grabbing p-1 -ml-1">
+                      <GripVertical size={16} />
+                    </div>
                     <span className="text-[10px] font-mono text-[var(--gray2)] font-bold bg-[var(--charcoal)] px-2 py-0.5 rounded border border-[var(--line)]">
                       #{idx + 1}
                     </span>
-                    <h4 className="text-sm font-bold text-[var(--white)]">{reason.label}</h4>
+                    <h4 className="text-sm font-bold text-[var(--white)] group-hover:text-[var(--lime)] transition-colors">{reason.label}</h4>
                   </div>
-
-                  <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                    reason.active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                  }`}>
-                    {reason.active ? 'Ativo' : 'Inativo'}
-                  </span>
                 </div>
 
                 {reason.description && (
-                  <p className="text-xs text-[var(--gray)] font-mono line-clamp-2">
+                  <p className="text-xs text-[var(--gray)] font-mono line-clamp-2 pl-7">
                     "{reason.description}"
                   </p>
                 )}
 
-                <div className="border-t border-[var(--line)] pt-3 flex items-center justify-between text-xs font-mono">
-                  <button
-                    onClick={() => handleToggleReasonActive(reason.id)}
-                    className="text-[11px] text-[var(--gray2)] hover:text-[var(--white)] flex items-center gap-1.5 cursor-pointer"
-                  >
-                    {reason.active ? <ToggleRight className="text-emerald-400" size={16} /> : <ToggleLeft className="text-red-400" size={16} />}
-                    <span>{reason.active ? 'Desativar' : 'Ativar'}</span>
-                  </button>
+                {/* Badges de Status & Tipo de Perda */}
+                <div className="border-t border-[var(--line)]/60 pt-3 flex items-center justify-between text-xs font-mono">
+                  <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                    reason.active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                  }`}>
+                    {reason.active ? '🟢 Ativo' : '⚫ Inativo'}
+                  </span>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        setEditingReason(reason)
-                        setReasonLabel(reason.label)
-                        setReasonDesc(reason.description || '')
-                        setShowReasonModal(true)
-                      }}
-                      className="p-1.5 rounded-lg border border-[var(--line)] text-[var(--gray2)] hover:text-[var(--white)] hover:bg-[var(--charcoal)] transition-colors cursor-pointer"
-                      title="Editar"
-                    >
-                      <Edit2 size={13} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteReason(reason.id)}
-                      className="p-1.5 rounded-lg border border-[var(--line)] text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
-                      title="Excluir"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
+                  <span className={`text-[9px] font-mono font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
+                    reason.isDefinitive !== false 
+                      ? 'bg-red-500/15 text-red-400 border border-red-500/30' 
+                      : 'bg-amber-400/15 text-amber-300 border border-amber-400/30'
+                  }`}>
+                    {reason.isDefinitive !== false ? '🔴 Perda Definitiva' : '🔄 Perda Temporária'}
+                  </span>
                 </div>
               </div>
             ))}
@@ -688,6 +713,7 @@ export default function MetasPage() {
                 <span>{editingReason ? 'Editar Motivo de Perda' : 'Novo Motivo de Perda'}</span>
               </h3>
               <button
+                type="button"
                 onClick={() => setShowReasonModal(false)}
                 className="p-1 text-[var(--gray2)] hover:text-[var(--white)] transition-colors cursor-pointer"
               >
@@ -706,7 +732,7 @@ export default function MetasPage() {
                   placeholder="Ex: Preço alto / Orçamento estourado"
                   value={reasonLabel}
                   onChange={e => setReasonLabel(e.target.value)}
-                  className="w-full bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-[var(--white)] outline-none focus:border-[var(--lime)]"
+                  className="w-full bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-[var(--white)] outline-none focus:border-[var(--lime)] font-mono"
                 />
               </div>
 
@@ -719,24 +745,90 @@ export default function MetasPage() {
                   placeholder="Descreva quando esse motivo de perda deve ser selecionado pelos representantes..."
                   value={reasonDesc}
                   onChange={e => setReasonDesc(e.target.value)}
-                  className="w-full bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-3 py-2 text-xs text-[var(--white)] outline-none focus:border-[var(--lime)] resize-none"
+                  className="w-full bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-3 py-2 text-xs text-[var(--white)] outline-none focus:border-[var(--lime)] resize-none font-mono"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 border-t border-[var(--line)] pt-4 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowReasonModal(false)}
-                  className="btn btn-secondary text-xs py-2 px-4 cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary text-xs py-2 px-4 cursor-pointer font-bold"
-                >
-                  Salvar Motivo
-                </button>
+              {/* Toggles Grandes de Status & Perda Definitiva */}
+              <div className="flex flex-col gap-3.5 p-4 border border-[var(--line)] rounded-xl bg-[var(--card2)]">
+                
+                {/* Toggle 1: Status (Ativo / Inativo) */}
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-[var(--white)] block">Status do Motivo</span>
+                    <span className="text-[10px] text-[var(--gray2)] font-mono">
+                      {reasonActive ? '🟢 Motivo ativo (visível no pipeline)' : '⚫ Motivo desativado (oculto no pipeline)'}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setReasonActive(v => !v)}
+                    className={`w-14 h-7 rounded-full p-1 transition-colors cursor-pointer shrink-0 flex items-center ${
+                      reasonActive ? 'bg-emerald-500 justify-end' : 'bg-gray-700 justify-start'
+                    }`}
+                  >
+                    <div className="w-5 h-5 rounded-full bg-white shadow-md transition-transform" />
+                  </button>
+                </div>
+
+                <div className="border-t border-[var(--line)]/60 pt-3">
+                  {/* Toggle 2: Perda Definitiva / Temporária */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs font-bold text-[var(--white)] block">Tipo de Perda</span>
+                      <span className="text-[10px] text-[var(--gray2)] font-mono">
+                        {reasonDefinitive ? '🔴 Perda Definitiva (negócio encerrado)' : '🔄 Perda Temporária (oportunidade de retorno)'}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setReasonDefinitive(v => !v)}
+                      className={`w-14 h-7 rounded-full p-1 transition-colors cursor-pointer shrink-0 flex items-center ${
+                        reasonDefinitive ? 'bg-red-500 justify-end' : 'bg-amber-500 justify-start'
+                      }`}
+                    >
+                      <div className="w-5 h-5 rounded-full bg-white shadow-md transition-transform" />
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Rodapé do Modal */}
+              <div className="flex items-center justify-between border-t border-[var(--line)] pt-4 mt-2">
+                {editingReason ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm(`Tem certeza que deseja excluir o motivo "${editingReason.label}"?`)) {
+                        handleDeleteReason(editingReason.id)
+                        setShowReasonModal(false)
+                      }
+                    }}
+                    className="p-2 px-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 flex items-center gap-1.5 font-bold transition-colors cursor-pointer text-[11px]"
+                  >
+                    <Trash2 size={13} />
+                    <span>Excluir</span>
+                  </button>
+                ) : <div />}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowReasonModal(false)}
+                    className="btn btn-secondary text-xs py-2 px-4 cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary text-xs py-2 px-4 cursor-pointer font-bold"
+                  >
+                    Salvar Motivo
+                  </button>
+                </div>
               </div>
             </form>
           </div>
