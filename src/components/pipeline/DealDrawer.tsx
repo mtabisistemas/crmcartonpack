@@ -591,8 +591,8 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       <div className={`drawer-container transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         
         {/* Drawer Header */}
-        <div className="p-5 border-b border-[var(--line)] flex items-center justify-between bg-[var(--card)]">
-          <div>
+        <div className="p-4 sm:p-5 border-b border-[var(--line)] flex items-center justify-between gap-3 bg-[var(--card)]">
+          <div className="min-w-0 flex-1">
             <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-full uppercase" style={{
               color: STAGE_CONFIG[stage].color,
               background: STAGE_CONFIG[stage].color + '15',
@@ -600,11 +600,24 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
             }}>
               {STAGE_CONFIG[stage].label}
             </span>
-            <h2 className="font-display text-lg text-[var(--white)] mt-1.5">{title}</h2>
+            <h2 className="font-display text-base sm:text-lg text-[var(--white)] mt-1 truncate">{title}</h2>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-[var(--white)] p-1 rounded-md hover:bg-[var(--line)] transition-colors">
-            <X size={18} />
-          </button>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowActivityModal(true)}
+              className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 font-bold border-[var(--lime)]/30 text-[var(--lime)] hover:bg-[var(--lime)]/10 transition-colors shadow-sm cursor-pointer"
+              title="Registrar Atividade Comercial"
+            >
+              <CheckCircle size={14} className="text-[var(--lime)]" />
+              <span className="hidden sm:inline">Registrar Atividade</span>
+              <span className="sm:hidden">Atividade</span>
+            </button>
+            <button onClick={onClose} className="text-gray-400 hover:text-[var(--white)] p-1.5 rounded-md hover:bg-[var(--line)] transition-colors">
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Tab Selection Row */}
@@ -959,7 +972,8 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     <label className="label">Data</label>
                     <input 
                       type="date" 
-                      className="input bg-[var(--charcoal)] text-white cursor-pointer"
+                      className="input bg-[var(--charcoal)] text-white cursor-pointer [color-scheme:dark]"
+                      style={{ colorScheme: 'dark' }}
                       required
                       value={aptDate}
                       onChange={(e) => setAptDate(e.target.value)}
@@ -970,7 +984,8 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     <label className="label">Hora</label>
                     <input 
                       type="time" 
-                      className="input bg-[var(--charcoal)] text-white cursor-pointer"
+                      className="input bg-[var(--charcoal)] text-white cursor-pointer [color-scheme:dark]"
+                      style={{ colorScheme: 'dark' }}
                       required
                       value={aptTime}
                       onChange={(e) => setAptTime(e.target.value)}

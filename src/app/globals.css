@@ -75,6 +75,30 @@ input, select, textarea {
   box-shadow: none !important;
 }
 
+/* Ajuste de visibilidade dos ícones de Data e Hora no modo escuro */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"] {
+  color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.9) sepia(100%) saturate(300%) hue-rotate(40deg);
+  cursor: pointer;
+  opacity: 0.9;
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  filter: invert(1) brightness(1.2);
+}
+
 input:focus,
 input:focus-visible,
 input:active {
