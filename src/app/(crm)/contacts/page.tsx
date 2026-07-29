@@ -659,7 +659,7 @@ function ContactDrawer({
                     value={representative} 
                     onChange={(e) => setRepresentative(e.target.value)}
                   >
-                    {representativesList.map(rep => (
+                    {Array.from(new Set([representative, ...representativesList].filter(Boolean))).map(rep => (
                       <option key={rep} value={rep}>{rep}</option>
                     ))}
                   </select>
@@ -2162,8 +2162,11 @@ export default function ContactsPage() {
         }
       }
 
-      const unique = Array.from(new Set(registeredNames.filter(Boolean)))
-      setRepresentativesList(unique)
+      // Also gather names from contacts list if available
+      const namesFromContacts = contacts.map(c => (c.representative || '').trim()).filter(Boolean)
+      const combined = Array.from(new Set([...registeredNames, ...namesFromContacts].filter(Boolean)))
+
+      setRepresentativesList(combined)
     }
 
     fetchRegisteredUsers()

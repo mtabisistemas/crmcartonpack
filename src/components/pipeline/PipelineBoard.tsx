@@ -876,11 +876,14 @@ export function PipelineBoard() {
         }
       }
 
-      setRepresentativesList(Array.from(new Set(repsFromUsers.filter(Boolean))))
+      const repsFromDeals = deals.map(d => (d.assigned_to || d.contact?.representative || '').trim()).filter(Boolean)
+      const combined = Array.from(new Set([...repsFromUsers, ...repsFromDeals].filter(Boolean)))
+
+      setRepresentativesList(combined)
     }
 
     fetchUsers()
-  }, [])
+  }, [deals])
 
   // Filter deals based on search query, year, month, representative, and curve
   const filteredDeals = deals.filter(d => {

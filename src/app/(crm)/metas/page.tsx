@@ -88,12 +88,45 @@ export default function MetasPage() {
   // Toast e Mensagem de Sucesso
   const [toastMessage, setToastMessage] = useState('')
 
-  // Dias úteis calculados
+  // Mapa de Dias Úteis Customizados por Ano_Mês
+  const [customBusinessDaysMap, setCustomBusinessDaysMap] = useState<Record<string, number>>({})
+
+  const monthKey = `${selectedYear}_${selectedMonth}`
+
+  // Dias úteis calculados ou customizados
   const businessDays = useMemo(() => {
+    if (customBusinessDaysMap[monthKey] && customBusinessDaysMap[monthKey] > 0) {
+      return customBusinessDaysMap[monthKey]
+    }
     const y = parseInt(selectedYear, 10) || 2026
     const m = (parseInt(selectedMonth, 10) || 7) - 1
     return getBusinessDaysInMonth(y, m)
-  }, [selectedYear, selectedMonth])
+  }, [selectedYear, selectedMonth, customBusinessDaysMap, monthKey])
+
+  const handleUpdateBusinessDays = (rawVal: string) => {
+    const num = Math.max(1, parseInt(rawVal, 10) || 1)
+    setCustomBusinessDaysMap(prev => {
+      const updated = { ...prev, [monthKey]: num }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cp_crm_business_days', JSON.stringify(updated))
+      }
+      return updated
+    })
+  }
+
+  const isGestor = (currentUser?.role || '').toLowerCase() === 'gestor'
+
+  // Gestor só visualiza Vendedores, Representantes e outros Gestores (Oculta Administradores)
+  const visibleUsersForMetas = useMemo(() => {
+    return registeredUsers.filter(u => {
+      if (u.status === 'inativo') return false
+      const uRole = (u.role || '').toLowerCase()
+      if (isGestor && (uRole === 'admin' || uRole === 'administrador')) {
+        return false
+      }
+      return true
+    })
+  }, [registeredUsers, isGestor])
 
   // Verificação de Acesso (Somente Admin e Gestor)
   useEffect(() => {
@@ -146,12 +179,23 @@ export default function MetasPage() {
             setGoalsMap(json.goalsMap)
             if (typeof window !== 'undefined') localStorage.setItem('cp_crm_user_goals', JSON.stringify(json.goalsMap))
           }
+          if (json.customBusinessDaysMap) {
+            setCustomBusinessDaysMap(json.customBusinessDaysMap)
+            if (typeof window !== 'undefined') localStorage.setItem('cp_crm_business_days', JSON.stringify(json.customBusinessDaysMap))
+          }
           if (Array.isArray(json.lossReasons) && json.lossReasons.length > 0) {
             setLossReasons(json.lossReasons)
             if (typeof window !== 'undefined') localStorage.setItem('cp_crm_loss_reasons', JSON.stringify(json.lossReasons))
           }
         }
       } catch (e) {}
+
+      if (typeof window !== 'undefined') {
+        const rawBD = localStorage.getItem('cp_crm_business_days')
+        if (rawBD) {
+          try { setCustomBusinessDaysMap(JSON.parse(rawBD)) } catch (e) {}
+        }
+      }
 
       if (typeof window !== 'undefined' && (!lossReasons || lossReasons.length === 0)) {
         const rawReasons = localStorage.getItem('cp_crm_loss_reasons')
@@ -224,16 +268,17 @@ export default function MetasPage() {
   const handleSaveGoals = () => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('cp_crm_user_goals', JSON.stringify(goalsMap))
+      localStorage.setItem('cp_crm_business_days', JSON.stringify(customBusinessDaysMap))
       window.dispatchEvent(new Event('storage-goals-changed'))
       window.dispatchEvent(new Event('storage'))
     }
     fetch('/api/metas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'goals', payload: goalsMap })
+      body: JSON.stringify({ type: 'goals', payload: goalsMap, customBusinessDaysMap })
     }).catch(err => console.error('API save goals error:', err))
 
-    showToast('Metas salvas com sucesso!')
+    showToast('Metas e Dias Úteis salvos com sucesso!')
   }
 
   // Salvar Motivos de Perda
@@ -321,13 +366,13 @@ export default function MetasPage() {
     setTimeout(() => setToastMessage(''), 3500)
   }
 
-  // Totais da Equipe (Soma das Metas Individuais)
+  // Totais da Equipe (Soma das Metas Individuais dos usuários visíveis)
   const teamTotals = useMemo(() => {
     let salesSum = 0
     let visitsSum = 0
     let newClientsSum = 0
 
-    registeredUsers.forEach(u => {
+    visibleUsersForMetas.forEach(u => {
       const key = `${selectedYear}_${selectedMonth}_${u.id || u.name}`
       const g = goalsMap[key]
       if (g) {
@@ -338,7 +383,7 @@ export default function MetasPage() {
     })
 
     return { sales: salesSum, visits: visitsSum, newClients: newClientsSum }
-  }, [registeredUsers, goalsMap, selectedYear, selectedMonth])
+  }, [visibleUsersForMetas, goalsMap, selectedYear, selectedMonth])
 
   return (
     <div className="page-content animate-fade-in w-full h-full flex flex-col gap-5 max-w-[1400px] mx-auto px-4 sm:px-6 py-6 pb-24 select-none">
@@ -435,10 +480,20 @@ export default function MetasPage() {
                 </select>
               </div>
 
-              {/* Info Dias Úteis */}
-              <div className="px-3 py-1.5 rounded-xl bg-lime-500/10 border border-[var(--lime)]/20 text-[11px] font-mono text-[var(--lime)] font-bold flex items-center gap-1.5">
-                <Calendar size={13} />
-                <span>{businessDays} dias úteis no mês</span>
+              {/* Info & Edição Dias Úteis */}
+              <div className="px-3 py-1.5 rounded-xl bg-lime-500/10 border border-[var(--lime)]/30 text-[11px] font-mono text-[var(--lime)] font-bold flex items-center gap-2">
+                <Calendar size={13} className="shrink-0 text-[var(--lime)]" />
+                <span className="shrink-0">Dias úteis:</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={businessDays}
+                  onChange={e => handleUpdateBusinessDays(e.target.value)}
+                  className="w-12 bg-[var(--charcoal)] border border-[var(--lime)]/40 rounded px-1.5 py-0.5 text-center text-xs font-bold text-[var(--white)] outline-none focus:border-[var(--lime)] font-mono"
+                  title="Clique para editar os dias úteis deste mês"
+                />
+                <span className="text-[10px] text-[var(--gray2)] font-mono">dias</span>
               </div>
             </div>
 
@@ -528,14 +583,14 @@ export default function MetasPage() {
             <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
               <h3 className="text-sm font-bold text-[var(--white)] font-display flex items-center gap-2">
                 <Users size={16} className="text-[var(--lime)]" />
-                <span>Metas Individuais da Equipe Comercial ({registeredUsers.length} Usuários)</span>
+                <span>Metas Individuais da Equipe Comercial ({visibleUsersForMetas.length} Usuários)</span>
               </h3>
               <span className="text-[10px] font-mono text-[var(--gray2)] uppercase">
                 {MONTH_NAMES[parseInt(selectedMonth, 10) - 1]} / {selectedYear}
               </span>
             </div>
 
-            {registeredUsers.length === 0 ? (
+            {visibleUsersForMetas.length === 0 ? (
               <div className="p-8 text-center text-xs font-mono text-[var(--gray2)] border border-dashed border-[var(--line)] rounded-xl">
                 Nenhum usuário comercial ativo encontrado no cadastro.
               </div>
@@ -552,7 +607,7 @@ export default function MetasPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--line)]/50 text-xs">
-                    {registeredUsers.map(u => {
+                    {visibleUsersForMetas.map(u => {
                       const key = `${selectedYear}_${selectedMonth}_${u.id || u.name}`
                       const g = goalsMap[key] || { salesGoal: 30000, visitsGoal: 10, newClientsGoal: 2 }
 
