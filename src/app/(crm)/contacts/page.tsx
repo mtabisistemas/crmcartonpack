@@ -2133,12 +2133,18 @@ export default function ContactsPage() {
       try {
         const res = await fetch('/api/users')
         if (res.ok) {
-          const apiUsers = await res.json()
-          if (Array.isArray(apiUsers) && apiUsers.length > 0) {
-            registeredNames = apiUsers
+          const json = await res.json()
+          const list = json.users || (Array.isArray(json) ? json : [])
+          if (Array.isArray(list) && list.length > 0) {
+            registeredNames = list
               .filter((u: any) => u.status !== 'inativo')
-              .map((u: any) => u.name.trim())
+              .map((u: any) => (u.name || '').trim())
               .filter(Boolean)
+
+            // Update localStorage crm_users with true system users to purge obsolete mock names
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('crm_users', JSON.stringify(list))
+            }
           }
         }
       } catch (e) {}
@@ -2150,16 +2156,14 @@ export default function ContactsPage() {
             const parsed = JSON.parse(savedUsers)
             registeredNames = parsed
               .filter((u: any) => u.status !== 'inativo')
-              .map((u: any) => u.name.trim())
+              .map((u: any) => (u.name || '').trim())
               .filter(Boolean)
           } catch (e) {}
         }
       }
 
-      if (registeredNames.length > 0) {
-        const unique = Array.from(new Set(registeredNames))
-        setRepresentativesList(unique)
-      }
+      const unique = Array.from(new Set(registeredNames.filter(Boolean)))
+      setRepresentativesList(unique)
     }
 
     fetchRegisteredUsers()

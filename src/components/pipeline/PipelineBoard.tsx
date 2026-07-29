@@ -847,22 +847,40 @@ export function PipelineBoard() {
   const isRep = roleLower === 'representante' || roleLower === 'vendedor'
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedUsers = localStorage.getItem('crm_users')
+    const fetchUsers = async () => {
       let repsFromUsers: string[] = []
-      if (savedUsers) {
-        try {
-          const parsed = JSON.parse(savedUsers)
-          repsFromUsers = parsed
-            .filter((u: any) => u.role === 'representante' || u.role === 'vendedor')
-            .map((u: any) => u.name)
-        } catch (e) {}
+      try {
+        const res = await fetch('/api/users')
+        if (res.ok) {
+          const json = await res.json()
+          const list = json.users || (Array.isArray(json) ? json : [])
+          if (Array.isArray(list) && list.length > 0) {
+            repsFromUsers = list
+              .filter((u: any) => u.status !== 'inativo')
+              .map((u: any) => (u.name || '').trim())
+              .filter(Boolean)
+          }
+        }
+      } catch (e) {}
+
+      if (repsFromUsers.length === 0 && typeof window !== 'undefined') {
+        const savedUsers = localStorage.getItem('crm_users')
+        if (savedUsers) {
+          try {
+            const parsed = JSON.parse(savedUsers)
+            repsFromUsers = parsed
+              .filter((u: any) => u.status !== 'inativo')
+              .map((u: any) => (u.name || '').trim())
+              .filter(Boolean)
+          } catch (e) {}
+        }
       }
-      const repsFromDeals = Array.from(new Set(deals.map(d => d.assigned_to || d.contact?.representative).filter(Boolean)))
-      const combined = Array.from(new Set([...repsFromUsers, ...repsFromDeals].filter(Boolean))) as string[]
-      setRepresentativesList(combined)
+
+      setRepresentativesList(Array.from(new Set(repsFromUsers.filter(Boolean))))
     }
-  }, [deals])
+
+    fetchUsers()
+  }, [])
 
   // Filter deals based on search query, year, month, representative, and curve
   const filteredDeals = deals.filter(d => {
