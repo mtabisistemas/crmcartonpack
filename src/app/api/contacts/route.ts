@@ -8,7 +8,7 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false }
 })
 
-const isUUID = (str: string) =>
+const isUUID = (str: any) =>
   typeof str === 'string' &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
 
@@ -93,6 +93,14 @@ export async function POST(req: Request) {
       activities: contact.activities || existingNotesObj.activities || []
     }
 
+    // assigned_to MUST be a valid UUID or NULL (never a name string like "Maurício Maciel")
+    let validAssignedTo: string | null = null
+    if (isUUID(contact.assigned_to)) validAssignedTo = contact.assigned_to
+    else if (isUUID(contact.assignedTo)) validAssignedTo = contact.assignedTo
+    else if (isUUID(contact.representative)) validAssignedTo = contact.representative
+
+    const repName = contact.representative || contact.assigned_to || ''
+
     const payload: any = {
       id: targetUUID,
       name: contact.name || contact.company || 'Contato Sem Nome',
@@ -105,8 +113,8 @@ export async function POST(req: Request) {
       state: contact.state || '',
       status: contact.status || 'ativo',
       curve: contact.curve || 'C',
-      representative: contact.representative || '',
-      assigned_to: contact.representative || '',
+      representative: repName,
+      assigned_to: validAssignedTo,
       cnpj: contact.cnpj || '',
       address: contact.address || '',
       bairro: contact.bairro || '',

@@ -8,7 +8,7 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false }
 })
 
-const isUUID = (str: string) =>
+const isUUID = (str: any) =>
   typeof str === 'string' &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
 
@@ -52,9 +52,12 @@ export async function POST(req: Request) {
 
       let dealId = d.id
       if (!isUUID(dealId)) {
-        // Deterministic or random UUID for non-UUID string IDs
-        dealId = '00000000-0000-0000-0000-' + String(Date.now()).slice(-12).padStart(12, '0')
+        dealId = crypto.randomUUID()
       }
+
+      let validAssignedTo: string | null = null
+      if (isUUID(d.assigned_to)) validAssignedTo = d.assigned_to
+      else if (isUUID(d.assignedTo)) validAssignedTo = d.assignedTo
 
       return {
         id: dealId,
@@ -62,7 +65,7 @@ export async function POST(req: Request) {
         title: d.title || d.contact?.name || d.contact?.company || 'Novo Negócio',
         contact_id: finalContactId,
         stage: d.stage || 'leads',
-        assigned_to: d.assigned_to || d.representative || '',
+        assigned_to: validAssignedTo,
         estimated_value: parseFloat(d.estimated_value) || 0,
         final_value: parseFloat(d.final_value) || 0,
         lost_reason: d.lost_reason || '',
