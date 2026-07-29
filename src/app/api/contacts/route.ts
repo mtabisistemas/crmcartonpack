@@ -8,6 +8,10 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false }
 })
 
+const isUUID = (str: string) =>
+  typeof str === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
+
 export async function GET() {
   try {
     const { data, error } = await supabaseAdmin
@@ -29,8 +33,46 @@ export async function POST(req: Request) {
   try {
     const contact = await req.json()
 
-    if (!contact.id) {
-      return NextResponse.json({ success: false, error: 'ID do contato é obrigatório' }, { status: 400 })
+    if (!contact) {
+      return NextResponse.json({ success: false, error: 'Dados do contato são obrigatórios' }, { status: 400 })
+    }
+
+    // Resolve target UUID in Supabase
+    let targetUUID: string | null = isUUID(contact.id) ? contact.id : null
+
+    const cleanCnpj = (contact.cnpj || '').replace(/\D/g, '')
+    const cleanCompany = (contact.company || '').trim()
+    const cleanName = (contact.name || '').trim()
+
+    if (!targetUUID && cleanCnpj) {
+      const { data: byCnpj } = await supabaseAdmin
+        .from('contacts')
+        .select('id')
+        .ilike('cnpj', `%${cleanCnpj}%`)
+        .limit(1)
+      if (byCnpj && byCnpj.length > 0) targetUUID = byCnpj[0].id
+    }
+
+    if (!targetUUID && cleanCompany) {
+      const { data: byComp } = await supabaseAdmin
+        .from('contacts')
+        .select('id')
+        .ilike('company', cleanCompany)
+        .limit(1)
+      if (byComp && byComp.length > 0) targetUUID = byComp[0].id
+    }
+
+    if (!targetUUID && cleanName) {
+      const { data: byName } = await supabaseAdmin
+        .from('contacts')
+        .select('id')
+        .ilike('name', cleanName)
+        .limit(1)
+      if (byName && byName.length > 0) targetUUID = byName[0].id
+    }
+
+    if (!targetUUID) {
+      targetUUID = crypto.randomUUID()
     }
 
     // Unpack projection fields into notes JSON
@@ -52,11 +94,11 @@ export async function POST(req: Request) {
     }
 
     const payload: any = {
-      id: contact.id,
-      name: contact.name || contact.company,
-      company: contact.company || contact.name,
+      id: targetUUID,
+      name: contact.name || contact.company || 'Contato Sem Nome',
+      company: contact.company || contact.name || 'Empresa Sem Nome',
       role: contact.tradeName || contact.company || contact.name,
-      trade_name: contact.tradeName || contact.company,
+      trade_name: contact.tradeName || contact.company || null,
       phone: contact.phone || '',
       email: contact.email || '',
       city: contact.city || '',

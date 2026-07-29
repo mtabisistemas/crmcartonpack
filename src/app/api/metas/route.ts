@@ -8,16 +8,14 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false }
 })
 
-const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001'
-
 export async function GET() {
   try {
-    const { data: tenant, error } = await supabaseAdmin
+    const { data: tenants, error } = await supabaseAdmin
       .from('tenants')
       .select('*')
-      .eq('id', DEFAULT_TENANT_ID)
-      .single()
+      .limit(1)
 
+    const tenant = tenants?.[0]
     if (error || !tenant) {
       return NextResponse.json({ success: true, goalsMap: {}, lossReasons: [] })
     }
@@ -42,11 +40,13 @@ export async function POST(req: Request) {
   try {
     const { type, payload } = await req.json()
 
-    const { data: tenant } = await supabaseAdmin
+    const { data: tenants } = await supabaseAdmin
       .from('tenants')
       .select('*')
-      .eq('id', DEFAULT_TENANT_ID)
-      .single()
+      .limit(1)
+
+    const tenant = tenants?.[0]
+    const tenantId = tenant?.id || '00000000-0000-0000-0000-000000000001'
 
     const updateObj: any = {
       updated_at: new Date().toISOString()
@@ -60,13 +60,13 @@ export async function POST(req: Request) {
 
     if (!tenant) {
       await supabaseAdmin.from('tenants').insert([{
-        id: DEFAULT_TENANT_ID,
-        name: 'Carton PACK CRM',
-        slug: 'cartonpack',
+        id: tenantId,
+        name: 'Carton Pack',
+        slug: 'carton-pack',
         ...updateObj
       }])
     } else {
-      await supabaseAdmin.from('tenants').update(updateObj).eq('id', DEFAULT_TENANT_ID)
+      await supabaseAdmin.from('tenants').update(updateObj).eq('id', tenantId)
     }
 
     return NextResponse.json({ success: true })
