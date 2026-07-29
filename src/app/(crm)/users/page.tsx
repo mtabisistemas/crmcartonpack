@@ -289,7 +289,7 @@ export default function UsersPage() {
       }
     }
 
-    const formattedName = capitalizeName(name)
+    const formattedName = name.trim().toUpperCase()
     const derivedUser = username || deriveUsername(formattedName)
     const isCarton = !isRep && email.includes('@')
     const finalUsername = derivedUser
@@ -763,13 +763,14 @@ export default function UsersPage() {
                     <input
                       type="text"
                       required
-                      className="input w-full !pl-9"
-                      placeholder="Ex: Roberto Carlos"
+                      className="input w-full !pl-9 uppercase"
+                      placeholder="Ex: ROBERTO CARLOS"
                       value={name}
                       onChange={(e) => {
-                        setName(e.target.value)
+                        const upper = e.target.value.toUpperCase()
+                        setName(upper)
                         if (!editingUser) {
-                          setUsername(deriveUsername(e.target.value))
+                          setUsername(deriveUsername(upper))
                         }
                       }}
                     />

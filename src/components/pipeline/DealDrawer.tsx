@@ -248,19 +248,23 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const unitPrice = totalSuggested / quantity
 
   const handleSaveGeneral = async () => {
+    const upperTitle = title.trim().toUpperCase()
+    const upperContactName = contactName.trim().toUpperCase()
+    const upperCompany = (contactCompany || title).trim().toUpperCase()
+
     const updatedDeal: Deal = {
       ...deal,
-      title,
+      title: upperTitle,
       estimated_value: estimatedValue,
       stage,
       assigned_to: representative,
       contact: {
         ...deal.contact,
         id: deal.contact?.id ?? 'c-temp',
-        name: contactName,
+        name: upperContactName,
         phone: contactPhone,
         email: contactEmail,
-        company: contactCompany || title,
+        company: upperCompany,
         curve: curve,
         representative: representative,
         created_at: deal.contact?.created_at ?? new Date().toISOString(),
@@ -268,7 +272,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       }
     }
 
-    const companyToFind = (contactCompany || title || '').trim()
+    const companyToFind = upperCompany
 
     if (companyToFind) {
       // 1. Sincroniza cache local em crm_contacts
@@ -515,9 +519,9 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                   <label className="label">Título da Oportunidade</label>
                   <input 
                     type="text" 
-                    className="input" 
+                    className="input uppercase" 
                     value={title} 
-                    onChange={(e) => setTitle(e.target.value)}
+                    onChange={(e) => setTitle(e.target.value.toUpperCase())}
                   />
                 </div>
 
@@ -564,9 +568,9 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     <User size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                     <input 
                       type="text" 
-                      className="input w-full !pl-9" 
+                      className="input w-full !pl-9 uppercase" 
                       value={contactName} 
-                      onChange={(e) => setContactName(e.target.value)}
+                      onChange={(e) => setContactName(e.target.value.toUpperCase())}
                     />
                   </div>
                 </div>
@@ -577,9 +581,9 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     <Building size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                     <input 
                       type="text" 
-                      className="input w-full !pl-9" 
+                      className="input w-full !pl-9 uppercase" 
                       value={contactCompany} 
-                      onChange={(e) => setContactCompany(e.target.value)}
+                      onChange={(e) => setContactCompany(e.target.value.toUpperCase())}
                     />
                   </div>
                 </div>

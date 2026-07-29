@@ -377,10 +377,13 @@ function NewDealModal({
       matchedRep = currentUser.name
     }
 
+    const upperClient = clientName.trim().toUpperCase()
+    const upperContact = (contactName.trim() || clientName.trim()).toUpperCase()
+
     onConfirm({
-      title: clientName.trim(),
-      contactName: contactName.trim() || clientName.trim(),
-      company: clientName.trim(),
+      title: upperClient,
+      contactName: upperContact,
+      company: upperClient,
       value,
       stage,
       contactId,
@@ -408,11 +411,11 @@ function NewDealModal({
               type="text" 
               required
               style={{ paddingLeft: '2.5rem' }}
-              className="input font-bold w-full" 
+              className="input font-bold w-full uppercase" 
               placeholder="Digite para buscar um cliente ou criar novo..."
               value={clientName} 
               onChange={(e) => {
-                setClientName(e.target.value)
+                setClientName(e.target.value.toUpperCase())
                 setShowDropdown(true)
               }}
               onFocus={() => setShowDropdown(true)}
@@ -432,10 +435,10 @@ function NewDealModal({
                   className="p-3 hover:bg-[var(--lime)]/10 cursor-pointer transition-colors flex items-center justify-between gap-2 group"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs font-bold text-white group-hover:text-[var(--lime)] transition-colors truncate">
+                    <div className="text-xs font-bold text-white group-hover:text-[var(--lime)] transition-colors truncate uppercase">
                       {c.company || c.name}
                     </div>
-                    <div className="text-[10px] text-[var(--gray)] font-mono truncate mt-0.5">
+                    <div className="text-[10px] text-[var(--gray)] font-mono truncate mt-0.5 uppercase">
                       {c.cnpj ? `${c.cnpj} ` : ''}{c.city ? `• ${c.city}/${c.state}` : ''}
                     </div>
                   </div>
@@ -453,10 +456,10 @@ function NewDealModal({
             <label className="label">Nome do Contato</label>
             <input 
               type="text" 
-              className="input" 
-              placeholder="Ex: Alberto Souza (opcional)"
+              className="input uppercase" 
+              placeholder="Ex: ALBERTO SOUZA (opcional)"
               value={contactName} 
-              onChange={(e) => setContactName(e.target.value)}
+              onChange={(e) => setContactName(e.target.value.toUpperCase())}
             />
           </div>
 

@@ -526,11 +526,10 @@ function ContactDrawer({
                       <input 
                         type="text" 
                         required
-                        className="bg-transparent border-b border-dashed border-[var(--line)] focus:border-[var(--lime)] font-display text-xs text-[var(--white)] font-bold w-full pb-0.5 focus:outline-none"
+                        className="bg-transparent border-b border-dashed border-[var(--line)] focus:border-[var(--lime)] font-display text-xs text-[var(--white)] font-bold w-full pb-0.5 focus:outline-none uppercase"
                         placeholder="Nome da Empresa"
                         value={company}
-                        onChange={(e) => setCompany(e.target.value)}
-                        
+                        onChange={(e) => setCompany(e.target.value.toUpperCase())}
                       />
                     </div>
 
@@ -540,11 +539,10 @@ function ContactDrawer({
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Nome Fantasia</label>
                         <input 
                           type="text" 
-                          className="input text-xs py-1 px-2.5" 
+                          className="input text-xs py-1 px-2.5 uppercase" 
                           placeholder="Nome Fantasia"
                           value={tradeName}
-                          onChange={(e) => setTradeName(e.target.value)}
-                          
+                          onChange={(e) => setTradeName(e.target.value.toUpperCase())}
                         />
                       </div>
 
@@ -553,11 +551,10 @@ function ContactDrawer({
                         <input 
                           type="text" 
                           required
-                          className="input text-xs py-1 px-2.5 font-bold border-dashed border-[var(--lime)]" 
+                          className="input text-xs py-1 px-2.5 font-bold border-dashed border-[var(--lime)] uppercase" 
                           placeholder="Nome do Contato Principal"
                           value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          
+                          onChange={(e) => setName(e.target.value.toUpperCase())}
                         />
                       </div>
                     </div>
@@ -572,7 +569,6 @@ function ContactDrawer({
                           placeholder="00.000.000/0001-00"
                           value={cnpj}
                           onChange={(e) => setCnpj(formatCnpj(e.target.value))}
-                          
                         />
                       </div>
 
@@ -633,22 +629,20 @@ function ContactDrawer({
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Rua / Número</label>
                         <input 
                           type="text" 
-                          className="input text-xs py-1 px-2.5" 
+                          className="input text-xs py-1 px-2.5 uppercase" 
                           placeholder="Rua, Número"
                           value={address}
-                          onChange={(e) => setAddress(e.target.value)}
-                          
+                          onChange={(e) => setAddress(e.target.value.toUpperCase())}
                         />
                       </div>
                       <div className="flex flex-col gap-0.5">
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Bairro</label>
                         <input 
                           type="text" 
-                          className="input text-xs py-1 px-2.5" 
+                          className="input text-xs py-1 px-2.5 uppercase" 
                           placeholder="Bairro"
                           value={bairro}
-                          onChange={(e) => setBairro(e.target.value)}
-                          
+                          onChange={(e) => setBairro(e.target.value.toUpperCase())}
                         />
                       </div>
                     </div>
@@ -664,7 +658,6 @@ function ContactDrawer({
                           placeholder="00000-000"
                           value={cep}
                           onChange={(e) => setCep(e.target.value)}
-                          
                         />
                       </div>
 
@@ -672,11 +665,10 @@ function ContactDrawer({
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Cidade</label>
                         <input 
                           type="text" 
-                          className="input text-xs py-1 px-2.5" 
+                          className="input text-xs py-1 px-2.5 uppercase" 
                           placeholder="Cidade"
                           value={city}
-                          onChange={(e) => setCity(e.target.value)}
-                          
+                          onChange={(e) => setCity(e.target.value.toUpperCase())}
                         />
                       </div>
 
@@ -1928,6 +1920,22 @@ export default function ContactsPage() {
   }
 
   const handleUpdateContact = async (updatedContact: MockContact) => {
+    // Upper-case text fields
+    updatedContact = {
+      ...updatedContact,
+      name: (updatedContact.name || '').trim().toUpperCase(),
+      company: (updatedContact.company || '').trim().toUpperCase(),
+      tradeName: (updatedContact.tradeName || '').trim().toUpperCase(),
+      address: (updatedContact.address || '').trim().toUpperCase(),
+      bairro: (updatedContact.bairro || '').trim().toUpperCase(),
+      city: (updatedContact.city || '').trim().toUpperCase(),
+      state: (updatedContact.state || '').trim().toUpperCase(),
+      mainCnae: (updatedContact.mainCnae || '').trim().toUpperCase(),
+      specialSituation: (updatedContact.specialSituation || 'Nenhuma').trim().toUpperCase(),
+      stateRegistration: (updatedContact.stateRegistration || '').trim().toUpperCase(),
+      registrationStatus: (updatedContact.registrationStatus || 'ATIVA').trim().toUpperCase()
+    }
+
     const cleanTargetCnpj = (updatedContact.cnpj || '').replace(/\D/g, '')
     const cleanTargetCompany = (updatedContact.company || '').trim().toLowerCase()
 
@@ -2065,30 +2073,30 @@ export default function ContactsPage() {
 
     const newContact: MockContact = {
       id: `c-${Date.now()}`,
-      name: data.name || '',
-      company: data.company || '',
+      name: (data.name || '').trim().toUpperCase(),
+      company: (data.company || '').trim().toUpperCase(),
       cnpj: data.cnpj || '',
       curve: data.curve || 'C',
       representative: assignedRep,
       phone: data.phone || '',
       email: data.email || '',
-      city: data.city || '',
-      state: data.state || '',
+      city: (data.city || '').trim().toUpperCase(),
+      state: (data.state || '').trim().toUpperCase(),
       status: 'ativo',
       lastPurchaseDays: 0,
       
       // New fields mapping
-      tradeName: data.tradeName || '',
-      registrationStatus: data.registrationStatus || 'ATIVA',
-      mainCnae: data.mainCnae || '',
-      address: data.address || '',
-      bairro: data.bairro || '',
+      tradeName: (data.tradeName || '').trim().toUpperCase(),
+      registrationStatus: (data.registrationStatus || 'ATIVA').trim().toUpperCase(),
+      mainCnae: (data.mainCnae || '').trim().toUpperCase(),
+      address: (data.address || '').trim().toUpperCase(),
+      bairro: (data.bairro || '').trim().toUpperCase(),
       cep: data.cep || '',
       sideActivities: data.sideActivities || [],
       taxRegime: data.taxRegime || 'Simples Nacional',
-      specialSituation: data.specialSituation || 'Nenhuma',
+      specialSituation: (data.specialSituation || 'Nenhuma').trim().toUpperCase(),
       specialSituationDate: data.specialSituationDate || '-',
-      stateRegistration: data.stateRegistration || '',
+      stateRegistration: (data.stateRegistration || '').trim().toUpperCase(),
       website: data.website || '',
       instagram: data.instagram || '',
       linkedin: data.linkedin || '',

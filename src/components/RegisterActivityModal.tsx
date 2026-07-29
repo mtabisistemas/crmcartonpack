@@ -459,11 +459,11 @@ export function RegisterActivityModal({
                     type="text" 
                     required
                     style={{ paddingLeft: '2.5rem' }}
-                    className="input font-bold w-full bg-[var(--black)] border border-[var(--line)] rounded-xl py-2.5 pr-3 text-xs text-white outline-none focus:border-[var(--lime)]/50" 
+                    className="input font-bold w-full bg-[var(--black)] border border-[var(--line)] rounded-xl py-2.5 pr-3 text-xs text-white outline-none focus:border-[var(--lime)]/50 uppercase" 
                     placeholder="Digite para buscar um cliente..."
                     value={clientSearchTerm} 
                     onChange={(e) => {
-                      setClientSearchTerm(e.target.value)
+                      setClientSearchTerm(e.target.value.toUpperCase())
                       setSelectedContactId('')
                       setShowClientDropdown(true)
                     }}
