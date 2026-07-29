@@ -19,6 +19,23 @@ interface Activity {
   photoUrl?: string
 }
 
+const WhatsappIcon = ({ size = 15, className = "" }: { size?: number; className?: string }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
+    <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" />
+  </svg>
+)
+
 interface DealDrawerProps {
   deal: Deal | null
   onClose: () => void
@@ -672,26 +689,24 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
 
                   <div className="flex flex-col gap-1.5">
                     <label className="label">Telefone (WhatsApp)</label>
-                    <div className="relative flex items-center gap-1.5">
-                      <div className="relative flex-1 flex items-center">
-                        <Phone size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
-                        <input 
-                          type="text" 
-                          className="input w-full !pl-9 font-mono text-xs" 
-                          placeholder="(00) 00000-0000"
-                          value={contactPhone} 
-                          onChange={(e) => setContactPhone(e.target.value)}
-                        />
-                      </div>
+                    <div className="relative flex items-center">
+                      <Phone size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
+                      <input 
+                        type="text" 
+                        className="input w-full !pl-9 !pr-9 font-mono text-xs" 
+                        placeholder="(00) 00000-0000"
+                        value={contactPhone} 
+                        onChange={(e) => setContactPhone(e.target.value)}
+                      />
                       {contactPhone && (
                         <a
                           href={whatsappLink(contactPhone)}
                           target="_blank"
                           rel="noreferrer"
-                          title="Abrir WhatsApp"
-                          className="p-2.5 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/40 text-[#25D366] transition-all flex items-center justify-center shrink-0 cursor-pointer"
+                          className="absolute right-2.5 text-emerald-400 hover:text-emerald-300 transition-transform hover:scale-110 cursor-pointer p-0.5"
+                          title="Chamar no WhatsApp"
                         >
-                          <MessageSquare size={15} />
+                          <WhatsappIcon size={15} />
                         </a>
                       )}
                     </div>
@@ -699,38 +714,39 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="label">E-mail</label>
-                  <div className="relative flex items-center gap-1.5">
-                    <div className="relative flex-1 flex items-center">
-                      <Mail size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
-                      <input 
-                        type="email" 
-                        className="input w-full !pl-9 font-mono text-xs" 
-                        placeholder="email@empresa.com.br"
-                        value={contactEmail} 
-                        onChange={(e) => setContactEmail(e.target.value)}
-                      />
-                    </div>
+                  <div className="flex justify-between items-center">
+                    <label className="label">E-mail</label>
                     {contactEmail && (
-                      <button
-                        type="button"
+                      <button 
+                        type="button" 
                         onClick={() => {
                           navigator.clipboard.writeText(contactEmail)
                           setCopiedEmailToast(true)
-                          setTimeout(() => setCopiedEmailToast(false), 2500)
-                        }}
+                          setTimeout(() => setCopiedEmailToast(false), 2000)
+                        }} 
+                        className="text-[9px] font-bold text-[var(--lime)] hover:text-white flex items-center gap-1 font-mono transition-colors cursor-pointer"
                         title="Copiar E-mail"
-                        className="p-2.5 rounded-xl bg-[var(--charcoal)] hover:bg-[var(--line)] border border-[var(--line)] text-[var(--gray)] hover:text-white transition-all flex items-center justify-center shrink-0 cursor-pointer"
                       >
-                        {copiedEmailToast ? <Check size={15} className="text-[var(--lime)]" /> : <Copy size={15} />}
+                        {copiedEmailToast ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                        <span>{copiedEmailToast ? 'COPIADO!' : 'COPIAR'}</span>
                       </button>
                     )}
+                  </div>
+                  <div className="relative flex items-center">
+                    <Mail size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
+                    <input 
+                      type="email" 
+                      className="input w-full !pl-9 font-mono text-xs" 
+                      placeholder="email@empresa.com.br"
+                      value={contactEmail} 
+                      onChange={(e) => setContactEmail(e.target.value)}
+                    />
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <label className="label">Endereço Completo</label>
-                  <div className="relative flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <div className="relative flex-1 flex items-center">
                       <MapPin size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                       <input 
@@ -741,17 +757,15 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                         onChange={(e) => setContactAddress(e.target.value.toUpperCase())}
                       />
                     </div>
-                    {contactAddress && (
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contactAddress)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Ver Endereço no Google Maps"
-                        className="p-2.5 rounded-xl bg-[var(--lime)]/10 hover:bg-[var(--lime)]/20 border border-[var(--lime)]/40 text-[var(--lime)] transition-all flex items-center justify-center shrink-0 cursor-pointer"
-                      >
-                        <MapPin size={15} />
-                      </a>
-                    )}
+                    <a
+                      href={contactAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contactAddress)}` : '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Ver endereço no mapa"
+                      className={`flex items-center justify-center p-1.5 rounded-lg border border-[var(--line)] transition-colors ${contactAddress ? 'text-[var(--lime)] hover:bg-[var(--lime)]/10 hover:border-[var(--lime)] cursor-pointer' : 'text-[var(--gray2)] opacity-30 pointer-events-none'}`}
+                    >
+                      <MapPin size={16} />
+                    </a>
                   </div>
                 </div>
 
