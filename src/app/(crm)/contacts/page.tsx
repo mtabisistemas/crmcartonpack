@@ -2299,6 +2299,30 @@ export default function ContactsPage() {
     }
   }
 
+  // Auto open contact drawer when openContactId or search is in URL
+  useEffect(() => {
+    if (typeof window === 'undefined' || contacts.length === 0) return
+
+    const searchParams = new URLSearchParams(window.location.search)
+    const openContactId = searchParams.get('openContactId') || searchParams.get('id')
+    const searchVal = searchParams.get('search')
+
+    if (searchVal) {
+      setSearchTerm(searchVal)
+    }
+
+    if (openContactId) {
+      const match = contacts.find(c =>
+        String(c.id) === String(openContactId) ||
+        (c.name && c.name.toLowerCase() === openContactId.toLowerCase()) ||
+        (c.company && c.company.toLowerCase() === openContactId.toLowerCase())
+      )
+      if (match) {
+        setSelectedContact(match)
+      }
+    }
+  }, [contacts])
+
   // Fetch strictly registered active system users for Representatives dropdown
   useEffect(() => {
     const fetchRegisteredUsers = async () => {
