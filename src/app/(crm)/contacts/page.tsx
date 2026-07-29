@@ -2043,6 +2043,21 @@ export default function ContactsPage() {
                 loadedActs = Array.from(actMap.values())
               }
 
+              let loadedHistory: any[] = []
+              if (item.history) {
+                try {
+                  loadedHistory = typeof item.history === 'string' ? JSON.parse(item.history) : item.history
+                } catch (e) {}
+              }
+
+              let combinedHistory = loadedHistory
+              if (localMatched && localMatched.history && Array.isArray(localMatched.history)) {
+                const histMap = new Map<string, any>()
+                loadedHistory.forEach((h: any) => histMap.set(h.id, h))
+                localMatched.history.forEach((h: any) => histMap.set(h.id, h))
+                combinedHistory = Array.from(histMap.values())
+              }
+
               return {
                 id: item.id,
                 name: localMatched?.name || item.name || '',
@@ -2071,6 +2086,11 @@ export default function ContactsPage() {
                 instagram: localMatched?.instagram || item.instagram || '',
                 linkedin: localMatched?.linkedin || item.linkedin || '',
                 facebook: localMatched?.facebook || item.facebook || '',
+                projectedPurchaseValue: localMatched?.projectedPurchaseValue ?? item.projected_purchase_value ?? item.projectedPurchaseValue ?? 0,
+                purchaseFrequencyDays: localMatched?.purchaseFrequencyDays ?? item.purchase_frequency_days ?? item.purchaseFrequencyDays ?? 30,
+                lastPurchaseDate: localMatched?.lastPurchaseDate || item.last_purchase_date || item.lastPurchaseDate || '',
+                planningNotes: localMatched?.planningNotes || item.planning_notes || item.planningNotes || '',
+                history: combinedHistory,
                 activities: loadedActs
               }
             })
@@ -2350,29 +2370,48 @@ export default function ContactsPage() {
           instagram: updatedContact.instagram,
           linkedin: updatedContact.linkedin,
           facebook: updatedContact.facebook,
+          projected_purchase_value: updatedContact.projectedPurchaseValue || 0,
+          purchase_frequency_days: updatedContact.purchaseFrequencyDays || 30,
+          last_purchase_date: updatedContact.lastPurchaseDate || '',
+          planning_notes: updatedContact.planningNotes || '',
+          history: JSON.stringify(updatedContact.history || []),
           activities: JSON.stringify(updatedContact.activities || []),
           updated_at: new Date().toISOString()
         }
 
-        let updateRes: any = null
-        if (updatedContact.id) {
-          updateRes = await supabase.from('contacts').update(payload).eq('id', updatedContact.id)
-        }
-
         const cleanCnpj = (updatedContact.cnpj || '').replace(/\D/g, '')
-        if ((!updateRes || updateRes.error || updateRes.count === 0) && updatedContact.cnpj) {
-          updateRes = await supabase.from('contacts').update(payload).eq('cnpj', updatedContact.cnpj)
-          if ((!updateRes || updateRes.error || updateRes.count === 0) && cleanCnpj) {
-            updateRes = await supabase.from('contacts').update(payload).ilike('cnpj', `%${cleanCnpj}%`)
+        let updatedRows: any[] | null = null
+
+        if (updatedContact.id) {
+          const { data, error } = await supabase.from('contacts').update(payload).eq('id', updatedContact.id).select()
+          if (!error && data && data.length > 0) {
+            updatedRows = data
           }
         }
 
-        if ((!updateRes || updateRes.error || updateRes.count === 0) && updatedContact.company) {
-          updateRes = await supabase.from('contacts').update(payload).ilike('company', updatedContact.company)
+        if ((!updatedRows || updatedRows.length === 0) && updatedContact.cnpj) {
+          const { data, error } = await supabase.from('contacts').update(payload).eq('cnpj', updatedContact.cnpj).select()
+          if (!error && data && data.length > 0) {
+            updatedRows = data
+          }
         }
 
-        if (!updateRes || updateRes.error || updateRes.count === 0) {
-          await supabase.from('contacts').insert([{ id: updatedContact.id, ...payload }])
+        if ((!updatedRows || updatedRows.length === 0) && cleanCnpj) {
+          const { data, error } = await supabase.from('contacts').update(payload).ilike('cnpj', `%${cleanCnpj}%`).select()
+          if (!error && data && data.length > 0) {
+            updatedRows = data
+          }
+        }
+
+        if ((!updatedRows || updatedRows.length === 0) && updatedContact.company) {
+          const { data, error } = await supabase.from('contacts').update(payload).ilike('company', updatedContact.company).select()
+          if (!error && data && data.length > 0) {
+            updatedRows = data
+          }
+        }
+
+        if (!updatedRows || updatedRows.length === 0) {
+          await supabase.from('contacts').upsert([{ id: updatedContact.id || `ct_${Date.now()}`, ...payload }], { onConflict: 'id' })
         }
       } catch (err) {
         console.error('Error updating contact in Supabase:', err)

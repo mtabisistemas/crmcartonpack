@@ -555,12 +555,16 @@ function NewDealModal({
 
   const [selectedContactObj, setSelectedContactObj] = useState<any>(null)
 
-  const handleSelectContact = (c: { company: string; name?: string; cnpj?: string; city?: string; representative?: string; id?: string }) => {
+  const handleSelectContact = (c: any) => {
     setSelectedContactObj(c)
-    const chosenName = c.company || c.name || ''
-    setClientName(chosenName)
-    if (c.name && c.name !== chosenName) {
-      setContactName(c.name)
+    const companyTitle = (c.company || c.name || '').trim().toUpperCase()
+    setClientName(companyTitle)
+
+    const personName = (c.name || c.contact_name || c.responsible || c.contactName || '').trim().toUpperCase()
+    if (personName) {
+      setContactName(personName)
+    } else {
+      setContactName(companyTitle)
     }
     setShowDropdown(false)
   }
@@ -623,8 +627,14 @@ function NewDealModal({
               placeholder="Digite para buscar um cliente ou criar novo..."
               value={clientName} 
               onChange={(e) => {
-                setClientName(e.target.value.toUpperCase())
+                const val = e.target.value.toUpperCase()
+                setClientName(val)
                 setShowDropdown(true)
+                const matched = userContacts.find(c => (c.company || c.name || '').trim().toUpperCase() === val.trim())
+                if (matched) {
+                  const personName = (matched.name || (matched as any).contact_name || (matched as any).responsible || '').trim().toUpperCase()
+                  if (personName) setContactName(personName)
+                }
               }}
               onFocus={() => setShowDropdown(true)}
             />
