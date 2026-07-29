@@ -100,6 +100,7 @@ export interface Deal {
   lost_reason?: string
   lost_notes?: string
   activities?: any[]
+  budget?: any
   stage_entered_at: string
   expected_close_date?: string
   closed_at?: string

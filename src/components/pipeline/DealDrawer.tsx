@@ -5,7 +5,7 @@ import { Deal, DealStage, STAGE_CONFIG, Appointment } from '@/types'
 import { 
   X, User, Mail, Phone, Building, Calendar, DollarSign, Tag,
   MessageSquare, FileText, Send, PhoneCall, Users, CheckCircle, ArrowRight, Save, Clock, Trash2, Edit2, Plus,
-  Copy, Check, MapPin, ExternalLink, Loader2, Lock
+  Copy, Check, MapPin, ExternalLink, Loader2, Lock, Upload, Paperclip
 } from 'lucide-react'
 import { formatCurrency, whatsappLink } from '@/lib/utils'
 import { getAppointmentsByDeal, saveAppointment, updateAppointment, deleteAppointment } from '@/services/appointment-service'
@@ -71,15 +71,51 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const [newNote, setNewNote] = useState('')
   const [activityType, setActivityType] = useState<Activity['type']>('nota')
 
-  // Briefing / Costs Calculator (Orçamento Tab)
-  const [boxType, setBoxType] = useState<'acoplada' | 'duplex' | 'triplex'>('acoplada')
-  const [length, setLength] = useState(300) // mm
-  const [width, setWidth] = useState(200)  // mm
-  const [height, setHeight] = useState(150) // mm
-  const [colors, setColors] = useState(2)    // 1-4 colors
-  const [quantity, setQuantity] = useState(1000)
-  const [margin, setMargin] = useState(35)   // %
-  const [toolingCost, setToolingCost] = useState(1200) // cliché + faca setup cost
+  // Orçamento Tab (Itens, Condição de Pagamento e Anexo)
+  interface BudgetItem {
+    id: string
+    description: string
+    quantity: number
+    unitPrice: number
+  }
+
+  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([
+    { id: 'b1', description: 'ITEM ORÇAMENTO', quantity: 1000, unitPrice: 0 }
+  ])
+  const [paymentTerms, setPaymentTerms] = useState('')
+  const [budgetAttachment, setBudgetAttachment] = useState<{ name: string; url: string } | null>(null)
+
+  const totalBudgetAmount = budgetItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
+
+  const handleAddBudgetItem = () => {
+    setBudgetItems(prev => [
+      ...prev,
+      { id: `item_${Date.now()}_${Math.random()}`, description: '', quantity: 1, unitPrice: 0 }
+    ])
+  }
+
+  const handleRemoveBudgetItem = (id: string) => {
+    setBudgetItems(prev => prev.filter(item => item.id !== id))
+  }
+
+  const handleUpdateBudgetItem = (id: string, field: keyof BudgetItem, val: any) => {
+    setBudgetItems(prev => prev.map(item => item.id === id ? { ...item, [field]: val } : item))
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (evt) => {
+      if (evt.target?.result) {
+        setBudgetAttachment({
+          name: file.name,
+          url: evt.target.result as string
+        })
+      }
+    }
+    reader.readAsDataURL(file)
+  }
 
   const [representative, setRepresentative] = useState('')
   const [isLoadingContactDetails, setIsLoadingContactDetails] = useState(false)
@@ -127,6 +163,17 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       setEstimatedValue(val > 0 ? val : undefined)
       setEstimatedValueInput(formatNumberToCurrencyStr(val))
       setStage(deal.stage)
+
+      if ((deal as any).budget) {
+        const b = (deal as any).budget
+        if (Array.isArray(b.items) && b.items.length > 0) setBudgetItems(b.items)
+        if (b.paymentTerms) setPaymentTerms(b.paymentTerms)
+        if (b.attachment) setBudgetAttachment(b.attachment)
+      } else {
+        setBudgetItems([{ id: 'b1', description: 'ITEM ORÇAMENTO', quantity: 1000, unitPrice: val > 0 ? val / 1000 : 0 }])
+        setPaymentTerms('')
+        setBudgetAttachment(null)
+      }
 
       let initialContactName = deal.contact?.name ?? ''
       let initialContactCompany = deal.contact?.company ?? ''
@@ -344,28 +391,6 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
 
   if (!deal) return null
 
-  // Calculate pricing based on briefing dimensions
-  const getMaterialCostPerM2 = () => {
-    switch (boxType) {
-      case 'acoplada': return 6.80 // R$/m2
-      case 'duplex':   return 4.50
-      case 'triplex':  return 5.50
-    }
-  }
-
-  // Calculate sheet area (L x W x H) in m2 (simplified box blank layout: (2*L + 2*W + 40mm joiner) * (W + H + 20mm flaps))
-  const blankWidthM = (2 * length + 2 * width + 40) / 1000
-  const blankHeightM = (width + height + 20) / 1000
-  const boxAreaM2 = blankWidthM * blankHeightM
-
-  const materialCost = boxAreaM2 * getMaterialCostPerM2() * quantity
-  const printingCost = (colors * 0.15) * quantity
-  const productionCost = materialCost + printingCost + toolingCost
-  
-  // Cost plus margin
-  const totalSuggested = productionCost / (1 - margin / 100)
-  const unitPrice = totalSuggested / quantity
-
   const handleEstimatedValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value
     const cleanRaw = raw.replace(/[^\d.,]/g, '')
@@ -444,22 +469,17 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   }
 
   const handleApplyBudgetToDeal = () => {
-    const roundedValue = Math.round(totalSuggested)
+    const roundedValue = Math.round(totalBudgetAmount)
     setEstimatedValue(roundedValue)
+    setEstimatedValueInput(formatNumberToCurrencyStr(roundedValue))
     const updatedDeal: Deal = {
       ...deal,
       estimated_value: roundedValue,
-      contact: {
-        ...deal.contact,
-        id: deal.contact?.id ?? 'c-temp',
-        name: contactName,
-        phone: contactPhone,
-        email: contactEmail,
-        company: contactCompany,
-        curve: curve,
-        created_at: deal.contact?.created_at ?? new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
+      budget: {
+        items: budgetItems,
+        paymentTerms,
+        attachment: budgetAttachment
+      } as any
     }
     onUpdateDeal(updatedDeal)
     
@@ -470,11 +490,12 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
     const budgetLog: Activity = {
       id: String(Date.now()),
       type: 'nota',
-      content: `Ficha técnica atualizada: Caixa ${boxType.toUpperCase()} (${length}x${width}x${height}mm). Orçamento recalculado para ${formatCurrency(roundedValue)} (${quantity} un. a ${formatCurrency(unitPrice)}/un.).`,
+      content: `Orçamento comercial aplicado ao negócio no valor total de ${formatCurrency(roundedValue)}.${paymentTerms ? ` Condição de pagamento: ${paymentTerms}` : ''}`,
       timestamp: timestampStr
     }
     setActivities(prev => [budgetLog, ...prev])
-    setActiveTab('historico')
+    setIsSavedSuccess(true)
+    setTimeout(() => setIsSavedSuccess(false), 2500)
   }
 
   const handleAddActivity = (e: React.FormEvent) => {
@@ -599,19 +620,17 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
             Agenda
           </button>
           <button 
+            className={`drawer-tab-btn ${activeTab === 'orcamento' ? 'active' : ''}`}
+            onClick={() => setActiveTab('orcamento')}
+          >
+            Orçamento
+          </button>
+          <button 
             className={`drawer-tab-btn ${activeTab === 'historico' ? 'active' : ''}`}
             onClick={() => setActiveTab('historico')}
           >
             Histórico
           </button>
-          {['briefing', 'aprovacao', 'fechamento', 'perdido', 'pos_venda'].includes(stage) && (
-            <button 
-              className={`drawer-tab-btn ${activeTab === 'orcamento' ? 'active' : ''}`}
-              onClick={() => setActiveTab('orcamento')}
-            >
-              Orçamento
-            </button>
-          )}
         </div>
 
         {/* Drawer Scrollable Content */}
@@ -1052,7 +1071,173 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
             </div>
           )}
 
-          {/* TAB 2: HISTÓRICO / TIMELINE */}
+          {/* TAB 3: ORÇAMENTO */}
+          {activeTab === 'orcamento' && (
+            <div className="flex flex-col gap-5">
+              
+              {/* Itens do Orçamento */}
+              <div className="flex flex-col gap-4 bg-[var(--card)] border border-[var(--line)] rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono">
+                    Itens do Orçamento
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddBudgetItem}
+                    className="btn btn-secondary text-xs py-1 px-3 flex items-center gap-1.5 font-bold text-white cursor-pointer"
+                  >
+                    <Plus size={13} className="text-[var(--lime)]" />
+                    <span>Adicionar Item</span>
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {budgetItems.map((item) => (
+                    <div key={item.id} className="grid grid-cols-12 gap-2 items-center bg-[#141416] p-3 rounded-lg border border-[var(--line)]">
+                      <div className="col-span-5 flex flex-col gap-1">
+                        <label className="text-[9px] font-mono text-[var(--gray2)] uppercase">Descrição do Item</label>
+                        <input
+                          type="text"
+                          className="input w-full uppercase text-xs"
+                          placeholder="Ex: CAIXA PERSONALIZADA"
+                          value={item.description}
+                          onChange={(e) => handleUpdateBudgetItem(item.id, 'description', e.target.value.toUpperCase())}
+                        />
+                      </div>
+                      <div className="col-span-2 flex flex-col gap-1">
+                        <label className="text-[9px] font-mono text-[var(--gray2)] uppercase text-center">Qtd</label>
+                        <input
+                          type="number"
+                          min={1}
+                          className="input w-full text-center text-xs font-mono"
+                          value={item.quantity || ''}
+                          onChange={(e) => handleUpdateBudgetItem(item.id, 'quantity', Number(e.target.value) || 0)}
+                        />
+                      </div>
+                      <div className="col-span-2 flex flex-col gap-1">
+                        <label className="text-[9px] font-mono text-[var(--gray2)] uppercase text-center">Val. Unit (R$)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min={0}
+                          className="input w-full text-center text-xs font-mono"
+                          value={item.unitPrice || ''}
+                          onChange={(e) => handleUpdateBudgetItem(item.id, 'unitPrice', Number(e.target.value) || 0)}
+                        />
+                      </div>
+                      <div className="col-span-2 flex flex-col gap-1 text-right">
+                        <label className="text-[9px] font-mono text-[var(--gray2)] uppercase">Subtotal</label>
+                        <div className="text-xs font-mono font-bold text-[var(--lime)] py-2">
+                          {formatCurrency(item.quantity * item.unitPrice)}
+                        </div>
+                      </div>
+                      <div className="col-span-1 flex items-center justify-end pt-4">
+                        {budgetItems.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveBudgetItem(item.id)}
+                            className="text-red-400 hover:text-red-300 p-1.5 rounded transition-colors cursor-pointer"
+                            title="Remover Item"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Resumo do Total */}
+                <div className="flex justify-between items-center bg-[var(--card2)] border border-[var(--line)] rounded-xl p-3.5 mt-1">
+                  <span className="text-xs font-bold text-[var(--white)] uppercase tracking-wider">Total do Orçamento:</span>
+                  <span className="font-mono text-lg font-black text-[var(--lime)]" style={{ filter: 'drop-shadow(0 0 8px rgba(180,217,50,0.25))' }}>
+                    {formatCurrency(totalBudgetAmount)}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleApplyBudgetToDeal}
+                  className="btn btn-primary w-full py-2.5 flex items-center justify-center gap-2 font-bold cursor-pointer mt-1"
+                >
+                  <CheckCircle size={15} />
+                  <span>Aplicar Valor no Negócio ({formatCurrency(totalBudgetAmount)})</span>
+                </button>
+              </div>
+
+              {/* Condição de Pagamento */}
+              <div className="flex flex-col gap-3 bg-[var(--card)] border border-[var(--line)] rounded-xl p-4">
+                <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono">
+                  Condição de Pagamento
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <input
+                    type="text"
+                    className="input w-full uppercase font-mono text-xs"
+                    placeholder="Ex: 30/60/90 DIAS NO BOLETO, À VISTA COM 5% DESC."
+                    value={paymentTerms}
+                    onChange={(e) => setPaymentTerms(e.target.value.toUpperCase())}
+                  />
+                </div>
+              </div>
+
+              {/* Anexo de Orçamento */}
+              <div className="flex flex-col gap-3 bg-[var(--card)] border border-[var(--line)] rounded-xl p-4">
+                <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono">
+                  Anexar Orçamento (PDF / Imagem)
+                </div>
+
+                {budgetAttachment ? (
+                  <div className="flex items-center justify-between bg-[#141416] p-3 rounded-lg border border-[var(--line)]">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="p-2 bg-[var(--lime)]/10 rounded-lg border border-[var(--lime)]/20 text-[var(--lime)] shrink-0">
+                        <FileText size={18} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-white truncate uppercase">{budgetAttachment.name}</div>
+                        <div className="text-[10px] text-[var(--gray2)] font-mono">Documento Anexado</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <a
+                        href={budgetAttachment.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-secondary text-xs py-1 px-2.5 flex items-center gap-1 cursor-pointer text-white"
+                        title="Visualizar Orçamento"
+                      >
+                        <ExternalLink size={13} />
+                        <span>Abrir</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setBudgetAttachment(null)}
+                        className="text-red-400 hover:text-red-300 p-1.5 rounded transition-colors cursor-pointer"
+                        title="Remover Anexo"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="border-2 border-dashed border-[var(--line)] hover:border-[var(--lime)]/50 rounded-xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-[#141416]/50">
+                    <Upload size={22} className="text-[var(--lime)]" />
+                    <span className="text-xs font-bold text-white">Clique para selecionar e anexar orçamento</span>
+                    <span className="text-[10px] text-[var(--gray2)] font-mono">Suporta PDF ou Imagens (Max 5MB)</span>
+                    <input
+                      type="file"
+                      accept=".pdf,image/*"
+                      className="hidden"
+                      onChange={handleFileUpload}
+                    />
+                  </label>
+                )}
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB 4: HISTÓRICO / TIMELINE (ÚLTIMA ABA) */}
           {activeTab === 'historico' && (
             <div className="flex flex-col gap-6">
               
@@ -1114,156 +1299,6 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                   ))}
                 </div>
               )}
-            </div>
-          )}
-
-          {/* TAB 3: ORÇAMENTO (BRIEFING & CUSTOS) */}
-          {activeTab === 'orcamento' && (
-            <div className="flex flex-col gap-5">
-              
-              {/* Ficha de Briefing Técnico */}
-              <div className="flex flex-col gap-4 bg-[var(--card)] border border-[var(--line)] rounded-xl p-4">
-                <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono">
-                  Briefing Técnico
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="label">Estrutura do Material</label>
-                  <select 
-                    className="input" 
-                    value={boxType} 
-                    onChange={(e) => setBoxType(e.target.value as any)}
-                  >
-                    <option value="acoplada">Microondulado Acoplado (Resistente)</option>
-                    <option value="duplex">Cartão Duplex (Leve)</option>
-                    <option value="triplex">Cartão Triplex (Premium)</option>
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="label">Comprim. (mm)</label>
-                    <input 
-                      type="number" 
-                      className="input text-center" 
-                      value={length}
-                      onChange={(e) => setLength(Number(e.target.value) || 0)}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="label">Largura (mm)</label>
-                    <input 
-                      type="number" 
-                      className="input text-center" 
-                      value={width}
-                      onChange={(e) => setWidth(Number(e.target.value) || 0)}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="label">Altura (mm)</label>
-                    <input 
-                      type="number" 
-                      className="input text-center" 
-                      value={height}
-                      onChange={(e) => setHeight(Number(e.target.value) || 0)}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="label">Cores Impressão</label>
-                    <select 
-                      className="input" 
-                      value={colors} 
-                      onChange={(e) => setColors(Number(e.target.value) || 1)}
-                    >
-                      <option value={1}>1 Cor (Mono)</option>
-                      <option value={2}>2 Cores (Padrão)</option>
-                      <option value={3}>3 Cores</option>
-                      <option value={4}>4 Cores (Policromia)</option>
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="label">Tiragem (Unidades)</label>
-                    <input 
-                      type="number" 
-                      className="input text-center" 
-                      value={quantity}
-                      onChange={(e) => setQuantity(Number(e.target.value) || 100)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Ficha de Custos e Margens */}
-              <div className="flex flex-col gap-4 bg-[var(--card)] border border-[var(--line)] rounded-xl p-4">
-                <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono">
-                  Custos e Lucratividade
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="label">Ferramental Setup (Faca/Clichê)</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-3.5 text-xs text-gray-500 font-mono">R$</span>
-                      <input 
-                        type="number" 
-                        className="input pl-8" 
-                        value={toolingCost}
-                        onChange={(e) => setToolingCost(Number(e.target.value) || 0)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex justify-between items-center">
-                      <label className="label">Margem Comercial</label>
-                      <span className="text-xs text-[var(--lime)] font-mono font-bold">{margin}%</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="15" 
-                      max="70" 
-                      className="w-full accent-[var(--lime)] h-1.5 bg-neutral-800 rounded-lg cursor-pointer mt-2.5" 
-                      value={margin}
-                      onChange={(e) => setMargin(Number(e.target.value))}
-                    />
-                  </div>
-                </div>
-
-                {/* Resumo Faturamento Sugerido */}
-                <div className="bg-[var(--card2)] border border-[var(--line)] rounded-xl p-4 flex flex-col gap-2 mt-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-[var(--gray)]">Custo Total de Produção:</span>
-                    <span className="font-mono text-[var(--white)] font-bold">{formatCurrency(productionCost)}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs border-b border-[var(--line)] pb-2 mb-2">
-                    <span className="text-[var(--gray)]">Área de Papelão (Unitária):</span>
-                    <span className="font-mono text-[var(--white)] font-bold">{boxAreaM2.toFixed(3)} m²</span>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-[var(--white)] opacity-80">Preço Unitário Sugerido:</span>
-                    <span className="font-mono text-sm font-black text-[var(--lime)]">{formatCurrency(unitPrice)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-[var(--white)] opacity-80">Valor Total Sugerido:</span>
-                    <span className="font-mono text-lg font-black text-[var(--lime)]" style={{ filter: 'drop-shadow(0 0 8px rgba(180,217,50,0.25))' }}>
-                      {formatCurrency(totalSuggested)}
-                    </span>
-                  </div>
-                </div>
-
-                <button 
-                  onClick={handleApplyBudgetToDeal} 
-                  className="btn btn-primary w-full py-3 flex items-center justify-center gap-2 mt-2"
-                >
-                  <CheckCircle size={15} />
-                  <span>Aplicar Valor Sugerido ao Negócio</span>
-                </button>
-              </div>
             </div>
           )}
 

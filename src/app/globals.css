@@ -523,7 +523,30 @@ a, button, input, select, textarea {
   flex: 1;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 0;
+  padding: 0 0 12px 0;
+  margin-bottom: 4px;
+}
+
+/* Custom prominent horizontal scrollbar for Kanban board */
+.pipeline-wrap::-webkit-scrollbar {
+  height: 12px;
+}
+.pipeline-wrap::-webkit-scrollbar-track {
+  background: rgba(20, 20, 22, 0.95);
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  margin-left: 2px;
+  margin-right: 2px;
+}
+.pipeline-wrap::-webkit-scrollbar-thumb {
+  background: var(--lime);
+  border-radius: 8px;
+  border: 2px solid #141416;
+  box-shadow: 0 0 12px var(--lime-glow);
+}
+.pipeline-wrap::-webkit-scrollbar-thumb:hover {
+  background: #c5f22c;
+  box-shadow: 0 0 18px var(--lime-glow);
 }
 
 .kanban-board {
