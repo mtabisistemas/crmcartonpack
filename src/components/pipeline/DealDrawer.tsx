@@ -60,6 +60,10 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const [contactCompany, setContactCompany] = useState('')
   const [contactCnpj, setContactCnpj] = useState('')
   const [contactAddress, setContactAddress] = useState('')
+  const [contactBairro, setContactBairro] = useState('')
+  const [contactCep, setContactCep] = useState('')
+  const [contactCity, setContactCity] = useState('')
+  const [contactState, setContactState] = useState('')
   const [curve, setCurve] = useState<'A' | 'B' | 'C' | 'D'>('C')
 
   // Timeline fields (Histórico Tab)
@@ -131,7 +135,11 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       let phone = deal.contact?.phone ?? ''
       let email = deal.contact?.email ?? ''
       let cnpj = (deal.contact as any)?.cnpj ?? ''
-      let address = (deal.contact as any)?.address ?? (deal.contact as any)?.city ?? ''
+      let address = (deal.contact as any)?.address ?? ''
+      let bairro = (deal.contact as any)?.bairro ?? ''
+      let cep = (deal.contact as any)?.cep ?? ''
+      let city = (deal.contact as any)?.city ?? ''
+      let state = (deal.contact as any)?.state ?? ''
       let rep = deal.assigned_to ?? (deal as any).assignedTo ?? (deal as any).assignedToName ?? (deal as any).representative ?? ''
 
       // Auto-populate Phone, Email, CNPJ, Address, Company, and Representative from saved contacts database
@@ -154,7 +162,10 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
             if (match.email && !email) email = match.email
             if (match.cnpj && !cnpj) cnpj = match.cnpj
             if (match.address && !address) address = match.address
-            if (match.city && !address) address = match.city
+            if (match.bairro && !bairro) bairro = match.bairro
+            if (match.cep && !cep) cep = match.cep
+            if (match.city && !city) city = match.city
+            if (match.state && !state) state = match.state
             if (match.representative && !rep) rep = match.representative
           }
         }
@@ -166,6 +177,10 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       setContactEmail(email)
       setContactCnpj(cnpj)
       setContactAddress(address)
+      setContactBairro(bairro)
+      setContactCep(cep)
+      setContactCity(city)
+      setContactState(state)
       setRepresentative(rep)
 
       // Load activities combining deal and matched contact from crm_contacts
@@ -328,6 +343,9 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
     const upperContactName = contactName.trim().toUpperCase()
     const upperCompany = contactCompany.trim().toUpperCase()
     const upperAddress = contactAddress.trim().toUpperCase()
+    const upperBairro = contactBairro.trim().toUpperCase()
+    const upperCity = contactCity.trim().toUpperCase()
+    const upperState = contactState.trim().toUpperCase()
 
     const updatedDeal: Deal = {
       ...deal,
@@ -346,7 +364,10 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
         representative: representative,
         cnpj: contactCnpj,
         address: upperAddress,
-        city: upperAddress,
+        bairro: upperBairro,
+        cep: contactCep,
+        city: upperCity,
+        state: upperState,
         created_at: deal.contact?.created_at ?? new Date().toISOString(),
         updated_at: new Date().toISOString(),
       } as any
@@ -374,7 +395,10 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                 email: contactEmail || c.email,
                 cnpj: contactCnpj || c.cnpj,
                 address: upperAddress || c.address,
-                city: upperAddress || c.city,
+                bairro: upperBairro || c.bairro,
+                cep: contactCep || c.cep,
+                city: upperCity || c.city,
+                state: upperState || c.state,
                 curve: curve || c.curve,
                 ...(isClosedStage ? { lastPurchaseDate: todayStr, last_purchase_date: todayStr, lastPurchaseDays: 0 } : {}),
               }
@@ -397,10 +421,11 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
           if (contactPhone) payload.phone = contactPhone
           if (contactEmail) payload.email = contactEmail
           if (contactCnpj) payload.cnpj = contactCnpj
-          if (upperAddress) {
-            payload.address = upperAddress
-            payload.city = upperAddress
-          }
+          if (upperAddress) payload.address = upperAddress
+          if (upperBairro) payload.bairro = upperBairro
+          if (contactCep) payload.cep = contactCep
+          if (upperCity) payload.city = upperCity
+          if (upperState) payload.state = upperState
           if (curve) payload.curve = curve
           if (isClosedStage) payload.last_purchase_date = todayStr
 
@@ -738,31 +763,84 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                       type="email" 
                       className="input w-full !pl-9 font-mono text-xs" 
                       placeholder="email@empresa.com.br"
-                      value={contactEmail} 
+                      value={contactEmail}
                       onChange={(e) => setContactEmail(e.target.value)}
                     />
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="label">Endereço Completo</label>
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1 flex items-center">
+                {/* Endereço: Rua / Número + Bairro */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="sm:col-span-2 flex flex-col gap-1.5">
+                    <label className="label">Rua / Número</label>
+                    <div className="relative flex items-center">
                       <MapPin size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                       <input 
                         type="text" 
                         className="input w-full !pl-9 uppercase text-xs font-mono" 
-                        placeholder="RUA / AVENIDA, NÚMERO, BAIRRO, CIDADE - UF"
+                        placeholder="Rua, Número"
                         value={contactAddress} 
                         onChange={(e) => setContactAddress(e.target.value.toUpperCase())}
                       />
                     </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="label">Bairro</label>
+                    <input 
+                      type="text" 
+                      className="input w-full uppercase text-xs font-mono" 
+                      placeholder="Bairro"
+                      value={contactBairro} 
+                      onChange={(e) => setContactBairro(e.target.value.toUpperCase())}
+                    />
+                  </div>
+                </div>
+
+                {/* CEP | Cidade | UF | Mapa */}
+                <div className="flex flex-wrap sm:flex-nowrap gap-2 items-end">
+                  <div className="flex flex-col gap-1.5 w-[100px] shrink-0">
+                    <label className="label">CEP</label>
+                    <input 
+                      type="text" 
+                      maxLength={9}
+                      className="input w-full text-xs font-mono" 
+                      placeholder="00000-000"
+                      value={contactCep} 
+                      onChange={(e) => setContactCep(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 flex-1 min-w-[110px]">
+                    <label className="label">Cidade</label>
+                    <input 
+                      type="text" 
+                      className="input w-full uppercase text-xs font-mono" 
+                      placeholder="Cidade"
+                      value={contactCity} 
+                      onChange={(e) => setContactCity(e.target.value.toUpperCase())}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 w-[55px] shrink-0">
+                    <label className="label">UF</label>
+                    <input 
+                      type="text" 
+                      maxLength={2}
+                      className="input w-full text-center uppercase text-xs font-mono font-bold" 
+                      placeholder="UF"
+                      value={contactState} 
+                      onChange={(e) => setContactState(e.target.value.toUpperCase())}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 shrink-0">
                     <a
-                      href={contactAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contactAddress)}` : '#'}
+                      href={(contactAddress || contactCity) ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([contactAddress, contactBairro, contactCity, contactState, contactCep].filter(Boolean).join(', '))}` : '#'}
                       target="_blank"
                       rel="noopener noreferrer"
-                      title="Ver endereço no mapa"
-                      className={`flex items-center justify-center p-1.5 rounded-lg border border-[var(--line)] transition-colors ${contactAddress ? 'text-[var(--lime)] hover:bg-[var(--lime)]/10 hover:border-[var(--lime)] cursor-pointer' : 'text-[var(--gray2)] opacity-30 pointer-events-none'}`}
+                      title="Ver endereço no Google Maps"
+                      className={`flex items-center justify-center p-1.5 rounded-lg border border-[var(--line)] transition-colors ${(contactAddress || contactCity) ? 'text-[var(--lime)] hover:bg-[var(--lime)]/10 hover:border-[var(--lime)] cursor-pointer' : 'text-[var(--gray2)] opacity-30 pointer-events-none'}`}
                     >
                       <MapPin size={16} />
                     </a>
