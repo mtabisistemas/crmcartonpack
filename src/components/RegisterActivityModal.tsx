@@ -284,6 +284,8 @@ export function RegisterActivityModal({
     const now = new Date()
     const timestampStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
+    const authorName = currentUser?.name || currentUser?.nome || 'Usuário'
+
     const newActivity = {
       id: `act_${Date.now()}`,
       type: channel === 'visita' ? 'reuniao' : channel === 'whatsapp' ? 'whatsapp' : channel === 'ligacao' ? 'ligacao' : channel === 'email' ? 'email' : 'nota',
@@ -295,7 +297,10 @@ export function RegisterActivityModal({
       stage: selectedActionObj.stage,
       hasAudio: isRecording || !!description,
       photoUrl: photoUrl || null,
-      timestamp: timestampStr
+      timestamp: timestampStr,
+      user_name: authorName,
+      userName: authorName,
+      author: authorName
     }
 
     // Update contacts in localStorage

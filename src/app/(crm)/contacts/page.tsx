@@ -196,9 +196,21 @@ function ContactDrawer({
   const [isSaved, setIsSaved] = useState(false)
   const [copiedEmail, setCopiedEmail] = useState(false)
   const handleCopyEmail = (str: string) => { if (!str) return; navigator.clipboard.writeText(str); setCopiedEmail(true); setTimeout(() => setCopiedEmail(false), 2000); }
+  const [currentUser, setCurrentUser] = useState<any | null>(null)
   const [activities, setActivities] = useState<Activity[]>([])
   const [newNote, setNewNote] = useState('')
   const [activityType, setActivityType] = useState<Activity['type']>('nota')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const session = localStorage.getItem('crm_current_user')
+      if (session) {
+        try {
+          setCurrentUser(JSON.parse(session))
+        } catch (e) {}
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (contact) {
@@ -251,26 +263,51 @@ function ContactDrawer({
       setLinkedin(contact.linkedin ?? '')
       setFacebook(contact.facebook ?? '')
 
-      // Load activities with fallback to crm_contacts in localStorage
+      // Load activities merging contact activities and pipeline deal activities
       const loadContactActivities = () => {
         try {
-          const raw = localStorage.getItem('crm_contacts')
-          if (raw) {
-            const list = JSON.parse(raw)
+          let contactActs: Activity[] = []
+          const rawContacts = localStorage.getItem('crm_contacts')
+          if (rawContacts) {
+            const list = JSON.parse(rawContacts)
             const matched = list.find((c: any) => c.id === contact.id || (c.company && contact.company && c.company.toLowerCase().trim() === contact.company.toLowerCase().trim()))
             if (matched && matched.activities) {
-              setActivities(matched.activities)
-              return
+              contactActs = matched.activities
             }
           }
-        } catch (e) {}
-        setActivities(contact.activities || [])
+          if (contactActs.length === 0) {
+            contactActs = contact.activities || []
+          }
+
+          let dealActs: Activity[] = []
+          const rawDeals = localStorage.getItem('cp_crm_pipeline_deals')
+          if (rawDeals) {
+            const deals = JSON.parse(rawDeals)
+            deals.forEach((d: any) => {
+              const matchesId = d.contact_id === contact.id
+              const matchesComp = contact.company && (d.contact?.company || d.title) && (d.contact?.company || d.title).toLowerCase().trim() === contact.company.toLowerCase().trim()
+              if ((matchesId || matchesComp) && d.activities && Array.isArray(d.activities)) {
+                dealActs.push(...d.activities)
+              }
+            })
+          }
+
+          const mergedMap = new Map<string, Activity>()
+          contactActs.forEach(a => mergedMap.set(a.id, a))
+          dealActs.forEach(a => mergedMap.set(a.id, a))
+
+          const merged = Array.from(mergedMap.values()).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
+          setActivities(merged)
+        } catch (e) {
+          setActivities(contact.activities || [])
+        }
       }
 
       loadContactActivities()
 
       if (typeof window !== 'undefined') {
         window.addEventListener('storage-contacts-changed', loadContactActivities)
+        window.addEventListener('storage-deals-changed', loadContactActivities)
       }
     } else {
       setIsOpen(false)
@@ -326,12 +363,17 @@ function ContactDrawer({
     const now = new Date()
     const timestampStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
+    const authorName = currentUser?.name || currentUser?.nome || 'Usuário'
+
     const newAct: Activity = {
       id: `act_${Date.now()}`,
       type: activityType,
       content: newNote,
-      timestamp: timestampStr
-    }
+      timestamp: timestampStr,
+      user_name: authorName,
+      userName: authorName,
+      author: authorName
+    } as any
 
     const updatedActs = [newAct, ...activities]
     setActivities(updatedActs)
@@ -342,6 +384,9 @@ function ContactDrawer({
         ...contact,
         activities: updatedActs
       })
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('storage-deals-changed'))
+      }
     }
   }
 
@@ -940,7 +985,9 @@ function ContactDrawer({
                       <div className="absolute -left-[33px] top-0 w-[22px] h-[22px] rounded-full bg-[var(--card)] border border-[var(--line)] flex items-center justify-center">
                         {getActivityIcon(act.type)}
                       </div>
-                      <div className="text-[10px] text-[var(--gray2)] font-mono">{act.timestamp}</div>
+                      <div className="text-[10px] text-[var(--gray2)] font-mono">
+                        {act.timestamp}{(act as any).user_name ? ` • Por: ${(act as any).user_name}` : ((act as any).userName ? ` • Por: ${(act as any).userName}` : ((act as any).author ? ` • Por: ${(act as any).author}` : ''))}
+                      </div>
                       <div className="card p-3 border-[var(--line)] bg-[var(--card)] text-xs text-[var(--white)] mt-1 ml-1 space-y-2">
                         <div>{act.content}</div>
                         {act.photoUrl && (

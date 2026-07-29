@@ -360,19 +360,36 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
     setActiveTab('historico')
   }
 
+  const [currentUser, setCurrentUser] = useState<any | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const session = localStorage.getItem('crm_current_user')
+      if (session) {
+        try {
+          setCurrentUser(JSON.parse(session))
+        } catch (e) {}
+      }
+    }
+  }, [])
+
   const handleAddActivity = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newNote.trim() || !deal) return
 
     const now = new Date()
     const timestampStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+    const authorName = currentUser?.name || currentUser?.nome || 'Usuário'
 
     const activity: Activity = {
       id: `act_${Date.now()}`,
       type: activityType,
       content: newNote,
-      timestamp: timestampStr
-    }
+      timestamp: timestampStr,
+      user_name: authorName,
+      userName: authorName,
+      author: authorName
+    } as any
 
     const updatedActs = [activity, ...activities]
     setActivities(updatedActs)
@@ -407,6 +424,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
           })
           localStorage.setItem('crm_contacts', JSON.stringify(updatedContacts))
           window.dispatchEvent(new Event('storage-contacts-changed'))
+          window.dispatchEvent(new Event('storage-deals-changed'))
         }
       } catch (e) {}
     }
@@ -842,7 +860,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                       
                       {/* Time */}
                       <div className="font-mono text-[9px] text-[var(--gray2)] mb-1">
-                        {act.timestamp}
+                        {act.timestamp}{(act as any).user_name ? ` • Por: ${(act as any).user_name}` : ((act as any).userName ? ` • Por: ${(act as any).userName}` : ((act as any).author ? ` • Por: ${(act as any).author}` : ''))}
                       </div>
 
                       {/* Content */}
