@@ -1079,13 +1079,15 @@ export default function DashboardPage() {
       }
     })
 
-    // Exibe no indicador da equipe apenas os representantes/vendedores comerciais ou gestores cadastrados
-    const commercialTeam = Object.values(repMap).filter(r => {
-      const roleNorm = r.role.toLowerCase()
-      const isCommercial = roleNorm.includes('vendedor') || roleNorm.includes('representante') || roleNorm.includes('gestor')
-      const hasSales = r.closedCount > 0 || r.sales > 0
-      return isCommercial || hasSales
-    })
+    // Exibe no indicador da equipe apenas os representantes/vendedores comerciais ou gestores cadastrados (ordenados por maior faturamento)
+    const commercialTeam = Object.values(repMap)
+      .filter(r => {
+        const roleNorm = r.role.toLowerCase()
+        const isCommercial = roleNorm.includes('vendedor') || roleNorm.includes('representante') || roleNorm.includes('gestor')
+        const hasSales = r.closedCount > 0 || r.sales > 0
+        return isCommercial || hasSales
+      })
+      .sort((a, b) => b.sales - a.sales)
 
     return commercialTeam.map((r, idx) => ({ id: `rep-${idx}`, ...r }))
   }, [systemUsers, pipelineDeals])
@@ -1810,27 +1812,21 @@ export default function DashboardPage() {
                   {funnelSummary.map(item => (
                     <div
                       key={item.key}
-                      className="rounded-xl px-2.5 py-2 flex flex-col gap-1 border transition-all duration-200"
-                      style={{
-                        borderColor: `color-mix(in srgb, ${item.color} 25%, transparent)`,
-                        background: `color-mix(in srgb, ${item.color} 6%, transparent)`,
-                        borderTopColor: item.color,
-                        borderTopWidth: '2px'
-                      }}
+                      className="rounded-xl px-2.5 py-2 flex flex-col gap-1 border border-[#24262b] bg-[#141517] hover:border-zinc-700 transition-all cursor-default"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-lg font-black font-display leading-none" style={{ color: item.color }}>
+                        <span className="text-lg font-black font-display leading-none text-zinc-100">
                           {item.count}
                         </span>
-                        <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: `color-mix(in srgb, ${item.color} 15%, transparent)` }}>
-                          {getStageIcon(item.key, item.color)}
+                        <div className="w-5 h-5 rounded-md flex items-center justify-center bg-[#1e2025] text-zinc-400">
+                          {getStageIcon(item.key, '#a1a1aa')}
                         </div>
                       </div>
-                      <div className="text-[8px] font-mono font-bold uppercase tracking-wide truncate" style={{ color: `color-mix(in srgb, ${item.color} 85%, var(--white))` }}>
+                      <div className="text-[8px] font-mono font-bold uppercase tracking-wide truncate text-zinc-300">
                         {item.stage}
                       </div>
-                      <div className="text-[9px] font-mono font-bold text-[var(--white)] truncate">
-                        {item.value ? formatCurrency(item.value) : <span className="text-[var(--gray2)]">—</span>}
+                      <div className="text-[9px] font-mono font-bold text-zinc-400 truncate">
+                        {item.value ? formatCurrency(item.value) : <span className="text-zinc-600">—</span>}
                       </div>
                     </div>
                   ))}
@@ -2096,75 +2092,75 @@ export default function DashboardPage() {
 
       {/* ── ROW 1: TOP SUMMARY KPIS (6 CARDS METRICS SUITE) ── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 shrink-0">
-        <div className="card px-3 py-2 flex items-center justify-between border-[rgba(180,217,50,0.15)] bg-[var(--card)]">
+        <div className="card px-3 py-2 flex items-center justify-between border-[#24262b] bg-[#141517] hover:border-zinc-700 transition-all">
           <div>
-            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Negócios Ativos</div>
-            <div className="text-base font-display font-black text-[var(--lime)] mt-0.5">{activeDealsCount}</div>
+            <div className="text-[8px] font-mono text-zinc-400 uppercase font-bold">Negócios Ativos</div>
+            <div className="text-base font-display font-black text-zinc-100 mt-0.5">{activeDealsCount}</div>
           </div>
-          <div className="w-7 h-7 rounded-lg bg-[rgba(180,217,50,0.1)] border border-[rgba(180,217,50,0.2)] flex items-center justify-center shrink-0">
-            <Package size={14} className="text-[var(--lime)]" />
+          <div className="w-7 h-7 rounded-lg bg-[#1a1c20] border border-[#2e3138] flex items-center justify-center shrink-0 text-zinc-300">
+            <Package size={14} className="text-zinc-300" />
           </div>
         </div>
 
-        <div className="card px-3 py-2 flex items-center justify-between border-[rgba(72,199,103,0.15)] bg-[var(--card)]">
+        <div className="card px-3 py-2 flex items-center justify-between border-[#24262b] bg-[#141517] hover:border-zinc-700 transition-all">
           <div>
-            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Fechamentos (Mês)</div>
-            <div className="text-base font-display font-black text-[var(--green)] mt-0.5">{formatCurrency(fechamentoValue)}</div>
+            <div className="text-[8px] font-mono text-zinc-400 uppercase font-bold">Fechamentos (Mês)</div>
+            <div className="text-base font-display font-black text-emerald-400 mt-0.5">{formatCurrency(fechamentoValue)}</div>
           </div>
-          <div className="w-7 h-7 rounded-lg bg-[rgba(72,199,103,0.1)] border border-[rgba(72,199,103,0.2)] flex items-center justify-center shrink-0">
-            <CheckCircle size={14} className="text-[var(--green)]" />
+          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-400">
+            <CheckCircle size={14} className="text-emerald-400" />
           </div>
         </div>
 
-        <div className="card px-3 py-2 flex items-center justify-between border-sky-500/20 bg-[var(--card)]">
+        <div className="card px-3 py-2 flex items-center justify-between border-[#24262b] bg-[#141517] hover:border-zinc-700 transition-all">
           <div>
-            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Ticket Médio</div>
-            <div className="text-base font-display font-black text-sky-400 mt-0.5">{formatCurrency(advancedMetrics.ticketMedio)}</div>
+            <div className="text-[8px] font-mono text-zinc-400 uppercase font-bold">Ticket Médio</div>
+            <div className="text-base font-display font-black text-zinc-100 mt-0.5">{formatCurrency(advancedMetrics.ticketMedio)}</div>
           </div>
-          <div className="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0">
-            <DollarSign size={14} className="text-sky-400" />
+          <div className="w-7 h-7 rounded-lg bg-[#1a1c20] border border-[#2e3138] flex items-center justify-center shrink-0 text-zinc-300">
+            <DollarSign size={14} className="text-zinc-300" />
           </div>
         </div>
 
-        <div className="card px-3 py-2 flex items-center justify-between border-purple-500/20 bg-[var(--card)]">
+        <div className="card px-3 py-2 flex items-center justify-between border-[#24262b] bg-[#141517] hover:border-zinc-700 transition-all">
           <div>
-            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Taxa Conversão</div>
-            <div className="text-base font-display font-black text-purple-400 mt-0.5">{advancedMetrics.conversionRate.toFixed(1)}%</div>
+            <div className="text-[8px] font-mono text-zinc-400 uppercase font-bold">Taxa Conversão</div>
+            <div className="text-base font-display font-black text-zinc-100 mt-0.5">{advancedMetrics.conversionRate.toFixed(1)}%</div>
           </div>
-          <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
-            <TrendingUp size={14} className="text-purple-400" />
+          <div className="w-7 h-7 rounded-lg bg-[#1a1c20] border border-[#2e3138] flex items-center justify-center shrink-0 text-zinc-300">
+            <TrendingUp size={14} className="text-zinc-300" />
           </div>
         </div>
 
-        <div className="card px-3 py-2 flex items-center justify-between border-amber-500/20 bg-[var(--card)]">
+        <div className="card px-3 py-2 flex items-center justify-between border-[#24262b] bg-[#141517] hover:border-zinc-700 transition-all">
           <div>
-            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Ciclo Médio</div>
-            <div className="text-base font-display font-black text-amber-400 mt-0.5">{advancedMetrics.averageCycleDays} dias</div>
+            <div className="text-[8px] font-mono text-zinc-400 uppercase font-bold">Ciclo Médio</div>
+            <div className="text-base font-display font-black text-zinc-100 mt-0.5">{advancedMetrics.averageCycleDays} dias</div>
           </div>
-          <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-            <Clock size={14} className="text-amber-400" />
+          <div className="w-7 h-7 rounded-lg bg-[#1a1c20] border border-[#2e3138] flex items-center justify-center shrink-0 text-zinc-300">
+            <Clock size={14} className="text-zinc-300" />
           </div>
         </div>
 
-        <div className="card px-3 py-2 flex items-center justify-between border-[rgba(226,72,61,0.15)] bg-[var(--card)]">
+        <div className="card px-3 py-2 flex items-center justify-between border-[#24262b] bg-[#141517] hover:border-zinc-700 transition-all">
           <div>
-            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Perdidos (Mês)</div>
-            <div className="text-base font-display font-black text-[var(--red)] mt-0.5">{formatCurrency(perdidoValue)}</div>
+            <div className="text-[8px] font-mono text-zinc-400 uppercase font-bold">Perdidos (Mês)</div>
+            <div className="text-base font-display font-black text-red-400/90 mt-0.5">{formatCurrency(perdidoValue)}</div>
           </div>
-          <div className="w-7 h-7 rounded-lg bg-[rgba(226,72,61,0.1)] border border-[rgba(226,72,61,0.2)] flex items-center justify-center shrink-0">
-            <XCircle size={14} className="text-[var(--red)]" />
+          <div className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0 text-red-400">
+            <XCircle size={14} className="text-red-400" />
           </div>
         </div>
       </div>
 
       {/* ── ROW 2: FUNNEL ── */}
-      <div className="card px-3 pt-2.5 pb-3 flex flex-col gap-2 shrink-0 bg-[var(--card)]">
-        <div className="flex items-center justify-between border-b border-[var(--line)] pb-2 mb-1">
+      <div className="card px-3 pt-2.5 pb-3 flex flex-col gap-2 shrink-0 bg-[#141517] border border-[#24262b]">
+        <div className="flex items-center justify-between border-b border-[#24262b] pb-2 mb-1">
           <div className="flex items-center gap-2">
-            <Target size={13} className="text-[var(--lime)]" />
-            <span className="text-[11px] font-bold font-display text-[var(--white)]">Funil de Vendas · Passos do Pipeline</span>
+            <Target size={13} className="text-zinc-400" />
+            <span className="text-[11px] font-bold font-display text-white">Funil de Vendas · Passos do Pipeline</span>
           </div>
-          <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider">8 Etapas Comerciais</span>
+          <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider">8 Etapas Comerciais</span>
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -2172,44 +2168,32 @@ export default function DashboardPage() {
             <div key={item.key} className="flex items-center gap-1.5 flex-1 min-w-0">
               {/* Stage card */}
               <div
-                className="flex-1 min-w-0 rounded-xl px-2.5 py-2 flex flex-col gap-1 border transition-all duration-200 hover:brightness-110 cursor-default"
-                style={{
-                  borderColor: `color-mix(in srgb, ${item.color} 25%, transparent)`,
-                  background: `color-mix(in srgb, ${item.color} 6%, transparent)`,
-                  borderTopColor: item.color,
-                  borderTopWidth: '2px'
-                }}
+                className="flex-1 min-w-0 rounded-xl px-2.5 py-2 flex flex-col gap-1 border border-[#24262b] bg-[#111214] hover:border-zinc-700 transition-all cursor-default"
               >
                 {/* Count + Icon */}
                 <div className="flex items-center justify-between">
-                  <span
-                    className="text-xl font-black font-display leading-none"
-                    style={{ color: item.color }}
-                  >
+                  <span className="text-xl font-black font-display leading-none text-zinc-100">
                     {item.count}
                   </span>
-                  <div
-                    className="w-5 h-5 rounded-md flex items-center justify-center"
-                    style={{ background: `color-mix(in srgb, ${item.color} 15%, transparent)` }}
-                  >
-                    {getStageIcon(item.key, item.color)}
+                  <div className="w-5 h-5 rounded-md flex items-center justify-center bg-[#1c1e22] text-zinc-400">
+                    {getStageIcon(item.key, '#a1a1aa')}
                   </div>
                 </div>
 
                 {/* Stage name */}
-                <div className="text-[8px] font-mono font-bold uppercase tracking-wide truncate" style={{ color: `color-mix(in srgb, ${item.color} 85%, var(--white))` }}>
+                <div className="text-[8px] font-mono font-bold uppercase tracking-wide truncate text-zinc-300">
                   {item.stage}
                 </div>
 
                 {/* Value */}
-                <div className="text-[9px] font-mono font-bold text-[var(--white)] truncate">
-                  {item.value ? formatCurrency(item.value) : <span className="text-[var(--gray2)]">—</span>}
+                <div className="text-[9px] font-mono font-bold text-zinc-400 truncate">
+                  {item.value ? formatCurrency(item.value) : <span className="text-zinc-600">—</span>}
                 </div>
               </div>
 
               {/* Connector */}
               {idx < funnelSummary.length - 1 && (
-                <div className="shrink-0 text-[var(--line)] opacity-60">
+                <div className="shrink-0 text-zinc-600">
                   <ArrowRight size={10} strokeWidth={2.5} />
                 </div>
               )}
@@ -2374,39 +2358,38 @@ export default function DashboardPage() {
             /* Visão Gestor/Admin: Exibe "Performance da Equipe" + "Top Clientes & Embalagens" lado a lado */
             <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
               {/* COL 1: Performance da Equipe */}
-              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] h-full">
-                <div className="flex items-center justify-between border-b border-[var(--line)] pb-1 shrink-0">
+              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[#141517] border border-[#24262b] h-full">
+                <div className="flex items-center justify-between border-b border-[#24262b] pb-1 shrink-0">
                   <div className="flex items-center gap-2">
-                    <Users size={13} className="text-[var(--lime)]" />
-                    <span className="text-xs font-bold font-display text-[var(--white)]">Performance da Equipe</span>
+                    <Users size={13} className="text-zinc-400" />
+                    <span className="text-xs font-bold font-display text-white">Performance da Equipe</span>
                   </div>
-                  <span className="text-[9px] font-mono text-[var(--gray2)] uppercase">Mês Atual</span>
+                  <span className="text-[9px] font-mono text-zinc-400 uppercase">Mês Atual</span>
                 </div>
 
                 <div className="flex-1 overflow-y-auto space-y-1.5 mt-2 pr-1 min-h-0">
                   {TEAM_PERFORMANCE.map(rep => (
-                    <div key={rep.id} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
+                    <div key={rep.id} className="p-2 rounded-xl border border-[#24262b] bg-[#111214] flex items-center justify-between gap-2 hover:border-zinc-700 transition-all">
                       <div className="flex items-center gap-2 min-w-0">
                         <div 
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-black font-bold text-[10px] shrink-0"
-                          style={{ backgroundColor: rep.avatarColor }}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center bg-zinc-800 border border-zinc-700 text-zinc-200 font-bold text-[10px] shrink-0"
                         >
                           {rep.name.split(' ').map((p: any) => p[0]).join('')}
                         </div>
                         <div className="min-w-0">
-                          <div className="text-xs font-bold text-[var(--white)] truncate leading-tight">{rep.name}</div>
-                          <div className="text-[8px] font-mono text-[var(--gray2)] truncate">{rep.role}</div>
+                          <div className="text-xs font-bold text-white truncate leading-tight">{rep.name}</div>
+                          <div className="text-[8px] font-mono text-zinc-400 truncate">{rep.role}</div>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0 text-right">
                         <div>
-                          <div className="text-[7px] font-mono text-[var(--gray2)] uppercase">Fechamentos</div>
-                          <div className="text-[10px] font-mono font-bold text-[var(--white)]">{rep.closedCount}</div>
+                          <div className="text-[7px] font-mono text-zinc-400 uppercase">Fechamentos</div>
+                          <div className="text-[10px] font-mono font-bold text-white">{rep.closedCount}</div>
                         </div>
                         <div>
-                          <div className="text-[7px] font-mono text-[var(--gray2)] uppercase">Faturado</div>
-                          <div className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(rep.sales)}</div>
+                          <div className="text-[7px] font-mono text-zinc-400 uppercase">Faturado</div>
+                          <div className="text-[10px] font-mono font-bold text-zinc-100">{formatCurrency(rep.sales)}</div>
                         </div>
                       </div>
                     </div>
@@ -2415,33 +2398,33 @@ export default function DashboardPage() {
               </div>
 
               {/* COL 2: Top Clientes e Embalagens Combinados */}
-              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] h-full">
-                <div className="flex items-center justify-between border-b border-[var(--line)] pb-1 shrink-0">
+              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[#141517] border border-[#24262b] h-full">
+                <div className="flex items-center justify-between border-b border-[#24262b] pb-1 shrink-0">
                   <div className="flex items-center gap-2">
-                    <Building size={13} className="text-[var(--lime)]" />
-                    <span className="text-xs font-bold font-display text-[var(--white)]">Top Clientes & Embalagens</span>
+                    <Building size={13} className="text-zinc-400" />
+                    <span className="text-xs font-bold font-display text-white">Top Clientes & Embalagens</span>
                   </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto space-y-3 mt-2 pr-1 min-h-0">
                   {/* Principais Clientes */}
                   <div className="space-y-1">
-                    <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold tracking-wider flex items-center gap-1">
-                      <Building size={10} className="text-[var(--lime)]" /> Principais Clientes
+                    <div className="text-[8px] font-mono text-zinc-400 uppercase font-bold tracking-wider flex items-center gap-1">
+                      <Building size={10} className="text-zinc-400" /> Principais Clientes
                     </div>
                     <div className="space-y-1">
                       {TOP_CLIENTS.length === 0 ? (
-                        <div className="text-[10px] font-mono text-[var(--gray2)] py-2 italic text-center">Nenhum cliente com venda fechada no período.</div>
+                        <div className="text-[10px] font-mono text-zinc-400 py-2 italic text-center">Nenhum cliente com venda fechada no período.</div>
                       ) : (
                         TOP_CLIENTS.map(cli => (
-                          <div key={cli.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
+                          <div key={cli.rank} className="p-2 rounded-xl border border-[#24262b] bg-[#111214] flex items-center justify-between gap-2 hover:border-zinc-700 transition-all">
                             <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{cli.rank}</span>
-                              <div className="text-xs font-bold text-[var(--white)] truncate">{cli.name}</div>
+                              <span className="text-[8px] font-mono text-zinc-400 font-bold">#{cli.rank}</span>
+                              <div className="text-xs font-bold text-white truncate">{cli.name}</div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[8px] font-mono bg-lime-500/10 text-[var(--lime)] px-1.5 py-0.5 rounded font-black border border-[var(--lime)]/10">{cli.type}</span>
-                              <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(cli.value)}</span>
+                              <span className="text-[8px] font-mono bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded font-bold border border-zinc-700">{cli.type}</span>
+                              <span className="text-[10px] font-mono font-bold text-zinc-100">{formatCurrency(cli.value)}</span>
                             </div>
                           </div>
                         ))
