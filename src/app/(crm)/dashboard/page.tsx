@@ -44,6 +44,11 @@ import Link from 'next/link'
 
 declare let L: any
 
+function formatAbbreviatedNumber(val: number): string {
+  if (!val) return '0'
+  return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(val)
+}
+
 const WhatsappIcon = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
   <svg 
     width={size} 
@@ -1812,27 +1817,27 @@ export default function DashboardPage() {
                   {funnelSummary.map(item => (
                     <div
                       key={item.key}
-                      className="rounded-xl px-2.5 py-2 flex flex-col gap-0.5 border border-[#24262b] bg-[#141517] hover:border-zinc-600 transition-all cursor-default relative overflow-hidden group shadow-sm"
+                      className="rounded-xl px-2.5 py-2 flex flex-col gap-0.5 border border-[var(--line)] bg-[var(--charcoal)] hover:border-[var(--lime)]/50 transition-all cursor-default relative overflow-hidden group shadow-sm"
                       style={{ borderLeft: `3.5px solid ${item.color}` }}
                     >
                       {/* Stage name */}
-                      <div className="text-[8px] font-mono font-bold uppercase tracking-wide truncate text-zinc-400">
+                      <div className="text-[8px] font-mono font-bold uppercase tracking-wide truncate text-[var(--gray2)]">
                         {item.stage}
                       </div>
 
                       {/* Main Value */}
-                      <div className="text-[11px] font-mono font-extrabold text-white truncate leading-tight my-0.5">
-                        {item.value ? formatCurrency(item.value) : <span className="text-zinc-500">R$ 0,00</span>}
+                      <div className="text-[11px] font-mono font-extrabold text-[var(--white)] truncate leading-tight my-0.5">
+                        {item.value ? formatCurrency(item.value) : <span className="text-[var(--gray2)]">R$ 0,00</span>}
                       </div>
 
                       {/* Negócios Count */}
-                      <div className="text-[9px] font-mono font-bold text-zinc-400">
+                      <div className="text-[9px] font-mono font-bold text-[var(--gray2)]">
                         {item.count} {item.count === 1 ? 'negócio' : 'negócios'}
                       </div>
 
                       {/* Watermark Icon */}
                       <div 
-                        className="absolute -right-1 -bottom-1 opacity-[0.08] pointer-events-none group-hover:opacity-20 transition-opacity"
+                        className="absolute -right-1 -bottom-1 opacity-[0.10] pointer-events-none group-hover:opacity-25 transition-opacity"
                         style={{ color: item.color }}
                       >
                         {getStageIcon(item.key, item.color, 40)}
@@ -2101,75 +2106,75 @@ export default function DashboardPage() {
 
       {/* ── ROW 1: TOP SUMMARY KPIS (6 CARDS METRICS SUITE) ── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 shrink-0">
-        <div className="card px-3 py-2 flex items-center justify-between border-[#24262b] bg-[#141517] hover:border-zinc-700 transition-all">
+        <div className="card px-3 py-2 flex items-center justify-between border border-[var(--line)] border-l-4 border-l-[var(--lime)] bg-[var(--card)] hover:border-[var(--lime)]/50 transition-all shadow-sm">
           <div>
-            <div className="text-[8px] font-mono text-zinc-400 uppercase font-bold">Negócios Ativos</div>
-            <div className="text-base font-display font-black text-zinc-100 mt-0.5">{activeDealsCount}</div>
+            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Negócios Ativos</div>
+            <div className="text-base font-display font-black text-[var(--white)] mt-0.5">{activeDealsCount}</div>
           </div>
-          <div className="w-7 h-7 rounded-lg bg-[#1a1c20] border border-[#2e3138] flex items-center justify-center shrink-0 text-zinc-300">
-            <Package size={14} className="text-zinc-300" />
+          <div className="w-7 h-7 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center shrink-0 text-[var(--gray2)]">
+            <Package size={14} className="text-[var(--gray2)]" />
           </div>
         </div>
 
-        <div className="card px-3 py-2 flex items-center justify-between border-[#24262b] bg-[#141517] hover:border-zinc-700 transition-all">
+        <div className="card px-3 py-2 flex items-center justify-between border border-[var(--line)] border-l-4 border-l-[var(--lime)] bg-[var(--card)] hover:border-[var(--lime)]/50 transition-all shadow-sm">
           <div>
-            <div className="text-[8px] font-mono text-zinc-400 uppercase font-bold">Fechamentos (Mês)</div>
-            <div className="text-base font-display font-black text-emerald-400 mt-0.5">{formatCurrency(fechamentoValue)}</div>
+            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Fechamentos (Mês)</div>
+            <div className="text-base font-display font-black text-[var(--green)] mt-0.5">{formatCurrency(fechamentoValue)}</div>
           </div>
-          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-400">
-            <CheckCircle size={14} className="text-emerald-400" />
+          <div className="w-7 h-7 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center shrink-0 text-[var(--green)]">
+            <CheckCircle size={14} className="text-[var(--green)]" />
           </div>
         </div>
 
-        <div className="card px-3 py-2 flex items-center justify-between border-[#24262b] bg-[#141517] hover:border-zinc-700 transition-all">
+        <div className="card px-3 py-2 flex items-center justify-between border border-[var(--line)] border-l-4 border-l-[var(--lime)] bg-[var(--card)] hover:border-[var(--lime)]/50 transition-all shadow-sm">
           <div>
-            <div className="text-[8px] font-mono text-zinc-400 uppercase font-bold">Ticket Médio</div>
-            <div className="text-base font-display font-black text-zinc-100 mt-0.5">{formatCurrency(advancedMetrics.ticketMedio)}</div>
+            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Ticket Médio</div>
+            <div className="text-base font-display font-black text-[var(--white)] mt-0.5">{formatCurrency(advancedMetrics.ticketMedio)}</div>
           </div>
-          <div className="w-7 h-7 rounded-lg bg-[#1a1c20] border border-[#2e3138] flex items-center justify-center shrink-0 text-zinc-300">
-            <DollarSign size={14} className="text-zinc-300" />
+          <div className="w-7 h-7 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center shrink-0 text-[var(--gray2)]">
+            <DollarSign size={14} className="text-[var(--gray2)]" />
           </div>
         </div>
 
-        <div className="card px-3 py-2 flex items-center justify-between border-[#24262b] bg-[#141517] hover:border-zinc-700 transition-all">
+        <div className="card px-3 py-2 flex items-center justify-between border border-[var(--line)] border-l-4 border-l-[var(--lime)] bg-[var(--card)] hover:border-[var(--lime)]/50 transition-all shadow-sm">
           <div>
-            <div className="text-[8px] font-mono text-zinc-400 uppercase font-bold">Taxa Conversão</div>
-            <div className="text-base font-display font-black text-zinc-100 mt-0.5">{advancedMetrics.conversionRate.toFixed(1)}%</div>
+            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Taxa Conversão</div>
+            <div className="text-base font-display font-black text-[var(--white)] mt-0.5">{advancedMetrics.conversionRate.toFixed(1)}%</div>
           </div>
-          <div className="w-7 h-7 rounded-lg bg-[#1a1c20] border border-[#2e3138] flex items-center justify-center shrink-0 text-zinc-300">
-            <TrendingUp size={14} className="text-zinc-300" />
+          <div className="w-7 h-7 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center shrink-0 text-[var(--gray2)]">
+            <TrendingUp size={14} className="text-[var(--gray2)]" />
           </div>
         </div>
 
-        <div className="card px-3 py-2 flex items-center justify-between border-[#24262b] bg-[#141517] hover:border-zinc-700 transition-all">
+        <div className="card px-3 py-2 flex items-center justify-between border border-[var(--line)] border-l-4 border-l-[var(--lime)] bg-[var(--card)] hover:border-[var(--lime)]/50 transition-all shadow-sm">
           <div>
-            <div className="text-[8px] font-mono text-zinc-400 uppercase font-bold">Ciclo Médio</div>
-            <div className="text-base font-display font-black text-zinc-100 mt-0.5">{advancedMetrics.averageCycleDays} dias</div>
+            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Ciclo Médio</div>
+            <div className="text-base font-display font-black text-[var(--white)] mt-0.5">{advancedMetrics.averageCycleDays} dias</div>
           </div>
-          <div className="w-7 h-7 rounded-lg bg-[#1a1c20] border border-[#2e3138] flex items-center justify-center shrink-0 text-zinc-300">
-            <Clock size={14} className="text-zinc-300" />
+          <div className="w-7 h-7 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center shrink-0 text-[var(--gray2)]">
+            <Clock size={14} className="text-[var(--gray2)]" />
           </div>
         </div>
 
-        <div className="card px-3 py-2 flex items-center justify-between border-[#24262b] bg-[#141517] hover:border-zinc-700 transition-all">
+        <div className="card px-3 py-2 flex items-center justify-between border border-[var(--line)] border-l-4 border-l-[var(--lime)] bg-[var(--card)] hover:border-[var(--lime)]/50 transition-all shadow-sm">
           <div>
-            <div className="text-[8px] font-mono text-zinc-400 uppercase font-bold">Perdidos (Mês)</div>
-            <div className="text-base font-display font-black text-red-400/90 mt-0.5">{formatCurrency(perdidoValue)}</div>
+            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Perdidos (Mês)</div>
+            <div className="text-base font-display font-black text-[var(--red)] mt-0.5">{formatCurrency(perdidoValue)}</div>
           </div>
-          <div className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0 text-red-400">
-            <XCircle size={14} className="text-red-400" />
+          <div className="w-7 h-7 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center shrink-0 text-[var(--red)]">
+            <XCircle size={14} className="text-[var(--red)]" />
           </div>
         </div>
       </div>
 
       {/* ── ROW 2: FUNNEL ── */}
-      <div className="card px-3 pt-2.5 pb-3 flex flex-col gap-2 shrink-0 bg-[#141517] border border-[#24262b]">
-        <div className="flex items-center justify-between border-b border-[#24262b] pb-2 mb-1">
+      <div className="card px-3 pt-2.5 pb-3 flex flex-col gap-2 shrink-0 bg-[var(--card)] border border-[var(--line)]">
+        <div className="flex items-center justify-between border-b border-[var(--line)] pb-2 mb-1">
           <div className="flex items-center gap-2">
-            <Target size={13} className="text-zinc-400" />
-            <span className="text-[11px] font-bold font-display text-white">Funil de Vendas · Passos do Pipeline</span>
+            <Target size={13} className="text-[var(--gray2)]" />
+            <span className="text-[11px] font-bold font-display text-[var(--white)]">Funil de Vendas · Passos do Pipeline</span>
           </div>
-          <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider">8 Etapas Comerciais</span>
+          <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider">8 Etapas Comerciais</span>
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -2177,27 +2182,27 @@ export default function DashboardPage() {
             <div key={item.key} className="flex items-center gap-1.5 flex-1 min-w-0">
               {/* Stage card with left accent border and watermark icon */}
               <div
-                className="flex-1 min-w-0 rounded-xl px-2.5 py-2 flex flex-col gap-0.5 border border-[#24262b] bg-[#111214] hover:border-zinc-600 transition-all cursor-default relative overflow-hidden group shadow-sm"
+                className="flex-1 min-w-0 rounded-xl px-2.5 py-2 flex flex-col gap-0.5 border border-[var(--line)] bg-[var(--charcoal)] hover:border-[var(--lime)]/50 transition-all cursor-default relative overflow-hidden group shadow-sm"
                 style={{ borderLeft: `3.5px solid ${item.color}` }}
               >
                 {/* Stage name */}
-                <div className="text-[8px] font-mono font-bold uppercase tracking-wide truncate text-zinc-400">
+                <div className="text-[8px] font-mono font-bold uppercase tracking-wide truncate text-[var(--gray2)]">
                   {item.stage}
                 </div>
 
                 {/* Main Value */}
-                <div className="text-[11px] font-mono font-extrabold text-white truncate leading-tight my-0.5">
-                  {item.value ? formatCurrency(item.value) : <span className="text-zinc-500">R$ 0,00</span>}
+                <div className="text-[11px] font-mono font-extrabold text-[var(--white)] truncate leading-tight my-0.5">
+                  {item.value ? formatCurrency(item.value) : <span className="text-[var(--gray2)]">R$ 0,00</span>}
                 </div>
 
                 {/* Negócios Count */}
-                <div className="text-[9px] font-mono font-bold text-zinc-400">
+                <div className="text-[9px] font-mono font-bold text-[var(--gray2)]">
                   {item.count} {item.count === 1 ? 'negócio' : 'negócios'}
                 </div>
 
                 {/* Watermark Icon */}
                 <div 
-                  className="absolute -right-1 -bottom-1 opacity-[0.08] pointer-events-none group-hover:opacity-20 transition-opacity"
+                  className="absolute -right-1 -bottom-1 opacity-[0.10] pointer-events-none group-hover:opacity-25 transition-opacity"
                   style={{ color: item.color }}
                 >
                   {getStageIcon(item.key, item.color, 40)}
@@ -2206,7 +2211,7 @@ export default function DashboardPage() {
 
               {/* Connector */}
               {idx < funnelSummary.length - 1 && (
-                <div className="shrink-0 text-zinc-600">
+                <div className="shrink-0 text-[var(--gray2)] opacity-50">
                   <ArrowRight size={10} strokeWidth={2.5} />
                 </div>
               )}
@@ -2294,12 +2299,9 @@ export default function DashboardPage() {
                       >
                         <defs>
                           <linearGradient id="salesLineGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#84cc16" stopOpacity="0.3" />
-                            <stop offset="100%" stopColor="#84cc16" stopOpacity="0.0" />
+                            <stop offset="0%" stopColor="var(--lime)" stopOpacity="0.35" />
+                            <stop offset="100%" stopColor="var(--lime)" stopOpacity="0.0" />
                           </linearGradient>
-                          <filter id="glowLimeLine" x="-20%" y="-20%" width="140%" height="140%">
-                            <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#84cc16" floodOpacity="0.4" />
-                          </filter>
                         </defs>
 
                         {/* Baseline */}
@@ -2308,7 +2310,7 @@ export default function DashboardPage() {
                           y1={baselineY}
                           x2={svgW - padX}
                           y2={baselineY}
-                          stroke="#27292e"
+                          stroke="var(--line)"
                           strokeWidth="1"
                         />
 
@@ -2319,11 +2321,10 @@ export default function DashboardPage() {
                         <path
                           d={lineD}
                           fill="none"
-                          stroke="#84cc16"
+                          stroke="var(--lime)"
                           strokeWidth="2.5"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          filter="url(#glowLimeLine)"
                         />
 
                         {/* Interactive Data Points */}
@@ -2344,7 +2345,7 @@ export default function DashboardPage() {
                                   y1={padTop}
                                   x2={pt.x}
                                   y2={baselineY}
-                                  stroke="#84cc16"
+                                  stroke="var(--lime)"
                                   strokeWidth="1"
                                   strokeDasharray="2 2"
                                   opacity="0.5"
@@ -2357,8 +2358,8 @@ export default function DashboardPage() {
                                   cx={pt.x}
                                   cy={pt.y}
                                   r={isSelected ? 5.5 : 4}
-                                  fill="#141517"
-                                  stroke="#84cc16"
+                                  fill="var(--card)"
+                                  stroke="var(--lime)"
                                   strokeWidth="2.5"
                                   className="transition-all duration-150 group-hover:r-6"
                                 />
@@ -2367,8 +2368,8 @@ export default function DashboardPage() {
                                   cx={pt.x}
                                   cy={pt.y}
                                   r="2"
-                                  fill="#2e3138"
-                                  className="transition-all duration-150 group-hover:fill-zinc-400 group-hover:r-3"
+                                  fill="var(--line)"
+                                  className="transition-all duration-150 group-hover:r-3"
                                 />
                               )}
 
@@ -2379,23 +2380,23 @@ export default function DashboardPage() {
                                 textAnchor="middle"
                                 fontSize="9"
                                 fontWeight={isSelected ? 'bold' : 'normal'}
-                                fill={isSelected ? '#84cc16' : '#a1a1aa'}
-                                className="font-mono transition-colors group-hover:fill-white"
+                                fill={isSelected ? 'var(--lime)' : 'var(--gray2)'}
+                                className="font-mono transition-colors"
                               >
                                 {pt.month}
                               </text>
 
-                              {/* Value Label above active points ONLY */}
+                              {/* Value Label above active points ONLY - Formatted without R$ and without decimals e.g. 146.600 */}
                               {hasSales && (
                                 <g className="transition-all">
                                   <rect
-                                    x={pt.x - 34}
+                                    x={pt.x - 30}
                                     y={pt.y - 20}
-                                    width="68"
+                                    width="60"
                                     height="15"
                                     rx="4"
-                                    fill="#1e2026"
-                                    stroke="#3f3f46"
+                                    fill="var(--card)"
+                                    stroke="var(--line)"
                                     strokeWidth="0.8"
                                   />
                                   <text
@@ -2404,10 +2405,10 @@ export default function DashboardPage() {
                                     textAnchor="middle"
                                     fontSize="8.5"
                                     fontWeight="bold"
-                                    fill="#84cc16"
+                                    fill="var(--lime)"
                                     className="font-mono"
                                   >
-                                    {formatCurrency(pt.value)}
+                                    {formatAbbreviatedNumber(pt.value)}
                                   </text>
                                 </g>
                               )}
@@ -2419,34 +2420,104 @@ export default function DashboardPage() {
                   )
                 })()
               ) : (
-                /* DAILY DRILLDOWN VIEW */
-                selectedDrilldownMonth.daily.map((d: any) => {
-                  const heightPct = Math.max(8, Math.min(84, Math.round((d.value / maxSalesValue) * 80)))
+                /* DAILY DRILLDOWN VIEW - Modern SVG Spline Area Line Chart with 146k labels */
+                (() => {
+                  const dailyArr: any[] = selectedDrilldownMonth.daily || []
+                  const svgW = 600
+                  const svgH = 140
+                  const padX = 18
+                  const padTop = 26
+                  const padBottom = 22
+
+                  const maxVal = Math.max(1000, ...dailyArr.map((d: any) => d.value))
+                  const chartW = svgW - padX * 2
+                  const chartH = svgH - padTop - padBottom
+                  const baselineY = svgH - padBottom
+
+                  const points = dailyArr.map((d: any, i: number) => {
+                    const x = padX + (i * chartW) / Math.max(1, dailyArr.length - 1)
+                    const y = baselineY - (d.value / maxVal) * chartH
+                    return { ...d, x, y, index: i }
+                  })
+
+                  let lineD = ''
+                  if (points.length > 0) {
+                    lineD = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`
+                    for (let i = 0; i < points.length - 1; i++) {
+                      const p0 = points[i === 0 ? i : i - 1]
+                      const p1 = points[i]
+                      const p2 = points[i + 1]
+                      const p3 = points[i + 2 < points.length ? i + 2 : i + 1]
+
+                      const cp1x = p1.x + (p2.x - p0.x) / 6
+                      const cp1y = p1.y + (p2.y - p0.y) / 6
+
+                      const cp2x = p2.x - (p3.x - p1.x) / 6
+                      const cp2y = p2.y - (p3.y - p1.y) / 6
+
+                      lineD += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`
+                    }
+                  }
+
+                  const areaD = `${lineD} L ${points[points.length - 1].x.toFixed(1)} ${baselineY} L ${points[0].x.toFixed(1)} ${baselineY} Z`
+
                   return (
-                    <div 
-                      key={d.day}
-                      className="flex-1 flex flex-col items-center gap-0.5 group h-full justify-end"
-                      title={`Dia ${d.day}: ${formatCurrency(d.value)}`}
-                    >
-                      {d.value > 0 ? (
-                        <span className="text-[6.5px] font-mono text-zinc-200 font-extrabold text-center tracking-tighter mb-0.5">
-                          {d.value >= 1000 ? `${(d.value / 1000).toFixed(0)}k` : d.value}
-                        </span>
-                      ) : (
-                        <span className="text-[6px] font-mono text-zinc-600 mb-0.5">—</span>
-                      )}
-                      <div className="w-full bg-[#18191c] border border-[#24262b] rounded-t-sm relative overflow-hidden flex items-end" style={{ height: `${heightPct}%` }}>
-                        <div 
-                          className="w-full bg-gradient-to-t from-emerald-600 to-[#84cc16] group-hover:brightness-125 transition-all"
-                          style={{ height: '100%' }}
-                        />
-                      </div>
-                      <span className="text-[7px] font-mono text-zinc-400 group-hover:text-white">
-                        {d.day}
-                      </span>
+                    <div className="w-full h-full flex flex-col justify-between relative select-none">
+                      <svg
+                        viewBox={`0 0 ${svgW} ${svgH}`}
+                        className="w-full h-full overflow-visible"
+                        preserveAspectRatio="none"
+                      >
+                        <defs>
+                          <linearGradient id="dailySalesGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="var(--lime)" stopOpacity="0.35" />
+                            <stop offset="100%" stopColor="var(--lime)" stopOpacity="0.0" />
+                          </linearGradient>
+                        </defs>
+
+                        {/* Baseline */}
+                        <line x1={padX} y1={baselineY} x2={svgW - padX} y2={baselineY} stroke="var(--line)" strokeWidth="1" />
+
+                        {/* Area Gradient */}
+                        <path d={areaD} fill="url(#dailySalesGrad)" />
+
+                        {/* Spline Line */}
+                        <path d={lineD} fill="none" stroke="var(--lime)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+                        {/* Points & Labels */}
+                        {points.map((pt: any) => {
+                          const hasSales = pt.value > 0
+                          const kLabel = pt.value >= 1000 ? `${(pt.value / 1000).toFixed(0)}k` : `${pt.value}`
+
+                          return (
+                            <g key={pt.day} className="group cursor-pointer">
+                              {hasSales ? (
+                                <circle cx={pt.x} cy={pt.y} r="3.5" fill="var(--card)" stroke="var(--lime)" strokeWidth="2" />
+                              ) : (
+                                <circle cx={pt.x} cy={pt.y} r="1.5" fill="var(--line)" />
+                              )}
+
+                              {/* Day Label */}
+                              <text x={pt.x} y={svgH - 4} textAnchor="middle" fontSize="7.5" fill="var(--gray2)" className="font-mono">
+                                {pt.day}
+                              </text>
+
+                              {/* Abbreviated label '146k' above active sales points */}
+                              {hasSales && (
+                                <g>
+                                  <rect x={pt.x - 16} y={pt.y - 17} width="32" height="13" rx="3" fill="var(--card)" stroke="var(--line)" strokeWidth="0.8" />
+                                  <text x={pt.x} y={pt.y - 7} textAnchor="middle" fontSize="8" fontWeight="bold" fill="var(--lime)" className="font-mono">
+                                    {kLabel}
+                                  </text>
+                                </g>
+                              )}
+                            </g>
+                          )
+                        })}
+                      </svg>
                     </div>
                   )
-                })
+                })()
               )}
             </div>
           </div>
@@ -2456,7 +2527,7 @@ export default function DashboardPage() {
             /* Visão Exclusiva de Vendedor/Representante: Separa Top Clientes de Top Embalagens lado a lado */
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 min-h-0">
               {/* CARD 1: Top Clientes */}
-              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] h-full">
+              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] border border-[var(--line)] h-full">
                 <div className="flex items-center justify-between border-b border-[var(--line)] pb-1.5 shrink-0">
                   <div className="flex items-center gap-2">
                     <Building size={13} className="text-[var(--lime)]" />
@@ -2486,7 +2557,7 @@ export default function DashboardPage() {
               </div>
 
               {/* CARD 2: Top Embalagens */}
-              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] h-full">
+              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] border border-[var(--line)] h-full">
                 <div className="flex items-center justify-between border-b border-[var(--line)] pb-1.5 shrink-0">
                   <div className="flex items-center gap-2">
                     <Layers size={13} className="text-[var(--lime)]" />
@@ -2519,38 +2590,38 @@ export default function DashboardPage() {
             /* Visão Gestor/Admin: Exibe "Performance da Equipe" + "Top Clientes & Embalagens" lado a lado */
             <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
               {/* COL 1: Performance da Equipe */}
-              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[#141517] border border-[#24262b] h-full">
-                <div className="flex items-center justify-between border-b border-[#24262b] pb-1 shrink-0">
+              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] border border-[var(--line)] h-full">
+                <div className="flex items-center justify-between border-b border-[var(--line)] pb-1 shrink-0">
                   <div className="flex items-center gap-2">
-                    <Users size={13} className="text-zinc-400" />
-                    <span className="text-xs font-bold font-display text-white">Performance da Equipe</span>
+                    <Users size={13} className="text-[var(--gray2)]" />
+                    <span className="text-xs font-bold font-display text-[var(--white)]">Performance da Equipe</span>
                   </div>
-                  <span className="text-[9px] font-mono text-zinc-400 uppercase">Mês Atual</span>
+                  <span className="text-[9px] font-mono text-[var(--gray2)] uppercase">Mês Atual</span>
                 </div>
 
                 <div className="flex-1 overflow-y-auto space-y-1.5 mt-2 pr-1 min-h-0">
                   {TEAM_PERFORMANCE.map(rep => (
-                    <div key={rep.id} className="p-2 rounded-xl border border-[#24262b] bg-[#111214] flex items-center justify-between gap-2 hover:border-zinc-700 transition-all">
+                    <div key={rep.id} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/50 transition-all">
                       <div className="flex items-center gap-2 min-w-0">
                         <div 
-                          className="w-7 h-7 rounded-lg flex items-center justify-center bg-zinc-800 border border-zinc-700 text-zinc-200 font-bold text-[10px] shrink-0"
+                          className="w-7 h-7 rounded-lg flex items-center justify-center bg-[var(--card)] border border-[var(--line)] text-[var(--white)] font-bold text-[10px] shrink-0"
                         >
                           {rep.name.split(' ').map((p: any) => p[0]).join('')}
                         </div>
                         <div className="min-w-0">
-                          <div className="text-xs font-bold text-white truncate leading-tight">{rep.name}</div>
-                          <div className="text-[8px] font-mono text-zinc-400 truncate">{rep.role}</div>
+                          <div className="text-xs font-bold text-[var(--white)] truncate leading-tight">{rep.name}</div>
+                          <div className="text-[8px] font-mono text-[var(--gray2)] truncate">{rep.role}</div>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0 text-right">
                         <div>
-                          <div className="text-[7px] font-mono text-zinc-400 uppercase">Fechamentos</div>
-                          <div className="text-[10px] font-mono font-bold text-white">{rep.closedCount}</div>
+                          <div className="text-[7px] font-mono text-[var(--gray2)] uppercase">Fechamentos</div>
+                          <div className="text-[10px] font-mono font-bold text-[var(--white)]">{rep.closedCount}</div>
                         </div>
                         <div>
-                          <div className="text-[7px] font-mono text-zinc-400 uppercase">Faturado</div>
-                          <div className="text-[10px] font-mono font-bold text-zinc-100">{formatCurrency(rep.sales)}</div>
+                          <div className="text-[7px] font-mono text-[var(--gray2)] uppercase">Faturado</div>
+                          <div className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(rep.sales)}</div>
                         </div>
                       </div>
                     </div>
@@ -2559,33 +2630,33 @@ export default function DashboardPage() {
               </div>
 
               {/* COL 2: Top Clientes e Embalagens Combinados */}
-              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[#141517] border border-[#24262b] h-full">
-                <div className="flex items-center justify-between border-b border-[#24262b] pb-1 shrink-0">
+              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] border border-[var(--line)] h-full">
+                <div className="flex items-center justify-between border-b border-[var(--line)] pb-1 shrink-0">
                   <div className="flex items-center gap-2">
-                    <Building size={13} className="text-zinc-400" />
-                    <span className="text-xs font-bold font-display text-white">Top Clientes & Embalagens</span>
+                    <Building size={13} className="text-[var(--gray2)]" />
+                    <span className="text-xs font-bold font-display text-[var(--white)]">Top Clientes & Embalagens</span>
                   </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto space-y-3 mt-2 pr-1 min-h-0">
                   {/* Principais Clientes */}
                   <div className="space-y-1">
-                    <div className="text-[8px] font-mono text-zinc-400 uppercase font-bold tracking-wider flex items-center gap-1">
-                      <Building size={10} className="text-zinc-400" /> Principais Clientes
+                    <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold tracking-wider flex items-center gap-1">
+                      <Building size={10} className="text-[var(--gray2)]" /> Principais Clientes
                     </div>
                     <div className="space-y-1">
                       {TOP_CLIENTS.length === 0 ? (
-                        <div className="text-[10px] font-mono text-zinc-400 py-2 italic text-center">Nenhum cliente com venda fechada no período.</div>
+                        <div className="text-[10px] font-mono text-[var(--gray2)] py-2 italic text-center">Nenhum cliente com venda fechada no período.</div>
                       ) : (
                         TOP_CLIENTS.map(cli => (
-                          <div key={cli.rank} className="p-2 rounded-xl border border-[#24262b] bg-[#111214] flex items-center justify-between gap-2 hover:border-zinc-700 transition-all">
+                          <div key={cli.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/50 transition-all">
                             <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-[8px] font-mono text-zinc-400 font-bold">#{cli.rank}</span>
-                              <div className="text-xs font-bold text-white truncate">{cli.name}</div>
+                              <span className="text-[8px] font-mono text-[var(--lime)] font-bold">#{cli.rank}</span>
+                              <div className="text-xs font-bold text-[var(--white)] truncate">{cli.name}</div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[8px] font-mono bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded font-bold border border-zinc-700">{cli.type}</span>
-                              <span className="text-[10px] font-mono font-bold text-zinc-100">{formatCurrency(cli.value)}</span>
+                              <span className="text-[8px] font-mono bg-[var(--card)] text-[var(--gray2)] px-1.5 py-0.5 rounded font-bold border border-[var(--line)]">{cli.type}</span>
+                              <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(cli.value)}</span>
                             </div>
                           </div>
                         ))
