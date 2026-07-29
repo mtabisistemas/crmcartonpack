@@ -845,11 +845,11 @@ export default function DiarioDeBordoPage() {
       {/* ========================================================
           3. GRADE INFERIOR LIMPA (2 COLUNAS)
          ======================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 flex-1 min-h-[380px]">
         
         {/* COLUNA ESQUERDA: Agenda Comercial do Dia */}
-        <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col gap-4 shadow-lg">
-          <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
+        <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-lg h-full">
+          <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 shrink-0">
             <div className="flex items-center gap-2">
               <CalendarIcon size={16} className="text-[var(--gray2)]" />
               <h3 className="font-display text-xs font-bold text-[var(--white)] uppercase tracking-wider">
@@ -866,19 +866,19 @@ export default function DiarioDeBordoPage() {
           </div>
 
           {todayAppointments.length === 0 ? (
-            <div className="py-10 text-center flex flex-col items-center gap-2.5 bg-[var(--charcoal)] rounded-xl border border-[var(--line)]">
-              <CheckCircle2 size={28} className="text-[var(--gray2)]" />
+            <div className="py-12 flex-1 min-h-[260px] text-center flex flex-col items-center justify-center gap-3 bg-[var(--charcoal)] rounded-xl border border-[var(--line)]">
+              <CheckCircle2 size={32} className="text-[var(--gray2)]" />
               <p className="text-xs font-mono text-[var(--gray2)]">Nenhum compromisso agendado para hoje.</p>
               <button
                 onClick={() => setCalendarOpen(true)}
-                className="btn btn-secondary text-xs py-1.5 px-3.5 font-bold cursor-pointer mt-1"
+                className="btn btn-secondary text-xs py-1.5 px-4 font-bold cursor-pointer mt-1"
               >
                 <Plus size={14} />
                 <span>Agendar Compromisso</span>
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-2.5 max-h-[350px] overflow-y-auto custom-scrollbar">
+            <div className="flex-1 flex flex-col gap-2.5 min-h-[260px] max-h-[500px] overflow-y-auto custom-scrollbar">
               {todayAppointments.map(apt => (
                 <div
                   key={apt.id}
@@ -924,8 +924,8 @@ export default function DiarioDeBordoPage() {
         </div>
 
         {/* COLUNA DIREITA: Negócios Estagnados (>7 dias) */}
-        <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col gap-4 shadow-lg">
-          <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
+        <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-lg h-full">
+          <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 shrink-0">
             <div className="flex items-center gap-2">
               <KanbanSquare size={16} className="text-[var(--gray2)]" />
               <h3 className="font-display text-xs font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2">
@@ -938,13 +938,17 @@ export default function DiarioDeBordoPage() {
           </div>
 
           {dealAlerts.stagnantDeals.length === 0 ? (
-            <div className="py-10 text-center bg-[var(--charcoal)] rounded-xl border border-[var(--line)]">
-              <p className="text-xs font-mono text-emerald-500">
+            <div className="py-12 flex-1 min-h-[260px] text-center flex flex-col items-center justify-center gap-2 bg-[var(--charcoal)] rounded-xl border border-[var(--line)]">
+              <CheckCircle2 size={32} className="text-emerald-500 mb-1" />
+              <p className="text-xs font-mono text-emerald-500 font-bold">
                 ✓ Todas as suas negociações foram atualizadas recentemente!
+              </p>
+              <p className="text-[11px] font-mono text-[var(--gray2)]">
+                Excelente trabalho no acompanhamento do funil de vendas.
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-2.5 max-h-[350px] overflow-y-auto custom-scrollbar">
+            <div className="flex-1 flex flex-col gap-2.5 min-h-[260px] max-h-[500px] overflow-y-auto custom-scrollbar">
               {dealAlerts.stagnantDeals.map(({ deal, days }) => (
                 <div
                   key={deal.id}
