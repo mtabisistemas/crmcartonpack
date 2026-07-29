@@ -15,7 +15,8 @@ import {
   Sun, 
   Moon, 
   LogOut,
-  X
+  X,
+  Compass
 } from 'lucide-react'
 
 export function MobileNavBar() {
@@ -54,15 +55,11 @@ export function MobileNavBar() {
     router.push('/login')
   }
 
-  const primaryItems = isRep ? [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  const primaryItems = [
+    { href: '/diario-de-bordo', label: 'Diário', icon: Compass },
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Clientes', icon: Users },
-  ] : [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
-    { href: '/contacts', label: 'Contatos', icon: Users },
-    { href: '/users', label: 'Usuários', icon: UserCog },
+    { href: '/dashboard', label: 'Painel', icon: LayoutDashboard },
   ]
 
   const moreItems: any[] = []

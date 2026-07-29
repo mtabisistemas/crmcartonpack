@@ -17,16 +17,18 @@ import {
   MapPin,
   User,
   Target,
+  Compass,
 } from 'lucide-react'
 
 import { CartonPackLogo } from '../CartonPackLogo'
 import { InstallPWAButton } from '../InstallPWA'
 
 const navItems = [
-  { href: '/dashboard',  label: 'Dashboard',   icon: LayoutDashboard },
-  { href: '/pipeline',   label: 'Pipeline',     icon: KanbanSquare },
-  { href: '/contacts',   label: 'Contatos',     icon: Users },
-  { href: '/users',      label: 'Usuários',     icon: UserCog },
+  { href: '/diario-de-bordo', label: 'Diário de Bordo', icon: Compass },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
+  { href: '/contacts', label: 'Contatos', icon: Users },
+  { href: '/users', label: 'Usuários', icon: UserCog },
 ]
 
 export function Sidebar() {
@@ -70,6 +72,7 @@ export function Sidebar() {
   }
 
   const repNavItems = [
+    { href: '/diario-de-bordo', label: 'Diário de Bordo', icon: Compass },
     { href: '/dashboard?tab=painel', label: 'Painel do Rep', icon: Target },
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Clientes', icon: Users },
@@ -77,6 +80,7 @@ export function Sidebar() {
   ]
 
   const vendedorNavItems = [
+    { href: '/diario-de-bordo', label: 'Diário de Bordo', icon: Compass },
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Clientes', icon: Users },
@@ -84,6 +88,7 @@ export function Sidebar() {
   ]
 
   const adminNavItems = [
+    { href: '/diario-de-bordo', label: 'Diário de Bordo', icon: Compass },
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Contatos', icon: Users },
