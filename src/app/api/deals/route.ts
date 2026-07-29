@@ -14,14 +14,25 @@ const isUUID = (str: any) =>
 
 const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001'
 
-const VALID_DB_STAGES = new Set(['leads', 'dinamica', 'potencial', 'visita', 'fechamento', 'pos_venda', 'perdido'])
+const VALID_DB_STAGES = new Set([
+  'leads',
+  'prospect',
+  'dinamica',
+  'potencial',
+  'visita',
+  'briefing',
+  'aprovacao',
+  'fechamento',
+  'pos_venda',
+  'perdido'
+])
 
 const mapFrontendStageToDB = (stage: string): string => {
   if (!stage) return 'leads'
   const lower = stage.toLowerCase()
   if (lower === 'pedido') return 'pos_venda'
-  if (lower === 'prospeccao') return 'leads'
-  if (lower === 'proposta') return 'fechamento'
+  if (lower === 'prospeccao') return 'prospect'
+  if (lower === 'proposta') return 'potencial'
   if (VALID_DB_STAGES.has(lower)) return lower
   return 'leads'
 }

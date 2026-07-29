@@ -23,7 +23,26 @@ export async function GET() {
       return NextResponse.json({ success: false, error: error.message, contacts: [] }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, contacts: data || [] })
+    const mappedContacts = (data || []).map((item: any) => {
+      let notesObj: any = {}
+      if (item.notes) {
+        try {
+          notesObj = typeof item.notes === 'string' ? JSON.parse(item.notes) : item.notes
+        } catch (e) {}
+      }
+
+      return {
+        ...item,
+        projectedPurchaseValue: notesObj.projectedPurchaseValue ?? item.projected_purchase_value ?? 0,
+        purchaseFrequencyDays: notesObj.purchaseFrequencyDays ?? item.purchase_frequency_days ?? 30,
+        lastPurchaseDate: notesObj.lastPurchaseDate || item.last_purchase_date || '',
+        planningNotes: notesObj.planningNotes || item.planning_notes || '',
+        history: notesObj.history || item.history || [],
+        activities: notesObj.activities || item.activities || []
+      }
+    })
+
+    return NextResponse.json({ success: true, contacts: mappedContacts })
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message, contacts: [] }, { status: 500 })
   }
@@ -77,11 +96,35 @@ export async function POST(req: Request) {
 
     // Unpack projection fields into notes JSON
     let existingNotesObj: any = {}
-    if (contact.notes) {
+    if (targetUUID) {
+      const { data: existingContact } = await supabaseAdmin
+        .from('contacts')
+        .select('notes')
+        .eq('id', targetUUID)
+        .limit(1)
+
+      if (existingContact?.[0]?.notes) {
+        try {
+          existingNotesObj = typeof existingContact[0].notes === 'string'
+            ? JSON.parse(existingContact[0].notes)
+            : existingContact[0].notes
+        } catch (e) {}
+      }
+    }
+
+    if (contact.notes && Object.keys(existingNotesObj).length === 0) {
       try {
         existingNotesObj = typeof contact.notes === 'string' ? JSON.parse(contact.notes) : contact.notes
       } catch (e) {}
     }
+
+    // Merge activities avoiding duplicate IDs
+    const existingActs: any[] = existingNotesObj.activities || []
+    const incomingActs: any[] = contact.activities || []
+    const actMap = new Map<string, any>()
+    existingActs.forEach(a => { if (a && a.id) actMap.set(a.id, a) })
+    incomingActs.forEach(a => { if (a && a.id) actMap.set(a.id, a) })
+    const mergedActivities = Array.from(actMap.values()).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
 
     const mergedNotesObj = {
       ...existingNotesObj,
@@ -90,7 +133,7 @@ export async function POST(req: Request) {
       lastPurchaseDate: contact.lastPurchaseDate || existingNotesObj.lastPurchaseDate || '',
       planningNotes: contact.planningNotes || existingNotesObj.planningNotes || '',
       history: contact.history || existingNotesObj.history || [],
-      activities: contact.activities || existingNotesObj.activities || []
+      activities: mergedActivities
     }
 
     // assigned_to MUST be a valid UUID or NULL (never a name string like "Maurício Maciel")

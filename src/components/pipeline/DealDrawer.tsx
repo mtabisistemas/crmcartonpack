@@ -123,8 +123,8 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
     if (deal) {
       setIsOpen(true)
       setTitle(deal.title)
-      const val = deal.final_value ?? deal.estimated_value
-      setEstimatedValue(val)
+      const val = (deal.estimated_value && deal.estimated_value > 0) ? deal.estimated_value : (deal.final_value || 0)
+      setEstimatedValue(val > 0 ? val : undefined)
       setEstimatedValueInput(formatNumberToCurrencyStr(val))
       setStage(deal.stage)
 
