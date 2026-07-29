@@ -381,15 +381,17 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
     setAptNotes('')
   }
 
-  // Hide Budget tab if stage is downgraded
+  // Hide Budget tab if stage is before briefing
   useEffect(() => {
-    const showBudget = ['briefing', 'aprovacao', 'fechamento', 'perdido', 'pos_venda'].includes(stage)
+    const showBudget = ['briefing', 'aprovacao', 'fechamento', 'pedido', 'pos_venda', 'perdido'].includes(stage)
     if (!showBudget && activeTab === 'orcamento') {
       setActiveTab('geral')
     }
   }, [stage, activeTab])
 
   if (!deal) return null
+
+  const showBudgetTab = ['briefing', 'aprovacao', 'fechamento', 'pedido', 'pos_venda', 'perdido'].includes(stage)
 
   const handleEstimatedValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value
@@ -619,12 +621,14 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
           >
             Agenda
           </button>
-          <button 
-            className={`drawer-tab-btn ${activeTab === 'orcamento' ? 'active' : ''}`}
-            onClick={() => setActiveTab('orcamento')}
-          >
-            Orçamento
-          </button>
+          {showBudgetTab && (
+            <button 
+              className={`drawer-tab-btn ${activeTab === 'orcamento' ? 'active' : ''}`}
+              onClick={() => setActiveTab('orcamento')}
+            >
+              Orçamento
+            </button>
+          )}
           <button 
             className={`drawer-tab-btn ${activeTab === 'historico' ? 'active' : ''}`}
             onClick={() => setActiveTab('historico')}
@@ -1109,7 +1113,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                         <input
                           type="number"
                           min={1}
-                          className="input w-full text-center text-xs font-mono"
+                          className="input w-full text-center text-xs font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           value={item.quantity || ''}
                           onChange={(e) => handleUpdateBudgetItem(item.id, 'quantity', Number(e.target.value) || 0)}
                         />
@@ -1120,7 +1124,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                           type="number"
                           step="0.01"
                           min={0}
-                          className="input w-full text-center text-xs font-mono"
+                          className="input w-full text-center text-xs font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           value={item.unitPrice || ''}
                           onChange={(e) => handleUpdateBudgetItem(item.id, 'unitPrice', Number(e.target.value) || 0)}
                         />
