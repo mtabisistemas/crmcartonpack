@@ -2322,19 +2322,22 @@ export default function ContactsPage() {
     })
 
     const finalContacts = foundMatch ? updated : [updatedContact, ...contacts]
-    saveContacts(finalContacts)
+    
+    // 1. Immediately update UI state and localStorage so table updates INSTANTLY
+    setContacts(finalContacts)
     setSelectedContact(updatedContact)
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('storage-contacts-changed'))
+      localStorage.setItem('crm_contacts', JSON.stringify(finalContacts))
     }
 
-    // Sync pipeline deals with updated contact info
+    // 2. Sync pipeline deals with updated contact info
+    let updatedDeals: any[] = []
     if (typeof window !== 'undefined') {
       try {
         const rawDeals = localStorage.getItem('cp_crm_pipeline_deals')
         if (rawDeals) {
           const deals = JSON.parse(rawDeals)
-          const updatedDeals = deals.map((d: any) => {
+          updatedDeals = deals.map((d: any) => {
             const matchesId = updatedContact.id && d.contact_id === updatedContact.id
             const matchesComp = cleanTargetCompany && (d.contact?.company || d.title) && (d.contact?.company || d.title).trim().toLowerCase() === cleanTargetCompany
             if (matchesId || matchesComp) {
@@ -2346,7 +2349,8 @@ export default function ContactsPage() {
                   company: updatedContact.company,
                   phone: updatedContact.phone,
                   email: updatedContact.email,
-                  curve: updatedContact.curve
+                  curve: updatedContact.curve,
+                  representative: updatedContact.representative
                 },
                 assigned_to: updatedContact.representative || d.assigned_to
               }
@@ -2354,19 +2358,33 @@ export default function ContactsPage() {
             return d
           })
           localStorage.setItem('cp_crm_pipeline_deals', JSON.stringify(updatedDeals))
-          window.dispatchEvent(new Event('storage-deals-changed'))
         }
       } catch (e) {}
     }
 
+    // 3. Await API post to Supabase for contact update FIRST
     try {
       await fetch('/api/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedContact)
       })
+
+      if (updatedDeals.length > 0) {
+        await fetch('/api/deals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedDeals)
+        }).catch(() => {})
+      }
     } catch (err) {
       console.error('Error updating contact via API:', err)
+    }
+
+    // 4. Dispatch storage events AFTER Supabase has completed the save!
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('storage-contacts-changed'))
+      window.dispatchEvent(new Event('storage-deals-changed'))
     }
   }
 
