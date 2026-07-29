@@ -5,7 +5,7 @@ import { Deal, DealStage, STAGE_CONFIG, Appointment } from '@/types'
 import { 
   X, User, Mail, Phone, Building, Calendar, DollarSign, Tag,
   MessageSquare, FileText, Send, PhoneCall, Users, CheckCircle, ArrowRight, Save, Clock, Trash2, Edit2, Plus,
-  Copy, Check, MapPin, ExternalLink
+  Copy, Check, MapPin, ExternalLink, Loader2
 } from 'lucide-react'
 import { formatCurrency, whatsappLink } from '@/lib/utils'
 import { getAppointmentsByDeal, saveAppointment, updateAppointment, deleteAppointment } from '@/services/appointment-service'
@@ -82,6 +82,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const [toolingCost, setToolingCost] = useState(1200) // cliché + faca setup cost
 
   const [representative, setRepresentative] = useState('')
+  const [isLoadingContactDetails, setIsLoadingContactDetails] = useState(false)
 
   // Agenda / Appointments tab states
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -182,6 +183,47 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       setContactCity(city)
       setContactState(state)
       setRepresentative(rep)
+
+      // Async fetch from /api/contacts if details are incomplete
+      const isMissingDetails = !phone || !email || !address || !bairro || !cep
+      if (isMissingDetails) {
+        setIsLoadingContactDetails(true)
+        fetch('/api/contacts', { cache: 'no-store' })
+          .then(res => res.json())
+          .then(json => {
+            if (json.success && Array.isArray(json.contacts)) {
+              const targetCnpj = (cnpj || '').replace(/\D/g, '')
+              const match = json.contacts.find((c: any) => {
+                const cComp = (c.company || c.name || '').trim().toLowerCase()
+                const cName = (c.name || '').trim().toLowerCase()
+                const cCnpj = (c.cnpj || '').replace(/\D/g, '')
+                return (deal.contact_id && c.id === deal.contact_id) ||
+                  (targetCnpj && cCnpj && targetCnpj === cCnpj) ||
+                  (searchCompany && cComp === searchCompany) ||
+                  (searchName && cName === searchName)
+              })
+              if (match) {
+                if (match.name) setContactName(match.name)
+                if (match.company) setContactCompany(match.company)
+                if (match.phone) setContactPhone(match.phone)
+                if (match.email) setContactEmail(match.email)
+                if (match.cnpj) setContactCnpj(match.cnpj)
+                if (match.address) setContactAddress(match.address)
+                if (match.bairro) setContactBairro(match.bairro)
+                if (match.cep) setContactCep(match.cep)
+                if (match.city) setContactCity(match.city)
+                if (match.state) setContactState(match.state)
+                if (match.representative) setRepresentative(match.representative)
+              }
+            }
+          })
+          .catch(() => {})
+          .finally(() => {
+            setIsLoadingContactDetails(false)
+          })
+      } else {
+        setIsLoadingContactDetails(false)
+      }
 
       // Load activities combining deal and matched contact from crm_contacts
       const loadAllActivities = () => {
@@ -667,8 +709,16 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
 
               {/* Seção Contato / Cliente */}
               <div className="flex flex-col gap-4 bg-[var(--card)] border border-[var(--line)] rounded-xl p-4">
-                <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono">
-                  Dados do Cliente
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono">
+                    Dados do Cliente
+                  </div>
+                  {isLoadingContactDetails && (
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono text-[var(--lime)] font-semibold animate-pulse bg-[var(--lime)]/10 px-2 py-0.5 rounded-md border border-[var(--lime)]/20">
+                      <Loader2 size={11} className="animate-spin text-[var(--lime)]" />
+                      <span>Carregando dados cadastrais...</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1.5">

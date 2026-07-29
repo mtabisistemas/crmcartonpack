@@ -1192,6 +1192,47 @@ export function PipelineBoard() {
     updateAndSaveDeals(prev => [newDeal, ...prev])
     setShowNewDealModal(false)
 
+    // Background hydration from Supabase if local matchedContact was incomplete
+    if (!matchedContact || !matchedContact.phone || !matchedContact.address) {
+      fetch('/api/contacts', { cache: 'no-store' })
+        .then(res => res.json())
+        .then(json => {
+          if (json.success && Array.isArray(json.contacts)) {
+            const comp = (data.company || data.title).trim().toLowerCase()
+            const name = (data.contactName || '').trim().toLowerCase()
+            const found = json.contacts.find((c: any) =>
+              (data.contactId && c.id === data.contactId) ||
+              (comp && (c.company || c.name || '').trim().toLowerCase() === comp) ||
+              (name && (c.name || '').trim().toLowerCase() === name)
+            )
+            if (found) {
+              const hydratedDeal: Deal = {
+                ...newDeal,
+                assigned_to: found.representative || rep,
+                contact: {
+                  ...(newDeal.contact || {}),
+                  id: found.id || (newDeal.contact as any)?.id || targetContactId,
+                  name: found.name || (newDeal.contact as any)?.name || data.company,
+                  company: found.company || (newDeal.contact as any)?.company || data.title,
+                  phone: found.phone || '',
+                  email: found.email || '',
+                  cnpj: found.cnpj || '',
+                  address: found.address || '',
+                  bairro: found.bairro || '',
+                  cep: found.cep || '',
+                  city: found.city || '',
+                  state: found.state || '',
+                  curve: found.curve || 'C',
+                  representative: found.representative || rep
+                } as any
+              }
+              updateAndSaveDeals(prev => prev.map(d => d.id === newDeal.id ? hydratedDeal : d))
+            }
+          }
+        })
+        .catch(() => {})
+    }
+
     // Trigger celebration if new deal created directly in pedido stage
     if (data.stage === 'pedido') {
       setCelebrationDeal(newDeal)
