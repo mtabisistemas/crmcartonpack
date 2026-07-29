@@ -35,6 +35,21 @@ function getBusinessDaysInMonth(year: number, monthZeroIndexed: number): number 
   return businessDays || 22
 }
 
+// Helper to format number with thousand dots (e.g. 30000 -> "30.000")
+function formatNumberBr(val: number | string): string {
+  if (val === undefined || val === null || val === '') return ''
+  const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/\./g, '').replace(',', '.'))
+  if (isNaN(num)) return ''
+  return num.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+}
+
+// Helper to parse formatted string to number (e.g. "30.000" -> 30000)
+function parseNumberBr(str: string): number {
+  if (!str) return 0
+  const clean = str.replace(/\D/g, '')
+  return parseInt(clean, 10) || 0
+}
+
 const MONTH_NAMES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
@@ -421,7 +436,7 @@ export default function MetasPage() {
                     viewMode === 'semanal' ? 'bg-[var(--lime)] text-black' : 'text-[var(--gray2)]'
                   }`}
                 >
-                  Semanal (÷4.4)
+                  Semanal
                 </button>
                 <button
                   onClick={() => setViewMode('diaria')}
@@ -429,7 +444,7 @@ export default function MetasPage() {
                     viewMode === 'diaria' ? 'bg-[var(--lime)] text-black' : 'text-[var(--gray2)]'
                   }`}
                 >
-                  Diária (÷{businessDays})
+                  Diária
                 </button>
               </div>
 
@@ -462,7 +477,7 @@ export default function MetasPage() {
               <div>
                 <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Meta Visitas/Contatos</span>
                 <div className="text-xl font-display font-black text-sky-400 mt-1">
-                  {Math.round(viewMode === 'mensal' ? teamTotals.visits : viewMode === 'semanal' ? teamTotals.visits / 4.4 : teamTotals.visits / businessDays)} visitas
+                  {Math.round(viewMode === 'mensal' ? teamTotals.visits : viewMode === 'semanal' ? teamTotals.visits / 4.4 : teamTotals.visits / businessDays).toLocaleString('pt-BR')} visitas
                   <span className="text-[10px] font-mono text-[var(--gray2)] font-normal ml-1">/{viewMode === 'mensal' ? 'mês' : viewMode === 'semanal' ? 'sem' : 'dia'}</span>
                 </div>
               </div>
@@ -475,7 +490,7 @@ export default function MetasPage() {
               <div>
                 <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Meta Novos Clientes (Pedido Fechado)</span>
                 <div className="text-xl font-display font-black text-emerald-400 mt-1">
-                  {Math.round(viewMode === 'mensal' ? teamTotals.newClients : viewMode === 'semanal' ? teamTotals.newClients / 4.4 : teamTotals.newClients / businessDays)} clientes
+                  {Math.round(viewMode === 'mensal' ? teamTotals.newClients : viewMode === 'semanal' ? teamTotals.newClients / 4.4 : teamTotals.newClients / businessDays).toLocaleString('pt-BR')} clientes
                   <span className="text-[10px] font-mono text-[var(--gray2)] font-normal ml-1">/{viewMode === 'mensal' ? 'mês' : viewMode === 'semanal' ? 'sem' : 'dia'}</span>
                 </div>
               </div>
@@ -509,7 +524,7 @@ export default function MetasPage() {
                       <th className="py-3 px-3">Vendedor / Representante</th>
                       <th className="py-3 px-3">Função</th>
                       <th className="py-3 px-3 text-right">Meta Vendas (R$) {viewMode !== 'mensal' ? `(${viewMode})` : ''}</th>
-                      <th className="py-3 px-3 text-right">Meta Visitas (Qtd) {viewMode !== 'mensal' ? `(${viewMode})` : ''}</th>
+                      <th className="py-3 px-3 text-right">Meta Visitas/Contatos (Qtd) {viewMode !== 'mensal' ? `(${viewMode})` : ''}</th>
                       <th className="py-3 px-3 text-right">Meta Novos Clientes (Qtd) {viewMode !== 'mensal' ? `(${viewMode})` : ''}</th>
                     </tr>
                   </thead>
@@ -545,35 +560,37 @@ export default function MetasPage() {
 
                           {/* Campo Meta Venda R$ */}
                           <td className="py-3.5 px-3 text-right font-mono">
-                            <div className="inline-flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2 py-1 focus-within:border-[var(--lime)]">
+                            <div className="inline-flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2.5 py-1 focus-within:border-[var(--lime)]">
                               <span className="text-[10px] text-[var(--gray2)] font-bold">R$</span>
                               <input
-                                type="number"
-                                value={viewMode === 'mensal' ? (g.salesGoal || 0) : salesDisp}
+                                type="text"
+                                inputMode="numeric"
+                                value={formatNumberBr(viewMode === 'mensal' ? (g.salesGoal || 0) : salesDisp)}
                                 onChange={e => {
-                                  let val = parseFloat(e.target.value) || 0
-                                  if (viewMode === 'semanal') val = val * 4.4
-                                  if (viewMode === 'diaria') val = val * businessDays
+                                  let val = parseNumberBr(e.target.value)
+                                  if (viewMode === 'semanal') val = Math.round(val * 4.4)
+                                  if (viewMode === 'diaria') val = Math.round(val * businessDays)
                                   handleUpdateGoalField(key, 'salesGoal', val.toString())
                                 }}
-                                className="bg-transparent border-none outline-none text-xs font-bold text-[var(--lime)] text-right w-24"
+                                className="bg-transparent border-none outline-none text-xs font-bold text-[var(--lime)] text-right w-24 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               />
                             </div>
                           </td>
 
-                          {/* Campo Meta Visitas */}
+                          {/* Campo Meta Visitas/Contatos */}
                           <td className="py-3.5 px-3 text-right font-mono">
-                            <div className="inline-flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2 py-1 focus-within:border-sky-400">
+                            <div className="inline-flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2.5 py-1 focus-within:border-sky-400">
                               <input
-                                type="number"
-                                value={viewMode === 'mensal' ? (g.visitsGoal || 0) : visitsDisp}
+                                type="text"
+                                inputMode="numeric"
+                                value={formatNumberBr(viewMode === 'mensal' ? (g.visitsGoal || 0) : visitsDisp)}
                                 onChange={e => {
-                                  let val = parseFloat(e.target.value) || 0
-                                  if (viewMode === 'semanal') val = val * 4.4
-                                  if (viewMode === 'diaria') val = val * businessDays
+                                  let val = parseNumberBr(e.target.value)
+                                  if (viewMode === 'semanal') val = Math.round(val * 4.4)
+                                  if (viewMode === 'diaria') val = Math.round(val * businessDays)
                                   handleUpdateGoalField(key, 'visitsGoal', val.toString())
                                 }}
-                                className="bg-transparent border-none outline-none text-xs font-bold text-sky-400 text-right w-16"
+                                className="bg-transparent border-none outline-none text-xs font-bold text-sky-400 text-right w-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               />
                               <span className="text-[10px] text-[var(--gray2)]">visitas</span>
                             </div>
@@ -581,17 +598,18 @@ export default function MetasPage() {
 
                           {/* Campo Meta Novos Clientes */}
                           <td className="py-3.5 px-3 text-right font-mono">
-                            <div className="inline-flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2 py-1 focus-within:border-emerald-400">
+                            <div className="inline-flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2.5 py-1 focus-within:border-emerald-400">
                               <input
-                                type="number"
-                                value={viewMode === 'mensal' ? (g.newClientsGoal || 0) : clientsDisp}
+                                type="text"
+                                inputMode="numeric"
+                                value={formatNumberBr(viewMode === 'mensal' ? (g.newClientsGoal || 0) : clientsDisp)}
                                 onChange={e => {
-                                  let val = parseFloat(e.target.value) || 0
-                                  if (viewMode === 'semanal') val = val * 4.4
-                                  if (viewMode === 'diaria') val = val * businessDays
+                                  let val = parseNumberBr(e.target.value)
+                                  if (viewMode === 'semanal') val = Math.round(val * 4.4)
+                                  if (viewMode === 'diaria') val = Math.round(val * businessDays)
                                   handleUpdateGoalField(key, 'newClientsGoal', val.toString())
                                 }}
-                                className="bg-transparent border-none outline-none text-xs font-bold text-emerald-400 text-right w-16"
+                                className="bg-transparent border-none outline-none text-xs font-bold text-emerald-400 text-right w-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               />
                               <span className="text-[10px] text-[var(--gray2)]">clientes</span>
                             </div>
