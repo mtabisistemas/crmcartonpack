@@ -591,15 +591,18 @@ function NewDealModal({
     }
 
     const upperClient = clientName.trim().toUpperCase()
-    const upperContact = (contactName.trim() || clientName.trim()).toUpperCase()
+    const foundContact = selectedContactObj || contactsList.find(c => (c.company || c.name || '').toLowerCase().trim() === clientName.toLowerCase().trim())
+
+    const targetCompany = foundContact ? (foundContact.company || foundContact.name || upperClient) : upperClient
+    const targetContactName = contactName.trim() ? contactName.trim().toUpperCase() : (foundContact ? (foundContact.name || '') : '')
 
     onConfirm({
       title: upperClient,
-      contactName: upperContact,
-      company: upperClient,
+      contactName: targetContactName,
+      company: targetCompany,
       value,
       stage,
-      contactId,
+      contactId: foundContact?.id || contactId,
       representative: matchedRep
     })
   }

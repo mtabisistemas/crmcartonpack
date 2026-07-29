@@ -280,8 +280,8 @@ export function createPipelineDeal(dealData: {
     updated_at: now,
     contact: {
       id: 'c_' + Date.now(),
-      name: dealData.contactName || dealData.company,
-      company: dealData.company,
+      name: dealData.contactName || '',
+      company: dealData.company || '',
       phone: dealData.phone,
       email: dealData.email,
       representative: rep,

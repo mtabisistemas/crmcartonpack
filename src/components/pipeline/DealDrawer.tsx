@@ -105,9 +105,11 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       setEstimatedValue(val)
       setEstimatedValueInput(formatNumberToCurrencyStr(val))
       setStage(deal.stage)
-      setContactName(deal.contact?.name ?? '')
-      setContactCompany(deal.contact?.company ?? deal.title ?? '')
-      setCurve(deal.contact?.curve ?? 'C')
+
+      let initialContactName = deal.contact?.name ?? ''
+      let initialContactCompany = deal.contact?.company ?? ''
+      if (initialContactCompany === deal.title) initialContactCompany = ''
+      if (initialContactName === deal.title) initialContactName = ''
 
       let phone = deal.contact?.phone ?? ''
       let email = deal.contact?.email ?? ''
@@ -115,7 +117,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       let address = (deal.contact as any)?.address ?? (deal.contact as any)?.city ?? ''
       let rep = deal.assigned_to ?? (deal as any).assignedTo ?? (deal as any).assignedToName ?? (deal as any).representative ?? ''
 
-      // Auto-populate Phone, Email, CNPJ, Address, and Representative from saved contacts database
+      // Auto-populate Phone, Email, CNPJ, Address, Company, and Representative from saved contacts database
       const searchCompany = (deal.contact?.company || deal.title || '').trim().toLowerCase()
       const searchName = (deal.contact?.name || '').trim().toLowerCase()
 
@@ -129,6 +131,8 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
             return (searchCompany && cComp === searchCompany) || (searchName && cName === searchName)
           })
           if (match) {
+            if (match.company && !initialContactCompany) initialContactCompany = match.company
+            if (match.name && !initialContactName) initialContactName = match.name
             if (match.phone && !phone) phone = match.phone
             if (match.email && !email) email = match.email
             if (match.cnpj && !cnpj) cnpj = match.cnpj
@@ -139,6 +143,8 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
         }
       } catch (e) {}
 
+      setContactName(initialContactName)
+      setContactCompany(initialContactCompany || deal.contact?.company || '')
       setContactPhone(phone)
       setContactEmail(email)
       setContactCnpj(cnpj)
@@ -303,7 +309,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const handleSaveGeneral = async () => {
     const upperTitle = title.trim().toUpperCase()
     const upperContactName = contactName.trim().toUpperCase()
-    const upperCompany = (contactCompany || title).trim().toUpperCase()
+    const upperCompany = contactCompany.trim().toUpperCase()
     const upperAddress = contactAddress.trim().toUpperCase()
 
     const updatedDeal: Deal = {
