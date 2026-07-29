@@ -342,8 +342,8 @@ export default function DashboardPage() {
   }
 
   // Helper function to render unique Lucide icons for each funnel stage
-  const getStageIcon = (key: string, color: string) => {
-    const size = 11
+  const getStageIcon = (key: string, color: string, customSize?: number) => {
+    const size = customSize || 11
     switch (key) {
       case 'leads': return <Target size={size} style={{ color }} />
       case 'prospect': return <Users size={size} style={{ color }} />
@@ -1173,16 +1173,16 @@ export default function DashboardPage() {
     .filter(d => d.stage === 'perdido')
     .reduce((acc, d) => acc + d.value, 0)
 
-  // Connected Horizontal Funnel Stages
+  // Connected Horizontal Funnel Stages with distinct stage colors
   const funnelSummary = [
-    { key: 'leads', stage: 'Leads', count: filteredDeals.filter(d => d.stage === 'leads').length, value: filteredDeals.filter(d => d.stage === 'leads').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-leads)' },
-    { key: 'prospect', stage: 'Prospect', count: filteredDeals.filter(d => d.stage === 'prospect').length, value: filteredDeals.filter(d => d.stage === 'prospect').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-prospect)' },
-    { key: 'dinamica', stage: 'Dinâmica', count: filteredDeals.filter(d => d.stage === 'dinamica').length, value: filteredDeals.filter(d => d.stage === 'dinamica').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-dinamica)' },
-    { key: 'potencial', stage: 'Potencial', count: filteredDeals.filter(d => d.stage === 'potencial').length, value: filteredDeals.filter(d => d.stage === 'potencial').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-potencial)' },
-    { key: 'visita', stage: 'Visita', count: filteredDeals.filter(d => d.stage === 'visita').length, value: filteredDeals.filter(d => d.stage === 'visita').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-visita)' },
-    { key: 'briefing', stage: 'Briefing', count: filteredDeals.filter(d => d.stage === 'briefing').length, value: filteredDeals.filter(d => d.stage === 'briefing').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-briefing)' },
-    { key: 'aprovacao', stage: 'Aprovação', count: filteredDeals.filter(d => d.stage === 'aprovacao').length, value: filteredDeals.filter(d => d.stage === 'aprovacao').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-aprovacao)' },
-    { key: 'fechamento', stage: 'Fechamento', count: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda' || d.stage === 'pedido').length, value: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda' || d.stage === 'pedido').reduce((acc, d) => acc + d.value, 0) || null, color: 'var(--stage-fechamento)' },
+    { key: 'leads', stage: 'Leads', count: filteredDeals.filter(d => d.stage === 'leads').length, value: filteredDeals.filter(d => d.stage === 'leads').reduce((acc, d) => acc + d.value, 0) || null, color: '#f59e0b' },
+    { key: 'prospect', stage: 'Prospect', count: filteredDeals.filter(d => d.stage === 'prospect').length, value: filteredDeals.filter(d => d.stage === 'prospect').reduce((acc, d) => acc + d.value, 0) || null, color: '#3b82f6' },
+    { key: 'dinamica', stage: 'Dinâmica', count: filteredDeals.filter(d => d.stage === 'dinamica').length, value: filteredDeals.filter(d => d.stage === 'dinamica').reduce((acc, d) => acc + d.value, 0) || null, color: '#a855f7' },
+    { key: 'potencial', stage: 'Potencial', count: filteredDeals.filter(d => d.stage === 'potencial').length, value: filteredDeals.filter(d => d.stage === 'potencial').reduce((acc, d) => acc + d.value, 0) || null, color: '#eab308' },
+    { key: 'visita', stage: 'Visita', count: filteredDeals.filter(d => d.stage === 'visita').length, value: filteredDeals.filter(d => d.stage === 'visita').reduce((acc, d) => acc + d.value, 0) || null, color: '#06b6d4' },
+    { key: 'briefing', stage: 'Briefing', count: filteredDeals.filter(d => d.stage === 'briefing').length, value: filteredDeals.filter(d => d.stage === 'briefing').reduce((acc, d) => acc + d.value, 0) || null, color: '#f97316' },
+    { key: 'aprovacao', stage: 'Aprovação', count: filteredDeals.filter(d => d.stage === 'aprovacao').length, value: filteredDeals.filter(d => d.stage === 'aprovacao').reduce((acc, d) => acc + d.value, 0) || null, color: '#6366f1' },
+    { key: 'fechamento', stage: 'Fechamento', count: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda' || d.stage === 'pedido').length, value: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda' || d.stage === 'pedido').reduce((acc, d) => acc + d.value, 0) || null, color: '#22c55e' },
   ]
 
   // Lista dos Usuários REAIS Cadastrados no Sistema
@@ -1812,21 +1812,30 @@ export default function DashboardPage() {
                   {funnelSummary.map(item => (
                     <div
                       key={item.key}
-                      className="rounded-xl px-2.5 py-2 flex flex-col gap-1 border border-[#24262b] bg-[#141517] hover:border-zinc-700 transition-all cursor-default"
+                      className="rounded-xl px-2.5 py-2 flex flex-col gap-0.5 border border-[#24262b] bg-[#141517] hover:border-zinc-600 transition-all cursor-default relative overflow-hidden group shadow-sm"
+                      style={{ borderLeft: `3.5px solid ${item.color}` }}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-lg font-black font-display leading-none text-zinc-100">
-                          {item.count}
-                        </span>
-                        <div className="w-5 h-5 rounded-md flex items-center justify-center bg-[#1e2025] text-zinc-400">
-                          {getStageIcon(item.key, '#a1a1aa')}
-                        </div>
-                      </div>
-                      <div className="text-[8px] font-mono font-bold uppercase tracking-wide truncate text-zinc-300">
+                      {/* Stage name */}
+                      <div className="text-[8px] font-mono font-bold uppercase tracking-wide truncate text-zinc-400">
                         {item.stage}
                       </div>
-                      <div className="text-[9px] font-mono font-bold text-zinc-400 truncate">
-                        {item.value ? formatCurrency(item.value) : <span className="text-zinc-600">—</span>}
+
+                      {/* Main Value */}
+                      <div className="text-[11px] font-mono font-extrabold text-white truncate leading-tight my-0.5">
+                        {item.value ? formatCurrency(item.value) : <span className="text-zinc-500">R$ 0,00</span>}
+                      </div>
+
+                      {/* Negócios Count */}
+                      <div className="text-[9px] font-mono font-bold text-zinc-400">
+                        {item.count} {item.count === 1 ? 'negócio' : 'negócios'}
+                      </div>
+
+                      {/* Watermark Icon */}
+                      <div 
+                        className="absolute -right-1 -bottom-1 opacity-[0.08] pointer-events-none group-hover:opacity-20 transition-opacity"
+                        style={{ color: item.color }}
+                      >
+                        {getStageIcon(item.key, item.color, 40)}
                       </div>
                     </div>
                   ))}
@@ -2166,28 +2175,32 @@ export default function DashboardPage() {
         <div className="flex items-center gap-1.5">
           {funnelSummary.map((item, idx) => (
             <div key={item.key} className="flex items-center gap-1.5 flex-1 min-w-0">
-              {/* Stage card */}
+              {/* Stage card with left accent border and watermark icon */}
               <div
-                className="flex-1 min-w-0 rounded-xl px-2.5 py-2 flex flex-col gap-1 border border-[#24262b] bg-[#111214] hover:border-zinc-700 transition-all cursor-default"
+                className="flex-1 min-w-0 rounded-xl px-2.5 py-2 flex flex-col gap-0.5 border border-[#24262b] bg-[#111214] hover:border-zinc-600 transition-all cursor-default relative overflow-hidden group shadow-sm"
+                style={{ borderLeft: `3.5px solid ${item.color}` }}
               >
-                {/* Count + Icon */}
-                <div className="flex items-center justify-between">
-                  <span className="text-xl font-black font-display leading-none text-zinc-100">
-                    {item.count}
-                  </span>
-                  <div className="w-5 h-5 rounded-md flex items-center justify-center bg-[#1c1e22] text-zinc-400">
-                    {getStageIcon(item.key, '#a1a1aa')}
-                  </div>
-                </div>
-
                 {/* Stage name */}
-                <div className="text-[8px] font-mono font-bold uppercase tracking-wide truncate text-zinc-300">
+                <div className="text-[8px] font-mono font-bold uppercase tracking-wide truncate text-zinc-400">
                   {item.stage}
                 </div>
 
-                {/* Value */}
-                <div className="text-[9px] font-mono font-bold text-zinc-400 truncate">
-                  {item.value ? formatCurrency(item.value) : <span className="text-zinc-600">—</span>}
+                {/* Main Value */}
+                <div className="text-[11px] font-mono font-extrabold text-white truncate leading-tight my-0.5">
+                  {item.value ? formatCurrency(item.value) : <span className="text-zinc-500">R$ 0,00</span>}
+                </div>
+
+                {/* Negócios Count */}
+                <div className="text-[9px] font-mono font-bold text-zinc-400">
+                  {item.count} {item.count === 1 ? 'negócio' : 'negócios'}
+                </div>
+
+                {/* Watermark Icon */}
+                <div 
+                  className="absolute -right-1 -bottom-1 opacity-[0.08] pointer-events-none group-hover:opacity-20 transition-opacity"
+                  style={{ color: item.color }}
+                >
+                  {getStageIcon(item.key, item.color, 40)}
                 </div>
               </div>
 
@@ -2229,36 +2242,184 @@ export default function DashboardPage() {
               )}
             </div>
 
-            <div className="flex-1 flex items-end gap-2 pt-3 pb-1 overflow-x-auto min-h-0 px-1">
+            <div className="flex-1 flex items-center pt-2 pb-1 overflow-x-auto min-h-0 px-1">
               {!selectedDrilldownMonth ? (
-                /* MONTHLY VIEW - Rótulos Always Active */
-                MONTHLY_SALES_DATA.map(m => {
-                  const heightPct = Math.max(10, Math.min(84, Math.round((m.value / maxSalesValue) * 80)))
-                  const isSelectedMonth = selectedMonth !== 'all' && parseInt(selectedMonth) === m.monthIndex
+                /* MONTHLY VIEW - Modern SVG Spline Area Line Chart */
+                (() => {
+                  const svgW = 600
+                  const svgH = 140
+                  const padX = 24
+                  const padTop = 26
+                  const padBottom = 22
+
+                  const maxVal = Math.max(10000, ...MONTHLY_SALES_DATA.map(m => m.value))
+                  const chartW = svgW - padX * 2
+                  const chartH = svgH - padTop - padBottom
+                  const baselineY = svgH - padBottom
+
+                  const points = MONTHLY_SALES_DATA.map((m, i) => {
+                    const x = padX + (i * chartW) / (MONTHLY_SALES_DATA.length - 1)
+                    const y = baselineY - (m.value / maxVal) * chartH
+                    return { ...m, x, y, index: i }
+                  })
+
+                  // Compute smooth bezier curve commands
+                  let lineD = ''
+                  if (points.length > 0) {
+                    lineD = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`
+                    for (let i = 0; i < points.length - 1; i++) {
+                      const p0 = points[i === 0 ? i : i - 1]
+                      const p1 = points[i]
+                      const p2 = points[i + 1]
+                      const p3 = points[i + 2 < points.length ? i + 2 : i + 1]
+
+                      const cp1x = p1.x + (p2.x - p0.x) / 6
+                      const cp1y = p1.y + (p2.y - p0.y) / 6
+
+                      const cp2x = p2.x - (p3.x - p1.x) / 6
+                      const cp2y = p2.y - (p3.y - p1.y) / 6
+
+                      lineD += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`
+                    }
+                  }
+
+                  const areaD = `${lineD} L ${points[points.length - 1].x.toFixed(1)} ${baselineY} L ${points[0].x.toFixed(1)} ${baselineY} Z`
+
                   return (
-                    <div 
-                      key={m.month} 
-                      onClick={() => setSelectedDrilldownMonth(m)}
-                      className="flex-1 flex flex-col items-center gap-1 group cursor-pointer h-full justify-end"
-                      title={`${m.month}: ${formatCurrency(m.value)} (${m.dealsCount} vendas). Clique para ver dia a dia.`}
-                    >
-                      <div className="text-[8px] font-mono text-[var(--white)] font-bold text-center">
-                        R$ {(m.value / 1000).toFixed(0)}k
-                      </div>
-                      <div className="w-full bg-[var(--chart-track)] border border-[var(--chart-border)] rounded-t-md relative overflow-hidden flex items-end" style={{ height: `${heightPct}%` }}>
-                        <div 
-                          className={`w-full transition-all duration-300 ${isSelectedMonth ? 'bg-[var(--lime)] shadow-[0_0_10px_var(--lime-glow)]' : 'bg-gradient-to-t from-[var(--lime-dim)] to-[var(--lime)] group-hover:brightness-125'}`}
-                          style={{ height: '100%' }}
+                    <div className="w-full h-full flex flex-col justify-between relative select-none">
+                      <svg
+                        viewBox={`0 0 ${svgW} ${svgH}`}
+                        className="w-full h-full overflow-visible"
+                        preserveAspectRatio="none"
+                      >
+                        <defs>
+                          <linearGradient id="salesLineGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#84cc16" stopOpacity="0.3" />
+                            <stop offset="100%" stopColor="#84cc16" stopOpacity="0.0" />
+                          </linearGradient>
+                          <filter id="glowLimeLine" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#84cc16" floodOpacity="0.4" />
+                          </filter>
+                        </defs>
+
+                        {/* Baseline */}
+                        <line
+                          x1={padX}
+                          y1={baselineY}
+                          x2={svgW - padX}
+                          y2={baselineY}
+                          stroke="#27292e"
+                          strokeWidth="1"
                         />
-                      </div>
-                      <span className={`text-[9px] font-mono font-bold ${isSelectedMonth ? 'text-[var(--lime)] underline' : 'text-[var(--gray)] group-hover:text-[var(--white)]'}`}>
-                        {m.month}
-                      </span>
+
+                        {/* Area gradient under line */}
+                        <path d={areaD} fill="url(#salesLineGradient)" />
+
+                        {/* Spline Line */}
+                        <path
+                          d={lineD}
+                          fill="none"
+                          stroke="#84cc16"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          filter="url(#glowLimeLine)"
+                        />
+
+                        {/* Interactive Data Points */}
+                        {points.map((pt) => {
+                          const isSelected = selectedMonth !== 'all' && parseInt(selectedMonth) === pt.monthIndex
+                          const hasSales = pt.value > 0
+
+                          return (
+                            <g
+                              key={pt.month}
+                              className="cursor-pointer group"
+                              onClick={() => setSelectedDrilldownMonth(pt)}
+                            >
+                              {/* Hover / Selected Guide Line */}
+                              {isSelected && (
+                                <line
+                                  x1={pt.x}
+                                  y1={padTop}
+                                  x2={pt.x}
+                                  y2={baselineY}
+                                  stroke="#84cc16"
+                                  strokeWidth="1"
+                                  strokeDasharray="2 2"
+                                  opacity="0.5"
+                                />
+                              )}
+
+                              {/* Point Marker */}
+                              {hasSales ? (
+                                <circle
+                                  cx={pt.x}
+                                  cy={pt.y}
+                                  r={isSelected ? 5.5 : 4}
+                                  fill="#141517"
+                                  stroke="#84cc16"
+                                  strokeWidth="2.5"
+                                  className="transition-all duration-150 group-hover:r-6"
+                                />
+                              ) : (
+                                <circle
+                                  cx={pt.x}
+                                  cy={pt.y}
+                                  r="2"
+                                  fill="#2e3138"
+                                  className="transition-all duration-150 group-hover:fill-zinc-400 group-hover:r-3"
+                                />
+                              )}
+
+                              {/* Month Name Below Baseline */}
+                              <text
+                                x={pt.x}
+                                y={svgH - 4}
+                                textAnchor="middle"
+                                fontSize="9"
+                                fontWeight={isSelected ? 'bold' : 'normal'}
+                                fill={isSelected ? '#84cc16' : '#a1a1aa'}
+                                className="font-mono transition-colors group-hover:fill-white"
+                              >
+                                {pt.month}
+                              </text>
+
+                              {/* Value Label above active points ONLY */}
+                              {hasSales && (
+                                <g className="transition-all">
+                                  <rect
+                                    x={pt.x - 34}
+                                    y={pt.y - 20}
+                                    width="68"
+                                    height="15"
+                                    rx="4"
+                                    fill="#1e2026"
+                                    stroke="#3f3f46"
+                                    strokeWidth="0.8"
+                                  />
+                                  <text
+                                    x={pt.x}
+                                    y={pt.y - 9}
+                                    textAnchor="middle"
+                                    fontSize="8.5"
+                                    fontWeight="bold"
+                                    fill="#84cc16"
+                                    className="font-mono"
+                                  >
+                                    {formatCurrency(pt.value)}
+                                  </text>
+                                </g>
+                              )}
+                            </g>
+                          )
+                        })}
+                      </svg>
                     </div>
                   )
-                })
+                })()
               ) : (
-                /* DAILY DRILLDOWN VIEW - Rótulos Above Bars */
+                /* DAILY DRILLDOWN VIEW */
                 selectedDrilldownMonth.daily.map((d: any) => {
                   const heightPct = Math.max(8, Math.min(84, Math.round((d.value / maxSalesValue) * 80)))
                   return (
@@ -2268,19 +2429,19 @@ export default function DashboardPage() {
                       title={`Dia ${d.day}: ${formatCurrency(d.value)}`}
                     >
                       {d.value > 0 ? (
-                        <span className="text-[6.5px] font-mono text-[var(--white)] font-extrabold text-center tracking-tighter mb-0.5">
+                        <span className="text-[6.5px] font-mono text-zinc-200 font-extrabold text-center tracking-tighter mb-0.5">
                           {d.value >= 1000 ? `${(d.value / 1000).toFixed(0)}k` : d.value}
                         </span>
                       ) : (
-                        <span className="text-[6px] font-mono text-[var(--gray2)] mb-0.5">—</span>
+                        <span className="text-[6px] font-mono text-zinc-600 mb-0.5">—</span>
                       )}
-                      <div className="w-full bg-[var(--chart-track)] border border-[var(--chart-border)] rounded-t-sm relative overflow-hidden flex items-end" style={{ height: `${heightPct}%` }}>
+                      <div className="w-full bg-[#18191c] border border-[#24262b] rounded-t-sm relative overflow-hidden flex items-end" style={{ height: `${heightPct}%` }}>
                         <div 
-                          className="w-full bg-gradient-to-t from-emerald-600 to-[var(--green)] group-hover:brightness-125 transition-all"
+                          className="w-full bg-gradient-to-t from-emerald-600 to-[#84cc16] group-hover:brightness-125 transition-all"
                           style={{ height: '100%' }}
                         />
                       </div>
-                      <span className="text-[7px] font-mono text-[var(--gray2)] group-hover:text-[var(--white)]">
+                      <span className="text-[7px] font-mono text-zinc-400 group-hover:text-white">
                         {d.day}
                       </span>
                     </div>
