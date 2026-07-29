@@ -1051,17 +1051,49 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
         </div>
       </div>
 
-      {showActivityModal && (
-        <RegisterActivityModal
-          isOpen={showActivityModal}
-          onClose={() => setShowActivityModal(false)}
-          contactsList={[]}
-          preselectedContactId={deal?.contact_id || (deal as any)?.contactId || deal?.id || ''}
-          onSuccess={() => {
-            setShowActivityModal(false)
-          }}
-        />
-      )}
+      {showActivityModal && (() => {
+        let savedContacts: any[] = []
+        try {
+          const raw = typeof window !== 'undefined' ? localStorage.getItem('crm_contacts') : null
+          if (raw) savedContacts = JSON.parse(raw)
+        } catch (e) {}
+
+        const dealComp = (deal?.contact?.company || deal?.title || '').trim().toLowerCase()
+        const dealName = (deal?.contact?.name || '').trim().toLowerCase()
+        const dealContactId = deal?.contact_id || (deal?.contact as any)?.id
+
+        let matchedContact = savedContacts.find(c => 
+          (dealContactId && c.id === dealContactId) ||
+          (dealComp && (c.company || c.name || '').trim().toLowerCase() === dealComp) ||
+          (dealName && (c.name || '').trim().toLowerCase() === dealName)
+        )
+
+        if (!matchedContact && deal) {
+          matchedContact = {
+            id: dealContactId || `cnt_${Date.now()}`,
+            name: deal.contact?.name || deal.title,
+            company: deal.contact?.company || deal.title,
+            phone: deal.contact?.phone || '',
+            city: (deal as any).city || '',
+            state: (deal as any).uf || ''
+          }
+          savedContacts = [matchedContact, ...savedContacts]
+        }
+
+        const preselectedId = matchedContact ? matchedContact.id : (dealContactId || '')
+
+        return (
+          <RegisterActivityModal
+            isOpen={showActivityModal}
+            onClose={() => setShowActivityModal(false)}
+            contactsList={savedContacts}
+            preselectedContactId={preselectedId}
+            onSuccess={() => {
+              setShowActivityModal(false)
+            }}
+          />
+        )
+      })()}
     </>
   )
 }

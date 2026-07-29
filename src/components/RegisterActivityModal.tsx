@@ -89,9 +89,19 @@ export function RegisterActivityModal({
 
   useEffect(() => {
     if (preselectedContactId) {
-      setSelectedContactId(preselectedContactId)
+      const found = contactsList.find(c => 
+        c.id === preselectedContactId ||
+        (c.company && c.company.toLowerCase().trim() === preselectedContactId.toLowerCase().trim()) ||
+        (c.name && c.name.toLowerCase().trim() === preselectedContactId.toLowerCase().trim())
+      )
+      if (found) {
+        setSelectedContactId(found.id)
+        setClientSearchTerm(found.company || found.name)
+      } else {
+        setSelectedContactId(preselectedContactId)
+      }
     }
-  }, [preselectedContactId])
+  }, [preselectedContactId, contactsList])
 
   useEffect(() => {
     if (selectedContactId) {
