@@ -345,22 +345,17 @@ export function RegisterActivityModal({
           })
           localStorage.setItem('crm_contacts', JSON.stringify(updatedContacts))
           
-          // Also sync to Supabase if available
-          if (supabase) {
-            const targetContact = updatedContacts.find((c: any) => c.id === selectedContactId)
-            if (targetContact) {
-              const payload = {
-                status: targetContact.status,
-                activities: JSON.stringify(targetContact.activities || []),
-                updated_at: new Date().toISOString()
-              }
-              if (selectedContactId && !selectedContactId.startsWith('c-')) {
-                supabase.from('contacts').update(payload).eq('id', selectedContactId).then(() => {})
-              } else if (selectedContact.company) {
-                supabase.from('contacts').update(payload).ilike('company', selectedContact.company).then(() => {})
-              }
-            }
-          }
+          // Also sync to Supabase via /api/contacts
+          fetch('/api/contacts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: selectedContactId,
+              company: selectedContact.company || selectedContact.name,
+              status: (selectedActionObj.stage === 'perdido') ? 'inativo' : 'ativo',
+              activities: [newActivity]
+            })
+          }).catch(() => {})
 
           window.dispatchEvent(new Event('storage-contacts-changed'))
         } catch (e) {

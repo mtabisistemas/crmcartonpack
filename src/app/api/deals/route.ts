@@ -118,23 +118,7 @@ export async function POST(req: Request) {
         finalContactId = fallbackContactId
       }
 
-      let dealId = isUUID(d.id) ? d.id : null
-      if (!dealId && d.title) {
-        const cleanTitle = d.title.trim().replace(/[%_]/g, '')
-        const { data: existingDeal } = await supabaseAdmin
-          .from('deals')
-          .select('id')
-          .ilike('title', cleanTitle)
-          .limit(1)
-
-        if (existingDeal && existingDeal.length > 0) {
-          dealId = existingDeal[0].id
-        }
-      }
-
-      if (!dealId) {
-        dealId = crypto.randomUUID()
-      }
+      let dealId = isUUID(d.id) ? d.id : crypto.randomUUID()
 
       let validAssignedTo: string | null = null
       if (isUUID(d.assigned_to)) validAssignedTo = d.assigned_to

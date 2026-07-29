@@ -574,6 +574,18 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
         }
       } catch (e) {}
     }
+
+    // Persist activity to Supabase via /api/contacts
+    const searchCompany = (deal.contact?.company || deal.title || '').trim()
+    fetch('/api/contacts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: deal.contact_id || deal.contact?.id,
+        company: searchCompany,
+        activities: [activity]
+      })
+    }).catch(() => {})
   }
 
   const getActivityIcon = (type: Activity['type']) => {

@@ -26,6 +26,10 @@ import { PipelineCalendarModal } from './PipelineCalendarModal'
 import { getPipelineDeals, savePipelineDeals, DEFAULT_PIPELINE_DEALS } from '@/services/pipeline-service'
 import { supabase } from '@/services/supabase-client'
 
+const isUUID = (str: any) =>
+  typeof str === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
+
 // ─── Mock data ────────────────────────────────────────────────
 const MOCK_DEALS: Deal[] = DEFAULT_PIPELINE_DEALS
 // ─── Deal Card ────────────────────────────────────────────────
@@ -1087,25 +1091,18 @@ export function PipelineBoard() {
         }
       } catch (e) {}
 
-      // Sync last purchase date directly in Supabase if closed
-      if (isClosedDeal) {
-        try {
-          import('@/services/supabase-client').then(({ supabase }) => {
-            if (supabase) {
-              const comp = targetDeal.contact?.company || targetDeal.title
-              const payload: any = {
-                last_purchase_date: todayStr,
-                updated_at: new Date().toISOString()
-              }
-              if (targetDeal.contact_id && !targetDeal.contact_id.startsWith('c-')) {
-                supabase.from('contacts').update(payload).eq('id', targetDeal.contact_id).then(() => {})
-              } else if (comp) {
-                supabase.from('contacts').update(payload).ilike('company', comp).then(() => {})
-              }
-            }
-          })
-        } catch (err) {}
-      }
+      // Sync activity & last purchase date to Supabase via /api/contacts
+      const comp = targetDeal.contact?.company || targetDeal.title
+      fetch('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: targetDeal.contact_id || targetDeal.contact?.id,
+          company: comp,
+          activities: [stageActivity],
+          ...(isClosedDeal ? { lastPurchaseDate: todayStr, status: 'ativo' } : {})
+        })
+      }).catch(() => {})
     }
 
     setPendingMove(null)
@@ -1157,10 +1154,11 @@ export function PipelineBoard() {
       rep = currentUser.name
     }
 
-    const targetContactId = data.contactId || matchedContact?.id || `c-${Date.now()}`
+    const dealUUID = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `00000000-0000-4000-8000-${String(Date.now()).padStart(12, '0')}`
+    const targetContactId = isUUID(data.contactId) ? data.contactId : (isUUID(matchedContact?.id) ? matchedContact.id : (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `00000000-0000-4000-8000-${String(Date.now()).padStart(12, '0')}`))
 
     const newDeal: Deal = {
-      id: `d-${Date.now()}`,
+      id: dealUUID,
       title: data.title,
       stage: data.stage,
       estimated_value: data.value,
