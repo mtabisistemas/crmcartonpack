@@ -1752,32 +1752,32 @@ export default function ContactsPage() {
 
               return {
                 id: item.id,
-                name: item.name || '',
-                company: item.company || '',
-                cnpj: item.cnpj || '',
-                curve: item.curve || 'C',
-                representative: item.representative || item.assigned_to || item.assignedTo || item.assigned_to_name || localMatched?.representative || '',
-                phone: item.phone || '',
-                email: item.email || '',
-                city: item.city || '',
-                state: item.state || '',
-                status: item.status || 'ativo',
+                name: localMatched?.name || item.name || '',
+                company: item.company || localMatched?.company || '',
+                cnpj: item.cnpj || localMatched?.cnpj || '',
+                curve: localMatched?.curve || item.curve || 'C',
+                representative: localMatched?.representative || item.representative || item.assigned_to || item.assignedTo || item.assigned_to_name || '',
+                phone: localMatched?.phone || item.phone || '',
+                email: localMatched?.email || item.email || '',
+                city: localMatched?.city || item.city || '',
+                state: localMatched?.state || item.state || '',
+                status: localMatched?.status || item.status || 'ativo',
                 lastPurchaseDays: 0,
-                tradeName: item.role || item.company || '',
-                registrationStatus: item.registration_status || 'ATIVA',
-                mainCnae: item.main_cnae || '',
-                address: item.address || '',
-                bairro: item.bairro || '',
-                cep: item.cep || '',
-                sideActivities: item.side_activities ? (typeof item.side_activities === 'string' ? JSON.parse(item.side_activities) : item.side_activities) : [],
-                taxRegime: item.tax_regime || 'Simples Nacional',
-                specialSituation: item.special_situation || 'Nenhuma',
-                specialSituationDate: item.special_situation_date || '-',
-                stateRegistration: item.state_registration || '',
-                website: item.website || '',
-                instagram: item.instagram || '',
-                linkedin: item.linkedin || '',
-                facebook: item.facebook || '',
+                tradeName: localMatched?.tradeName || item.role || item.company || '',
+                registrationStatus: localMatched?.registrationStatus || item.registration_status || 'ATIVA',
+                mainCnae: localMatched?.mainCnae || item.main_cnae || '',
+                address: localMatched?.address || item.address || '',
+                bairro: localMatched?.bairro || item.bairro || '',
+                cep: localMatched?.cep || item.cep || '',
+                sideActivities: localMatched?.sideActivities?.length ? localMatched.sideActivities : (item.side_activities ? (typeof item.side_activities === 'string' ? JSON.parse(item.side_activities) : item.side_activities) : []),
+                taxRegime: localMatched?.taxRegime || item.tax_regime || 'Simples Nacional',
+                specialSituation: localMatched?.specialSituation || item.special_situation || 'Nenhuma',
+                specialSituationDate: localMatched?.specialSituationDate || item.special_situation_date || '-',
+                stateRegistration: localMatched?.stateRegistration || item.state_registration || '',
+                website: localMatched?.website || item.website || '',
+                instagram: localMatched?.instagram || item.instagram || '',
+                linkedin: localMatched?.linkedin || item.linkedin || '',
+                facebook: localMatched?.facebook || item.facebook || '',
                 activities: loadedActs
               }
             })
@@ -1928,13 +1928,62 @@ export default function ContactsPage() {
   }
 
   const handleUpdateContact = async (updatedContact: MockContact) => {
-    const updated = contacts.map(c => c.id === updatedContact.id ? updatedContact : c)
-    saveContacts(updated)
+    const cleanTargetCnpj = (updatedContact.cnpj || '').replace(/\D/g, '')
+    const cleanTargetCompany = (updatedContact.company || '').trim().toLowerCase()
+
+    let foundMatch = false
+    const updated = contacts.map(c => {
+      const matchesId = updatedContact.id && c.id === updatedContact.id
+      const matchesCnpj = cleanTargetCnpj && (c.cnpj || '').replace(/\D/g, '') === cleanTargetCnpj
+      const matchesComp = cleanTargetCompany && (c.company || '').trim().toLowerCase() === cleanTargetCompany
+      if (matchesId || matchesCnpj || matchesComp) {
+        foundMatch = true
+        return { ...c, ...updatedContact }
+      }
+      return c
+    })
+
+    const finalContacts = foundMatch ? updated : [updatedContact, ...contacts]
+    saveContacts(finalContacts)
     setSelectedContact(updatedContact)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('storage-contacts-changed'))
+    }
+
+    // Sync pipeline deals with updated contact info
+    if (typeof window !== 'undefined') {
+      try {
+        const rawDeals = localStorage.getItem('cp_crm_pipeline_deals')
+        if (rawDeals) {
+          const deals = JSON.parse(rawDeals)
+          const updatedDeals = deals.map((d: any) => {
+            const matchesId = updatedContact.id && d.contact_id === updatedContact.id
+            const matchesComp = cleanTargetCompany && (d.contact?.company || d.title) && (d.contact?.company || d.title).trim().toLowerCase() === cleanTargetCompany
+            if (matchesId || matchesComp) {
+              return {
+                ...d,
+                contact: {
+                  ...(d.contact || {}),
+                  name: updatedContact.name,
+                  company: updatedContact.company,
+                  phone: updatedContact.phone,
+                  email: updatedContact.email,
+                  curve: updatedContact.curve
+                },
+                assigned_to: updatedContact.representative || d.assigned_to
+              }
+            }
+            return d
+          })
+          localStorage.setItem('cp_crm_pipeline_deals', JSON.stringify(updatedDeals))
+          window.dispatchEvent(new Event('storage-deals-changed'))
+        }
+      } catch (e) {}
+    }
 
     if (supabase) {
       try {
-        const payload = {
+        const payload: any = {
           name: updatedContact.name,
           company: updatedContact.company,
           role: updatedContact.tradeName || updatedContact.company,
@@ -1966,13 +2015,11 @@ export default function ContactsPage() {
           updated_at: new Date().toISOString()
         }
 
-        // Try update by ID first
         let updateRes: any = null
         if (updatedContact.id) {
           updateRes = await supabase.from('contacts').update(payload).eq('id', updatedContact.id)
         }
 
-        // Fallback to CNPJ matching (both raw and cleaned)
         const cleanCnpj = (updatedContact.cnpj || '').replace(/\D/g, '')
         if ((!updateRes || updateRes.error || updateRes.count === 0) && updatedContact.cnpj) {
           updateRes = await supabase.from('contacts').update(payload).eq('cnpj', updatedContact.cnpj)
@@ -1981,11 +2028,13 @@ export default function ContactsPage() {
           }
         }
 
-        // Fallback to Company name matching
         if ((!updateRes || updateRes.error || updateRes.count === 0) && updatedContact.company) {
           updateRes = await supabase.from('contacts').update(payload).ilike('company', updatedContact.company)
         }
-        console.log('Successfully updated contact in Supabase!', updateRes)
+
+        if (!updateRes || updateRes.error || updateRes.count === 0) {
+          await supabase.from('contacts').insert([{ id: updatedContact.id, ...payload }])
+        }
       } catch (err) {
         console.error('Error updating contact in Supabase:', err)
       }
