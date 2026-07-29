@@ -136,19 +136,44 @@ function capitalizeString(str: string) {
   return str.toLowerCase().replace(/(^\w|\s\w)/g, m => m.toUpperCase())
 }
 
+function parseFlexibleDate(str: string | null | undefined): Date | null {
+  if (!str) return null
+  const iso = new Date(str)
+  if (!isNaN(iso.getTime())) return iso
+  if (str.includes('/')) {
+    const [datePart, timePart] = str.split(' ')
+    const parts = datePart.split('/')
+    if (parts.length === 3) {
+      const [d, m, y] = parts.map(Number)
+      const date = new Date(y, m - 1, d)
+      if (timePart && timePart.includes(':')) {
+        const [h, min] = timePart.split(':').map(Number)
+        date.setHours(h || 0, min || 0, 0, 0)
+      }
+      if (!isNaN(date.getTime())) return date
+    }
+  }
+  return null
+}
+
 export function getContactActivityAndRepurchaseInfo(contact: MockContact) {
   let lastActivityDate: Date | null = null
+
   if (contact.activities && contact.activities.length > 0) {
-    const sorted = [...contact.activities].sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
-    if (sorted[0]?.timestamp) {
-      const parsed = new Date(sorted[0].timestamp)
-      if (!isNaN(parsed.getTime())) lastActivityDate = parsed
+    for (const act of contact.activities) {
+      const parsed = parseFlexibleDate(act.timestamp)
+      if (parsed && (!lastActivityDate || parsed.getTime() > lastActivityDate.getTime())) {
+        lastActivityDate = parsed
+      }
     }
   }
 
+  if (!lastActivityDate && contact.lastPurchaseDate) {
+    lastActivityDate = parseFlexibleDate(contact.lastPurchaseDate)
+  }
+
   if (!lastActivityDate && contact.created_at) {
-    const parsed = new Date(contact.created_at)
-    if (!isNaN(parsed.getTime())) lastActivityDate = parsed
+    lastActivityDate = parseFlexibleDate(contact.created_at)
   }
 
   const now = new Date()
@@ -169,9 +194,8 @@ export function getContactActivityAndRepurchaseInfo(contact: MockContact) {
   let nextPurchaseDateStr = '-'
 
   if (contact.lastPurchaseDate) {
-    const cleanDate = contact.lastPurchaseDate.split('T')[0]
-    const lastDate = new Date(cleanDate + 'T00:00:00')
-    if (!isNaN(lastDate.getTime())) {
+    const lastDate = parseFlexibleDate(contact.lastPurchaseDate)
+    if (lastDate && !isNaN(lastDate.getTime())) {
       const freq = contact.purchaseFrequencyDays || 30
       const nextDate = new Date(lastDate)
       nextDate.setDate(nextDate.getDate() + freq)
@@ -1253,7 +1277,7 @@ function ContactDrawer({
                   Parâmetros de Recompra & Projeção
                 </h4>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                   {/* Valor Projetado R$ */}
                   <div className="flex flex-col gap-0.5">
                     <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
@@ -1315,7 +1339,34 @@ function ContactDrawer({
                         handleSaveGeneral({ lastPurchaseDate: val })
                       }}
                     />
-                    <span className="text-[8px] text-[var(--gray2)] font-mono">Data do último pedido fechado (editável)</span>
+                    <span className="text-[8px] text-[var(--gray2)] font-mono">Data do último pedido fechado</span>
+                  </div>
+
+                  {/* Tempo para Inativação (Dias) */}
+                  <div className="flex flex-col gap-0.5">
+                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+                      Tempo para Inativação (Dias)
+                    </label>
+                    <div className="relative flex items-center">
+                      <input
+                        type="number"
+                        min="1"
+                        className="input text-xs py-1 px-2.5 font-bold font-mono pr-12 text-amber-400"
+                        placeholder="Ex: 90"
+                        value={inactivityThresholdDays || ''}
+                        onChange={e => {
+                          const val = parseInt(e.target.value) || 90
+                          setInactivityThresholdDays(val)
+                          handleSaveGeneral({ inactivityThresholdDays: val })
+                        }}
+                      />
+                      <span className="absolute right-2.5 text-[10px] font-bold text-[var(--gray2)] font-mono select-none">
+                        dias
+                      </span>
+                    </div>
+                    <span className="text-[8px] text-amber-400/90 font-mono">
+                      Inativação automática após {inactivityThresholdDays || 90} dias sem atividades registradas
+                    </span>
                   </div>
                 </div>
               </div>
@@ -2306,6 +2357,9 @@ export default function ContactsPage() {
 
   const isRep = currentUser?.role === 'representante' || currentUser?.role === 'vendedor'
 
+  // ── Repurchase Category Filter State ──
+  const [repurchaseCategoryFilter, setRepurchaseCategoryFilter] = useState<'all' | 'atrasado' | '15dias' | '30dias' | 'inativo'>('all')
+
   // ── Pagination State ──
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 25
@@ -2318,13 +2372,32 @@ export default function ContactsPage() {
     })
   }, [contacts, isRep, currentUser?.name])
 
-  // ── Metrics Calculation (Total, Ativos, Inativos, Prospecção) ──
+  // ── Metrics Calculation (Total, Recompra Atrasada, Recompra 15 Dias, Recompra 30 Dias, Inativos) ──
   const metrics = useMemo(() => {
-    const total = scopedContacts.length
-    const ativos = scopedContacts.filter(c => c.status === 'ativo' || (!c.status && (!c.lastPurchaseDays || c.lastPurchaseDays <= 30))).length
-    const inativos = scopedContacts.filter(c => c.status === 'inativo' || (c.lastPurchaseDays && c.lastPurchaseDays > 30 && c.status !== 'prospeccao')).length
-    const prospeccao = scopedContacts.filter(c => c.status === 'prospeccao').length
-    return { total, ativos, inativos, prospeccao }
+    let total = 0
+    let atrasado = 0
+    let recompra15 = 0
+    let recompra30 = 0
+    let inativos = 0
+
+    scopedContacts.forEach(c => {
+      total++
+      const repInfo = getContactActivityAndRepurchaseInfo(c)
+
+      if (repInfo.computedStatus === 'inativo') {
+        inativos++
+      }
+
+      if (repInfo.isOverdue) {
+        atrasado++
+      } else if (repInfo.daysToRepurchase <= 15) {
+        recompra15++
+      } else if (repInfo.daysToRepurchase <= 30) {
+        recompra30++
+      }
+    })
+
+    return { total, atrasado, recompra15, recompra30, inativos }
   }, [scopedContacts])
 
   // Filtering logic — representatives only see their own clients
@@ -2340,16 +2413,31 @@ export default function ContactsPage() {
       
       const matchesCurve = selectedCurve === 'all' || contact.curve === selectedCurve
       const matchesRep = selectedRep === 'all' || contact.representative === selectedRep
-      const matchesStatus = selectedStatus === 'all' || contact.status === selectedStatus
 
-      return matchesSearch && matchesCurve && matchesRep && matchesStatus
+      const repInfo = getContactActivityAndRepurchaseInfo(contact)
+      const effectiveStatus = repInfo.computedStatus
+
+      const matchesStatus = selectedStatus === 'all' || effectiveStatus === selectedStatus
+
+      let matchesCategory = true
+      if (repurchaseCategoryFilter === 'atrasado') {
+        matchesCategory = repInfo.isOverdue
+      } else if (repurchaseCategoryFilter === '15dias') {
+        matchesCategory = !repInfo.isOverdue && repInfo.daysToRepurchase <= 15
+      } else if (repurchaseCategoryFilter === '30dias') {
+        matchesCategory = !repInfo.isOverdue && repInfo.daysToRepurchase > 15 && repInfo.daysToRepurchase <= 30
+      } else if (repurchaseCategoryFilter === 'inativo') {
+        matchesCategory = effectiveStatus === 'inativo'
+      }
+
+      return matchesSearch && matchesCurve && matchesRep && matchesStatus && matchesCategory
     })
-  }, [contacts, isRep, currentUser?.name, searchTerm, selectedCurve, selectedRep, selectedStatus])
+  }, [contacts, isRep, currentUser?.name, searchTerm, selectedCurve, selectedRep, selectedStatus, repurchaseCategoryFilter])
 
   // Reset pagination to page 1 whenever filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, selectedCurve, selectedRep, selectedStatus])
+  }, [searchTerm, selectedCurve, selectedRep, selectedStatus, repurchaseCategoryFilter])
 
   const totalPages = Math.ceil(filteredContacts.length / itemsPerPage) || 1
   const paginatedContacts = useMemo(() => {
@@ -2596,12 +2684,15 @@ export default function ContactsPage() {
       </div>
 
       {/* ── KPI METRICS SUMMARY CARDS ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
         {/* Card 1: Total de Clientes */}
         <div 
-          onClick={() => setSelectedStatus('all')}
+          onClick={() => {
+            setRepurchaseCategoryFilter('all')
+            setSelectedStatus('all')
+          }}
           className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            selectedStatus === 'all' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
+            repurchaseCategoryFilter === 'all' && selectedStatus === 'all' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
           }`}
         >
           <div>
@@ -2613,51 +2704,79 @@ export default function ContactsPage() {
           </div>
         </div>
 
-        {/* Card 2: Clientes Ativos */}
+        {/* Card 2: Recompra Atrasada */}
         <div 
-          onClick={() => setSelectedStatus('ativo')}
+          onClick={() => {
+            setRepurchaseCategoryFilter('atrasado')
+            setSelectedStatus('all')
+          }}
           className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            selectedStatus === 'ativo' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
+            repurchaseCategoryFilter === 'atrasado' ? 'border-red-500 bg-red-500/10 shadow-sm animate-pulse' : 'border-red-500/40 bg-red-500/5'
           }`}
         >
           <div>
-            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Clientes Ativos</span>
-            <span className="text-xl font-black text-[var(--lime)] font-display mt-0.5 block">{metrics.ativos}</span>
+            <span className="text-[9px] font-mono text-red-400 uppercase tracking-wider block font-bold">Recompra Atrasada</span>
+            <span className="text-xl font-black text-red-400 font-display mt-0.5 block">{metrics.atrasado}</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-[var(--lime)]/10 border border-[var(--lime)]/20 text-[var(--lime)] flex items-center justify-center shrink-0">
-            <CheckCircle size={15} />
-          </div>
-        </div>
-
-        {/* Card 3: Inativos / Alerta */}
-        <div 
-          onClick={() => setSelectedStatus('inativo')}
-          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            selectedStatus === 'inativo' ? 'border-red-500 bg-red-500/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
-          }`}
-        >
-          <div>
-            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Inativos / Alerta</span>
-            <span className="text-xl font-black text-red-400 font-display mt-0.5 block">{metrics.inativos}</span>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center shrink-0">
             <AlertTriangle size={15} />
           </div>
         </div>
 
-        {/* Card 4: Em Prospecção */}
+        {/* Card 3: Recompra 15 Dias */}
         <div 
-          onClick={() => setSelectedStatus('prospeccao')}
+          onClick={() => {
+            setRepurchaseCategoryFilter('15dias')
+            setSelectedStatus('all')
+          }}
           className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            selectedStatus === 'prospeccao' ? 'border-amber-400 bg-amber-400/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
+            repurchaseCategoryFilter === '15dias' ? 'border-amber-400 bg-amber-400/10 shadow-sm' : 'border-amber-400/30 bg-amber-400/5'
           }`}
         >
           <div>
-            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Em Prospecção</span>
-            <span className="text-xl font-black text-amber-400 font-display mt-0.5 block">{metrics.prospeccao}</span>
+            <span className="text-[9px] font-mono text-amber-300 uppercase tracking-wider block font-bold">Recompra 15 Dias</span>
+            <span className="text-xl font-black text-amber-300 font-display mt-0.5 block">{metrics.recompra15}</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center shrink-0">
-            <UserPlus size={15} />
+          <div className="w-8 h-8 rounded-lg bg-amber-400/15 border border-amber-400/30 text-amber-300 flex items-center justify-center shrink-0">
+            <Clock size={15} />
+          </div>
+        </div>
+
+        {/* Card 4: Recompra 30 Dias */}
+        <div 
+          onClick={() => {
+            setRepurchaseCategoryFilter('30dias')
+            setSelectedStatus('all')
+          }}
+          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            repurchaseCategoryFilter === '30dias' ? 'border-sky-400 bg-sky-400/10 shadow-sm' : 'border-sky-400/30 bg-sky-400/5'
+          }`}
+        >
+          <div>
+            <span className="text-[9px] font-mono text-sky-300 uppercase tracking-wider block font-bold">Recompra 30 Dias</span>
+            <span className="text-xl font-black text-sky-300 font-display mt-0.5 block">{metrics.recompra30}</span>
+          </div>
+          <div className="w-8 h-8 rounded-lg bg-sky-400/15 border border-sky-400/30 text-sky-300 flex items-center justify-center shrink-0">
+            <Calendar size={15} />
+          </div>
+        </div>
+
+        {/* Card 5: Clientes Inativos */}
+        <div 
+          onClick={() => {
+            setRepurchaseCategoryFilter('inativo')
+            setSelectedStatus('inativo')
+          }}
+          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            repurchaseCategoryFilter === 'inativo' || selectedStatus === 'inativo' ? 'border-rose-500 bg-rose-500/10 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
+          }`}
+        >
+          <div>
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Clientes Inativos</span>
+            <span className="text-xl font-black text-rose-400 font-display mt-0.5 block">{metrics.inativos}</span>
+          </div>
+          <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+            <AlertCircle size={15} />
           </div>
         </div>
       </div>
@@ -2726,7 +2845,9 @@ export default function ContactsPage() {
         /* ── REPRESENTATIVE CARD GRID VIEW ── */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {paginatedContacts.map(contact => {
-            const isInactive = contact.status === 'inativo' || (contact.lastPurchaseDays && contact.lastPurchaseDays > 30)
+            const repInfo = getContactActivityAndRepurchaseInfo(contact)
+            const effectiveStatus = repInfo.computedStatus
+            const isInactive = effectiveStatus === 'inativo'
             return (
               <div
                 key={contact.id}
@@ -2736,22 +2857,32 @@ export default function ContactsPage() {
                 }`}
               >
                 <div className="flex justify-between items-start gap-2">
-                  <div className="min-w-0">
-                    <h4 className="text-xs font-bold text-[var(--white)] truncate">{contact.company || contact.name}</h4>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h4 className="text-xs font-bold text-[var(--white)] truncate">{contact.company || contact.name}</h4>
+                      {repInfo.isOverdue && (
+                        <span 
+                          title={`🔴 Recompra Atrasada (${repInfo.daysOverdue} dias)! Prevista para ${repInfo.nextPurchaseDateStr}`}
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] font-mono font-bold animate-pulse shrink-0 cursor-help"
+                        >
+                          <AlertTriangle size={11} className="text-red-400 shrink-0" />
+                          <span>Atrasado ({repInfo.daysOverdue}d)</span>
+                        </span>
+                      )}
+                    </div>
                     {contact.company && contact.name && (
                       <span className="text-[9px] font-mono text-[var(--gray)] block mt-0.5 truncate">Contato: {contact.name}</span>
                     )}
                     <span className="text-[9px] text-[var(--gray)] font-mono block">{contact.city}{contact.state ? ` · ${contact.state}` : ''}</span>
                   </div>
                   {(() => {
-                    const s = contact.status || 'ativo'
-                    if (s === 'prospeccao') return (
+                    if (effectiveStatus === 'prospeccao') return (
                       <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-400/15 text-amber-300 border border-amber-400/30 shrink-0">
                         Prospecção
                       </span>
                     )
-                    if (s === 'inativo') return (
-                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30 shrink-0">
+                    if (effectiveStatus === 'inativo') return (
+                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30 shrink-0" title={repInfo.isAutoInactive ? `Inativado por ${repInfo.daysSinceLastActivity}d sem atividade` : undefined}>
                         Inativo
                       </span>
                     )
@@ -2850,11 +2981,14 @@ export default function ContactsPage() {
               </thead>
               <tbody className="divide-y divide-[var(--line)]">
                 {paginatedContacts.map(contact => {
+                  const repInfo = getContactActivityAndRepurchaseInfo(contact)
+                  const effectiveStatus = repInfo.computedStatus
+                  const isInactive = effectiveStatus === 'inativo'
                   return (
                     <tr 
                       key={contact.id} 
                       onClick={() => setSelectedContact(contact)}
-                      className={`transition-all duration-150 cursor-pointer ${contact.status === 'inativo' ? 'bg-[rgba(226,72,61,0.08)] hover:bg-[rgba(226,72,61,0.15)] border-l-4 border-l-[var(--red)]' : 'hover:bg-[var(--charcoal)]'}`}
+                      className={`transition-all duration-150 cursor-pointer ${isInactive ? 'bg-[rgba(226,72,61,0.08)] hover:bg-[rgba(226,72,61,0.15)] border-l-4 border-l-[var(--red)]' : 'hover:bg-[var(--charcoal)]'}`}
                     >
                       {/* Cliente Info */}
                       <td className="py-2 px-3 pl-4">
@@ -2863,10 +2997,19 @@ export default function ContactsPage() {
                             <Building2 size={14} />
                           </div>
                           <div className="min-w-0">
-                            <div className="text-xs font-bold text-[var(--white)] flex items-center gap-2 truncate">
+                            <div className="text-xs font-bold text-[var(--white)] flex items-center gap-2 flex-wrap">
                               <span className="truncate">{contact.company}</span>
-                              {contact.status === 'inativo' && (
-                                <span className="font-mono text-[9px] text-[var(--gray)] flex items-center gap-1 font-normal shrink-0">
+                              {repInfo.isOverdue && (
+                                <span 
+                                  title={`🔴 Recompra Atrasada (${repInfo.daysOverdue} dias)! Prevista para ${repInfo.nextPurchaseDateStr}`}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] font-mono font-bold animate-pulse shrink-0 cursor-help"
+                                >
+                                  <AlertTriangle size={11} className="text-red-400 shrink-0" />
+                                  <span>Atrasado ({repInfo.daysOverdue}d)</span>
+                                </span>
+                              )}
+                              {isInactive && (
+                                <span className="font-mono text-[9px] text-[var(--gray)] flex items-center gap-1 font-normal shrink-0" title={repInfo.isAutoInactive ? `Inativado por ${repInfo.daysSinceLastActivity}d sem atividade` : undefined}>
                                   <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
                                   Inativo
                                 </span>
@@ -2904,15 +3047,14 @@ export default function ContactsPage() {
                       {/* Status */}
                       <td className="py-2 px-3">
                         {(() => {
-                          const s = contact.status || 'ativo'
-                          if (s === 'prospeccao') return (
+                          if (effectiveStatus === 'prospeccao') return (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-amber-400/10 border border-amber-400/25 text-amber-300">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-pulse" />
                               Prospecção
                             </span>
                           )
-                          if (s === 'inativo') return (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-red-500/10 border border-red-500/25 text-red-400">
+                          if (effectiveStatus === 'inativo') return (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-red-500/10 border border-red-500/25 text-red-400" title={repInfo.isAutoInactive ? `Inativado por ${repInfo.daysSinceLastActivity}d sem atividade` : undefined}>
                               <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
                               Inativo
                             </span>

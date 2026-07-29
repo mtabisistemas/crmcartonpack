@@ -36,6 +36,7 @@ export async function GET() {
         projectedPurchaseValue: notesObj.projectedPurchaseValue ?? item.projected_purchase_value ?? 0,
         purchaseFrequencyDays: notesObj.purchaseFrequencyDays ?? item.purchase_frequency_days ?? 30,
         lastPurchaseDate: notesObj.lastPurchaseDate || item.last_purchase_date || '',
+        inactivityThresholdDays: notesObj.inactivityThresholdDays ?? item.inactivity_threshold_days ?? 90,
         planningNotes: notesObj.planningNotes || item.planning_notes || '',
         history: notesObj.history || item.history || [],
         activities: notesObj.activities || item.activities || []
