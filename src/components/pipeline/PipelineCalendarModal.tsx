@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Appointment } from '@/types'
 import { getAppointments, updateAppointment, deleteAppointment, saveAppointment } from '@/services/appointment-service'
 import { 
-  X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Plus, Edit2, Trash2
+  X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Plus, Edit2, Trash2, Check, AlertTriangle
 } from 'lucide-react'
 
 interface PipelineCalendarModalProps {
@@ -438,18 +438,34 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
 
                       {/* Chips List (Max 3) */}
                       <div className="flex-1 flex flex-col gap-1 overflow-hidden min-h-0 mt-0.5">
-                        {visibleApts.map(apt => (
-                          <button
-                            key={apt.id}
-                            onClick={() => handleOpenAptDetails(apt)}
-                            className="w-full text-left text-[10px] py-1 px-1.5 rounded-md border border-[var(--lime)]/40 bg-[var(--lime)]/15 text-[var(--white)] font-mono truncate transition-all hover:bg-[var(--lime)]/30 hover:border-[var(--lime)] cursor-pointer flex items-center gap-1.5"
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--lime)] shrink-0" />
-                            <span className="truncate font-semibold text-[var(--white)]">
-                              <strong className="font-bold text-[var(--lime)]">{apt.time}</strong> {apt.company_name || apt.title}
-                            </span>
-                          </button>
-                        ))}
+                        {visibleApts.map(apt => {
+                          const now = new Date()
+                          const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+                          const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+                          const isConcluido = apt.status === 'concluido'
+                          const isOverdue = !isConcluido && (apt.date < todayStr || (apt.date === todayStr && apt.time < currentTimeStr))
+
+                          return (
+                            <button
+                              key={apt.id}
+                              onClick={() => handleOpenAptDetails(apt)}
+                              className={`w-full text-left text-[10px] py-1 px-1.5 rounded-md border font-mono truncate transition-all cursor-pointer flex items-center gap-1.5 ${
+                                isConcluido
+                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 line-through opacity-75'
+                                  : isOverdue
+                                  ? 'bg-red-500/20 text-red-400 border-red-500/50 font-bold animate-pulse'
+                                  : 'bg-[var(--lime)]/15 text-[var(--white)] border-[var(--lime)]/40 hover:bg-[var(--lime)]/30 hover:border-[var(--lime)]'
+                              }`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                isConcluido ? 'bg-emerald-400' : isOverdue ? 'bg-red-500' : 'bg-[var(--lime)]'
+                              }`} />
+                              <span className="truncate font-semibold text-[var(--white)]">
+                                <strong className={`font-bold ${isOverdue ? 'text-red-400' : 'text-[var(--lime)]'}`}>{apt.time}</strong> {apt.company_name || apt.title}
+                              </span>
+                            </button>
+                          )
+                        })}
 
                         {/* "Mais X" Indicator Button */}
                         {hasMore && (
@@ -540,15 +556,22 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                             />
                           ))}
 
-                          {/* Rendered Appointment Blocks */}
+                          {/* Rendered Appointment Blocks (Default 30min duration = 28px height) */}
                           {dayApts.map(apt => {
                             const [hStr, mStr] = (apt.time || '09:00').split(':')
                             const hourNum = parseInt(hStr, 10) || 9
                             const minNum = parseInt(mStr, 10) || 0
                             
-                            // 56px per hour
+                            // 56px per hour (30 min = 28px height)
                             const topPx = (hourNum + minNum / 60) * 56
-                            const heightPx = 52 // standard ~1 hour block height
+                            const durationMinutes = (apt as any).duration || 30
+                            const heightPx = Math.max(26, Math.round((durationMinutes / 60) * 56))
+
+                            const now = new Date()
+                            const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+                            const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+                            const isConcluido = apt.status === 'concluido'
+                            const isOverdue = !isConcluido && (apt.date < todayDateStr || (apt.date === todayDateStr && apt.time < currentTimeStr))
 
                             return (
                               <button
@@ -558,14 +581,23 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                                   handleOpenAptDetails(apt)
                                 }}
                                 style={{ top: `${topPx}px`, height: `${heightPx}px` }}
-                                className="absolute left-0.5 right-0.5 z-10 bg-[var(--lime)]/15 border-l-4 border-[var(--lime)] p-1.5 rounded-md text-[11px] font-mono text-left shadow-md hover:bg-[var(--lime)]/25 transition-all cursor-pointer overflow-hidden flex flex-col justify-between"
+                                className={`absolute left-0.5 right-0.5 z-10 p-1.5 rounded-md text-[10px] font-mono text-left shadow-md transition-all cursor-pointer overflow-hidden flex flex-col justify-between border-l-4 ${
+                                  isConcluido
+                                    ? 'bg-emerald-500/15 border-l-emerald-500 text-emerald-300 opacity-75 line-through'
+                                    : isOverdue
+                                    ? 'bg-red-500/20 border-l-red-500 text-red-300 animate-pulse border border-red-500/40'
+                                    : 'bg-[var(--lime)]/15 border-l-[var(--lime)] text-[var(--white)] hover:bg-[var(--lime)]/25'
+                                }`}
                               >
-                                <div className="font-bold truncate text-[var(--white)] leading-tight">
+                                <div className="font-bold truncate leading-tight">
+                                  {isOverdue && <span className="text-red-400 font-extrabold mr-1">⚠️</span>}
                                   {apt.title}
                                 </div>
-                                <div className="text-[10px] text-[var(--lime)] truncate font-semibold">
-                                  {apt.time} {apt.company_name ? `· ${apt.company_name}` : ''}
-                                </div>
+                                {heightPx > 35 && (
+                                  <div className={`text-[9px] truncate font-semibold ${isOverdue ? 'text-red-300' : 'text-[var(--lime)]'}`}>
+                                    {apt.time} {apt.company_name ? `· ${apt.company_name}` : ''}
+                                  </div>
+                                )}
                               </button>
                             )
                           })}
@@ -609,27 +641,60 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
               </div>
 
               {/* Popover Appointments List */}
-              <div className="max-h-[300px] overflow-y-auto custom-scrollbar flex flex-col gap-2 py-1">
-                {dayPopover.apts.map(apt => (
-                  <button
-                    key={apt.id}
-                    onClick={() => handleOpenAptDetails(apt)}
-                    className="w-full text-left p-2.5 rounded-xl border border-[var(--lime)]/30 bg-[var(--lime)]/10 hover:bg-[var(--lime)]/20 text-[var(--white)] transition-all cursor-pointer flex items-center justify-between gap-2"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[var(--lime)] shrink-0" />
-                      <div className="truncate">
-                        <div className="text-xs font-bold text-[var(--white)] truncate">{apt.title}</div>
+              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                {dayPopover.apts.map(apt => {
+                  const now = new Date()
+                  const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+                  const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+                  const isConcluido = apt.status === 'concluido'
+                  const isOverdue = !isConcluido && (apt.date < todayDateStr || (apt.date === todayDateStr && apt.time < currentTimeStr))
+
+                  return (
+                    <div
+                      key={apt.id}
+                      onClick={() => {
+                        setDayPopover(null)
+                        handleOpenAptDetails(apt)
+                      }}
+                      className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${
+                        isConcluido
+                          ? 'bg-[var(--charcoal)] border-[var(--line)] opacity-65'
+                          : isOverdue
+                          ? 'bg-red-500/10 border-red-500/40'
+                          : 'bg-[var(--charcoal)] border-[var(--line)] hover:border-[var(--lime)]/50'
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-mono font-bold ${isOverdue ? 'text-red-400' : 'text-[var(--lime)]'}`}>
+                            {apt.time}
+                          </span>
+                          <span className={`text-xs font-bold truncate ${isConcluido ? 'line-through text-[var(--gray2)]' : 'text-[var(--white)]'}`}>
+                            {apt.title}
+                          </span>
+                        </div>
                         {apt.company_name && (
-                          <div className="text-[10px] text-[var(--lime)] font-mono truncate">{apt.company_name}</div>
+                          <span className="text-[10px] font-mono text-[var(--gray2)] truncate block">
+                            {apt.company_name}
+                          </span>
                         )}
                       </div>
+                      {isConcluido ? (
+                        <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          ✓ Concluído
+                        </span>
+                      ) : isOverdue ? (
+                        <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30 animate-pulse">
+                          ⚠️ Atrasado
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-[var(--card)] text-[var(--gray2)] border border-[var(--line)]">
+                          {apt.type}
+                        </span>
+                      )}
                     </div>
-                    <span className="text-xs font-mono font-bold text-[var(--lime)] shrink-0">
-                      {apt.time}
-                    </span>
-                  </button>
-                ))}
+                  )
+                })}
               </div>
 
               {/* Footer action to add appointment for this day */}
@@ -777,6 +842,37 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                   <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-[var(--lime)]/10 text-[var(--lime)] border border-[var(--lime)]/30">
                     {activeApt.type}
                   </span>
+
+                  {(() => {
+                    const now = new Date()
+                    const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+                    const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+                    const isConcluido = activeApt.status === 'concluido'
+                    const isOverdue = !isConcluido && (activeApt.date < todayDateStr || (activeApt.date === todayDateStr && activeApt.time < currentTimeStr))
+
+                    if (isConcluido) {
+                      return (
+                        <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                          <Check size={10} />
+                          <span>Concluído</span>
+                        </span>
+                      )
+                    }
+                    if (isOverdue) {
+                      return (
+                        <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30 flex items-center gap-1 animate-pulse">
+                          <AlertTriangle size={10} />
+                          <span>Atrasado</span>
+                        </span>
+                      )
+                    }
+                    return (
+                      <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                        Pendente
+                      </span>
+                    )
+                  })()}
+
                   <h3 className="font-display text-sm font-bold text-[var(--white)]">Detalhes do Agendamento</h3>
                 </div>
                 <button

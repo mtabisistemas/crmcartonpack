@@ -879,46 +879,77 @@ export default function DiarioDeBordoPage() {
             </div>
           ) : (
             <div className="flex-1 flex flex-col gap-2.5 min-h-[260px] max-h-[500px] overflow-y-auto custom-scrollbar">
-              {todayAppointments.map(apt => (
-                <div
-                  key={apt.id}
-                  className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all ${
-                    apt.status === 'concluido'
-                      ? 'bg-[var(--charcoal)] border-[var(--line)] opacity-60'
-                      : 'bg-[var(--charcoal)] border-[var(--line)] hover:border-[var(--lime)]/50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <button
-                      onClick={() => handleToggleAptDone(apt)}
-                      className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors cursor-pointer shrink-0 ${
-                        apt.status === 'concluido'
-                          ? 'bg-[var(--lime)] border-[var(--lime)] text-black'
-                          : 'border-[var(--line)] hover:border-[var(--lime)]'
-                      }`}
-                      title={apt.status === 'concluido' ? 'Marcar como pendente' : 'Concluir compromisso'}
-                    >
-                      {apt.status === 'concluido' && <Check size={13} strokeWidth={3} />}
-                    </button>
+              {todayAppointments.map(apt => {
+                const now = new Date()
+                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+                const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+                
+                const isConcluido = apt.status === 'concluido'
+                const isOverdue = !isConcluido && (apt.date < todayStr || (apt.date === todayStr && apt.time < currentTimeStr))
 
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-[var(--gray2)]">{apt.time}</span>
-                        <span className="text-xs font-bold text-[var(--white)] truncate">{apt.title}</span>
+                return (
+                  <div
+                    key={apt.id}
+                    className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all ${
+                      isConcluido
+                        ? 'bg-[var(--charcoal)] border-[var(--line)] opacity-65'
+                        : isOverdue
+                        ? 'bg-red-500/10 border-red-500/40 shadow-sm'
+                        : 'bg-[var(--charcoal)] border-[var(--line)] hover:border-[var(--lime)]/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <button
+                        onClick={() => handleToggleAptDone(apt)}
+                        className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors cursor-pointer shrink-0 ${
+                          isConcluido
+                            ? 'bg-[var(--lime)] border-[var(--lime)] text-black'
+                            : isOverdue
+                            ? 'border-red-500/60 text-red-400 hover:bg-red-500/20'
+                            : 'border-[var(--line)] hover:border-[var(--lime)]'
+                        }`}
+                        title={isConcluido ? 'Marcar como pendente' : 'Concluir compromisso'}
+                      >
+                        {isConcluido && <Check size={13} strokeWidth={3} />}
+                      </button>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-mono font-bold ${isOverdue ? 'text-red-400' : 'text-[var(--gray2)]'}`}>
+                            {apt.time}
+                          </span>
+                          <span className={`text-xs font-bold truncate ${isConcluido ? 'line-through text-[var(--gray2)]' : 'text-[var(--white)]'}`}>
+                            {apt.title}
+                          </span>
+                        </div>
+                        {apt.company_name && (
+                          <span className="text-[10px] font-mono text-[var(--gray2)] truncate block mt-0.5">
+                            {apt.company_name}
+                          </span>
+                        )}
                       </div>
-                      {apt.company_name && (
-                        <span className="text-[10px] font-mono text-[var(--gray2)] truncate block mt-0.5">
-                          {apt.company_name}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isConcluido ? (
+                        <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                          <Check size={10} />
+                          <span>Concluído</span>
+                        </span>
+                      ) : isOverdue ? (
+                        <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30 flex items-center gap-1 animate-pulse">
+                          <AlertTriangle size={10} />
+                          <span>Atrasado</span>
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-[var(--card)] text-[var(--gray2)] border border-[var(--line)]">
+                          {apt.type}
                         </span>
                       )}
                     </div>
                   </div>
-
-                  <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-[var(--card)] text-[var(--gray2)] border border-[var(--line)] shrink-0">
-                    {apt.type}
-                  </span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
