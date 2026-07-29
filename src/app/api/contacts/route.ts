@@ -94,21 +94,26 @@ export async function POST(req: Request) {
       targetUUID = crypto.randomUUID()
     }
 
-    // Unpack projection fields into notes JSON
+    // Fetch existing contact row from Supabase to preserve any non-empty fields
+    let existingContactRow: any = null
     let existingNotesObj: any = {}
+
     if (targetUUID) {
-      const { data: existingContact } = await supabaseAdmin
+      const { data: found } = await supabaseAdmin
         .from('contacts')
-        .select('notes')
+        .select('*')
         .eq('id', targetUUID)
         .limit(1)
 
-      if (existingContact?.[0]?.notes) {
-        try {
-          existingNotesObj = typeof existingContact[0].notes === 'string'
-            ? JSON.parse(existingContact[0].notes)
-            : existingContact[0].notes
-        } catch (e) {}
+      if (found && found.length > 0) {
+        existingContactRow = found[0]
+        if (existingContactRow.notes) {
+          try {
+            existingNotesObj = typeof existingContactRow.notes === 'string'
+              ? JSON.parse(existingContactRow.notes)
+              : existingContactRow.notes
+          } catch (e) {}
+        }
       }
     }
 
@@ -136,43 +141,43 @@ export async function POST(req: Request) {
       activities: mergedActivities
     }
 
-    // assigned_to MUST be a valid UUID or NULL (never a name string like "Maurício Maciel")
+    // assigned_to MUST be a valid UUID or NULL
     let validAssignedTo: string | null = null
     if (isUUID(contact.assigned_to)) validAssignedTo = contact.assigned_to
     else if (isUUID(contact.assignedTo)) validAssignedTo = contact.assignedTo
     else if (isUUID(contact.representative)) validAssignedTo = contact.representative
 
-    const repName = contact.representative || contact.assigned_to || ''
+    const repName = contact.representative || contact.assigned_to || existingContactRow?.representative || ''
 
     const payload: any = {
       id: targetUUID,
-      name: contact.name || contact.company || 'Contato Sem Nome',
-      company: contact.company || contact.name || 'Empresa Sem Nome',
-      role: contact.tradeName || contact.company || contact.name,
-      trade_name: contact.tradeName || contact.company || null,
-      phone: contact.phone || '',
-      email: contact.email || '',
-      city: contact.city || '',
-      state: contact.state || '',
-      status: contact.status || 'ativo',
-      curve: contact.curve || 'C',
+      name: contact.name || existingContactRow?.name || contact.company || existingContactRow?.company || 'Contato Sem Nome',
+      company: contact.company || existingContactRow?.company || contact.name || existingContactRow?.name || 'Empresa Sem Nome',
+      role: contact.tradeName || existingContactRow?.role || contact.company || 'Empresa Sem Nome',
+      trade_name: contact.tradeName || existingContactRow?.trade_name || null,
+      phone: contact.phone || existingContactRow?.phone || '',
+      email: contact.email || existingContactRow?.email || '',
+      city: contact.city || existingContactRow?.city || '',
+      state: contact.state || existingContactRow?.state || '',
+      status: contact.status || existingContactRow?.status || 'ativo',
+      curve: contact.curve || existingContactRow?.curve || 'C',
       representative: repName,
-      assigned_to: validAssignedTo,
-      cnpj: contact.cnpj || '',
-      address: contact.address || '',
-      bairro: contact.bairro || '',
-      cep: contact.cep || '',
-      tax_regime: contact.taxRegime || 'Simples Nacional',
-      special_situation: contact.specialSituation || 'Nenhuma',
-      special_situation_date: contact.specialSituationDate || '-',
-      state_registration: contact.stateRegistration || '',
-      registration_status: contact.registrationStatus || 'ATIVA',
-      main_cnae: contact.mainCnae || '',
-      side_activities: JSON.stringify(contact.sideActivities || []),
-      website: contact.website || '',
-      instagram: contact.instagram || '',
-      linkedin: contact.linkedin || '',
-      facebook: contact.facebook || '',
+      assigned_to: validAssignedTo || existingContactRow?.assigned_to || null,
+      cnpj: contact.cnpj || existingContactRow?.cnpj || '',
+      address: contact.address || existingContactRow?.address || '',
+      bairro: contact.bairro || existingContactRow?.bairro || '',
+      cep: contact.cep || existingContactRow?.cep || '',
+      tax_regime: contact.taxRegime || existingContactRow?.tax_regime || 'Simples Nacional',
+      special_situation: contact.specialSituation || existingContactRow?.special_situation || 'Nenhuma',
+      special_situation_date: contact.specialSituationDate || existingContactRow?.special_situation_date || '-',
+      state_registration: contact.stateRegistration || existingContactRow?.state_registration || '',
+      registration_status: contact.registrationStatus || existingContactRow?.registration_status || 'ATIVA',
+      main_cnae: contact.mainCnae || existingContactRow?.main_cnae || '',
+      side_activities: contact.sideActivities ? JSON.stringify(contact.sideActivities) : (existingContactRow?.side_activities || '[]'),
+      website: contact.website || existingContactRow?.website || '',
+      instagram: contact.instagram || existingContactRow?.instagram || '',
+      linkedin: contact.linkedin || existingContactRow?.linkedin || '',
+      facebook: contact.facebook || existingContactRow?.facebook || '',
       notes: JSON.stringify(mergedNotesObj),
       updated_at: new Date().toISOString()
     }

@@ -5,7 +5,7 @@ import { Deal, DealStage, STAGE_CONFIG, Appointment } from '@/types'
 import { 
   X, User, Mail, Phone, Building, Calendar, DollarSign, Tag,
   MessageSquare, FileText, Send, PhoneCall, Users, CheckCircle, ArrowRight, Save, Clock, Trash2, Edit2, Plus,
-  Copy, Check, MapPin, ExternalLink, Loader2
+  Copy, Check, MapPin, ExternalLink, Loader2, Lock
 } from 'lucide-react'
 import { formatCurrency, whatsappLink } from '@/lib/utils'
 import { getAppointmentsByDeal, saveAppointment, updateAppointment, deleteAppointment } from '@/services/appointment-service'
@@ -382,12 +382,6 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
 
   const handleSaveGeneral = async () => {
     const upperTitle = title.trim().toUpperCase()
-    const upperContactName = contactName.trim().toUpperCase()
-    const upperCompany = contactCompany.trim().toUpperCase()
-    const upperAddress = contactAddress.trim().toUpperCase()
-    const upperBairro = contactBairro.trim().toUpperCase()
-    const upperCity = contactCity.trim().toUpperCase()
-    const upperState = contactState.trim().toUpperCase()
 
     const updatedDeal: Deal = {
       ...deal,
@@ -398,18 +392,18 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       contact: {
         ...deal.contact,
         id: deal.contact?.id ?? 'c-temp',
-        name: upperContactName,
+        name: contactName,
         phone: contactPhone,
         email: contactEmail,
-        company: upperCompany,
+        company: contactCompany,
         curve: curve,
         representative: representative,
         cnpj: contactCnpj,
-        address: upperAddress,
-        bairro: upperBairro,
+        address: contactAddress,
+        bairro: contactBairro,
         cep: contactCep,
-        city: upperCity,
-        state: upperState,
+        city: contactCity,
+        state: contactState,
         created_at: deal.contact?.created_at ?? new Date().toISOString(),
         updated_at: new Date().toISOString(),
       } as any
@@ -418,69 +412,33 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
     const isClosedStage = stage === 'fechamento' || stage === 'pedido' || stage === 'pos_venda'
     const todayStr = new Date().toISOString().split('T')[0]
 
-    const companyToFind = upperCompany
+    onUpdateDeal(updatedDeal)
 
-    if (companyToFind) {
-      // 1. Sincroniza cache local em crm_contacts
-      try {
-        const raw = typeof window !== 'undefined' ? localStorage.getItem('crm_contacts') : null
-        if (raw) {
-          const contactsList = JSON.parse(raw)
-          const updatedContacts = contactsList.map((c: any) => {
-            const matchesComp = c.company && c.company.trim().toLowerCase() === companyToFind.toLowerCase()
-            const matchesName = c.name && c.name.trim().toLowerCase() === companyToFind.toLowerCase()
-            if (matchesComp || matchesName) {
-              return {
-                ...c,
-                representative: representative || c.representative,
-                phone: contactPhone || c.phone,
-                email: contactEmail || c.email,
-                cnpj: contactCnpj || c.cnpj,
-                address: upperAddress || c.address,
-                bairro: upperBairro || c.bairro,
-                cep: contactCep || c.cep,
-                city: upperCity || c.city,
-                state: upperState || c.state,
-                curve: curve || c.curve,
-                ...(isClosedStage ? { lastPurchaseDate: todayStr, last_purchase_date: todayStr, lastPurchaseDays: 0 } : {}),
-              }
-            }
-            return c
-          })
-          localStorage.setItem('crm_contacts', JSON.stringify(updatedContacts))
-          window.dispatchEvent(new Event('storage-contacts-changed'))
-        }
-      } catch (e) {}
+    // Save deal update to Supabase via /api/deals
+    try {
+      await fetch('/api/deals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify([updatedDeal])
+      })
+    } catch (e) {}
 
-      // 2. Sincroniza no banco de dados Supabase via /api/contacts
+    // Only update last purchase date on contact if deal is closed
+    if (isClosedStage && (deal.contact?.id || contactCompany)) {
       try {
         await fetch('/api/contacts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: deal.contact?.id,
-            name: upperContactName,
-            company: companyToFind,
-            representative,
-            phone: contactPhone,
-            email: contactEmail,
-            cnpj: contactCnpj,
-            address: upperAddress,
-            bairro: upperBairro,
-            cep: contactCep,
-            city: upperCity,
-            state: upperState,
-            curve,
-            ...(isClosedStage ? { lastPurchaseDate: todayStr } : {})
+            company: contactCompany,
+            lastPurchaseDate: todayStr,
+            status: 'ativo'
           })
         })
-        console.log('[DealDrawer] Contato sincronizado com sucesso via /api/contacts!')
-      } catch (err) {
-        console.error('[DealDrawer] Erro ao atualizar contato:', err)
-      }
+      } catch (err) {}
     }
 
-    onUpdateDeal(updatedDeal)
     setIsSavedSuccess(true)
     setTimeout(() => setIsSavedSuccess(false), 2500)
   }
@@ -716,16 +674,22 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
 
               {/* Seção Contato / Cliente */}
               <div className="flex flex-col gap-4 bg-[var(--card)] border border-[var(--line)] rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono">
-                    Dados do Cliente
-                  </div>
-                  {isLoadingContactDetails && (
-                    <div className="flex items-center gap-1.5 text-[10px] font-mono text-[var(--lime)] font-semibold animate-pulse bg-[var(--lime)]/10 px-2 py-0.5 rounded-md border border-[var(--lime)]/20">
-                      <Loader2 size={11} className="animate-spin text-[var(--lime)]" />
-                      <span>Carregando dados cadastrais...</span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono">
+                      Dados do Cliente
                     </div>
-                  )}
+                    {isLoadingContactDetails && (
+                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-[var(--lime)] font-semibold animate-pulse bg-[var(--lime)]/10 px-2 py-0.5 rounded-md border border-[var(--lime)]/20">
+                        <Loader2 size={11} className="animate-spin text-[var(--lime)]" />
+                        <span>Carregando dados cadastrais...</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-[10px] font-mono text-amber-300/80 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20 flex items-center gap-1.5 mt-1">
+                    <Lock size={11} className="text-amber-400 shrink-0" />
+                    <span>Dados cadastrais em modo somente leitura. Altere na Ficha do Cliente na Carteira.</span>
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -734,9 +698,9 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     <User size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                     <input 
                       type="text" 
-                      className="input w-full !pl-9 uppercase" 
+                      readOnly
+                      className="input w-full !pl-9 uppercase bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
                       value={contactName} 
-                      onChange={(e) => setContactName(e.target.value.toUpperCase())}
                     />
                   </div>
                 </div>
@@ -747,9 +711,9 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     <Building size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                     <input 
                       type="text" 
-                      className="input w-full !pl-9 uppercase" 
+                      readOnly
+                      className="input w-full !pl-9 uppercase bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
                       value={contactCompany} 
-                      onChange={(e) => setContactCompany(e.target.value.toUpperCase())}
                     />
                   </div>
                 </div>
@@ -761,10 +725,10 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                       <FileText size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                       <input 
                         type="text" 
-                        className="input w-full !pl-9 font-mono text-xs" 
+                        readOnly
+                        className="input w-full !pl-9 font-mono text-xs bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
                         placeholder="00.000.000/0000-00"
                         value={contactCnpj} 
-                        onChange={(e) => setContactCnpj(e.target.value)}
                       />
                     </div>
                   </div>
@@ -775,10 +739,10 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                       <Phone size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                       <input 
                         type="text" 
-                        className="input w-full !pl-9 !pr-9 font-mono text-xs" 
+                        readOnly
+                        className="input w-full !pl-9 !pr-9 font-mono text-xs bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
                         placeholder="(00) 00000-0000"
                         value={contactPhone} 
-                        onChange={(e) => setContactPhone(e.target.value)}
                       />
                       {contactPhone && (
                         <a
@@ -818,10 +782,10 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     <Mail size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                     <input 
                       type="email" 
-                      className="input w-full !pl-9 font-mono text-xs" 
+                      readOnly
+                      className="input w-full !pl-9 font-mono text-xs bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
                       placeholder="email@empresa.com.br"
                       value={contactEmail}
-                      onChange={(e) => setContactEmail(e.target.value)}
                     />
                   </div>
                 </div>
@@ -834,10 +798,10 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                       <MapPin size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                       <input 
                         type="text" 
-                        className="input w-full !pl-9 uppercase text-xs font-mono" 
+                        readOnly
+                        className="input w-full !pl-9 uppercase text-xs font-mono bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
                         placeholder="Rua, Número"
                         value={contactAddress} 
-                        onChange={(e) => setContactAddress(e.target.value.toUpperCase())}
                       />
                     </div>
                   </div>
@@ -846,10 +810,10 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     <label className="label">Bairro</label>
                     <input 
                       type="text" 
-                      className="input w-full uppercase text-xs font-mono" 
+                      readOnly
+                      className="input w-full uppercase text-xs font-mono bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
                       placeholder="Bairro"
                       value={contactBairro} 
-                      onChange={(e) => setContactBairro(e.target.value.toUpperCase())}
                     />
                   </div>
                 </div>
@@ -860,11 +824,11 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     <label className="label">CEP</label>
                     <input 
                       type="text" 
+                      readOnly
                       maxLength={9}
-                      className="input w-full text-xs font-mono" 
+                      className="input w-full text-xs font-mono bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
                       placeholder="00000-000"
                       value={contactCep} 
-                      onChange={(e) => setContactCep(e.target.value)}
                     />
                   </div>
 
@@ -872,10 +836,10 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     <label className="label">Cidade</label>
                     <input 
                       type="text" 
-                      className="input w-full uppercase text-xs font-mono" 
+                      readOnly
+                      className="input w-full uppercase text-xs font-mono bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
                       placeholder="Cidade"
                       value={contactCity} 
-                      onChange={(e) => setContactCity(e.target.value.toUpperCase())}
                     />
                   </div>
 
@@ -883,11 +847,11 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     <label className="label">UF</label>
                     <input 
                       type="text" 
+                      readOnly
                       maxLength={2}
-                      className="input w-full text-center uppercase text-xs font-mono font-bold" 
+                      className="input w-full text-center uppercase text-xs font-mono font-bold bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
                       placeholder="UF"
                       value={contactState} 
-                      onChange={(e) => setContactState(e.target.value.toUpperCase())}
                     />
                   </div>
 
