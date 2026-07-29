@@ -356,7 +356,7 @@ export function RegisterActivityModal({
 
   return (
     <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[999999] flex flex-col justify-start lg:justify-center lg:items-center p-0 lg:p-4">
-      <div className="bg-[var(--charcoal)] border-0 lg:border border-[var(--line)] rounded-none lg:rounded-3xl flex flex-col animate-fade-in max-w-lg mx-auto w-full h-full lg:h-auto lg:max-h-[90vh] shadow-2xl overflow-hidden">
+      <div className="bg-[var(--charcoal)] border-0 lg:border border-[var(--line)] rounded-none lg:rounded-3xl flex flex-col animate-fade-in max-w-lg lg:max-w-4xl mx-auto w-full h-full lg:h-auto lg:max-h-[92vh] shadow-2xl overflow-hidden">
         
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           {/* Modal Header */}
@@ -366,7 +366,7 @@ export function RegisterActivityModal({
                 Registrar Atividade Comercial
               </h3>
               <p className="text-[11px] text-[var(--gray)] font-mono mt-0.5">
-                Informe a ação efetuada e o canal de contato
+                Informe a ação efetuada, o canal de contato e o relato detalhado
               </p>
             </div>
             <button 
@@ -378,158 +378,168 @@ export function RegisterActivityModal({
             </button>
           </div>
 
-          {/* Form Fields Body (Scrollable Card Area) */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-            {/* Success Toast Banner (Top position for 100% visibility) */}
+          {/* Form Fields Body: Single column on Mobile, 2 Columns Horizontal on Desktop */}
+          <div className="flex-1 overflow-y-auto lg:overflow-visible p-4 sm:p-6 space-y-4 lg:space-y-0 lg:grid lg:grid-cols-12 lg:gap-6 items-stretch">
+            
+            {/* Success Toast Banner */}
             {isSavedToast && (
-              <div className="p-3.5 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-mono font-bold flex items-center gap-2.5 animate-fade-in shadow-lg">
+              <div className="lg:col-span-12 p-3.5 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-mono font-bold flex items-center gap-2.5 animate-fade-in shadow-lg mb-2">
                 <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
                 <span>Atividade registrada e oportunidade atualizada com sucesso!</span>
               </div>
             )}
 
-            {/* 1. Cliente */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
-                Cliente / Oportunidade *
-              </label>
-              <select
-                className="input w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[var(--lime)]/50"
-                required
-                value={selectedContactId}
-                onChange={(e) => setSelectedContactId(e.target.value)}
-              >
-                <option value="" className="bg-[var(--charcoal)]">Selecione o Cliente...</option>
-                {availableContacts.map(c => (
-                  <option key={c.id} value={c.id} className="bg-[var(--charcoal)]">
-                    {c.name} — {c.company} {c.city ? `(${c.city})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 2. Como o Contato foi Feito (Meio / Canal) */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
-                Como o Contato foi Feito? (Canal) *
-              </label>
-              <select
-                className="input w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[var(--lime)]/50 cursor-pointer"
-                required
-                value={channel}
-                onChange={(e) => setChannel(e.target.value)}
-              >
-                {CHANNEL_OPTIONS.map(ch => (
-                  <option key={ch.id} value={ch.id} className="bg-[var(--charcoal)]">
-                    {ch.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 3. Ação Comercial Efetiva Realizada */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
-                Qual Ação Comercial foi Realizada? *
-              </label>
-              <select
-                className="input w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[var(--lime)]/50 cursor-pointer"
-                required
-                value={actionId}
-                onChange={(e) => setActionId(e.target.value)}
-              >
-                {ACTION_OPTIONS.map(act => (
-                  <option key={act.id} value={act.id} className="bg-[var(--charcoal)]">
-                    {act.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 4. Relato Comercial (Digitado ou por Voz) */}
-            <div className="flex flex-col gap-1.5 border border-[var(--line)] rounded-xl p-4 bg-black/20">
-              <label className="text-[10px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider flex items-center justify-between">
-                <span>Relato da Interação (Digitado ou Por Voz)</span>
-                {isRecording && <span className="text-[var(--red)] animate-pulse font-mono">Gravando... {formatTimer(recordingTime)}</span>}
-              </label>
+            {/* ── COLUNA ESQUERDA: DADOS DO CONTATO & AÇÃO (5 cols no Desktop) ── */}
+            <div className="lg:col-span-5 flex flex-col gap-3.5 justify-between">
               
-              <div className="flex flex-col items-center justify-center py-2 gap-3">
-                {isRecording ? (
-                  <div className="flex items-center gap-1 justify-center h-8 w-full">
-                    {[...Array(9)].map((_, i) => (
+              {/* 1. Cliente */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+                  Cliente / Oportunidade *
+                </label>
+                <select
+                  className="input w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[var(--lime)]/50"
+                  required
+                  value={selectedContactId}
+                  onChange={(e) => setSelectedContactId(e.target.value)}
+                >
+                  <option value="" className="bg-[var(--charcoal)]">Selecione o Cliente...</option>
+                  {availableContacts.map(c => (
+                    <option key={c.id} value={c.id} className="bg-[var(--charcoal)]">
+                      {c.name} — {c.company} {c.city ? `(${c.city})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 2. Meio / Canal */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+                  Como o Contato foi Feito? (Canal) *
+                </label>
+                <select
+                  className="input w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[var(--lime)]/50 cursor-pointer"
+                  required
+                  value={channel}
+                  onChange={(e) => setChannel(e.target.value)}
+                >
+                  {CHANNEL_OPTIONS.map(ch => (
+                    <option key={ch.id} value={ch.id} className="bg-[var(--charcoal)]">
+                      {ch.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 3. Ação Comercial Efetiva */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+                  Qual Ação Comercial foi Realizada? *
+                </label>
+                <select
+                  className="input w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[var(--lime)]/50 cursor-pointer"
+                  required
+                  value={actionId}
+                  onChange={(e) => setActionId(e.target.value)}
+                >
+                  {ACTION_OPTIONS.map(act => (
+                    <option key={act.id} value={act.id} className="bg-[var(--charcoal)]">
+                      {act.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 4. Foto / Anexo (Opcional) */}
+              <div className="flex flex-col gap-1.5 border border-[var(--line)] rounded-xl p-3 bg-black/20 mt-auto">
+                <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider flex items-center justify-between">
+                  <span>Foto ou Anexo (Opcional)</span>
+                  <span className="text-[9px] text-[var(--gray)] font-normal font-sans">Fachada, cartão ou imagem</span>
+                </label>
+                
+                <label className="flex items-center justify-center gap-2 p-2.5 border border-dashed border-[var(--line)] hover:border-[var(--lime)]/50 rounded-xl cursor-pointer bg-black/30 transition-colors">
+                  <Camera size={15} className="text-[var(--lime)]" />
+                  <span className="text-xs font-mono text-[var(--white)]">
+                    {photoUrl ? '✓ Imagem Selecionada (Alterar)' : 'Tirar Foto ou Carregar Arquivo'}
+                  </span>
+                  <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                </label>
+
+                {photoUrl && (
+                  <div className="mt-1 rounded-xl overflow-hidden border border-[var(--line)] h-20 relative bg-black">
+                    <img src={photoUrl} alt="Anexo" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            {/* ── COLUNA DIREITA: RELATO DA INTERAÇÃO E VOZ (7 cols no Desktop com Campo Taller) ── */}
+            <div className="lg:col-span-7 flex flex-col gap-2 border border-[var(--line)] rounded-2xl p-4 bg-black/20 h-full justify-between">
+              
+              <div className="flex items-center justify-between border-b border-[var(--line)]/60 pb-2">
+                <label className="text-[10px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider flex items-center gap-2">
+                  <span>Relato Comercial da Interação</span>
+                </label>
+                {isRecording && <span className="text-[var(--red)] animate-pulse font-mono text-[10px] font-bold">Gravando... {formatTimer(recordingTime)}</span>}
+              </div>
+              
+              <div className="flex flex-col sm:flex-row items-center justify-between py-1 px-3 gap-3 bg-[var(--charcoal)] border border-[var(--line)]/50 rounded-xl">
+                <div className="text-[11px] text-[var(--gray2)] font-mono text-center sm:text-left flex-1">
+                  Digite seu relato abaixo ou use o botão para gravar por voz em tempo real.
+                </div>
+
+                {isRecording && (
+                  <div className="flex items-center gap-1 justify-center h-6 shrink-0">
+                    {[...Array(7)].map((_, i) => (
                       <div 
                         key={i} 
-                        className="w-1.5 bg-[var(--lime)] rounded-full animate-pulse"
+                        className="w-1 bg-[var(--lime)] rounded-full animate-pulse"
                         style={{
                           animationDelay: `${i * 0.1}s`,
-                          height: `${Math.floor(10 + Math.random() * 24)}px`
+                          height: `${Math.floor(8 + Math.random() * 18)}px`
                         }}
                       />
                     ))}
-                  </div>
-                ) : (
-                  <div className="text-[11px] text-[var(--gray2)] font-mono text-center max-w-[290px]">
-                    Você pode digitar seu relato abaixo ou tocar no microfone para gravar por voz.
                   </div>
                 )}
 
                 <button
                   type="button"
                   onClick={isRecording ? handleStopRecording : handleStartRecording}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 cursor-pointer ${
+                  className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 cursor-pointer shrink-0 ${
                     isRecording 
                       ? 'bg-[var(--red)] text-white hover:bg-[#ef4444] animate-pulse' 
                       : 'bg-[var(--lime)] text-black hover:scale-105'
                   }`}
                 >
-                  {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+                  {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
                 </button>
               </div>
 
               <textarea
-                className="input w-full min-h-[90px] text-xs font-mono bg-[var(--black)] border border-[var(--line)] rounded-xl p-3 text-white outline-none focus:border-[var(--lime)]/50"
-                placeholder="Escreva seu relato do contato aqui ou use o microfone acima..."
+                className="input w-full flex-1 min-h-[120px] lg:min-h-[220px] text-xs font-mono bg-[var(--black)] border border-[var(--line)] rounded-xl p-3.5 text-white outline-none focus:border-[var(--lime)]/50 leading-relaxed resize-none"
+                placeholder="Escreva seu relato detalhado do contato comercial aqui ou use a gravação por voz..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
 
-            {/* 5. Foto / Anexo (Opcional) */}
-            <div className="flex flex-col gap-1.5 border border-[var(--line)] rounded-xl p-3 bg-black/20">
-              <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider flex items-center justify-between">
-                <span>Foto ou Anexo (Opcional)</span>
-                <span className="text-[9px] text-[var(--gray)] font-normal font-sans">Fachada, cartão ou imagem</span>
-              </label>
-              
-              <label className="flex items-center justify-center gap-2 p-3 border border-dashed border-[var(--line)] hover:border-[var(--lime)]/50 rounded-xl cursor-pointer bg-black/30 transition-colors">
-                <Camera size={16} className="text-[var(--lime)]" />
-                <span className="text-xs font-mono text-[var(--white)]">
-                  {photoUrl ? '✓ Imagem Selecionada (Alterar)' : 'Tirar Foto ou Carregar Arquivo'}
-                </span>
-                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-              </label>
-
-              {photoUrl && (
-                <div className="mt-1 rounded-xl overflow-hidden border border-[var(--line)] h-24 relative bg-black">
-                  <img src={photoUrl} alt="Anexo" className="w-full h-full object-cover" />
-                </div>
-              )}
-            </div>
           </div>
 
-          {/* Actions (Outside the fields card in clean modal footer) */}
-          <div className="p-3 sm:px-6 bg-[var(--card)] border-t border-[var(--line)] flex gap-3 shrink-0 rounded-b-3xl">
+          {/* Actions Footer */}
+          <div className="p-3 sm:px-6 bg-[var(--card)] border-t border-[var(--line)] flex justify-end gap-3 shrink-0 rounded-b-3xl">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 btn btn-secondary py-2.5 text-xs font-bold uppercase tracking-wider cursor-pointer rounded-xl"
+              className="btn btn-secondary py-2.5 px-6 text-xs font-bold uppercase tracking-wider cursor-pointer rounded-xl"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSavedToast}
-              className="flex-1 btn btn-primary py-2.5 text-xs font-black uppercase tracking-wider text-black cursor-pointer shadow-lg shadow-[rgba(180,217,50,0.2)] bg-[var(--lime)] hover:brightness-110 rounded-xl"
+              className="btn btn-primary py-2.5 px-8 text-xs font-black uppercase tracking-wider text-black cursor-pointer shadow-lg shadow-[rgba(180,217,50,0.2)] bg-[var(--lime)] hover:brightness-110 rounded-xl"
             >
               Salvar Registro
             </button>
