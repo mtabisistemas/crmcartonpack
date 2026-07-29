@@ -516,7 +516,7 @@ function translateAuthError(msg: string): string {
 
         {/* FOOTER */}
         <p className="text-center text-[11px] font-mono text-[var(--gray)] font-medium">
-          Carton Pack © {new Date().getFullYear()} — Sistema Interno Homologado
+          CRM Carton Pack © {new Date().getFullYear()} · v1.0.0
         </p>
 
       </div>
