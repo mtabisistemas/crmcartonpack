@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { X, Mic, MicOff, Camera, CheckCircle2, Phone, MessageSquare, Mail, Video, MapPin, Target, FileText, Package, Briefcase, Trophy, RefreshCw, Handshake, AlertCircle } from 'lucide-react'
+import { X, Mic, MicOff, Camera, CheckCircle2, Phone, MessageSquare, Mail, Video, MapPin, Target, FileText, Package, Briefcase, Trophy, RefreshCw, Handshake, AlertCircle, Building2 } from 'lucide-react'
 import { DealStage } from '@/types'
 import { supabase } from '@/services/supabase-client'
 
@@ -48,6 +48,10 @@ export function RegisterActivityModal({
 }: RegisterActivityModalProps) {
   const [currentUser, setCurrentUser] = useState<any | null>(null)
   const [selectedContactId, setSelectedContactId] = useState(preselectedContactId)
+  const [clientSearchTerm, setClientSearchTerm] = useState('')
+  const [showClientDropdown, setShowClientDropdown] = useState(false)
+  const clientDropdownRef = useRef<HTMLDivElement>(null)
+
   const [channel, setChannel] = useState('visita')
   const [actionId, setActionId] = useState('prospeccao')
   const [description, setDescription] = useState('')
@@ -74,10 +78,31 @@ export function RegisterActivityModal({
   }, [])
 
   useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (clientDropdownRef.current && !clientDropdownRef.current.contains(e.target as Node)) {
+        setShowClientDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => {
     if (preselectedContactId) {
       setSelectedContactId(preselectedContactId)
     }
   }, [preselectedContactId])
+
+  useEffect(() => {
+    if (selectedContactId) {
+      const found = contactsList.find(c => c.id === selectedContactId)
+      if (found) {
+        setClientSearchTerm(found.company || found.name)
+      }
+    } else if (!preselectedContactId) {
+      setClientSearchTerm('')
+    }
+  }, [selectedContactId, contactsList, preselectedContactId])
 
   useEffect(() => {
     if (isRecording) {
@@ -354,6 +379,22 @@ export function RegisterActivityModal({
     ? contactsList.filter(c => c.representative === currentUser.name)
     : contactsList
 
+  const filteredAutocompleteContacts = availableContacts.filter(c => {
+    const q = clientSearchTerm.toLowerCase().trim()
+    if (!q) return true
+    const company = (c.company || '').toLowerCase()
+    const name = (c.name || '').toLowerCase()
+    const city = (c.city || '').toLowerCase()
+    const cnpj = ((c as any).cnpj || '').replace(/\D/g, '')
+    return company.includes(q) || name.includes(q) || city.includes(q) || cnpj.includes(q)
+  })
+
+  const handleSelectAutocompleteContact = (c: { id: string; name: string; company: string; city?: string; state?: string; cnpj?: string }) => {
+    setSelectedContactId(c.id)
+    setClientSearchTerm(c.company || c.name)
+    setShowClientDropdown(false)
+  }
+
   return (
     <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[999999] flex flex-col justify-start lg:justify-center lg:items-center p-0 lg:p-4">
       <div className="bg-[var(--charcoal)] border-0 lg:border border-[var(--line)] rounded-none lg:rounded-3xl flex flex-col animate-fade-in max-w-lg lg:max-w-4xl mx-auto w-full h-full lg:h-auto lg:max-h-[92vh] shadow-2xl overflow-hidden">
@@ -392,24 +433,56 @@ export function RegisterActivityModal({
             {/* ── COLUNA ESQUERDA: DADOS DO CONTATO & AÇÃO (5 cols no Desktop) ── */}
             <div className="lg:col-span-5 flex flex-col gap-3.5 justify-between">
               
-              {/* 1. Cliente */}
-              <div className="flex flex-col gap-1.5">
+              {/* 1. Cliente / Oportunidade — Busca Autocomplete Elegante */}
+              <div className="flex flex-col gap-1.5 relative" ref={clientDropdownRef}>
                 <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
                   Cliente / Oportunidade *
                 </label>
-                <select
-                  className="input w-full bg-[var(--black)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[var(--lime)]/50"
-                  required
-                  value={selectedContactId}
-                  onChange={(e) => setSelectedContactId(e.target.value)}
-                >
-                  <option value="" className="bg-[var(--charcoal)]">Selecione o Cliente...</option>
-                  {availableContacts.map(c => (
-                    <option key={c.id} value={c.id} className="bg-[var(--charcoal)]">
-                      {c.name} — {c.company} {c.city ? `(${c.city})` : ''}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative flex items-center">
+                  <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--gray2)] z-10 pointer-events-none" />
+                  <input 
+                    type="text" 
+                    required
+                    style={{ paddingLeft: '2.5rem' }}
+                    className="input font-bold w-full bg-[var(--black)] border border-[var(--line)] rounded-xl py-2.5 pr-3 text-xs text-white outline-none focus:border-[var(--lime)]/50" 
+                    placeholder="Digite para buscar um cliente..."
+                    value={clientSearchTerm} 
+                    onChange={(e) => {
+                      setClientSearchTerm(e.target.value)
+                      setSelectedContactId('')
+                      setShowClientDropdown(true)
+                    }}
+                    onFocus={() => setShowClientDropdown(true)}
+                  />
+                </div>
+
+                {/* Autocomplete Dropdown List */}
+                {showClientDropdown && filteredAutocompleteContacts.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1.5 z-50 max-h-52 overflow-y-auto bg-[#141416] border border-[var(--line)] rounded-xl shadow-2xl divide-y divide-[var(--line)] animate-fade-in">
+                    <div className="px-3 py-1.5 text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider bg-[var(--charcoal)] sticky top-0">
+                      Selecione um Cliente Salvo ({filteredAutocompleteContacts.length})
+                    </div>
+                    {filteredAutocompleteContacts.map((c, idx) => (
+                      <div
+                        key={c.id || idx}
+                        onClick={() => handleSelectAutocompleteContact(c)}
+                        className="p-3 hover:bg-[var(--lime)]/10 cursor-pointer transition-colors flex items-center justify-between gap-2 group"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold text-white group-hover:text-[var(--lime)] transition-colors truncate">
+                            {c.company || c.name}
+                          </div>
+                          <div className="text-[10px] text-[var(--gray)] font-mono truncate mt-0.5">
+                            {(c as any).cnpj ? `${(c as any).cnpj} ` : ''}{c.city ? `• ${c.city}${c.state ? `/${c.state}` : ''}` : ''}
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-mono text-[var(--lime)] bg-[var(--lime)]/10 px-2 py-0.5 rounded border border-[var(--lime)]/20 shrink-0 opacity-80 group-hover:opacity-100">
+                          Selecionar
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* 2. Meio / Canal */}
