@@ -194,7 +194,166 @@ function BottomDropZones({ activeId }: { activeId: string | null }) {
   )
 }
 
+// ─── Confirmation Modal Before Moving Stage ─────────────────────
+function ConfirmMoveModal({
+  deal,
+  targetStage,
+  onConfirm,
+  onCancel
+}: {
+  deal: Deal
+  targetStage: DealStage
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  const currentStageConfig = STAGE_CONFIG[deal.stage]
+  const targetStageConfig = STAGE_CONFIG[targetStage]
+
+  return (
+    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <div className="bg-[var(--charcoal)] border border-[var(--lime)]/30 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 animate-fade-up">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-[var(--lime)]/10 border border-[var(--lime)]/30 flex items-center justify-center text-[var(--lime)] font-bold text-lg">
+            ❓
+          </div>
+          <div>
+            <h3 className="font-display text-base text-[var(--white)] font-bold">Confirmar Mudança de Etapa</h3>
+            <p className="text-xs text-[var(--gray)] mt-0.5">Confirma a movimentação deste negócio no pipeline?</p>
+          </div>
+        </div>
+
+        <div className="p-3 bg-[var(--card)] border border-[var(--line)] rounded-xl text-xs space-y-2">
+          <div>
+            <span className="text-[var(--gray2)] font-mono uppercase text-[10px] block">Oportunidade:</span>
+            <strong className="text-white text-sm font-bold uppercase">{deal.title}</strong>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 pt-2 border-t border-[var(--line)]">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-[var(--gray2)] font-mono uppercase">Etapa Atual</span>
+              <span className="font-bold text-xs" style={{ color: currentStageConfig?.color }}>{currentStageConfig?.label}</span>
+            </div>
+
+            <span className="text-[var(--lime)] font-bold text-sm">➔</span>
+
+            <div className="flex flex-col text-right">
+              <span className="text-[10px] text-[var(--gray2)] font-mono uppercase">Nova Etapa</span>
+              <span className="font-bold text-xs" style={{ color: targetStageConfig?.color }}>{targetStageConfig?.label}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-2">
+          <button 
+            type="button" 
+            onClick={onCancel}
+            className="btn btn-secondary py-2.5 px-4 text-xs font-bold uppercase tracking-wider cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="button" 
+            onClick={onConfirm}
+            className="btn btn-primary py-2.5 px-4 text-xs font-bold uppercase tracking-wider text-[#060606] cursor-pointer"
+          >
+            Confirmar Mudança
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Order Celebration Modal (Visual WOW for Pedido Fechado) ───
+function OrderCelebrationModal({
+  deal,
+  onClose
+}: {
+  deal: Deal
+  onClose: () => void
+}) {
+  const val = (deal.final_value && deal.final_value > 0) ? deal.final_value : (deal.estimated_value || 0)
+
+  return (
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-fade-in">
+      {/* Floating Confetti Particles Layer */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        {[...Array(45)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-sm animate-confetti-fall"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `-${Math.random() * 20}%`,
+              width: `${Math.random() * 10 + 6}px`,
+              height: `${Math.random() * 14 + 8}px`,
+              backgroundColor: ['#B4D932', '#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6'][i % 6],
+              animationDuration: `${Math.random() * 3 + 2.5}s`,
+              animationDelay: `${Math.random() * 1.5}s`,
+              transform: `rotate(${Math.random() * 360}deg)`
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="relative z-10 bg-[var(--charcoal)] border-2 border-[var(--lime)] rounded-3xl p-8 max-w-lg w-full text-center shadow-[0_0_80px_rgba(180,217,50,0.35)] flex flex-col items-center gap-5 animate-bounce-in">
+        <div className="relative">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-[var(--lime)] to-emerald-400 flex items-center justify-center text-[#060606] shadow-xl animate-pulse">
+            <Trophy size={54} strokeWidth={2.5} />
+          </div>
+          <div className="absolute -top-2 -right-2 bg-amber-400 text-black font-black text-xs px-2.5 py-1 rounded-full border border-amber-300 shadow-md">
+            🎉 NOVO!
+          </div>
+        </div>
+
+        <div>
+          <span className="text-xs font-mono font-bold tracking-widest text-[var(--lime)] uppercase bg-[var(--lime)]/10 px-3.5 py-1.5 rounded-full border border-[var(--lime)]/30">
+            PEDIDO FECHADO COM SUCESSO!
+          </span>
+          <h2 className="font-display text-2xl md:text-3xl text-white font-extrabold mt-3 uppercase tracking-tight">
+            {deal.title}
+          </h2>
+          {deal.contact?.company && (
+            <p className="text-xs text-[var(--gray2)] mt-1 font-mono uppercase">
+              {deal.contact.company}
+            </p>
+          )}
+        </div>
+
+        <div className="w-full bg-[var(--card)] border border-[var(--line)] rounded-2xl p-4 flex flex-col gap-1">
+          <span className="text-[10px] font-mono text-[var(--gray2)] uppercase">Valor do Pedido Fechado</span>
+          <span className="font-display text-3xl font-black text-[var(--lime)] font-mono">
+            {formatCurrency(val)}
+          </span>
+          {deal.assigned_to && (
+            <span className="text-xs text-white font-bold mt-1 uppercase">
+              Vendedor Responsável: {deal.assigned_to}
+            </span>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="btn btn-primary w-full py-3.5 text-sm font-bold uppercase tracking-wider text-[#060606] shadow-xl cursor-pointer hover:scale-105 transition-transform"
+        >
+          Excelente! Continuar 🚀
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Lost Reason Modal ─────────────────────────────────────────
+const LOSS_REASON_OPTIONS = [
+  'Preço alto / Orçamento excedido',
+  'Prazo de entrega não atende',
+  'Concorrência ganhou o pedido',
+  'Cliente desistiu / Sem demanda',
+  'Especificação técnica incompatível',
+  'Outro motivo'
+]
+
 function LostReasonModal({ 
   deal, 
   onConfirm, 
@@ -204,35 +363,64 @@ function LostReasonModal({
   onConfirm: (reason: string, notes: string) => void 
   onCancel: () => void 
 }) {
-  const [reason, setReason] = useState(FOLLOW_UP_LOST_REASONS[0])
+  const [reason, setReason] = useState(LOSS_REASON_OPTIONS[0])
+  const [customReason, setCustomReason] = useState('')
   const [notes, setNotes] = useState('')
 
+  const handleSave = () => {
+    const finalReason = reason === 'Outro motivo' && customReason.trim() ? customReason.trim() : reason
+    onConfirm(finalReason, notes)
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[var(--charcoal)] border border-[var(--line)] rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 animate-fade-up">
-        <div>
-          <h3 className="font-display text-base text-[var(--white)] font-bold">Arquivar Negócio</h3>
-          <p className="text-xs text-[var(--gray)] mt-1">Por favor, indique o motivo da perda de <strong>{deal.title}</strong>:</p>
+    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+      <div className="bg-[var(--charcoal)] border border-rose-500/40 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 animate-fade-up">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 font-bold">
+            <XCircle size={22} />
+          </div>
+          <div>
+            <h3 className="font-display text-base text-[var(--white)] font-bold">Informe o Motivo da Perda</h3>
+            <p className="text-xs text-[var(--gray)] mt-0.5">Obrigatório para mover para <strong>Perdidos</strong>.</p>
+          </div>
+        </div>
+
+        <div className="p-3 bg-[var(--card)] border border-[var(--line)] rounded-xl text-xs">
+          <span className="text-[var(--gray2)] font-mono uppercase text-[10px]">Oportunidade:</span>
+          <div className="text-white font-bold uppercase">{deal.title}</div>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="label">Motivo da Perda</label>
+          <label className="label text-rose-400 font-bold">Motivo Principal da Perda *</label>
           <select 
-            className="input" 
+            className="input text-xs font-bold" 
             value={reason} 
             onChange={(e) => setReason(e.target.value)}
           >
-            {FOLLOW_UP_LOST_REASONS.map(r => (
+            {LOSS_REASON_OPTIONS.map(r => (
               <option key={r} value={r}>{r}</option>
             ))}
           </select>
         </div>
 
+        {reason === 'Outro motivo' && (
+          <div className="flex flex-col gap-1.5 animate-fade-in">
+            <label className="label">Especifique o Motivo *</label>
+            <input 
+              type="text" 
+              className="input uppercase text-xs" 
+              placeholder="Digite o motivo..."
+              value={customReason}
+              onChange={(e) => setCustomReason(e.target.value.toUpperCase())}
+            />
+          </div>
+        )}
+
         <div className="flex flex-col gap-1.5">
-          <label className="label">Observações</label>
+          <label className="label">Observações / Detalhes Comerciais (Opcional)</label>
           <textarea 
-            className="input min-h-[80px] py-2 resize-none"
-            placeholder="Justificativa ou notas comerciais..."
+            className="input min-h-[70px] py-2 text-xs resize-none"
+            placeholder="Detalhes adicionais..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
@@ -242,14 +430,14 @@ function LostReasonModal({
           <button 
             type="button" 
             onClick={onCancel}
-            className="btn btn-secondary py-2 px-4 text-xs font-bold uppercase tracking-wider"
+            className="btn btn-secondary py-2 px-4 text-xs font-bold uppercase tracking-wider cursor-pointer"
           >
             Cancelar
           </button>
           <button 
             type="button" 
-            onClick={() => onConfirm(reason, notes)}
-            className="btn btn-danger py-2 px-4 text-xs font-bold uppercase tracking-wider"
+            onClick={handleSave}
+            className="btn btn-danger py-2 px-4 text-xs font-bold uppercase tracking-wider cursor-pointer"
           >
             Confirmar Perda
           </button>
@@ -542,7 +730,9 @@ export function PipelineBoard() {
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null)
 
   // Modals state
+  const [pendingMove, setPendingMove] = useState<{ deal: Deal; targetStage: DealStage } | null>(null)
   const [lostModalDeal, setLostModalDeal] = useState<Deal | null>(null)
+  const [celebrationDeal, setCelebrationDeal] = useState<Deal | null>(null)
   const [showNewDealModal, setShowNewDealModal] = useState(false)
   const [showCalendarModal, setShowCalendarModal] = useState(false)
   const [newDealStage, setNewDealStage] = useState<DealStage>('leads')
@@ -581,9 +771,9 @@ export function PipelineBoard() {
             .map((u: any) => u.name)
         } catch (e) {}
       }
-      const repsFromDeals = deals.map(d => d.assigned_to || d.contact?.representative).filter((r): r is string => !!r)
-      const allReps = Array.from(new Set([...repsFromUsers, ...repsFromDeals]))
-      setRepresentativesList(allReps)
+      const repsFromDeals = Array.from(new Set(deals.map(d => d.assigned_to || d.contact?.representative).filter(Boolean)))
+      const combined = Array.from(new Set([...repsFromUsers, ...repsFromDeals].filter(Boolean))) as string[]
+      setRepresentativesList(combined)
     }
   }, [deals])
 
@@ -627,8 +817,19 @@ export function PipelineBoard() {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   )
 
-  // Map only active stages to Kanban board columns
-  const activeStages = (Object.keys(STAGE_CONFIG) as DealStage[]).filter(s => s !== 'perdido' && s !== 'pos_venda')
+  // Map active stages to Kanban board columns (order: leads -> ... -> fechamento -> pedido -> perdido)
+  const activeStages: DealStage[] = [
+    'leads',
+    'prospect',
+    'dinamica',
+    'potencial',
+    'visita',
+    'briefing',
+    'aprovacao',
+    'fechamento',
+    'pedido',
+    'perdido'
+  ]
 
   const dealsByStage = (Object.keys(STAGE_CONFIG) as DealStage[]).reduce((acc, stage) => {
     acc[stage] = filteredDeals.filter(d => d.stage === stage).sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
@@ -648,43 +849,120 @@ export function PipelineBoard() {
     const draggedDeal = deals.find(d => d.id === active.id)
     if (!draggedDeal) return
 
-    // Drop on Won zone
+    // Target stage can be from drop zone or column
+    let newStage: DealStage | undefined = undefined
     if (over.id === 'drop-zone-pos_venda') {
-      updateAndSaveDeals(prev => prev.map(d =>
-        d.id === draggedDeal.id
-          ? { ...d, stage: 'pos_venda', stage_entered_at: new Date().toISOString() }
-          : d
-      ))
-      return
+      newStage = 'pos_venda'
+    } else if (over.id === 'drop-zone-perdido') {
+      newStage = 'perdido'
+    } else if (activeStages.includes(over.id as DealStage)) {
+      newStage = over.id as DealStage
+    } else {
+      newStage = deals.find(d => d.id === over.id)?.stage
     }
-
-    // Drop on Lost zone
-    if (over.id === 'drop-zone-perdido') {
-      setLostModalDeal(draggedDeal)
-      return
-    }
-
-    // Drop on normal columns
-    const newStage = (activeStages as string[]).includes(over.id as string)
-      ? (over.id as DealStage)
-      : deals.find(d => d.id === over.id)?.stage
 
     if (!newStage || newStage === draggedDeal.stage) return
 
-    updateAndSaveDeals(prev => prev.map(d =>
-      d.id === draggedDeal.id
-        ? { 
-            ...d, 
-            stage: newStage, 
-            stage_entered_at: new Date().toISOString(),
-            estimated_value: d.estimated_value ?? draggedDeal.estimated_value ?? 0,
-            final_value: d.final_value ?? draggedDeal.final_value
-          }
-        : d
-    ))
+    // 🔍 ALWAYS REQUIRE USER CONFIRMATION BEFORE MOVING CARD!
+    setPendingMove({
+      deal: draggedDeal,
+      targetStage: newStage
+    })
+  }
+
+  const handleExecuteMove = (reason?: string, notes?: string) => {
+    if (!pendingMove && !lostModalDeal) return
+
+    const targetDeal = pendingMove ? pendingMove.deal : lostModalDeal!
+    const targetStage = pendingMove ? pendingMove.targetStage : 'perdido'
+
+    // If target is perdido and no reason was provided yet, open LostReasonModal
+    if (targetStage === 'perdido' && !reason) {
+      setLostModalDeal(targetDeal)
+      setPendingMove(null)
+      return
+    }
+
+    const now = new Date()
+    const timestampStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+    const userRaw = typeof window !== 'undefined' ? localStorage.getItem('crm_current_user') : null
+    const currentUser = userRaw ? JSON.parse(userRaw) : null
+    const authorName = currentUser?.name || currentUser?.nome || 'Usuário'
+
+    const currentStageLabel = STAGE_CONFIG[targetDeal.stage]?.label || targetDeal.stage
+    const targetStageLabel = STAGE_CONFIG[targetStage]?.label || targetStage
+
+    let activityText = `Oportunidade movida da etapa [${currentStageLabel}] para [${targetStageLabel}].`
+    if (targetStage === 'perdido' && reason) {
+      activityText = `Negócio marcado como PERDIDO. Motivo: ${reason}${notes ? ` • Obs: ${notes}` : ''}`
+    } else if (targetStage === 'pedido') {
+      activityText = `🎉 PEDIDO FECHADO! Oportunidade confirmada com sucesso!`
+    }
+
+    const stageActivity = {
+      id: `act_${Date.now()}`,
+      type: targetStage === 'perdido' ? 'nota' : targetStage === 'pedido' ? 'stage_change' : 'stage_change',
+      content: activityText,
+      title: `Mudança de Etapa: ${targetStageLabel}`,
+      description: activityText,
+      timestamp: timestampStr,
+      user_name: authorName,
+      userName: authorName,
+      author: authorName
+    }
+
+    const updatedDeal: Deal = {
+      ...targetDeal,
+      stage: targetStage,
+      stage_entered_at: new Date().toISOString(),
+      ...(targetStage === 'perdido' ? { lost_reason: reason, lost_notes: notes } : {}),
+      activities: [stageActivity, ...(targetDeal.activities || [])]
+    }
+
+    updateAndSaveDeals(prev => prev.map(d => d.id === targetDeal.id ? updatedDeal : d))
+
+    // Sync activity with contacts in localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const rawContacts = localStorage.getItem('crm_contacts')
+        if (rawContacts) {
+          const list = JSON.parse(rawContacts)
+          const cleanComp = (targetDeal.contact?.company || targetDeal.title || '').trim().toLowerCase()
+          const updatedContacts = list.map((c: any) => {
+            const matchesId = c.id === targetDeal.contact_id || c.id === targetDeal.contact?.id
+            const matchesComp = cleanComp && (c.company || c.name || '').trim().toLowerCase() === cleanComp
+            if (matchesId || matchesComp) {
+              return {
+                ...c,
+                status: targetStage === 'perdido' ? 'inativo' : 'ativo',
+                pipelineStage: targetStage,
+                activities: [stageActivity, ...(c.activities || [])]
+              }
+            }
+            return c
+          })
+          localStorage.setItem('crm_contacts', JSON.stringify(updatedContacts))
+          window.dispatchEvent(new Event('storage-contacts-changed'))
+        }
+      } catch (e) {}
+    }
+
+    setPendingMove(null)
+    setLostModalDeal(null)
+
+    // Trigger celebration modal if targetStage === 'pedido'
+    if (targetStage === 'pedido') {
+      setCelebrationDeal(updatedDeal)
+    }
   }
 
   function handleUpdateDeal(updatedDeal: Deal) {
+    // Check if stage changed to trigger confirmation or celebration
+    const currentDeal = deals.find(d => d.id === updatedDeal.id)
+    if (currentDeal && currentDeal.stage !== updatedDeal.stage) {
+      setPendingMove({ deal: currentDeal, targetStage: updatedDeal.stage })
+      return
+    }
     updateAndSaveDeals(prev => prev.map(d => d.id === updatedDeal.id ? updatedDeal : d))
     setSelectedDeal(updatedDeal)
   }
@@ -740,22 +1018,11 @@ export function PipelineBoard() {
 
     updateAndSaveDeals(prev => [newDeal, ...prev])
     setShowNewDealModal(false)
-  }
 
-  const handleConfirmLost = (reason: string, notes: string) => {
-    if (!lostModalDeal) return
-    updateAndSaveDeals(prev => prev.map(d =>
-      d.id === lostModalDeal.id
-        ? { 
-            ...d, 
-            stage: 'perdido', 
-            lost_reason: reason, 
-            lost_notes: notes,
-            stage_entered_at: new Date().toISOString() 
-          }
-        : d
-    ))
-    setLostModalDeal(null)
+    // Trigger celebration if new deal created directly in pedido stage
+    if (data.stage === 'pedido') {
+      setCelebrationDeal(newDeal)
+    }
   }
 
   return (
@@ -934,12 +1201,30 @@ export function PipelineBoard() {
         onUpdateDeal={handleUpdateDeal}
       />
 
+      {/* Confirm Move Modal */}
+      {pendingMove && (
+        <ConfirmMoveModal
+          deal={pendingMove.deal}
+          targetStage={pendingMove.targetStage}
+          onConfirm={() => handleExecuteMove()}
+          onCancel={() => setPendingMove(null)}
+        />
+      )}
+
       {/* Lost Reason Modal */}
       {lostModalDeal && (
         <LostReasonModal 
           deal={lostModalDeal}
-          onConfirm={handleConfirmLost}
+          onConfirm={(reason, notes) => handleExecuteMove(reason, notes)}
           onCancel={() => setLostModalDeal(null)}
+        />
+      )}
+
+      {/* Order Celebration Modal (Pedido Fechado) */}
+      {celebrationDeal && (
+        <OrderCelebrationModal
+          deal={celebrationDeal}
+          onClose={() => setCelebrationDeal(null)}
         />
       )}
 

@@ -11,6 +11,7 @@ export type DealStage =
   | 'briefing'
   | 'aprovacao'
   | 'fechamento'
+  | 'pedido'
   | 'perdido'
   | 'pos_venda'
 
@@ -159,6 +160,7 @@ export const STAGE_CONFIG: Record<DealStage, { label: string; color: string; ico
   briefing:   { label: 'Briefing / Orçamento',   color: '#f97316', icon: FileText, showValue: true  },
   aprovacao:  { label: 'Aprovação',              color: '#a855f7', icon: CheckCircle, showValue: true  },
   fechamento: { label: 'Fechamento',             color: '#b4d932', icon: Trophy, showValue: true  },
+  pedido:     { label: 'Pedido Fechado',         color: '#10b981', icon: CheckCircle, showValue: true  },
   perdido:    { label: 'Perdidos',               color: '#e2483d', icon: XCircle, showValue: true  },
   pos_venda:  { label: 'Pós-Vendas',             color: '#48c767', icon: Handshake, showValue: true  },
 }

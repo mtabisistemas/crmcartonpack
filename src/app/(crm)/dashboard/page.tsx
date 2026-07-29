@@ -925,7 +925,7 @@ export default function DashboardPage() {
       const mStr = String(mIdx + 1).padStart(2, '0')
       
       const dealsInMonth = repFilteredDeals.filter(d => {
-        if (d.stage !== 'fechamento' && d.stage !== 'pos_venda') return false
+        if (d.stage !== 'pedido' && d.stage !== 'pos_venda') return false
         const dDate = new Date(d.created_at || d.stage_entered_at || Date.now())
         const y = dDate.getFullYear().toString()
         const m = String(dDate.getMonth() + 1).padStart(2, '0')
@@ -1040,7 +1040,7 @@ export default function DashboardPage() {
 
     // Processa APENAS vendas fechadas e credita unicamente se o responsável for um USUÁRIO DO SISTEMA válido
     pipelineDeals.forEach(d => {
-      if (d.stage !== 'fechamento' && d.stage !== 'pos_venda') return
+      if (d.stage !== 'pedido' && d.stage !== 'pos_venda') return
 
       const compName = normalize(d.contact?.company || d.title || '')
       const contactId = d.contact_id || d.contact?.id || ''
@@ -1074,7 +1074,7 @@ export default function DashboardPage() {
     const clientMap: Record<string, { name: string; value: number; type: string }> = {}
 
     repFilteredDeals.forEach(d => {
-      if (d.stage !== 'fechamento' && d.stage !== 'pos_venda') return
+      if (d.stage !== 'pedido' && d.stage !== 'pos_venda') return
 
       const name = d.contact?.company || d.contact?.name || d.title || 'Cliente'
       const val = d.final_value || d.estimated_value || 0

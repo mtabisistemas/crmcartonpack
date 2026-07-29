@@ -58,6 +58,7 @@
   --stage-briefing:   #f97316;
   --stage-aprovacao:  #a855f7;
   --stage-fechamento: #b4d932;
+  --stage-pedido:     #10b981;
   --stage-perdido:    #e2483d;
   --stage-pos-venda:  #48c767;
 
@@ -1157,5 +1158,41 @@ textarea.input { resize: vertical; min-height: 80px; }
 /* ── Form Inputs with Left Icons alignment ── */
 .relative.has-left-icon > .input {
   padding-left: 36px;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(105vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-confetti-fall {
+  animation: confetti-fall linear infinite;
+}
+
+@keyframes bounce-in {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
