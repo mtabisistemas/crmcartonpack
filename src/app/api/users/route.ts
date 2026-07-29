@@ -35,13 +35,48 @@ export async function GET() {
         status: p.active !== false ? 'ativo' : 'inativo',
         phone: p.phone || '',
         createdAt: p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '',
-        username: p.username || p.email?.split('@')[0] || ''
+        username: p.username || p.email?.split('@')[0] || '',
+        lastSeenAt: p.last_seen_at || null,
+        lastLocation: p.last_location || null
       }
     })
 
     return NextResponse.json({ success: true, users: usersList })
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message, users: [] }, { status: 500 })
+  }
+}
+
+// PATCH endpoint to update user activity (heartbeat & location)
+export async function PATCH(req: Request) {
+  try {
+    const { userId, location } = await req.json()
+
+    if (!userId || !isUUID(userId)) {
+      return NextResponse.json({ success: false, error: 'User ID inválido' }, { status: 400 })
+    }
+
+    const updates: any = {
+      last_seen_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+
+    if (location && typeof location === 'string') {
+      updates.last_location = location
+    }
+
+    const { error } = await supabaseAdmin
+      .from('profiles')
+      .update(updates)
+      .eq('id', userId)
+
+    if (error) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
   }
 }
 
@@ -84,11 +119,11 @@ export async function POST(req: Request) {
     const tempPass = user.tempPassword || user.password || '123456'
 
     if (!authUserId) {
-      // 2. Create in auth.users with email_confirm: false for corporate users (requiring email verification link)
+      // 2. Create in auth.users
       const { data: createdAuth, error: createErr } = await supabaseAdmin.auth.admin.createUser({
         email: emailForAuth,
         password: tempPass,
-        email_confirm: isRep ? true : false,
+        email_confirm: true,
         user_metadata: {
           full_name: user.name,
           role: user.role || 'representante',
@@ -127,7 +162,7 @@ export async function POST(req: Request) {
     }).catch(err => console.error('[API /users] Error updating auth user', err))
 
     // 4. Create / Update public.profiles with guaranteed authUserId
-    const profilePayload = {
+    const profilePayload: any = {
       id: authUserId,
       tenant_id: '00000000-0000-0000-0000-000000000001',
       full_name: user.name,
