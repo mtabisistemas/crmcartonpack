@@ -114,14 +114,14 @@ export default function MetasPage() {
     })
   }
 
-  const isGestor = (currentUser?.role || '').toLowerCase() === 'gestor'
+  const isGestor = (currentUser?.role || '').toLowerCase().includes('gestor')
 
   // Gestor só visualiza Vendedores, Representantes e outros Gestores (Oculta Administradores)
   const visibleUsersForMetas = useMemo(() => {
     return registeredUsers.filter(u => {
       if (u.status === 'inativo') return false
       const uRole = (u.role || '').toLowerCase()
-      if (isGestor && (uRole === 'admin' || uRole === 'administrador')) {
+      if (isGestor && (uRole.includes('admin') || uRole === 'administrador')) {
         return false
       }
       return true
@@ -626,14 +626,43 @@ export default function MetasPage() {
                             </div>
                           </td>
                           <td className="py-3.5 px-3 font-mono text-[10px]">
-                            <span className={`px-2 py-0.5 rounded font-bold uppercase ${
-                              u.role === 'admin' || u.role === 'administrador' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
-                              u.role === 'gestor' || u.role === 'gestor comercial' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                              u.role === 'vendedor' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                              'bg-sky-500/10 text-sky-400 border border-sky-500/20'
-                            }`}>
-                              {u.role}
-                            </span>
+                            {(() => {
+                              const isThaiane = (u.email || '').toLowerCase().includes('thaiane') || (u.name || '').toLowerCase().includes('thaiane')
+                              if (isThaiane) {
+                                return (
+                                  <span className="px-2 py-0.5 rounded font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                    GESTOR COMERCIAL
+                                  </span>
+                                )
+                              }
+                              const rLower = (u.role || '').toLowerCase()
+                              if (rLower.includes('admin')) {
+                                return (
+                                  <span className="px-2 py-0.5 rounded font-bold uppercase bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                    ADMINISTRADOR
+                                  </span>
+                                )
+                              }
+                              if (rLower.includes('gestor')) {
+                                return (
+                                  <span className="px-2 py-0.5 rounded font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                    GESTOR COMERCIAL
+                                  </span>
+                                )
+                              }
+                              if (rLower.includes('vend')) {
+                                return (
+                                  <span className="px-2 py-0.5 rounded font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    VENDEDOR
+                                  </span>
+                                )
+                              }
+                              return (
+                                <span className="px-2 py-0.5 rounded font-bold uppercase bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                                  REPRESENTANTE
+                                </span>
+                              )
+                            })()}
                           </td>
 
                           {/* Campo Meta Venda R$ */}

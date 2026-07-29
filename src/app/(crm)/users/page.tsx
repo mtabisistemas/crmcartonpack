@@ -436,7 +436,11 @@ export default function UsersPage() {
   }, [roleFilteredUsers])
 
   // Role tag styling helpers
-  const getRoleDetails = (r: string) => {
+  const getRoleDetails = (r: string, u?: any) => {
+    const isThaiane = (u?.email || '').toLowerCase().includes('thaiane') || (u?.name || '').toLowerCase().includes('thaiane')
+    if (isThaiane) {
+      return { label: 'Gestor Comercial', bg: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: 'rgba(59,130,246,0.3)' }
+    }
     const roleLower = (r || '').toLowerCase()
     if (roleLower.includes('admin')) {
       return { label: 'Administrador', bg: 'rgba(168,85,247,0.12)', color: '#c084fc', border: 'rgba(168,85,247,0.25)' }
@@ -605,7 +609,7 @@ export default function UsersPage() {
             </thead>
             <tbody className="divide-y divide-[var(--line)]">
               {filteredUsers.map(user => {
-                const roleInfo = getRoleDetails(user.role)
+                const roleInfo = getRoleDetails(user.role, user)
                 return (
                   <tr 
                     key={user.id} 
