@@ -83,7 +83,7 @@ const TOP_CLIENTS: any[] = []
 
 export default function DashboardPage() {
   // Roles and Current User Session
-  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string; role: string; username?: string } | null>(null)
   const [isSessionLoaded, setIsSessionLoaded] = useState(false)
   const [contacts, setContacts] = useState<any[]>([])
   const [pipelineDeals, setPipelineDeals] = useState<any[]>([])
@@ -1326,12 +1326,22 @@ export default function DashboardPage() {
 
   // ==================== ROLE: REPRESENTANTE / VENDEDOR (MOBILE PORTAL) ====================
   if (currentUser?.role === 'representante' || currentUser?.role === 'vendedor') {
-    const userRepNorm = currentUser?.name ? currentUser.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ''
+    const userNameNorm = currentUser?.name ? currentUser.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ''
+    const userUsernameNorm = currentUser?.username ? currentUser.username.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ''
+    const userEmailNorm = currentUser?.email ? currentUser.email.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ''
+
     const repAllContacts = contacts.filter(c => {
-      if (!userRepNorm) return true
-      const cRepNorm = (c.representative || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
-      return cRepNorm === userRepNorm || cRepNorm.includes(userRepNorm) || userRepNorm.includes(cRepNorm)
+      if (!c.representative) return false
+      const cRepNorm = c.representative.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+      return (userNameNorm && cRepNorm === userNameNorm) ||
+             (userUsernameNorm && cRepNorm === userUsernameNorm) ||
+             (userEmailNorm && cRepNorm === userEmailNorm)
     })
+
+    const repContactsNeedingAttention = repAllContacts.filter(c => {
+      return c.status === 'inativo' || (c.lastPurchaseDays && c.lastPurchaseDays > 30)
+    })
+
     const filteredMobileContacts = repAllContacts.filter(c => {
       const matchesSearch = c.name.toLowerCase().includes(mobileSearch.toLowerCase()) || 
                             (c.company && c.company.toLowerCase().includes(mobileSearch.toLowerCase())) ||
