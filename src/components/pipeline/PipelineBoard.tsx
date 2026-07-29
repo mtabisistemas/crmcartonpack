@@ -1030,7 +1030,10 @@ export function PipelineBoard() {
 
     updateAndSaveDeals(prev => prev.map(d => d.id === targetDeal.id ? updatedDeal : d))
 
-    // Sync activity with contacts in localStorage
+    const isClosedDeal = targetStage === 'fechamento' || targetStage === 'pedido' || targetStage === 'pos_venda'
+    const todayStr = new Date().toISOString().split('T')[0]
+
+    // Sync activity and last purchase date with contacts in localStorage
     if (typeof window !== 'undefined') {
       try {
         const rawContacts = localStorage.getItem('crm_contacts')
@@ -1045,6 +1048,7 @@ export function PipelineBoard() {
                 ...c,
                 status: targetStage === 'perdido' ? 'inativo' : 'ativo',
                 pipelineStage: targetStage,
+                ...(isClosedDeal ? { lastPurchaseDate: todayStr, last_purchase_date: todayStr, lastPurchaseDays: 0 } : {}),
                 activities: [stageActivity, ...(c.activities || [])]
               }
             }
@@ -1054,6 +1058,26 @@ export function PipelineBoard() {
           window.dispatchEvent(new Event('storage-contacts-changed'))
         }
       } catch (e) {}
+
+      // Sync last purchase date directly in Supabase if closed
+      if (isClosedDeal) {
+        try {
+          import('@/services/supabase-client').then(({ supabase }) => {
+            if (supabase) {
+              const comp = targetDeal.contact?.company || targetDeal.title
+              const payload: any = {
+                last_purchase_date: todayStr,
+                updated_at: new Date().toISOString()
+              }
+              if (targetDeal.contact_id && !targetDeal.contact_id.startsWith('c-')) {
+                supabase.from('contacts').update(payload).eq('id', targetDeal.contact_id).then(() => {})
+              } else if (comp) {
+                supabase.from('contacts').update(payload).ilike('company', comp).then(() => {})
+              }
+            }
+          })
+        } catch (err) {}
+      }
     }
 
     setPendingMove(null)

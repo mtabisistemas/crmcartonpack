@@ -329,6 +329,9 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       } as any
     }
 
+    const isClosedStage = stage === 'fechamento' || stage === 'pedido' || stage === 'pos_venda'
+    const todayStr = new Date().toISOString().split('T')[0]
+
     const companyToFind = upperCompany
 
     if (companyToFind) {
@@ -350,6 +353,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                 address: upperAddress || c.address,
                 city: upperAddress || c.city,
                 curve: curve || c.curve,
+                ...(isClosedStage ? { lastPurchaseDate: todayStr, last_purchase_date: todayStr, lastPurchaseDays: 0 } : {}),
               }
             }
             return c
@@ -375,6 +379,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
             payload.city = upperAddress
           }
           if (curve) payload.curve = curve
+          if (isClosedStage) payload.last_purchase_date = todayStr
 
           if (deal.contact?.id && !deal.contact.id.startsWith('c-')) {
             await supabase.from('contacts').update(payload).eq('id', deal.contact.id)

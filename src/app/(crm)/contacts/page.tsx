@@ -202,10 +202,38 @@ function ContactDrawer({
 
   // Planejamento & Recompra states
   const [projectedPurchaseValue, setProjectedPurchaseValue] = useState<number>(0)
+  const [projectedValueInput, setProjectedValueInput] = useState<string>('')
   const [purchaseFrequencyDays, setPurchaseFrequencyDays] = useState<number>(30)
   const [lastPurchaseDate, setLastPurchaseDate] = useState<string>('')
   const [planningNotes, setPlanningNotes] = useState<string>('')
   const [historyList, setHistoryList] = useState<Array<{ id: string; date: string; author: string; action: string; details: string }>>([])
+
+  const parseCurrencyToNumber = (val: string): number => {
+    if (!val) return 0
+    const clean = val.replace(/\./g, '').replace(',', '.')
+    const parsed = parseFloat(clean)
+    return isNaN(parsed) ? 0 : parsed
+  }
+
+  const formatNumberToCurrencyStr = (num: number | undefined | null): string => {
+    if (num == null || isNaN(num) || num === 0) return ''
+    return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  }
+
+  const handleProjectedValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value
+    const cleanRaw = raw.replace(/[^\d.,]/g, '')
+    setProjectedValueInput(cleanRaw)
+    const num = parseCurrencyToNumber(cleanRaw)
+    setProjectedPurchaseValue(num)
+  }
+
+  const handleProjectedValueBlur = () => {
+    if (projectedPurchaseValue) {
+      setProjectedValueInput(formatNumberToCurrencyStr(projectedPurchaseValue))
+    }
+    handleSaveGeneral({ projectedPurchaseValue })
+  }
 
   // History states
   const [isSaving, setIsSaving] = useState(false)
@@ -244,7 +272,9 @@ function ContactDrawer({
       setStatus(contact.status)
       
       // Load planning and history fields
-      setProjectedPurchaseValue((contact as any).projectedPurchaseValue ?? (contact as any).projected_purchase_value ?? 0)
+      const pVal = (contact as any).projectedPurchaseValue ?? (contact as any).projected_purchase_value ?? 0
+      setProjectedPurchaseValue(pVal)
+      setProjectedValueInput(formatNumberToCurrencyStr(pVal))
       setPurchaseFrequencyDays((contact as any).purchaseFrequencyDays ?? (contact as any).purchase_frequency_days ?? 30)
       setLastPurchaseDate((contact as any).lastPurchaseDate ?? (contact as any).last_purchase_date ?? '')
       setPlanningNotes((contact as any).planningNotes ?? (contact as any).planning_notes ?? '')
@@ -1118,102 +1148,119 @@ function ContactDrawer({
 
           {/* TAB 2: PLANEJAMENTO E RECOMPRA */}
           {activeTab === 'planejamento' && (
-            <div className="flex flex-col gap-4 animate-fade-in pb-12">
+            <div className="flex flex-col gap-3 animate-fade-in pb-12">
               
               {/* Banner de Status de Recompra */}
               {(() => {
                 const repInfo = getRepurchaseStatusInfo()
                 return (
-                  <div className={`p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${repInfo.badgeBg}`}>
+                  <div className={`p-3.5 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${repInfo.badgeBg}`}>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center bg-black/20 text-current font-bold shrink-0">
-                        <Clock size={20} />
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-black/20 text-current font-bold shrink-0">
+                        <Clock size={18} />
                       </div>
                       <div>
-                        <div className="text-[10px] font-mono uppercase font-extrabold tracking-wider">Status do Ciclo de Recompra</div>
-                        <div className="text-sm font-bold font-display mt-0.5">{repInfo.label}</div>
+                        <div className="text-[9px] font-mono uppercase font-extrabold tracking-wider">Status do Ciclo de Recompra</div>
+                        <div className="text-xs font-bold font-display mt-0.5">{repInfo.label}</div>
                       </div>
                     </div>
 
                     <div className="sm:text-right shrink-0 font-mono">
                       <div className="text-[9px] uppercase font-bold opacity-80">Próxima Compra Prevista</div>
-                      <div className="text-sm font-black mt-0.5">{repInfo.nextDateStr}</div>
+                      <div className="text-xs font-black mt-0.5">{repInfo.nextDateStr}</div>
                     </div>
                   </div>
                 )
               })()}
 
-              {/* Grid de Campos: Valor Projetado, Frequência, Última Compra */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                
-                {/* Valor Projetado R$ */}
-                <div className="card p-3.5 border-[var(--line)] bg-[var(--card)] flex flex-col gap-1.5">
-                  <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider flex items-center gap-1">
-                    <DollarSign size={12} /> Valor Projetado de Compra
-                  </label>
-                  <div className="flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-3 py-2 focus-within:border-[var(--lime)]">
-                    <span className="text-xs font-bold text-[var(--gray2)] font-mono">R$</span>
-                    <input
-                      type="number"
-                      step="100"
-                      className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] font-mono w-full"
-                      placeholder="0,00"
-                      value={projectedPurchaseValue || ''}
-                      onChange={e => setProjectedPurchaseValue(parseFloat(e.target.value) || 0)}
-                    />
-                  </div>
-                  <span className="text-[9px] text-[var(--gray2)] font-mono">Estimativa de faturamento por ciclo de compra</span>
-                </div>
+              {/* Card: Parâmetros de Recompra & Projeção */}
+              <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2.5">
+                <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">
+                  Parâmetros de Recompra & Projeção
+                </h4>
 
-                {/* Frequência de Compra (Dias) */}
-                <div className="card p-3.5 border-[var(--line)] bg-[var(--card)] flex flex-col gap-1.5">
-                  <label className="text-[9px] font-bold text-sky-400 uppercase font-mono tracking-wider flex items-center gap-1">
-                    <Calendar size={12} /> Frequência de Compra (Dias)
-                  </label>
-                  <div className="flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-3 py-2 focus-within:border-sky-400">
-                    <input
-                      type="number"
-                      min="1"
-                      className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] font-mono w-full"
-                      placeholder="Ex: 30, 45, 60"
-                      value={purchaseFrequencyDays || ''}
-                      onChange={e => setPurchaseFrequencyDays(parseInt(e.target.value) || 0)}
-                    />
-                    <span className="text-xs font-bold text-[var(--gray2)] font-mono">dias</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {/* Valor Projetado R$ */}
+                  <div className="flex flex-col gap-0.5">
+                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+                      Valor Projetado de Compra
+                    </label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-2.5 text-xs font-mono font-bold text-[var(--lime)] select-none pointer-events-none">
+                        R$
+                      </span>
+                      <input
+                        type="text"
+                        className="input text-xs py-1 px-2.5 !pl-8 font-bold font-mono text-[var(--lime)]"
+                        placeholder="0,00"
+                        value={projectedValueInput}
+                        onChange={handleProjectedValueChange}
+                        onBlur={handleProjectedValueBlur}
+                      />
+                    </div>
+                    <span className="text-[8px] text-[var(--gray2)] font-mono">Estimativa por ciclo de compra</span>
                   </div>
-                  <span className="text-[9px] text-[var(--gray2)] font-mono">Intervalo numérico em dias (ex: 30, 45, 60)</span>
-                </div>
 
-                {/* Data da Última Compra */}
-                <div className="card p-3.5 border-[var(--line)] bg-[var(--card)] flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
-                  <label className="text-[9px] font-bold text-amber-400 uppercase font-mono tracking-wider flex items-center gap-1">
-                    <Clock size={12} /> Data da Última Compra
-                  </label>
-                  <div className="flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-3 py-2 focus-within:border-amber-400">
+                  {/* Frequência de Compra (Dias) */}
+                  <div className="flex flex-col gap-0.5">
+                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+                      Frequência de Compra (Dias)
+                    </label>
+                    <div className="relative flex items-center">
+                      <input
+                        type="number"
+                        min="1"
+                        className="input text-xs py-1 px-2.5 font-bold font-mono pr-12"
+                        placeholder="Ex: 30, 45, 60"
+                        value={purchaseFrequencyDays || ''}
+                        onChange={e => {
+                          const val = parseInt(e.target.value) || 0
+                          setPurchaseFrequencyDays(val)
+                          handleSaveGeneral({ purchaseFrequencyDays: val })
+                        }}
+                      />
+                      <span className="absolute right-2.5 text-[10px] font-bold text-[var(--gray2)] font-mono select-none">
+                        dias
+                      </span>
+                    </div>
+                    <span className="text-[8px] text-[var(--gray2)] font-mono">Intervalo numérico em dias</span>
+                  </div>
+
+                  {/* Data da Última Compra */}
+                  <div className="flex flex-col gap-0.5">
+                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+                      Data da Última Compra
+                    </label>
                     <input
                       type="date"
-                      className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] font-mono w-full cursor-pointer"
+                      className="input text-xs py-1 px-2.5 font-bold font-mono cursor-pointer"
                       value={lastPurchaseDate}
-                      onChange={e => setLastPurchaseDate(e.target.value)}
+                      onChange={e => {
+                        const val = e.target.value
+                        setLastPurchaseDate(val)
+                        handleSaveGeneral({ lastPurchaseDate: val })
+                      }}
                     />
+                    <span className="text-[8px] text-[var(--gray2)] font-mono">Data do último pedido fechado (editável)</span>
                   </div>
-                  <span className="text-[9px] text-[var(--gray2)] font-mono">Data do último pedido fechado</span>
                 </div>
-
               </div>
 
-              {/* Observações e Perfil de Compra */}
-              <div className="card p-4 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2">
-                <label className="text-[10px] font-bold text-[var(--white)] uppercase font-mono tracking-wider flex items-center gap-1.5">
-                  <FileText size={14} className="text-[var(--lime)]" />
-                  <span>Observações & Perfil de Compra do Cliente</span>
-                </label>
+              {/* Card: Observações & Perfil de Compra */}
+              <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2">
+                <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">
+                  Observações & Perfil de Compra do Cliente
+                </h4>
                 <textarea
                   rows={4}
-                  className="w-full bg-[var(--charcoal)] border border-[var(--line)] rounded-xl p-3 text-xs text-[var(--white)] outline-none focus:border-[var(--lime)] resize-none font-mono"
+                  className="input w-full p-2.5 text-xs text-[var(--white)] font-mono resize-none"
                   placeholder="Particularidades de compra, pico de sazonalidade, preferências de cartão/embalagem..."
                   value={planningNotes}
-                  onChange={e => setPlanningNotes(e.target.value)}
+                  onChange={e => {
+                    const val = e.target.value
+                    setPlanningNotes(val)
+                    handleSaveGeneral({ planningNotes: val })
+                  }}
                 />
               </div>
 
