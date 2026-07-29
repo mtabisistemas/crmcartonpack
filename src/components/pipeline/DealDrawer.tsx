@@ -674,22 +674,16 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
 
               {/* Seção Contato / Cliente */}
               <div className="flex flex-col gap-4 bg-[var(--card)] border border-[var(--line)] rounded-xl p-4">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono">
-                      Dados do Cliente
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono">
+                    Dados do Cliente
+                  </div>
+                  {isLoadingContactDetails && (
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono text-[var(--lime)] font-semibold animate-pulse bg-[var(--lime)]/10 px-2 py-0.5 rounded-md border border-[var(--lime)]/20">
+                      <Loader2 size={11} className="animate-spin text-[var(--lime)]" />
+                      <span>Carregando dados cadastrais...</span>
                     </div>
-                    {isLoadingContactDetails && (
-                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-[var(--lime)] font-semibold animate-pulse bg-[var(--lime)]/10 px-2 py-0.5 rounded-md border border-[var(--lime)]/20">
-                        <Loader2 size={11} className="animate-spin text-[var(--lime)]" />
-                        <span>Carregando dados cadastrais...</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-[10px] font-mono text-amber-300/80 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20 flex items-center gap-1.5 mt-1">
-                    <Lock size={11} className="text-amber-400 shrink-0" />
-                    <span>Dados cadastrais em modo somente leitura. Altere na Ficha do Cliente na Carteira.</span>
-                  </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1.5">
