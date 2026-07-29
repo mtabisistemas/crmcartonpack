@@ -23,10 +23,11 @@ import { formatCurrency, daysSince } from '@/lib/utils'
 import { Plus, Clock, Trophy, XCircle, Search, Filter, Building2, Calendar } from 'lucide-react'
 import { DealDrawer } from './DealDrawer'
 import { PipelineCalendarModal } from './PipelineCalendarModal'
-import { getPipelineDeals, savePipelineDeals } from '@/services/pipeline-service'
+import { getPipelineDeals, savePipelineDeals, DEFAULT_PIPELINE_DEALS } from '@/services/pipeline-service'
+import { supabase } from '@/services/supabase-client'
 
 // ─── Mock data ────────────────────────────────────────────────
-const MOCK_DEALS: Deal[] = []
+const MOCK_DEALS: Deal[] = DEFAULT_PIPELINE_DEALS
 // ─── Deal Card ────────────────────────────────────────────────
 function DealCard({ deal, overlay = false, onCardClick }: { deal: Deal; overlay?: boolean; onCardClick?: (deal: Deal) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: deal.id })
@@ -731,6 +732,67 @@ export function PipelineBoard() {
   const [deals, setDeals] = useState<Deal[]>(() => getPipelineDeals(MOCK_DEALS))
 
   useEffect(() => {
+    async function loadSupabaseDeals() {
+      if (supabase) {
+        try {
+          const { data, error } = await supabase.from('deals').select('*')
+          if (!error && data && data.length > 0) {
+            const mappedDeals: Deal[] = data.map((item: any) => {
+              let parsedContact = item.contact
+              if (typeof parsedContact === 'string') {
+                try { parsedContact = JSON.parse(parsedContact) } catch (e) {}
+              }
+              return {
+                id: item.id,
+                title: item.title,
+                contact_id: item.contact_id || (parsedContact?.id) || `c_${Date.now()}`,
+                stage: item.stage,
+                position: item.position || 0,
+                estimated_value: item.estimated_value || 0,
+                final_value: item.final_value || 0,
+                assigned_to: item.assigned_to || item.representative || '',
+                stage_entered_at: item.stage_entered_at || item.created_at || new Date().toISOString(),
+                created_at: item.created_at || new Date().toISOString(),
+                updated_at: item.updated_at || new Date().toISOString(),
+                contact: parsedContact || {
+                  id: item.contact_id || `c_${Date.now()}`,
+                  name: item.title,
+                  company: item.title,
+                  representative: item.assigned_to || ''
+                }
+              }
+            })
+            setDeals(mappedDeals)
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('cp_crm_pipeline_deals', JSON.stringify(mappedDeals))
+            }
+          } else if (!error && (!data || data.length === 0)) {
+            // Populate defaults if Supabase deals table is empty
+            const initialDeals = getPipelineDeals(MOCK_DEALS)
+            const seedPayloads = initialDeals.map(d => ({
+              id: d.id,
+              title: d.title,
+              stage: d.stage,
+              position: d.position || 0,
+              estimated_value: d.estimated_value || 0,
+              final_value: d.final_value || 0,
+              assigned_to: d.assigned_to || '',
+              contact_id: d.contact_id || d.contact?.id || '',
+              contact: JSON.stringify(d.contact || {}),
+              created_at: d.created_at || new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }))
+            await supabase.from('deals').upsert(seedPayloads, { onConflict: 'id' })
+            setDeals(initialDeals)
+          }
+        } catch (e) {
+          console.error('Error fetching deals from Supabase:', e)
+        }
+      }
+    }
+
+    loadSupabaseDeals()
+
     const syncDeals = () => {
       const latestDeals = getPipelineDeals(MOCK_DEALS)
       setDeals(latestDeals)
@@ -747,6 +809,24 @@ export function PipelineBoard() {
     setDeals(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater
       savePipelineDeals(next)
+      if (supabase) {
+        try {
+          const payloads = next.map(d => ({
+            id: d.id,
+            title: d.title,
+            stage: d.stage,
+            position: d.position || 0,
+            estimated_value: d.estimated_value || 0,
+            final_value: d.final_value || 0,
+            assigned_to: d.assigned_to || '',
+            contact_id: d.contact_id || d.contact?.id || '',
+            contact: JSON.stringify(d.contact || {}),
+            created_at: d.created_at || new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }))
+          supabase.from('deals').upsert(payloads, { onConflict: 'id' }).then(() => {}, (err) => console.error('Supabase deal save error:', err))
+        } catch (e) {}
+      }
       return next
     })
   }

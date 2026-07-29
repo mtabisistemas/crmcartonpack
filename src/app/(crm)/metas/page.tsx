@@ -21,6 +21,7 @@ import {
   X
 } from 'lucide-react'
 import { UserGoal, LossReason, DEFAULT_LOSS_REASONS } from '@/types'
+import { supabase } from '@/services/supabase-client'
 
 // Função auxiliar para calcular dias úteis em determinado ano/mês (Segunda a Sexta)
 function getBusinessDaysInMonth(year: number, monthZeroIndexed: number): number {
@@ -137,7 +138,20 @@ export default function MetasPage() {
       setRegisteredUsers(users.filter(u => u.status !== 'inativo'))
 
       // 2. Carrega Motivos de Perda
-      if (typeof window !== 'undefined') {
+      if (supabase) {
+        try {
+          const { data } = await supabase.from('briefings').select('*').eq('id', 'system_loss_reasons').single()
+          if (data && data.content) {
+            const parsed = typeof data.content === 'string' ? JSON.parse(data.content) : data.content
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setLossReasons(parsed)
+              if (typeof window !== 'undefined') localStorage.setItem('cp_crm_loss_reasons', JSON.stringify(parsed))
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (typeof window !== 'undefined' && (!lossReasons || lossReasons.length === 0)) {
         const rawReasons = localStorage.getItem('cp_crm_loss_reasons')
         if (rawReasons) {
           try {
@@ -152,12 +166,25 @@ export default function MetasPage() {
       }
 
       // 3. Carrega Metas Salvas
+      if (supabase) {
+        try {
+          const { data } = await supabase.from('briefings').select('*').eq('id', 'system_user_goals').single()
+          if (data && data.content) {
+            const parsedMap = typeof data.content === 'string' ? JSON.parse(data.content) : data.content
+            if (parsedMap && typeof parsedMap === 'object') {
+              setGoalsMap(parsedMap)
+              if (typeof window !== 'undefined') localStorage.setItem('cp_crm_user_goals', JSON.stringify(parsedMap))
+            }
+          }
+        } catch (e) {}
+      }
+
       if (typeof window !== 'undefined') {
         const rawGoals = localStorage.getItem('cp_crm_user_goals')
         if (rawGoals) {
           try {
             const parsedMap = JSON.parse(rawGoals)
-            setGoalsMap(parsedMap)
+            setGoalsMap(prev => Object.keys(prev).length > 0 ? prev : parsedMap)
           } catch (e) {}
         }
       }
@@ -209,12 +236,20 @@ export default function MetasPage() {
     }))
   }
 
-  // Salvar Metas no LocalStorage e avisar app
+  // Salvar Metas no LocalStorage e no Supabase
   const handleSaveGoals = () => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('cp_crm_user_goals', JSON.stringify(goalsMap))
       window.dispatchEvent(new Event('storage-goals-changed'))
       window.dispatchEvent(new Event('storage'))
+    }
+    if (supabase) {
+      supabase.from('briefings').upsert([{
+        id: 'system_user_goals',
+        title: 'Metas Comerciais do Sistema',
+        content: JSON.stringify(goalsMap),
+        created_at: new Date().toISOString()
+      }], { onConflict: 'id' }).then(() => {}, (err) => console.error('Supabase save goals error:', err))
     }
     showToast('Metas salvas com sucesso!')
   }
@@ -226,6 +261,14 @@ export default function MetasPage() {
       localStorage.setItem('cp_crm_loss_reasons', JSON.stringify(updatedList))
       window.dispatchEvent(new Event('storage-loss-reasons-changed'))
       window.dispatchEvent(new Event('storage'))
+    }
+    if (supabase) {
+      supabase.from('briefings').upsert([{
+        id: 'system_loss_reasons',
+        title: 'Motivos de Perda do Sistema',
+        content: JSON.stringify(updatedList),
+        created_at: new Date().toISOString()
+      }], { onConflict: 'id' }).then(() => {}, (err) => console.error('Supabase save loss reasons error:', err))
     }
   }
 

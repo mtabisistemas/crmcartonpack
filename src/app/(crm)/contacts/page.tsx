@@ -616,6 +616,12 @@ function ContactDrawer({
             Ficha Geral
           </button>
           <button 
+            className={`drawer-tab-btn ${activeTab === 'planejamento' ? 'active' : ''}`}
+            onClick={() => setActiveTab('planejamento')}
+          >
+            Projeção & Planejamento
+          </button>
+          <button 
             className={`drawer-tab-btn ${activeTab === 'historico' ? 'active' : ''}`}
             onClick={() => setActiveTab('historico')}
           >
@@ -2060,36 +2066,36 @@ export default function ContactsPage() {
 
               return {
                 id: item.id,
-                name: localMatched?.name || item.name || '',
+                name: item.responsible || item.contact_name || item.name || localMatched?.name || '',
                 company: item.company || localMatched?.company || '',
                 cnpj: item.cnpj || localMatched?.cnpj || '',
-                curve: localMatched?.curve || item.curve || 'C',
-                representative: localMatched?.representative || item.representative || item.assigned_to || item.assignedTo || item.assigned_to_name || '',
-                phone: localMatched?.phone || item.phone || '',
-                email: localMatched?.email || item.email || '',
-                city: localMatched?.city || item.city || '',
-                state: localMatched?.state || item.state || '',
-                status: localMatched?.status || item.status || 'ativo',
+                curve: item.curve || localMatched?.curve || 'C',
+                representative: item.representative || item.assigned_to || item.assignedTo || localMatched?.representative || '',
+                phone: item.phone || localMatched?.phone || '',
+                email: item.email || localMatched?.email || '',
+                city: item.city || localMatched?.city || '',
+                state: item.state || localMatched?.state || '',
+                status: item.status || localMatched?.status || 'ativo',
                 lastPurchaseDays: 0,
-                tradeName: localMatched?.tradeName || item.role || item.company || '',
-                registrationStatus: localMatched?.registrationStatus || item.registration_status || 'ATIVA',
-                mainCnae: localMatched?.mainCnae || item.main_cnae || '',
-                address: localMatched?.address || item.address || '',
-                bairro: localMatched?.bairro || item.bairro || '',
-                cep: localMatched?.cep || item.cep || '',
-                sideActivities: localMatched?.sideActivities?.length ? localMatched.sideActivities : (item.side_activities ? (typeof item.side_activities === 'string' ? JSON.parse(item.side_activities) : item.side_activities) : []),
-                taxRegime: localMatched?.taxRegime || item.tax_regime || 'Simples Nacional',
-                specialSituation: localMatched?.specialSituation || item.special_situation || 'Nenhuma',
-                specialSituationDate: localMatched?.specialSituationDate || item.special_situation_date || '-',
-                stateRegistration: localMatched?.stateRegistration || item.state_registration || '',
-                website: localMatched?.website || item.website || '',
-                instagram: localMatched?.instagram || item.instagram || '',
-                linkedin: localMatched?.linkedin || item.linkedin || '',
-                facebook: localMatched?.facebook || item.facebook || '',
-                projectedPurchaseValue: localMatched?.projectedPurchaseValue ?? item.projected_purchase_value ?? item.projectedPurchaseValue ?? 0,
-                purchaseFrequencyDays: localMatched?.purchaseFrequencyDays ?? item.purchase_frequency_days ?? item.purchaseFrequencyDays ?? 30,
-                lastPurchaseDate: localMatched?.lastPurchaseDate || item.last_purchase_date || item.lastPurchaseDate || '',
-                planningNotes: localMatched?.planningNotes || item.planning_notes || item.planningNotes || '',
+                tradeName: item.role || item.trade_name || localMatched?.tradeName || item.company || '',
+                registrationStatus: item.registration_status || localMatched?.registrationStatus || 'ATIVA',
+                mainCnae: item.main_cnae || localMatched?.mainCnae || '',
+                address: item.address || localMatched?.address || '',
+                bairro: item.bairro || localMatched?.bairro || '',
+                cep: item.cep || localMatched?.cep || '',
+                sideActivities: item.side_activities ? (typeof item.side_activities === 'string' ? JSON.parse(item.side_activities) : item.side_activities) : (localMatched?.sideActivities || []),
+                taxRegime: item.tax_regime || localMatched?.taxRegime || 'Simples Nacional',
+                specialSituation: item.special_situation || localMatched?.specialSituation || 'Nenhuma',
+                specialSituationDate: item.special_situation_date || localMatched?.specialSituationDate || '-',
+                stateRegistration: item.state_registration || localMatched?.stateRegistration || '',
+                website: item.website || localMatched?.website || '',
+                instagram: item.instagram || localMatched?.instagram || '',
+                linkedin: item.linkedin || localMatched?.linkedin || '',
+                facebook: item.facebook || localMatched?.facebook || '',
+                projectedPurchaseValue: item.projected_purchase_value ?? item.projectedPurchaseValue ?? localMatched?.projectedPurchaseValue ?? 0,
+                purchaseFrequencyDays: item.purchase_frequency_days ?? item.purchaseFrequencyDays ?? localMatched?.purchaseFrequencyDays ?? 30,
+                lastPurchaseDate: item.last_purchase_date || item.lastPurchaseDate || localMatched?.lastPurchaseDate || '',
+                planningNotes: item.planning_notes || item.planningNotes || localMatched?.planningNotes || '',
                 history: combinedHistory,
                 activities: loadedActs
               }
@@ -2344,7 +2350,10 @@ export default function ContactsPage() {
       try {
         const payload: any = {
           name: updatedContact.name,
+          responsible: updatedContact.name,
+          contact_name: updatedContact.name,
           company: updatedContact.company,
+          trade_name: updatedContact.tradeName || updatedContact.company,
           role: updatedContact.tradeName || updatedContact.company,
           phone: updatedContact.phone,
           email: updatedContact.email,
