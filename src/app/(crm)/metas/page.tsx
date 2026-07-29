@@ -137,46 +137,30 @@ export default function MetasPage() {
       }
       setRegisteredUsers(users.filter(u => u.status !== 'inativo'))
 
-      // 2. Carrega Motivos de Perda
-      if (supabase) {
-        try {
-          const { data } = await supabase.from('briefings').select('*').eq('id', 'system_loss_reasons').single()
-          if (data && data.content) {
-            const parsed = typeof data.content === 'string' ? JSON.parse(data.content) : data.content
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setLossReasons(parsed)
-              if (typeof window !== 'undefined') localStorage.setItem('cp_crm_loss_reasons', JSON.stringify(parsed))
-            }
+      // 2. Carrega Metas & Motivos de Perda da API /api/metas
+      try {
+        const res = await fetch('/api/metas', { cache: 'no-store' })
+        const json = await res.json()
+        if (json.success) {
+          if (json.goalsMap && Object.keys(json.goalsMap).length > 0) {
+            setGoalsMap(json.goalsMap)
+            if (typeof window !== 'undefined') localStorage.setItem('cp_crm_user_goals', JSON.stringify(json.goalsMap))
           }
-        } catch (e) {}
-      }
+          if (Array.isArray(json.lossReasons) && json.lossReasons.length > 0) {
+            setLossReasons(json.lossReasons)
+            if (typeof window !== 'undefined') localStorage.setItem('cp_crm_loss_reasons', JSON.stringify(json.lossReasons))
+          }
+        }
+      } catch (e) {}
 
       if (typeof window !== 'undefined' && (!lossReasons || lossReasons.length === 0)) {
         const rawReasons = localStorage.getItem('cp_crm_loss_reasons')
         if (rawReasons) {
-          try {
-            setLossReasons(JSON.parse(rawReasons))
-          } catch (e) {
-            setLossReasons(DEFAULT_LOSS_REASONS)
-          }
+          try { setLossReasons(JSON.parse(rawReasons)) } catch (e) { setLossReasons(DEFAULT_LOSS_REASONS) }
         } else {
           setLossReasons(DEFAULT_LOSS_REASONS)
           localStorage.setItem('cp_crm_loss_reasons', JSON.stringify(DEFAULT_LOSS_REASONS))
         }
-      }
-
-      // 3. Carrega Metas Salvas
-      if (supabase) {
-        try {
-          const { data } = await supabase.from('briefings').select('*').eq('id', 'system_user_goals').single()
-          if (data && data.content) {
-            const parsedMap = typeof data.content === 'string' ? JSON.parse(data.content) : data.content
-            if (parsedMap && typeof parsedMap === 'object') {
-              setGoalsMap(parsedMap)
-              if (typeof window !== 'undefined') localStorage.setItem('cp_crm_user_goals', JSON.stringify(parsedMap))
-            }
-          }
-        } catch (e) {}
       }
 
       if (typeof window !== 'undefined') {
@@ -236,21 +220,19 @@ export default function MetasPage() {
     }))
   }
 
-  // Salvar Metas no LocalStorage e no Supabase
+  // Salvar Metas no LocalStorage e no Supabase via API
   const handleSaveGoals = () => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('cp_crm_user_goals', JSON.stringify(goalsMap))
       window.dispatchEvent(new Event('storage-goals-changed'))
       window.dispatchEvent(new Event('storage'))
     }
-    if (supabase) {
-      supabase.from('briefings').upsert([{
-        id: 'system_user_goals',
-        title: 'Metas Comerciais do Sistema',
-        content: JSON.stringify(goalsMap),
-        created_at: new Date().toISOString()
-      }], { onConflict: 'id' }).then(() => {}, (err) => console.error('Supabase save goals error:', err))
-    }
+    fetch('/api/metas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'goals', payload: goalsMap })
+    }).catch(err => console.error('API save goals error:', err))
+
     showToast('Metas salvas com sucesso!')
   }
 
@@ -262,14 +244,11 @@ export default function MetasPage() {
       window.dispatchEvent(new Event('storage-loss-reasons-changed'))
       window.dispatchEvent(new Event('storage'))
     }
-    if (supabase) {
-      supabase.from('briefings').upsert([{
-        id: 'system_loss_reasons',
-        title: 'Motivos de Perda do Sistema',
-        content: JSON.stringify(updatedList),
-        created_at: new Date().toISOString()
-      }], { onConflict: 'id' }).then(() => {}, (err) => console.error('Supabase save loss reasons error:', err))
-    }
+    fetch('/api/metas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'loss_reasons', payload: updatedList })
+    }).catch(err => console.error('API save loss reasons error:', err))
   }
 
   // Adicionar / Editar Motivo de Perda

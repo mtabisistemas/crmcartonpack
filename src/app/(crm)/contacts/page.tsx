@@ -2016,99 +2016,76 @@ export default function ContactsPage() {
     }
 
     async function loadContacts() {
-      let existingLocalMap = new Map<string, any>()
-      if (typeof window !== 'undefined') {
-        try {
-          const raw = localStorage.getItem('crm_contacts')
-          if (raw) {
-            const list = JSON.parse(raw)
-            list.forEach((c: any) => {
-              if (c.id) existingLocalMap.set(c.id, c)
-              if (c.company) existingLocalMap.set(c.company.toLowerCase().trim(), c)
-            })
-          }
-        } catch (e) {}
-      }
-
-      if (supabase) {
-        try {
-          const { data, error } = await supabase.from('contacts').select('*').order('created_at', { ascending: false })
-          if (!error && data) {
-            const mapped: MockContact[] = data.map((item: any) => {
-              let loadedActs: Activity[] = []
-              if (item.activities) {
-                try {
-                  loadedActs = typeof item.activities === 'string' ? JSON.parse(item.activities) : item.activities
-                } catch (e) {}
-              }
-              const localMatched = existingLocalMap.get(item.id) || (item.company && existingLocalMap.get(item.company.toLowerCase().trim()))
-              if (localMatched && localMatched.activities && Array.isArray(localMatched.activities)) {
-                const actMap = new Map<string, Activity>()
-                loadedActs.forEach((a: Activity) => actMap.set(a.id, a))
-                localMatched.activities.forEach((a: Activity) => actMap.set(a.id, a))
-                loadedActs = Array.from(actMap.values())
-              }
-
-              let loadedHistory: any[] = []
-              if (item.history) {
-                try {
-                  loadedHistory = typeof item.history === 'string' ? JSON.parse(item.history) : item.history
-                } catch (e) {}
-              }
-
-              let combinedHistory = loadedHistory
-              if (localMatched && localMatched.history && Array.isArray(localMatched.history)) {
-                const histMap = new Map<string, any>()
-                loadedHistory.forEach((h: any) => histMap.set(h.id, h))
-                localMatched.history.forEach((h: any) => histMap.set(h.id, h))
-                combinedHistory = Array.from(histMap.values())
-              }
-
-              return {
-                id: item.id,
-                name: item.responsible || item.contact_name || item.name || localMatched?.name || '',
-                company: item.company || localMatched?.company || '',
-                cnpj: item.cnpj || localMatched?.cnpj || '',
-                curve: item.curve || localMatched?.curve || 'C',
-                representative: item.representative || item.assigned_to || item.assignedTo || localMatched?.representative || '',
-                phone: item.phone || localMatched?.phone || '',
-                email: item.email || localMatched?.email || '',
-                city: item.city || localMatched?.city || '',
-                state: item.state || localMatched?.state || '',
-                status: item.status || localMatched?.status || 'ativo',
-                lastPurchaseDays: 0,
-                tradeName: item.role || item.trade_name || localMatched?.tradeName || item.company || '',
-                registrationStatus: item.registration_status || localMatched?.registrationStatus || 'ATIVA',
-                mainCnae: item.main_cnae || localMatched?.mainCnae || '',
-                address: item.address || localMatched?.address || '',
-                bairro: item.bairro || localMatched?.bairro || '',
-                cep: item.cep || localMatched?.cep || '',
-                sideActivities: item.side_activities ? (typeof item.side_activities === 'string' ? JSON.parse(item.side_activities) : item.side_activities) : (localMatched?.sideActivities || []),
-                taxRegime: item.tax_regime || localMatched?.taxRegime || 'Simples Nacional',
-                specialSituation: item.special_situation || localMatched?.specialSituation || 'Nenhuma',
-                specialSituationDate: item.special_situation_date || localMatched?.specialSituationDate || '-',
-                stateRegistration: item.state_registration || localMatched?.stateRegistration || '',
-                website: item.website || localMatched?.website || '',
-                instagram: item.instagram || localMatched?.instagram || '',
-                linkedin: item.linkedin || localMatched?.linkedin || '',
-                facebook: item.facebook || localMatched?.facebook || '',
-                projectedPurchaseValue: item.projected_purchase_value ?? item.projectedPurchaseValue ?? localMatched?.projectedPurchaseValue ?? 0,
-                purchaseFrequencyDays: item.purchase_frequency_days ?? item.purchaseFrequencyDays ?? localMatched?.purchaseFrequencyDays ?? 30,
-                lastPurchaseDate: item.last_purchase_date || item.lastPurchaseDate || localMatched?.lastPurchaseDate || '',
-                planningNotes: item.planning_notes || item.planningNotes || localMatched?.planningNotes || '',
-                history: combinedHistory,
-                activities: loadedActs
-              }
-            })
-            setContacts(mapped)
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('crm_contacts', JSON.stringify(mapped))
+      try {
+        const res = await fetch('/api/contacts', { cache: 'no-store' })
+        const json = await res.json()
+        if (json.success && Array.isArray(json.contacts) && json.contacts.length > 0) {
+          const mapped: MockContact[] = json.contacts.map((item: any) => {
+            let notesObj: any = {}
+            if (item.notes) {
+              try {
+                notesObj = typeof item.notes === 'string' ? JSON.parse(item.notes) : item.notes
+              } catch (e) {}
             }
-            return
+
+            let loadedActs: Activity[] = notesObj.activities || []
+            if (item.activities) {
+              try {
+                loadedActs = typeof item.activities === 'string' ? JSON.parse(item.activities) : item.activities
+              } catch (e) {}
+            }
+
+            let loadedHistory: any[] = notesObj.history || []
+            if (item.history) {
+              try {
+                loadedHistory = typeof item.history === 'string' ? JSON.parse(item.history) : item.history
+              } catch (e) {}
+            }
+
+            return {
+              id: item.id,
+              name: item.name || item.company || '',
+              company: item.company || item.name || '',
+              cnpj: item.cnpj || '',
+              curve: item.curve || 'C',
+              representative: item.representative || item.assigned_to || '',
+              phone: item.phone || '',
+              email: item.email || '',
+              city: item.city || '',
+              state: item.state || '',
+              status: item.status || 'ativo',
+              lastPurchaseDays: 0,
+              tradeName: item.trade_name || item.role || item.company || '',
+              registrationStatus: item.registration_status || 'ATIVA',
+              mainCnae: item.main_cnae || '',
+              address: item.address || '',
+              bairro: item.bairro || '',
+              cep: item.cep || '',
+              sideActivities: item.side_activities ? (typeof item.side_activities === 'string' ? JSON.parse(item.side_activities) : item.side_activities) : [],
+              taxRegime: item.tax_regime || 'Simples Nacional',
+              specialSituation: item.special_situation || 'Nenhuma',
+              specialSituationDate: item.special_situation_date || '-',
+              stateRegistration: item.state_registration || '',
+              website: item.website || '',
+              instagram: item.instagram || '',
+              linkedin: item.linkedin || '',
+              facebook: item.facebook || '',
+              projectedPurchaseValue: notesObj.projectedPurchaseValue ?? item.projected_purchase_value ?? 0,
+              purchaseFrequencyDays: notesObj.purchaseFrequencyDays ?? item.purchase_frequency_days ?? 30,
+              lastPurchaseDate: notesObj.lastPurchaseDate || item.last_purchase_date || '',
+              planningNotes: notesObj.planningNotes || item.planning_notes || '',
+              history: loadedHistory,
+              activities: loadedActs
+            }
+          })
+          setContacts(mapped)
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('crm_contacts', JSON.stringify(mapped))
           }
-        } catch (err) {
-          console.error('Supabase load error:', err)
+          return
         }
+      } catch (err) {
+        console.error('Error fetching contacts from API:', err)
       }
 
       if (typeof window !== 'undefined') {
@@ -2116,32 +2093,14 @@ export default function ContactsPage() {
         if (savedContacts) {
           try {
             const parsed = JSON.parse(savedContacts)
-            const clean = parsed.filter((c: any) => !c.company?.toUpperCase().includes('SIQUEIRA'))
-            setContacts(clean)
-            localStorage.setItem('crm_contacts', JSON.stringify(clean))
+            setContacts(parsed)
           } catch (e) {
             setContacts([])
-          }
-        } else {
-          setContacts([])
-        }
-
-        const savedUsers = localStorage.getItem('crm_users')
-        if (savedUsers) {
-          try {
-            const parsed = JSON.parse(savedUsers)
-            const repsFromUsers = parsed
-              .filter((u: any) => u.status === 'ativo' || u.status !== 'inativo')
-              .map((u: any) => u.name)
-            if (repsFromUsers.length > 0) {
-              setRepresentativesList(repsFromUsers)
-            }
-          } catch (e) {
-            console.error(e)
           }
         }
       }
     }
+
     loadContacts()
 
     // Recarrega contatos quando lead é encaminhado da prospecção
@@ -2346,85 +2305,14 @@ export default function ContactsPage() {
       } catch (e) {}
     }
 
-    if (supabase) {
-      try {
-        const payload: any = {
-          name: updatedContact.name,
-          responsible: updatedContact.name,
-          contact_name: updatedContact.name,
-          company: updatedContact.company,
-          trade_name: updatedContact.tradeName || updatedContact.company,
-          role: updatedContact.tradeName || updatedContact.company,
-          phone: updatedContact.phone,
-          email: updatedContact.email,
-          city: updatedContact.city,
-          state: updatedContact.state,
-          status: updatedContact.status,
-          curve: updatedContact.curve,
-          representative: updatedContact.representative,
-          assigned_to: updatedContact.representative,
-          assignedTo: updatedContact.representative,
-          cnpj: updatedContact.cnpj,
-          address: updatedContact.address,
-          bairro: updatedContact.bairro,
-          cep: updatedContact.cep,
-          tax_regime: updatedContact.taxRegime,
-          special_situation: updatedContact.specialSituation,
-          special_situation_date: updatedContact.specialSituationDate,
-          state_registration: updatedContact.stateRegistration,
-          registration_status: updatedContact.registrationStatus,
-          main_cnae: updatedContact.mainCnae,
-          side_activities: JSON.stringify(updatedContact.sideActivities || []),
-          website: updatedContact.website,
-          instagram: updatedContact.instagram,
-          linkedin: updatedContact.linkedin,
-          facebook: updatedContact.facebook,
-          projected_purchase_value: updatedContact.projectedPurchaseValue || 0,
-          purchase_frequency_days: updatedContact.purchaseFrequencyDays || 30,
-          last_purchase_date: updatedContact.lastPurchaseDate || '',
-          planning_notes: updatedContact.planningNotes || '',
-          history: JSON.stringify(updatedContact.history || []),
-          activities: JSON.stringify(updatedContact.activities || []),
-          updated_at: new Date().toISOString()
-        }
-
-        const cleanCnpj = (updatedContact.cnpj || '').replace(/\D/g, '')
-        let updatedRows: any[] | null = null
-
-        if (updatedContact.id) {
-          const { data, error } = await supabase.from('contacts').update(payload).eq('id', updatedContact.id).select()
-          if (!error && data && data.length > 0) {
-            updatedRows = data
-          }
-        }
-
-        if ((!updatedRows || updatedRows.length === 0) && updatedContact.cnpj) {
-          const { data, error } = await supabase.from('contacts').update(payload).eq('cnpj', updatedContact.cnpj).select()
-          if (!error && data && data.length > 0) {
-            updatedRows = data
-          }
-        }
-
-        if ((!updatedRows || updatedRows.length === 0) && cleanCnpj) {
-          const { data, error } = await supabase.from('contacts').update(payload).ilike('cnpj', `%${cleanCnpj}%`).select()
-          if (!error && data && data.length > 0) {
-            updatedRows = data
-          }
-        }
-
-        if ((!updatedRows || updatedRows.length === 0) && updatedContact.company) {
-          const { data, error } = await supabase.from('contacts').update(payload).ilike('company', updatedContact.company).select()
-          if (!error && data && data.length > 0) {
-            updatedRows = data
-          }
-        }
-
-        if (!updatedRows || updatedRows.length === 0) {
-          await supabase.from('contacts').upsert([{ id: updatedContact.id || `ct_${Date.now()}`, ...payload }], { onConflict: 'id' })
-        }
-      } catch (err) {
-        console.error('Error updating contact in Supabase:', err)
-      }
+    try {
+      await fetch('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedContact)
+      })
+    } catch (err) {
+      console.error('Error updating contact via API:', err)
     }
   }
 

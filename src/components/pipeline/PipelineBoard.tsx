@@ -733,61 +733,45 @@ export function PipelineBoard() {
 
   useEffect(() => {
     async function loadSupabaseDeals() {
-      if (supabase) {
-        try {
-          const { data, error } = await supabase.from('deals').select('*')
-          if (!error && data && data.length > 0) {
-            const mappedDeals: Deal[] = data.map((item: any) => {
-              let parsedContact = item.contact
-              if (typeof parsedContact === 'string') {
-                try { parsedContact = JSON.parse(parsedContact) } catch (e) {}
-              }
-              return {
-                id: item.id,
-                title: item.title,
-                contact_id: item.contact_id || (parsedContact?.id) || `c_${Date.now()}`,
-                stage: item.stage,
-                position: item.position || 0,
-                estimated_value: item.estimated_value || 0,
-                final_value: item.final_value || 0,
-                assigned_to: item.assigned_to || item.representative || '',
-                stage_entered_at: item.stage_entered_at || item.created_at || new Date().toISOString(),
-                created_at: item.created_at || new Date().toISOString(),
-                updated_at: item.updated_at || new Date().toISOString(),
-                contact: parsedContact || {
-                  id: item.contact_id || `c_${Date.now()}`,
-                  name: item.title,
-                  company: item.title,
-                  representative: item.assigned_to || ''
-                }
-              }
-            })
-            setDeals(mappedDeals)
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('cp_crm_pipeline_deals', JSON.stringify(mappedDeals))
+      try {
+        const res = await fetch('/api/deals', { cache: 'no-store' })
+        const json = await res.json()
+        if (json.success && Array.isArray(json.deals) && json.deals.length > 0) {
+          const mappedDeals: Deal[] = json.deals.map((item: any) => ({
+            id: item.id,
+            title: item.title,
+            contact_id: item.contact_id || `c_${Date.now()}`,
+            stage: item.stage,
+            position: item.position || 0,
+            estimated_value: item.estimated_value || 0,
+            final_value: item.final_value || 0,
+            assigned_to: item.assigned_to || '',
+            stage_entered_at: item.stage_entered_at || item.created_at || new Date().toISOString(),
+            created_at: item.created_at || new Date().toISOString(),
+            updated_at: item.updated_at || new Date().toISOString(),
+            contact: {
+              id: item.contact_id || `c_${Date.now()}`,
+              name: item.title,
+              company: item.title,
+              representative: item.assigned_to || ''
             }
-          } else if (!error && (!data || data.length === 0)) {
-            // Populate defaults if Supabase deals table is empty
-            const initialDeals = getPipelineDeals(MOCK_DEALS)
-            const seedPayloads = initialDeals.map(d => ({
-              id: d.id,
-              title: d.title,
-              stage: d.stage,
-              position: d.position || 0,
-              estimated_value: d.estimated_value || 0,
-              final_value: d.final_value || 0,
-              assigned_to: d.assigned_to || '',
-              contact_id: d.contact_id || d.contact?.id || '',
-              contact: JSON.stringify(d.contact || {}),
-              created_at: d.created_at || new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }))
-            await supabase.from('deals').upsert(seedPayloads, { onConflict: 'id' })
-            setDeals(initialDeals)
+          }))
+          setDeals(mappedDeals)
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('cp_crm_pipeline_deals', JSON.stringify(mappedDeals))
           }
-        } catch (e) {
-          console.error('Error fetching deals from Supabase:', e)
+        } else {
+          // Populate defaults if API has 0 deals
+          const initialDeals = getPipelineDeals(MOCK_DEALS)
+          setDeals(initialDeals)
+          fetch('/api/deals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(initialDeals)
+          }).catch(e => console.error('Error seeding initial deals:', e))
         }
+      } catch (e) {
+        console.error('Error fetching deals from API:', e)
       }
     }
 
@@ -809,24 +793,11 @@ export function PipelineBoard() {
     setDeals(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater
       savePipelineDeals(next)
-      if (supabase) {
-        try {
-          const payloads = next.map(d => ({
-            id: d.id,
-            title: d.title,
-            stage: d.stage,
-            position: d.position || 0,
-            estimated_value: d.estimated_value || 0,
-            final_value: d.final_value || 0,
-            assigned_to: d.assigned_to || '',
-            contact_id: d.contact_id || d.contact?.id || '',
-            contact: JSON.stringify(d.contact || {}),
-            created_at: d.created_at || new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }))
-          supabase.from('deals').upsert(payloads, { onConflict: 'id' }).then(() => {}, (err) => console.error('Supabase deal save error:', err))
-        } catch (e) {}
-      }
+      fetch('/api/deals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(next)
+      }).catch(err => console.error('API deal save error:', err))
       return next
     })
   }
