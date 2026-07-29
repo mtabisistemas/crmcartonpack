@@ -438,7 +438,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-3.5">
+    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-2.5">
       
       {/* Toast Notification */}
       {toastMessage && (
@@ -447,20 +447,15 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
-            Gestão de Equipe e Usuários
-          </h1>
-          <p className="text-xs text-[var(--gray)] font-mono mt-1">
-            {isAdmin ? 'Visão Geral e Controle Administrativo da Equipe' : 'Gestão e Acompanhamento da Equipe Comercial'}
-          </p>
-        </div>
+      {/* Header — Clean without subtitle matching Contacts page */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
+          Gestão de Equipe e Usuários
+        </h1>
 
         {(isAdmin || isGestor) && (
-          <button onClick={handleOpenCreate} className="btn btn-primary text-xs py-2 px-4 flex items-center gap-1.5 shrink-0 self-start md:self-auto cursor-pointer shadow-lg font-bold">
-            <Plus size={14} />
+          <button onClick={handleOpenCreate} className="btn btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5 shrink-0 self-start sm:self-auto cursor-pointer shadow-md font-bold">
+            <Plus size={13} />
             <span>Novo Usuário</span>
           </button>
         )}
@@ -533,22 +528,21 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Filters Bar */}
-      <div className="card p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="relative flex items-center">
-          <Search size={14} className="absolute left-3 text-[var(--gray2)] pointer-events-none" />
+      {/* Filters Bar — Exact match to Contacts Page */}
+      <div className="card p-3 grid grid-cols-1 md:grid-cols-5 gap-3 items-center">
+        <div className="md:col-span-3 flex items-center gap-2 input w-full py-1.5 px-3">
+          <Search size={13} className="text-[var(--gray2)] shrink-0" />
           <input
-            type="text"
-            className="input w-full !pl-9"
-            placeholder="Buscar por nome, email ou telefone..."
+            className="bg-transparent border-none outline-none w-full text-xs text-[var(--white)] placeholder-[var(--gray2)]"
+            placeholder="Buscar por nome, e-mail ou telefone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        <div>
+        <div className="md:col-span-1">
           <select 
-            className="input w-full"
+            className="input w-full py-1.5 px-3 text-xs"
             value={selectedRole}
             onChange={(e) => setSelectedRole(e.target.value)}
           >
@@ -560,9 +554,9 @@ export default function UsersPage() {
           </select>
         </div>
 
-        <div>
+        <div className="md:col-span-1">
           <select 
-            className="input w-full"
+            className="input w-full py-1.5 px-3 text-xs"
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
           >
@@ -573,20 +567,20 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Table Card */}
-      <div className="card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-[var(--line)] bg-[var(--charcoal)] font-mono text-[10px] text-[var(--gray)] uppercase tracking-wider">
-                <th className="p-4 pl-6">Membro / Contato</th>
-                <th className="p-4">Função</th>
-                <th className="p-4 text-center">Status</th>
-                <th className="p-4">Telefone</th>
-                <th className="p-4">Cadastrado em</th>
-                <th className="p-4">Último Acesso</th>
-                {isAdmin && <th className="p-4">Última Localização</th>}
-                <th className="p-4 pr-6 text-right">Ações</th>
+      {/* Table Card — Compact layout matching Contacts page */}
+      <div className="card overflow-hidden flex flex-col flex-1">
+        <div className="overflow-x-auto flex-1 overflow-y-auto custom-scrollbar">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead className="sticky top-0 z-10 bg-[var(--charcoal)] shadow-sm">
+              <tr className="border-b border-[var(--line)] bg-[var(--charcoal)] font-mono text-[9px] text-[var(--gray)] uppercase tracking-wider">
+                <th className="py-2.5 px-3 pl-4">Membro / Contato</th>
+                <th className="py-2.5 px-3">Função</th>
+                <th className="py-2.5 px-3 text-center">Status</th>
+                <th className="py-2.5 px-3">Telefone</th>
+                <th className="py-2.5 px-3">Cadastrado em</th>
+                <th className="py-2.5 px-3">Último Acesso</th>
+                {isAdmin && <th className="py-2.5 px-3">Última Localização</th>}
+                <th className="py-2.5 px-3 pr-4 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)]">
@@ -600,10 +594,10 @@ export default function UsersPage() {
                   >
                     
                     {/* User Info */}
-                    <td className="p-4 pl-6">
-                      <div className="flex items-center gap-3">
+                    <td className="py-2 px-3 pl-4">
+                      <div className="flex items-center gap-2.5">
                         <div 
-                          className="w-9 h-9 rounded-lg flex items-center justify-center text-[var(--white)] font-bold text-xs shrink-0"
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--white)] font-bold text-xs shrink-0"
                           style={{
                             background: user.role === 'admin' ? 'rgba(168,85,247,0.15)' : 'var(--line)',
                             border: `1px solid ${user.role === 'admin' ? 'rgba(168,85,247,0.3)' : 'transparent'}`
@@ -611,17 +605,17 @@ export default function UsersPage() {
                         >
                           {getInitials(user.name)}
                         </div>
-                        <div>
-                          <div className="text-sm font-bold text-[var(--white)]">{user.name}</div>
-                          <div className="text-xs text-[var(--gray)] font-mono mt-0.5">{user.email || user.username}</div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-[var(--white)] truncate">{user.name}</div>
+                          <div className="text-[10px] text-[var(--gray)] font-mono leading-tight truncate">{user.email || user.username}</div>
                         </div>
                       </div>
                     </td>
 
                     {/* Role Tag */}
-                    <td className="p-4">
+                    <td className="py-2 px-3">
                       <span
-                        className="font-mono text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider"
+                        className="font-mono text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider inline-block shrink-0"
                         style={{
                           background: roleInfo.bg,
                           color: roleInfo.color,
@@ -633,7 +627,7 @@ export default function UsersPage() {
                     </td>
 
                     {/* Status Badge */}
-                    <td className="p-4 text-center">
+                    <td className="py-2 px-3 text-center">
                       {(isAdmin || isGestor) ? (
                         <button 
                           onClick={(e) => {
@@ -641,7 +635,7 @@ export default function UsersPage() {
                             handleToggleStatus(user)
                           }}
                           title={`Clique para deixar o usuário ${user.status === 'ativo' ? 'inativo' : 'ativo'}`}
-                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold border transition-all cursor-pointer ${
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold border transition-all cursor-pointer ${
                             user.status === 'ativo'
                               ? 'bg-[rgba(34,197,94,0.15)] text-[var(--green)] border-[rgba(34,197,94,0.25)] hover:bg-[rgba(34,197,94,0.25)]'
                               : 'bg-[rgba(239,68,68,0.15)] text-[var(--red)] border-[rgba(239,68,68,0.25)] hover:bg-[rgba(239,68,68,0.25)]'
@@ -651,7 +645,7 @@ export default function UsersPage() {
                           <span>{user.status === 'ativo' ? 'ATIVO' : 'INATIVO'}</span>
                         </button>
                       ) : (
-                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold border ${
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold border ${
                           user.status === 'ativo'
                             ? 'bg-[rgba(34,197,94,0.15)] text-[var(--green)] border-[rgba(34,197,94,0.25)]'
                             : 'bg-[rgba(239,68,68,0.15)] text-[var(--red)] border-[rgba(239,68,68,0.25)]'
@@ -663,23 +657,23 @@ export default function UsersPage() {
                     </td>
 
                     {/* Telefone */}
-                    <td className="p-4 font-mono text-xs text-[var(--white)]">
+                    <td className="py-2 px-3 font-mono text-xs text-[var(--white)]">
                       {user.phone || '-'}
                     </td>
 
                     {/* Created At */}
-                    <td className="p-4 text-xs text-[var(--gray)] font-mono">
+                    <td className="py-2 px-3 text-xs text-[var(--gray)] font-mono">
                       {user.createdAt}
                     </td>
 
                     {/* Último Acesso (Admin & Gestor) */}
-                    <td className="p-4 text-xs font-mono text-[var(--lime)] font-medium">
+                    <td className="py-2 px-3 text-xs font-mono text-[var(--lime)] font-medium">
                       {formatLastSeen(user.lastSeenAt)}
                     </td>
 
                     {/* Última Localização (Admin ONLY) */}
                     {isAdmin && (
-                      <td className="p-4 text-xs font-mono text-zinc-300">
+                      <td className="py-2 px-3 text-xs font-mono text-zinc-300">
                         <div className="flex items-center gap-1.5">
                           <MapPin size={13} className="text-[var(--lime)] shrink-0" />
                           <span className="truncate max-w-[180px]" title={user.lastLocation || 'Não capturada'}>
@@ -690,15 +684,15 @@ export default function UsersPage() {
                     )}
 
                     {/* Actions */}
-                    <td className="p-4 pr-6 text-right" onClick={(e) => e.stopPropagation()}>
+                    <td className="py-2 px-3 pr-4 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-end items-center gap-2">
                         <button
                           type="button"
                           onClick={() => setSelectedUserForFicha(user)}
                           title="Visualizar Ficha Completa do Usuário"
-                          className="p-2 rounded-xl bg-neutral-900 border border-[var(--line)] text-zinc-300 hover:text-white hover:border-[var(--lime)]/50 transition-all cursor-pointer"
+                          className="p-1.5 rounded-lg bg-neutral-900 border border-[var(--line)] text-zinc-300 hover:text-white hover:border-[var(--lime)]/50 transition-all cursor-pointer"
                         >
-                          <Eye size={14} />
+                          <Eye size={13} />
                         </button>
                       </div>
                     </td>
@@ -709,6 +703,35 @@ export default function UsersPage() {
             </tbody>
           </table>
         </div>
+
+        {/* ── PAGINATION CONTROLS BAR INTEGRATED AT BOTTOM OF TABLE CARD ── */}
+        {filteredUsers.length > 0 && (
+          <div className="py-2 px-4 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-[var(--line)] bg-[var(--charcoal)]/80 shrink-0">
+            <div className="text-[11px] font-mono text-[var(--gray2)]">
+              Exibindo <span className="font-bold text-[var(--white)]">1</span> a <span className="font-bold text-[var(--white)]">{filteredUsers.length}</span> de <span className="font-bold text-[var(--white)]">{filteredUsers.length}</span> usuários
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                disabled
+                className="btn btn-secondary text-[11px] px-2.5 py-1 rounded-md disabled:opacity-40 cursor-not-allowed font-mono font-bold"
+              >
+                &larr; Anterior
+              </button>
+
+              <span className="text-[11px] font-mono font-bold text-[var(--lime)] px-2">
+                Página 1 de 1
+              </span>
+
+              <button
+                disabled
+                className="btn btn-secondary text-[11px] px-2.5 py-1 rounded-md disabled:opacity-40 cursor-not-allowed font-mono font-bold"
+              >
+                Próxima &rarr;
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal Cadastrar / Editar Usuário */}
