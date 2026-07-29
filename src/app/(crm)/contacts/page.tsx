@@ -2715,15 +2715,17 @@ export default function ContactsPage() {
             setRepurchaseCategoryFilter('all')
             setSelectedStatus('all')
           }}
-          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            repurchaseCategoryFilter === 'all' && selectedStatus === 'all' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
+          className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            repurchaseCategoryFilter === 'all' && selectedStatus === 'all' 
+              ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
+              : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
           }`}
         >
           <div>
             <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Total de Clientes</span>
             <span className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">{metrics.total}</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--lime)] flex items-center justify-center shrink-0">
             <Users size={15} />
           </div>
         </div>
@@ -2734,15 +2736,17 @@ export default function ContactsPage() {
             setRepurchaseCategoryFilter('atrasado')
             setSelectedStatus('all')
           }}
-          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            repurchaseCategoryFilter === 'atrasado' ? 'border-red-500 bg-red-500/10 shadow-sm animate-pulse' : 'border-red-500/40 bg-red-500/5'
+          className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            repurchaseCategoryFilter === 'atrasado' 
+              ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
+              : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
           }`}
         >
           <div>
-            <span className="text-[9px] font-mono text-red-400 uppercase tracking-wider block font-bold">Recompra Atrasada</span>
-            <span className="text-xl font-black text-red-400 font-display mt-0.5 block">{metrics.atrasado}</span>
+            <span className="text-[9px] font-mono text-red-500 uppercase tracking-wider block font-bold">Recompra Atrasada</span>
+            <span className="text-xl font-black text-red-500 font-display mt-0.5 block">{metrics.atrasado}</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center shrink-0">
             <AlertTriangle size={15} />
           </div>
         </div>
@@ -2753,15 +2757,17 @@ export default function ContactsPage() {
             setRepurchaseCategoryFilter('15dias')
             setSelectedStatus('all')
           }}
-          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            repurchaseCategoryFilter === '15dias' ? 'border-amber-400 bg-amber-400/10 shadow-sm' : 'border-amber-400/30 bg-amber-400/5'
+          className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            repurchaseCategoryFilter === '15dias' 
+              ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
+              : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
           }`}
         >
           <div>
-            <span className="text-[9px] font-mono text-amber-300 uppercase tracking-wider block font-bold">Recompra 15 Dias</span>
-            <span className="text-xl font-black text-amber-300 font-display mt-0.5 block">{metrics.recompra15}</span>
+            <span className="text-[9px] font-mono text-amber-500 uppercase tracking-wider block font-bold">Recompra 15 Dias</span>
+            <span className="text-xl font-black text-amber-500 font-display mt-0.5 block">{metrics.recompra15}</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-amber-400/15 border border-amber-400/30 text-amber-300 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
             <Clock size={15} />
           </div>
         </div>
@@ -2772,15 +2778,17 @@ export default function ContactsPage() {
             setRepurchaseCategoryFilter('30dias')
             setSelectedStatus('all')
           }}
-          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            repurchaseCategoryFilter === '30dias' ? 'border-sky-400 bg-sky-400/10 shadow-sm' : 'border-sky-400/30 bg-sky-400/5'
+          className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            repurchaseCategoryFilter === '30dias' 
+              ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
+              : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
           }`}
         >
           <div>
-            <span className="text-[9px] font-mono text-sky-300 uppercase tracking-wider block font-bold">Recompra 30 Dias</span>
-            <span className="text-xl font-black text-sky-300 font-display mt-0.5 block">{metrics.recompra30}</span>
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Recompra 30 Dias</span>
+            <span className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">{metrics.recompra30}</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-sky-400/15 border border-sky-400/30 text-sky-300 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--gray2)] flex items-center justify-center shrink-0">
             <Calendar size={15} />
           </div>
         </div>
@@ -2791,15 +2799,17 @@ export default function ContactsPage() {
             setRepurchaseCategoryFilter('inativo')
             setSelectedStatus('inativo')
           }}
-          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            repurchaseCategoryFilter === 'inativo' || selectedStatus === 'inativo' ? 'border-rose-500 bg-rose-500/10 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
+          className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            repurchaseCategoryFilter === 'inativo' || selectedStatus === 'inativo' 
+              ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
+              : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
           }`}
         >
           <div>
             <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Clientes Inativos</span>
-            <span className="text-xl font-black text-rose-400 font-display mt-0.5 block">{metrics.inativos}</span>
+            <span className="text-xl font-black text-rose-500 font-display mt-0.5 block">{metrics.inativos}</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center shrink-0">
             <AlertCircle size={15} />
           </div>
         </div>

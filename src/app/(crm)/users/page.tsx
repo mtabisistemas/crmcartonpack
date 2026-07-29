@@ -469,22 +469,22 @@ export default function UsersPage() {
   const getRoleDetails = (r: string, u?: any) => {
     const isThaiane = (u?.email || '').toLowerCase().includes('thaiane') || (u?.name || '').toLowerCase().includes('thaiane')
     if (isThaiane) {
-      return { label: 'Gestor Comercial', bg: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: 'rgba(59,130,246,0.3)' }
+      return { label: 'Gestor Comercial', bg: 'var(--charcoal)', color: 'var(--white)', border: 'var(--line)' }
     }
     const roleLower = (r || '').toLowerCase()
     if (roleLower.includes('admin')) {
-      return { label: 'Administrador', bg: 'rgba(168,85,247,0.12)', color: '#c084fc', border: 'rgba(168,85,247,0.25)' }
+      return { label: 'Administrador', bg: 'var(--charcoal)', color: 'var(--white)', border: 'var(--line)' }
     }
     if (roleLower.includes('gestor')) {
-      return { label: 'Gestor Comercial', bg: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: 'rgba(59,130,246,0.3)' }
+      return { label: 'Gestor Comercial', bg: 'var(--charcoal)', color: 'var(--white)', border: 'var(--line)' }
     }
     if (roleLower.includes('rep')) {
-      return { label: 'Representante', bg: 'rgba(180,217,50,0.12)', color: 'var(--lime)', border: 'rgba(180,217,50,0.25)' }
+      return { label: 'Representante', bg: 'var(--charcoal)', color: 'var(--lime)', border: 'var(--line)' }
     }
     if (roleLower.includes('vend')) {
-      return { label: 'Vendedor', bg: 'rgba(240,196,25,0.1)', color: 'var(--yellow)', border: 'rgba(240,196,25,0.2)' }
+      return { label: 'Vendedor', bg: 'var(--charcoal)', color: 'var(--white)', border: 'var(--line)' }
     }
-    return { label: r || 'Membro', bg: 'rgba(180,217,50,0.12)', color: 'var(--lime)', border: 'rgba(180,217,50,0.25)' }
+    return { label: r || 'Membro', bg: 'var(--charcoal)', color: 'var(--white)', border: 'var(--line)' }
   }
 
   const getInitials = (n: string) => {
@@ -520,15 +520,15 @@ export default function UsersPage() {
         {/* Card 1: Total de Usuários */}
         <div 
           onClick={() => setSelectedRole('all')}
-          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            selectedRole === 'all' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
+          className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedRole === 'all' ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
           }`}
         >
           <div>
             <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Total de Usuários</span>
             <span className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">{metrics.total}</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--lime)] flex items-center justify-center shrink-0">
             <Users size={15} />
           </div>
         </div>
@@ -536,15 +536,15 @@ export default function UsersPage() {
         {/* Card 2: Gestores */}
         <div 
           onClick={() => setSelectedRole('gestor')}
-          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            selectedRole === 'gestor' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
+          className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedRole === 'gestor' ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
           }`}
         >
           <div>
             <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Gestores</span>
-            <span className="text-xl font-black text-[#60a5fa] font-display mt-0.5 block">{metrics.gestores}</span>
+            <span className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">{metrics.gestores}</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[#60a5fa] flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--white)] flex items-center justify-center shrink-0">
             <UserCog size={15} />
           </div>
         </div>
@@ -552,15 +552,15 @@ export default function UsersPage() {
         {/* Card 3: Vendedores */}
         <div 
           onClick={() => setSelectedRole('vendedor')}
-          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            selectedRole === 'vendedor' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
+          className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedRole === 'vendedor' ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
           }`}
         >
           <div>
             <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Vendedores</span>
-            <span className="text-xl font-black text-amber-400 font-display mt-0.5 block">{metrics.vendedores}</span>
+            <span className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">{metrics.vendedores}</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--gray2)] flex items-center justify-center shrink-0">
             <User size={15} />
           </div>
         </div>
@@ -568,15 +568,15 @@ export default function UsersPage() {
         {/* Card 4: Representantes */}
         <div 
           onClick={() => setSelectedRole('representante')}
-          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            selectedRole === 'representante' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
+          className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedRole === 'representante' ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
           }`}
         >
           <div>
             <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Representantes</span>
-            <span className="text-xl font-black text-[var(--lime)] font-display mt-0.5 block">{metrics.representantes}</span>
+            <span className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">{metrics.representantes}</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-[var(--lime)]/10 border border-[var(--lime)]/20 text-[var(--lime)] flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--lime)] flex items-center justify-center shrink-0">
             <UserCheck size={15} />
           </div>
         </div>
@@ -721,13 +721,15 @@ export default function UsersPage() {
                     </td>
 
                     {/* Último Acesso (Admin & Gestor) */}
-                    <td className="py-2 px-3 text-xs font-mono text-[var(--lime)] font-medium">
-                      {formatLastSeen(user.lastSeenAt)}
+                    <td className="py-2 px-3 text-xs font-mono">
+                      <span className={user.lastSeenAt ? "text-[var(--white)] font-bold" : "text-[var(--gray2)]"}>
+                        {formatLastSeen(user.lastSeenAt)}
+                      </span>
                     </td>
 
                     {/* Última Localização (Admin ONLY) */}
                     {isAdmin && (
-                      <td className="py-2 px-3 text-xs font-mono text-zinc-300">
+                      <td className="py-2 px-3 text-xs font-mono text-[var(--gray2)]">
                         <div className="flex items-center gap-1.5">
                           <MapPin size={13} className="text-[var(--lime)] shrink-0" />
                           <span className="truncate max-w-[180px]" title={user.lastLocation || 'Não capturada'}>
@@ -744,7 +746,7 @@ export default function UsersPage() {
                           type="button"
                           onClick={() => setSelectedUserForFicha(user)}
                           title="Visualizar Ficha Completa do Usuário"
-                          className="p-1.5 rounded-lg bg-neutral-900 border border-[var(--line)] text-zinc-300 hover:text-white hover:border-[var(--lime)]/50 transition-all cursor-pointer"
+                          className="p-1.5 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--white)] hover:border-[var(--lime)] transition-all cursor-pointer"
                         >
                           <Eye size={13} />
                         </button>
