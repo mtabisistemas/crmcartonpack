@@ -9,22 +9,12 @@ import {
   AlertTriangle, 
   TrendingUp, 
   Target, 
-  Users, 
   KanbanSquare, 
   Plus, 
   ChevronRight, 
-  ArrowUpRight, 
-  Sparkles,
-  PhoneCall,
-  Mail,
-  MapPin,
-  Building2,
-  FileText,
-  AlertCircle,
-  Filter,
-  Check,
-  Zap,
-  Activity
+  Filter, 
+  Check, 
+  Zap
 } from 'lucide-react'
 
 import { Contact, Deal, Appointment, UserGoal } from '@/types'
@@ -171,7 +161,6 @@ export default function DiarioDeBordoPage() {
           try {
             const localContacts = JSON.parse(rawC)
             if (Array.isArray(localContacts) && localContacts.length > 0) {
-              // Merge API and local contacts without duplicates
               const mapById = new Map<string, any>()
               localContacts.forEach(c => mapById.set(c.id, c))
               loadedContacts.forEach(c => mapById.set(c.id, c))
@@ -300,7 +289,6 @@ export default function DiarioDeBordoPage() {
     let visitsGoalSum = 0
 
     if (userFilter === 'all') {
-      // Sum sales goals for all registered users for current month
       Object.keys(goalsMap).forEach(key => {
         if (key.startsWith(`${yearStr}_${monthStr}_`) || key.startsWith(`EQUIPE_${yearStr}_${monthStr}`)) {
           const g = goalsMap[key]
@@ -375,16 +363,12 @@ export default function DiarioDeBordoPage() {
     }
   }, [filteredDeals, currentMonthGoal, bizStats, appointments])
 
-  // 2. Client Status, Repurchase & Inactivation Alerts (30 to 90 Days)
+  // 2. Client Status & Repurchase Overdue Alerts
   const clientAlerts = useMemo(() => {
     const now = new Date()
-    
-    const inactThreshold = 90
-    const inactRiskList: Array<{ contact: Contact; days: number; lastDateStr: string }> = []
     const overdueRepurchaseList: Array<{ contact: Contact; daysOverdue: number }> = []
 
     filteredContacts.forEach(c => {
-      // 1. Repurchase Overdue Check
       let daysSincePurchase = (c as any).lastPurchaseDays
       if (daysSincePurchase === undefined && c.lastPurchaseDate) {
         const lastP = parseFlexibleDate(c.lastPurchaseDate)
@@ -400,60 +384,23 @@ export default function DiarioDeBordoPage() {
           daysOverdue: daysSincePurchase - freq
         })
       }
-
-      // 2. Inactivation Risk (30 to 90 days without activity)
-      let lastActDate: Date | null = null
-      if (c.history && c.history.length > 0) {
-        const parsedHist = c.history
-          .map(h => parseFlexibleDate(h.date))
-          .filter((d): d is Date => d !== null)
-        if (parsedHist.length > 0) {
-          lastActDate = new Date(Math.max(...parsedHist.map(d => d.getTime())))
-        }
-      }
-      if (!lastActDate && c.lastPurchaseDate) {
-        lastActDate = parseFlexibleDate(c.lastPurchaseDate)
-      }
-      if (!lastActDate && c.created_at) {
-        lastActDate = parseFlexibleDate(c.created_at)
-      }
-
-      if (lastActDate) {
-        const diffDays = Math.floor((now.getTime() - lastActDate.getTime()) / (1000 * 60 * 60 * 24))
-        const threshold = c.inactivityThresholdDays || inactThreshold
-
-        if (diffDays >= 30 && diffDays <= threshold) {
-          inactRiskList.push({
-            contact: c,
-            days: diffDays,
-            lastDateStr: lastActDate.toLocaleDateString('pt-BR')
-          })
-        }
-      }
     })
 
-    inactRiskList.sort((a, b) => b.days - a.days)
     overdueRepurchaseList.sort((a, b) => b.daysOverdue - a.daysOverdue)
 
     return {
-      inactRiskList,
       overdueRepurchaseList,
       overdueRepurchaseCount: overdueRepurchaseList.length
     }
   }, [filteredContacts])
 
-  // 3. Stagnant Deals (>7 days) & Briefing/Budget pending
+  // 3. Stagnant Deals (>7 days)
   const dealAlerts = useMemo(() => {
     const now = new Date()
     const stagnantDeals: Array<{ deal: Deal; days: number }> = []
-    let pendingBriefingCount = 0
 
     filteredDeals.forEach(d => {
       if (d.stage === 'fechamento' || d.stage === 'perdido') return
-
-      if (d.stage === 'briefing' || d.stage === 'aprovacao') {
-        pendingBriefingCount++
-      }
 
       const lastDate = parseFlexibleDate(d.updated_at || d.created_at)
       if (lastDate) {
@@ -467,8 +414,7 @@ export default function DiarioDeBordoPage() {
     stagnantDeals.sort((a, b) => b.days - a.days)
 
     return {
-      stagnantDeals,
-      pendingBriefingCount
+      stagnantDeals
     }
   }, [filteredDeals])
 
@@ -480,10 +426,10 @@ export default function DiarioDeBordoPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#0d0e0f] text-[var(--white)] p-4 sm:p-6 lg:p-8 gap-5 animate-fade-in pb-24 lg:pb-12 max-w-[1600px] mx-auto w-full">
+    <div className="flex flex-col min-h-screen bg-[#0d0e0f] text-[var(--white)] p-4 sm:p-6 lg:p-8 gap-6 animate-fade-in pb-24 lg:pb-12 max-w-[1600px] mx-auto w-full">
       
       {/* ========================================================
-          1. HEADER DE BOAS-VINDAS CLEAN & ELEGANTE
+          1. CABEÇALHO DE BOAS-VINDAS (MANTIDO EXACTAMENTE O NOVO)
          ======================================================== */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden">
         
@@ -535,387 +481,261 @@ export default function DiarioDeBordoPage() {
       </div>
 
       {/* ========================================================
-          2. HERO SECTION: 4 CARDS KPI EXECUTIVOS EM LINHA
+          2. HERO DUPLO: META DO MÊS (ESQUERDA) + ALERTAS DO DIA (DIREITA)
          ======================================================== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        {/* Card 1: Meta do Mês & Realizado */}
-        <div className="card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl flex flex-col justify-between gap-3 shadow-md hover:border-[var(--lime)]/30 transition-all">
+        {/* BLOCO ESQUERDA (7 Colunas): Resultado x Meta do Mês */}
+        <div className="lg:col-span-8 card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-lg hover:border-[var(--lime)]/30 transition-all">
+          
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-lime-500/10 border border-lime-500/20 flex items-center justify-center text-[var(--lime)]">
-                <Target size={16} />
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-lime-500/10 border border-lime-500/20 flex items-center justify-center text-[var(--lime)]">
+                <Target size={18} />
               </div>
-              <span className="text-xs font-mono font-bold text-gray-300 uppercase">Meta do Mês</span>
+              <div>
+                <h2 className="text-sm font-display font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <span>Resultado x Meta do Mês</span>
+                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                    pacingMetrics.isPacingAhead 
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' 
+                      : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                  }`}>
+                    {pacingMetrics.isPacingAhead ? '▲ No Pacing' : '▼ Ritmo Abaixo do Pacing'}
+                  </span>
+                </h2>
+                <span className="text-[11px] font-mono text-[var(--gray2)]">
+                  Dia {bizStats.todayDate} de {bizStats.totalDays} · {bizStats.elapsedBusinessDays} de {bizStats.totalBusinessDays} dias úteis transcorridos
+                </span>
+              </div>
             </div>
 
-            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-              pacingMetrics.isPacingAhead 
-                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' 
-                : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-            }`}>
-              {pacingMetrics.isPacingAhead ? '▲ No Pacing' : '▼ Abaixo'}
-            </span>
+            <div className="text-right">
+              <span className="text-[10px] font-mono uppercase text-gray-400 font-bold block">Progresso</span>
+              <span className="text-2xl font-mono font-black text-[var(--lime)]">{pacingMetrics.salesProgressPct}%</span>
+            </div>
           </div>
 
-          <div>
+          {/* Main Progress Value */}
+          <div className="flex flex-col gap-1.5 my-1">
             <div className="flex items-baseline justify-between">
-              <span className="text-xl font-mono font-black text-white">{formatCurrency(pacingMetrics.totalSalesAchieved)}</span>
-              <span className="text-xs font-mono font-bold text-[var(--lime)]">{pacingMetrics.salesProgressPct}%</span>
+              <span className="text-sm font-mono text-gray-300">
+                Realizado: <strong className="text-2xl font-black text-white ml-1">{formatCurrency(pacingMetrics.totalSalesAchieved)}</strong>
+              </span>
+              <span className="text-xs font-mono text-[var(--gray2)]">
+                Meta: <strong className="text-white font-bold">{formatCurrency(pacingMetrics.salesTarget)}</strong>
+              </span>
             </div>
-            <span className="text-[10px] font-mono text-[var(--gray2)] block mt-0.5">
-              Meta: {formatCurrency(pacingMetrics.salesTarget)}
-            </span>
+
+            <div className="w-full h-2.5 bg-black/50 border border-[var(--line)] rounded-full overflow-hidden p-0.5">
+              <div 
+                className="h-full bg-[var(--lime)] rounded-full transition-all duration-500"
+                style={{ width: `${pacingMetrics.salesProgressPct}%` }}
+              />
+            </div>
           </div>
 
-          {/* Mini Progress Bar */}
-          <div className="w-full h-2 bg-black/40 border border-[var(--line)] rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-[var(--lime)] rounded-full transition-all duration-500"
-              style={{ width: `${pacingMetrics.salesProgressPct}%` }}
-            />
+          {/* Footer Metrics Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-[var(--line)] text-xs font-mono">
+            <div>
+              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Esperado Hoje (Pacing)</span>
+              <span className="font-bold text-white">{formatCurrency(pacingMetrics.expectedSalesPacing)}</span>
+            </div>
+
+            <div>
+              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Falta para 100%</span>
+              <span className="font-bold text-amber-400">{formatCurrency(pacingMetrics.remainingSalesR$)}</span>
+            </div>
+
+            <div>
+              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Meta Diária Necessária</span>
+              <span className="font-bold text-[var(--lime)]">{formatCurrency(pacingMetrics.dailyPaceRequired)} / dia</span>
+            </div>
+
+            <div>
+              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Visitas no Mês</span>
+              <span className="font-bold text-sky-400">{pacingMetrics.currentMonthVisits} / {pacingMetrics.visitsTarget} realizados</span>
+            </div>
           </div>
+
         </div>
 
-        {/* Card 2: Pacing & Meta Diária Necessária */}
-        <div className="card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl flex flex-col justify-between gap-3 shadow-md hover:border-[var(--lime)]/30 transition-all">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
-                <Zap size={16} />
+        {/* BLOCO DIREITA (4 Colunas): Alertas do Dia */}
+        <div className="lg:col-span-4 card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-lg hover:border-[var(--lime)]/30 transition-all">
+          
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={18} className="text-amber-400" />
+            <h2 className="text-xs font-display font-bold text-white uppercase tracking-wider">
+              Alertas do Dia
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2.5">
+            <div className="bg-[var(--charcoal)] border border-[var(--line)] p-3 rounded-xl flex flex-col justify-between">
+              <span className="text-[9px] font-mono font-bold text-[var(--gray2)] uppercase block">Agenda Hoje</span>
+              <div className="my-1">
+                <span className="text-2xl font-mono font-black text-white">{todayAppointments.length}</span>
               </div>
-              <span className="text-xs font-mono font-bold text-gray-300 uppercase">Meta Diária</span>
+              <span className="text-[9px] font-mono text-purple-400 font-bold uppercase">eventos</span>
             </div>
-            <span className="text-[10px] font-mono text-gray-400">
-              {bizStats.remainingBusinessDays} dias úteis
-            </span>
-          </div>
 
-          <div>
-            <span className="text-xl font-mono font-black text-[var(--lime)]">{formatCurrency(pacingMetrics.dailyPaceRequired)}</span>
-            <span className="text-[10px] font-mono text-[var(--gray2)] block mt-0.5">
-              Esperado hoje: {formatCurrency(pacingMetrics.expectedSalesPacing)}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] font-mono pt-1 border-t border-[var(--line)]">
-            <span className="text-gray-400">Visitas:</span>
-            <span className="font-bold text-sky-400">{pacingMetrics.currentMonthVisits} / {pacingMetrics.visitsTarget}</span>
-          </div>
-        </div>
-
-        {/* Card 3: Compromissos Hoje */}
-        <div className="card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl flex flex-col justify-between gap-3 shadow-md hover:border-[var(--lime)]/30 transition-all">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-                <CalendarIcon size={16} />
+            <div className="bg-[var(--charcoal)] border border-red-500/20 p-3 rounded-xl flex flex-col justify-between">
+              <span className="text-[9px] font-mono font-bold text-red-400/80 uppercase block">Recompra Atrasada</span>
+              <div className="my-1">
+                <span className="text-2xl font-mono font-black text-red-400">{clientAlerts.overdueRepurchaseCount}</span>
               </div>
-              <span className="text-xs font-mono font-bold text-gray-300 uppercase">Agenda Hoje</span>
+              <span className="text-[9px] font-mono text-red-300 font-bold uppercase">clientes</span>
             </div>
 
-            <button
-              onClick={() => setCalendarOpen(true)}
-              className="text-[10px] font-mono font-bold text-[var(--lime)] hover:underline flex items-center gap-0.5"
-            >
-              <span>Ver</span>
-              <ChevronRight size={12} />
-            </button>
-          </div>
-
-          <div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-mono font-black text-white">{todayAppointments.length}</span>
-              <span className="text-xs font-mono text-purple-400 font-bold">compromissos</span>
-            </div>
-            <span className="text-[10px] font-mono text-[var(--gray2)] block mt-0.5">
-              {todayAppointments.filter(a => a.status === 'concluido').length} concluídos hoje
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] font-mono pt-1 border-t border-[var(--line)]">
-            <span className="text-gray-400">Status:</span>
-            <span className="font-bold text-purple-300">
-              {todayAppointments.length > 0 ? 'Eventos Pendentes' : 'Dia Livre'}
-            </span>
-          </div>
-        </div>
-
-        {/* Card 4: Alertas da Carteira (Recompra & Inativação) */}
-        <div className="card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl flex flex-col justify-between gap-3 shadow-md hover:border-red-500/30 transition-all">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
-                <AlertTriangle size={16} />
+            <div className="bg-[var(--charcoal)] border border-purple-500/20 p-3 rounded-xl flex flex-col justify-between">
+              <span className="text-[9px] font-mono font-bold text-purple-400/80 uppercase block">Parados &gt; 7 Dias</span>
+              <div className="my-1">
+                <span className="text-2xl font-mono font-black text-purple-400">{dealAlerts.stagnantDeals.length}</span>
               </div>
-              <span className="text-xs font-mono font-bold text-gray-300 uppercase">Alertas Carteira</span>
+              <span className="text-[9px] font-mono text-purple-300 font-bold uppercase">negócios</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-red-500/10 border border-red-500/20 p-2 rounded-xl text-center">
-              <span className="text-base font-mono font-black text-red-400 block">{clientAlerts.overdueRepurchaseCount}</span>
-              <span className="text-[9px] font-mono text-red-300 font-bold uppercase block">Recompra</span>
-            </div>
+          <p className="text-[11px] font-mono text-[var(--gray2)]">
+            Mantenha contato regular com os clientes para garantir o fluxo de vendas e evitar estagnação de propostas.
+          </p>
 
-            <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl text-center">
-              <span className="text-base font-mono font-black text-amber-400 block">{clientAlerts.inactRiskList.length}</span>
-              <span className="text-[9px] font-mono text-amber-300 font-bold uppercase block">Inativação</span>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] font-mono pt-1 border-t border-[var(--line)]">
-            <span className="text-gray-400">Inativação:</span>
-            <span className="font-bold text-amber-400">30 a 90 dias sem contato</span>
-          </div>
         </div>
 
       </div>
 
       {/* ========================================================
-          3. GRADE PRINCIPAL DE 2 COLUNAS (COMPACTA)
+          3. GRADE INFERIOR LIMPA (2 COLUNAS)
          ======================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         
-        {/* COLUNA ESQUERDA: Agenda Comercial & Alerta de Inativação */}
-        <div className="flex flex-col gap-5">
-          
-          {/* Section 1: Agenda Comercial do Dia */}
-          <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-lg">
-            <div className="flex items-center justify-between border-b border-[var(--line)] pb-2.5">
-              <div className="flex items-center gap-2">
-                <CalendarIcon size={16} className="text-[var(--lime)]" />
-                <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider">
-                  Agenda de Hoje ({todayAppointments.length})
-                </h3>
-              </div>
+        {/* COLUNA ESQUERDA: Agenda Comercial do Dia */}
+        <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col gap-4 shadow-lg">
+          <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
+            <div className="flex items-center gap-2">
+              <CalendarIcon size={16} className="text-[var(--lime)]" />
+              <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider">
+                Agenda de Hoje ({todayAppointments.length})
+              </h3>
+            </div>
+            <button
+              onClick={() => setCalendarOpen(true)}
+              className="text-xs font-mono font-bold text-[var(--lime)] hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <span>Ver Grade Completa</span>
+              <ChevronRight size={13} />
+            </button>
+          </div>
+
+          {todayAppointments.length === 0 ? (
+            <div className="py-10 text-center flex flex-col items-center gap-2.5 bg-black/20 rounded-xl border border-[var(--line)]/50">
+              <CheckCircle2 size={28} className="text-gray-500" />
+              <p className="text-xs font-mono text-gray-400">Nenhum compromisso agendado para hoje.</p>
               <button
                 onClick={() => setCalendarOpen(true)}
-                className="text-xs font-mono font-bold text-[var(--lime)] hover:underline flex items-center gap-1 cursor-pointer"
+                className="btn btn-secondary text-xs py-1.5 px-3.5 font-bold cursor-pointer mt-1"
               >
-                <span>Ver Grade Completa</span>
-                <ChevronRight size={13} />
+                <Plus size={14} />
+                <span>Agendar Compromisso</span>
               </button>
             </div>
-
-            {todayAppointments.length === 0 ? (
-              <div className="py-6 text-center flex flex-col items-center gap-2 bg-black/20 rounded-xl border border-[var(--line)]/50">
-                <CheckCircle2 size={24} className="text-gray-500" />
-                <p className="text-xs font-mono text-gray-400">Nenhum compromisso agendado para hoje.</p>
-                <button
-                  onClick={() => setCalendarOpen(true)}
-                  className="btn btn-secondary text-xs py-1.5 px-3 font-bold cursor-pointer"
+          ) : (
+            <div className="flex flex-col gap-2.5 max-h-[350px] overflow-y-auto custom-scrollbar">
+              {todayAppointments.map(apt => (
+                <div
+                  key={apt.id}
+                  className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all ${
+                    apt.status === 'concluido'
+                      ? 'bg-black/20 border-gray-800 opacity-60'
+                      : 'bg-[var(--charcoal)] border-[var(--line)] hover:border-[var(--lime)]/40'
+                  }`}
                 >
-                  <Plus size={14} />
-                  <span>Agendar Compromisso</span>
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-                {todayAppointments.map(apt => (
-                  <div
-                    key={apt.id}
-                    className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-all ${
-                      apt.status === 'concluido'
-                        ? 'bg-black/20 border-gray-800 opacity-60'
-                        : 'bg-[var(--charcoal)] border-[var(--line)] hover:border-[var(--lime)]/40'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <button
-                        onClick={() => handleToggleAptDone(apt)}
-                        className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors cursor-pointer shrink-0 ${
-                          apt.status === 'concluido'
-                            ? 'bg-[var(--lime)] border-[var(--lime)] text-black'
-                            : 'border-gray-600 hover:border-[var(--lime)]'
-                        }`}
-                        title={apt.status === 'concluido' ? 'Marcar como pendente' : 'Concluir compromisso'}
-                      >
-                        {apt.status === 'concluido' && <Check size={13} strokeWidth={3} />}
-                      </button>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <button
+                      onClick={() => handleToggleAptDone(apt)}
+                      className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors cursor-pointer shrink-0 ${
+                        apt.status === 'concluido'
+                          ? 'bg-[var(--lime)] border-[var(--lime)] text-black'
+                          : 'border-gray-600 hover:border-[var(--lime)]'
+                      }`}
+                      title={apt.status === 'concluido' ? 'Marcar como pendente' : 'Concluir compromisso'}
+                    >
+                      {apt.status === 'concluido' && <Check size={13} strokeWidth={3} />}
+                    </button>
 
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold text-[var(--lime)]">{apt.time}</span>
-                          <span className="text-xs font-bold text-white truncate">{apt.title}</span>
-                        </div>
-                        {apt.company_name && (
-                          <span className="text-[10px] font-mono text-[var(--gray2)] truncate block">
-                            {apt.company_name}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-[var(--lime)]/10 text-[var(--lime)] border border-[var(--lime)]/20 shrink-0">
-                      {apt.type}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Section 2: Alerta de Inativação (30 a 90 Dias) */}
-          <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-lg">
-            <div className="flex items-center justify-between border-b border-[var(--line)] pb-2.5">
-              <div className="flex items-center gap-2">
-                <Clock size={16} className="text-amber-400" />
-                <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                  <span>Risco de Inativação</span>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400">
-                    30 a 90d sem contato ({clientAlerts.inactRiskList.length})
-                  </span>
-                </h3>
-              </div>
-            </div>
-
-            {clientAlerts.inactRiskList.length === 0 ? (
-              <div className="py-6 text-center bg-black/20 rounded-xl border border-[var(--line)]/50">
-                <p className="text-xs font-mono text-emerald-400">
-                  ✓ Nenhum cliente no intervalo de 30 a 90 dias sem atividades!
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-                {clientAlerts.inactRiskList.slice(0, 6).map(({ contact, days, lastDateStr }) => (
-                  <div
-                    key={contact.id}
-                    className="p-3 rounded-xl bg-[var(--charcoal)] border border-amber-500/20 flex items-center justify-between gap-3 hover:border-amber-500/50 transition-all"
-                  >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-white truncate">{contact.name}</span>
-                        {contact.representative && (
-                          <span className="text-[9px] font-mono text-gray-400 border border-gray-700 px-1.5 py-0.5 rounded">
-                            {contact.representative}
-                          </span>
-                        )}
+                        <span className="text-xs font-mono font-bold text-[var(--lime)]">{apt.time}</span>
+                        <span className="text-xs font-bold text-white truncate">{apt.title}</span>
                       </div>
-                      <p className="text-[10px] font-mono text-amber-400/90 mt-0.5">
-                        Sem atividades há <strong>{days} dias</strong> (última: {lastDateStr})
-                      </p>
+                      {apt.company_name && (
+                        <span className="text-[10px] font-mono text-[var(--gray2)] truncate block mt-0.5">
+                          {apt.company_name}
+                        </span>
+                      )}
                     </div>
-
-                    <button
-                      onClick={() => setSelectedContactForActivity(contact)}
-                      className="btn btn-secondary text-[11px] py-1 px-2.5 font-mono font-bold border-amber-500/30 hover:border-amber-400 text-amber-300 hover:bg-amber-500/10 cursor-pointer shrink-0"
-                    >
-                      Registrar Atividade
-                    </button>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
 
+                  <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-[var(--lime)]/10 text-[var(--lime)] border border-[var(--lime)]/20 shrink-0">
+                    {apt.type}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* COLUNA DIREITA: Negócios do Pipeline & Funil */}
-        <div className="flex flex-col gap-5">
-          
-          {/* Section 3: Negócios Estagnados (>7 dias) */}
-          <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-lg">
-            <div className="flex items-center justify-between border-b border-[var(--line)] pb-2.5">
-              <div className="flex items-center gap-2">
-                <KanbanSquare size={16} className="text-purple-400" />
-                <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                  <span>Negócios Parados (&gt;7 dias)</span>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400">
-                    {dealAlerts.stagnantDeals.length}
-                  </span>
-                </h3>
-              </div>
+        {/* COLUNA DIREITA: Negócios Estagnados (>7 dias) */}
+        <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col gap-4 shadow-lg">
+          <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
+            <div className="flex items-center gap-2">
+              <KanbanSquare size={16} className="text-purple-400" />
+              <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <span>Negócios Parados (&gt;7 dias)</span>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                  {dealAlerts.stagnantDeals.length}
+                </span>
+              </h3>
             </div>
+          </div>
 
-            {dealAlerts.stagnantDeals.length === 0 ? (
-              <div className="py-6 text-center bg-black/20 rounded-xl border border-[var(--line)]/50">
-                <p className="text-xs font-mono text-emerald-400">
-                  ✓ Todas as suas negociações foram atualizadas recentemente!
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-                {dealAlerts.stagnantDeals.slice(0, 6).map(({ deal, days }) => (
-                  <div
-                    key={deal.id}
-                    onClick={() => setSelectedDeal(deal)}
-                    className="p-3 rounded-xl bg-[var(--charcoal)] border border-purple-500/20 hover:border-purple-500/50 transition-all cursor-pointer flex items-center justify-between gap-3"
-                  >
-                    <div className="min-w-0">
-                      <h4 className="text-xs font-bold text-white truncate">{deal.title}</h4>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] font-mono text-purple-300 font-bold uppercase">
-                          Etapa: {deal.stage}
-                        </span>
-                        <span className="text-[10px] font-mono text-[var(--gray2)]">
-                          · {formatCurrency(deal.estimated_value || deal.final_value || 0)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="text-right shrink-0">
-                      <span className="text-xs font-mono font-bold text-purple-400 block">{days}d sem mover</span>
-                      <span className="text-[9px] font-mono text-[var(--lime)] hover:underline flex items-center justify-end gap-0.5 mt-0.5">
-                        <span>Abrir</span>
-                        <ChevronRight size={10} />
+          {dealAlerts.stagnantDeals.length === 0 ? (
+            <div className="py-10 text-center bg-black/20 rounded-xl border border-[var(--line)]/50">
+              <p className="text-xs font-mono text-emerald-400">
+                ✓ Todas as suas negociações foram atualizadas recentemente!
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2.5 max-h-[350px] overflow-y-auto custom-scrollbar">
+              {dealAlerts.stagnantDeals.map(({ deal, days }) => (
+                <div
+                  key={deal.id}
+                  onClick={() => setSelectedDeal(deal)}
+                  className="p-3.5 rounded-xl bg-[var(--charcoal)] border border-purple-500/20 hover:border-purple-500/50 transition-all cursor-pointer flex items-center justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <h4 className="text-xs font-bold text-white truncate">{deal.title}</h4>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] font-mono text-purple-300 font-bold uppercase">
+                        Etapa: {deal.stage}
+                      </span>
+                      <span className="text-[10px] font-mono text-[var(--gray2)]">
+                        · {formatCurrency(deal.estimated_value || deal.final_value || 0)}
                       </span>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
 
-          {/* Section 4: Visão Geral do Funil de Negócios */}
-          <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-lg">
-            <div className="flex items-center justify-between border-b border-[var(--line)] pb-2.5">
-              <div className="flex items-center gap-2">
-                <TrendingUp size={16} className="text-[var(--lime)]" />
-                <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider">
-                  Visão Geral do Funil de Negócios
-                </h3>
-              </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-xs font-mono font-bold text-purple-400 block">{days}d sem mover</span>
+                    <span className="text-[9px] font-mono text-[var(--lime)] hover:underline flex items-center justify-end gap-0.5 mt-0.5">
+                      <span>Abrir</span>
+                      <ChevronRight size={10} />
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
-                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Leads</span>
-                <span className="text-lg font-mono font-bold text-white block mt-0.5">
-                  {filteredDeals.filter(d => d.stage === 'leads').length} cards
-                </span>
-              </div>
-
-              <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
-                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Visita</span>
-                <span className="text-lg font-mono font-bold text-sky-400 block mt-0.5">
-                  {filteredDeals.filter(d => d.stage === 'visita').length} cards
-                </span>
-              </div>
-
-              <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
-                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Briefing/Orçamento</span>
-                <span className="text-lg font-mono font-bold text-[var(--lime)] block mt-0.5">
-                  {filteredDeals.filter(d => d.stage === 'briefing' || d.stage === 'aprovacao').length} cards
-                </span>
-              </div>
-
-              <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
-                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Proposta</span>
-                <span className="text-lg font-mono font-bold text-amber-400 block mt-0.5">
-                  {filteredDeals.filter(d => d.stage === 'fechamento' && !d.closed_at).length} cards
-                </span>
-              </div>
-
-              <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-emerald-500/20 col-span-2 sm:col-span-2">
-                <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold">Fechados no Mês</span>
-                <span className="text-lg font-mono font-bold text-emerald-400 block mt-0.5">
-                  {filteredDeals.filter(d => d.stage === 'fechamento').length} negócios ({formatCurrency(pacingMetrics.totalSalesAchieved)})
-                </span>
-              </div>
-            </div>
-          </div>
-
+          )}
         </div>
 
       </div>
