@@ -40,18 +40,51 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, deals: [] })
     }
 
-    // Get a fallback contact UUID in case a deal is missing a valid contact_id
-    const { data: contacts } = await supabaseAdmin.from('contacts').select('id, name, company').limit(1)
-    const fallbackContactId = contacts?.[0]?.id || '177d91c9-f324-4998-8e1a-b847777d4b8a'
+    // Get fallback contact UUID
+    const { data: fallbackList } = await supabaseAdmin.from('contacts').select('id').limit(1)
+    const fallbackContactId = fallbackList?.[0]?.id || '177d91c9-f324-4998-8e1a-b847777d4b8a'
 
-    const payloads = dealsInput.map((d: any) => {
-      let finalContactId = d.contact_id || d.contact?.id
-      if (!isUUID(finalContactId)) {
+    const payloads = []
+
+    for (const d of dealsInput) {
+      let finalContactId: string | null = isUUID(d.contact_id) ? d.contact_id : (isUUID(d.contact?.id) ? d.contact.id : null)
+
+      const companyName = (d.contact?.company || d.contact?.name || d.title || '').trim()
+
+      if (!finalContactId && companyName) {
+        // Search contact by company or name
+        const { data: found } = await supabaseAdmin
+          .from('contacts')
+          .select('id')
+          .or(`company.ilike.%${companyName}%,name.ilike.%${companyName}%`)
+          .limit(1)
+
+        if (found && found.length > 0) {
+          finalContactId = found[0].id
+        } else {
+          // Create contact in contacts table so foreign key is valid
+          const newContactUUID = crypto.randomUUID()
+          const { data: createdContact } = await supabaseAdmin.from('contacts').insert([{
+            id: newContactUUID,
+            name: d.contact?.name || companyName,
+            company: companyName,
+            role: companyName,
+            representative: d.assigned_to || d.contact?.representative || '',
+            status: 'ativo'
+          }]).select()
+
+          if (createdContact && createdContact.length > 0) {
+            finalContactId = createdContact[0].id
+          }
+        }
+      }
+
+      if (!finalContactId) {
         finalContactId = fallbackContactId
       }
 
-      let dealId = d.id
-      if (!isUUID(dealId)) {
+      let dealId = isUUID(d.id) ? d.id : null
+      if (!dealId) {
         dealId = crypto.randomUUID()
       }
 
@@ -59,10 +92,10 @@ export async function POST(req: Request) {
       if (isUUID(d.assigned_to)) validAssignedTo = d.assigned_to
       else if (isUUID(d.assignedTo)) validAssignedTo = d.assignedTo
 
-      return {
+      payloads.push({
         id: dealId,
         tenant_id: DEFAULT_TENANT_ID,
-        title: d.title || d.contact?.name || d.contact?.company || 'Novo Negócio',
+        title: d.title || d.contact?.company || d.contact?.name || 'Novo Negócio',
         contact_id: finalContactId,
         stage: d.stage || 'leads',
         assigned_to: validAssignedTo,
@@ -72,8 +105,8 @@ export async function POST(req: Request) {
         lost_notes: d.lost_notes || '',
         position: parseInt(d.position) || 0,
         updated_at: new Date().toISOString()
-      }
-    })
+      })
+    }
 
     const { data, error } = await supabaseAdmin
       .from('deals')
