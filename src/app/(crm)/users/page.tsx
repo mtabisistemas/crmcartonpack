@@ -1,7 +1,7 @@
 'use client'
 
 import { dbService } from '@/services/supabase-client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus,
@@ -20,14 +20,16 @@ import {
   CheckCircle,
   Key,
   MapPin,
-  Eye
+  Eye,
+  Users,
+  UserCog
 } from 'lucide-react'
 
 interface TeamUser {
   id: string
   name: string
   email: string
-  role: 'admin' | 'gestor' | 'representante' | 'vendedor' | 'financeiro'
+  role: 'admin' | 'gestor' | 'representante' | 'vendedor'
   status: 'ativo' | 'inativo'
   phone: string
   createdAt: string
@@ -189,7 +191,7 @@ export default function UsersPage() {
     setShowModal(true)
   }
 
-  // Toggle user status quickly
+  // Toggle user status
   const handleToggleStatus = async (user: TeamUser) => {
     const newStatus: TeamUser['status'] = user.status === 'ativo' ? 'inativo' : 'ativo'
     const updatedUser = { ...user, status: newStatus }
@@ -269,6 +271,13 @@ export default function UsersPage() {
     e.preventDefault()
     const isRep = role === 'representante'
     if (!name.trim() || (!isRep && !email.trim())) return
+
+    // Prevent Gestor Comercial from creating an Admin user
+    if (isGestor && (role as string) === 'admin') {
+      setToastMessage('Gestores Comerciais não possuem permissão para criar usuários Administradores.')
+      setTimeout(() => setToastMessage(''), 4000)
+      return
+    }
 
     // Corporate users MUST use @cartonpack.com.br domain
     if (!isRep) {
@@ -371,25 +380,40 @@ export default function UsersPage() {
   }
 
   // Filter users list by role & search
-  const roleFilteredUsers = users.filter(u => {
-    if (isGestor) {
-      // Manager can only see Vendedor and Representante
-      return u.role === 'vendedor' || u.role === 'representante'
+  const roleFilteredUsers = useMemo(() => {
+    return users.filter(u => {
+      if (isGestor) {
+        // Manager can only see Vendedor and Representante
+        return u.role === 'vendedor' || u.role === 'representante'
+      }
+      return true
+    })
+  }, [users, isGestor])
+
+  const filteredUsers = useMemo(() => {
+    return roleFilteredUsers.filter(u => {
+      const matchesSearch = 
+        u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.phone.includes(searchTerm)
+        
+      const matchesRole = selectedRole === 'all' || u.role === selectedRole
+      const matchesStatus = selectedStatus === 'all' || u.status === selectedStatus
+
+      return matchesSearch && matchesRole && matchesStatus
+    })
+  }, [roleFilteredUsers, searchTerm, selectedRole, selectedStatus])
+
+  // KPI Metrics calculation for summary cards
+  const metrics = useMemo(() => {
+    const list = roleFilteredUsers
+    return {
+      total: list.length,
+      gestores: list.filter(u => u.role === 'gestor').length,
+      vendedores: list.filter(u => u.role === 'vendedor').length,
+      representantes: list.filter(u => u.role === 'representante').length
     }
-    return true
-  })
-
-  const filteredUsers = roleFilteredUsers.filter(u => {
-    const matchesSearch = 
-      u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.phone.includes(searchTerm)
-      
-    const matchesRole = selectedRole === 'all' || u.role === selectedRole
-    const matchesStatus = selectedStatus === 'all' || u.status === selectedStatus
-
-    return matchesSearch && matchesRole && matchesStatus
-  })
+  }, [roleFilteredUsers])
 
   // Role tag styling helpers
   const getRoleDetails = (r: string) => {
@@ -405,9 +429,6 @@ export default function UsersPage() {
     }
     if (roleLower.includes('vend')) {
       return { label: 'Vendedor', bg: 'rgba(240,196,25,0.1)', color: 'var(--yellow)', border: 'rgba(240,196,25,0.2)' }
-    }
-    if (roleLower.includes('finan')) {
-      return { label: 'Financeiro', bg: 'rgba(6,182,212,0.12)', color: '#22d3ee', border: 'rgba(6,182,212,0.25)' }
     }
     return { label: r || 'Membro', bg: 'rgba(180,217,50,0.12)', color: 'var(--lime)', border: 'rgba(180,217,50,0.25)' }
   }
@@ -433,16 +454,83 @@ export default function UsersPage() {
             Gestão de Equipe e Usuários
           </h1>
           <p className="text-xs text-[var(--gray)] font-mono mt-1">
-            {isAdmin ? 'Visão Geral e Controle Administrativo da Equipe' : 'Visualização da Equipe de Vendas e Representantes'}
+            {isAdmin ? 'Visão Geral e Controle Administrativo da Equipe' : 'Gestão e Acompanhamento da Equipe Comercial'}
           </p>
         </div>
 
-        {isAdmin && (
-          <button onClick={handleOpenCreate} className="btn btn-primary btn-sm flex items-center gap-1.5 shrink-0 self-start md:self-auto cursor-pointer">
+        {(isAdmin || isGestor) && (
+          <button onClick={handleOpenCreate} className="btn btn-primary text-xs py-2 px-4 flex items-center gap-1.5 shrink-0 self-start md:self-auto cursor-pointer shadow-lg font-bold">
             <Plus size={14} />
             <span>Novo Usuário</span>
           </button>
         )}
+      </div>
+
+      {/* ── KPI METRICS SUMMARY CARDS (Exact match to Contacts Page) ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
+        {/* Card 1: Total de Usuários */}
+        <div 
+          onClick={() => setSelectedRole('all')}
+          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedRole === 'all' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
+          }`}
+        >
+          <div>
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Total de Usuários</span>
+            <span className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">{metrics.total}</span>
+          </div>
+          <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+            <Users size={15} />
+          </div>
+        </div>
+
+        {/* Card 2: Gestores */}
+        <div 
+          onClick={() => setSelectedRole('gestor')}
+          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedRole === 'gestor' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
+          }`}
+        >
+          <div>
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Gestores</span>
+            <span className="text-xl font-black text-[#60a5fa] font-display mt-0.5 block">{metrics.gestores}</span>
+          </div>
+          <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[#60a5fa] flex items-center justify-center shrink-0">
+            <UserCog size={15} />
+          </div>
+        </div>
+
+        {/* Card 3: Vendedores */}
+        <div 
+          onClick={() => setSelectedRole('vendedor')}
+          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedRole === 'vendedor' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
+          }`}
+        >
+          <div>
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Vendedores</span>
+            <span className="text-xl font-black text-amber-400 font-display mt-0.5 block">{metrics.vendedores}</span>
+          </div>
+          <div className="w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center shrink-0">
+            <User size={15} />
+          </div>
+        </div>
+
+        {/* Card 4: Representantes */}
+        <div 
+          onClick={() => setSelectedRole('representante')}
+          className={`card p-3 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedRole === 'representante' ? 'border-[var(--lime)] bg-[var(--lime)]/5 shadow-sm' : 'border-[var(--line)] bg-[var(--card)]'
+          }`}
+        >
+          <div>
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Representantes</span>
+            <span className="text-xl font-black text-[var(--lime)] font-display mt-0.5 block">{metrics.representantes}</span>
+          </div>
+          <div className="w-8 h-8 rounded-lg bg-[var(--lime)]/10 border border-[var(--lime)]/20 text-[var(--lime)] flex items-center justify-center shrink-0">
+            <UserCheck size={15} />
+          </div>
+        </div>
       </div>
 
       {/* Filters Bar */}
@@ -469,7 +557,6 @@ export default function UsersPage() {
             <option value="vendedor">Vendedor</option>
             <option value="representante">Representante</option>
             {isAdmin && <option value="admin">Administrador</option>}
-            {isAdmin && <option value="financeiro">Financeiro</option>}
           </select>
         </div>
 
@@ -547,7 +634,7 @@ export default function UsersPage() {
 
                     {/* Status Badge */}
                     <td className="p-4 text-center">
-                      {isAdmin ? (
+                      {(isAdmin || isGestor) ? (
                         <button 
                           onClick={(e) => {
                             e.stopPropagation()
@@ -676,8 +763,7 @@ export default function UsersPage() {
                     <option value="vendedor">Vendedor</option>
                     <option value="representante">Representante</option>
                     <option value="gestor">Gestor Comercial</option>
-                    <option value="admin">Administrador</option>
-                    <option value="financeiro">Financeiro</option>
+                    {isAdmin && <option value="admin">Administrador</option>}
                   </select>
                 </div>
 
@@ -917,8 +1003,8 @@ Obs: No primeiro acesso você deverá alterar a senha temporária para ativar su
                 )}
               </div>
 
-              {/* Drawer Footer Actions (Admin only) */}
-              {isAdmin && (
+              {/* Drawer Footer Actions (Admin only or Gestor for non-admin users) */}
+              {(isAdmin || (isGestor && selectedUserForFicha.role !== 'admin')) && (
                 <div className="p-5 border-t border-[var(--line)] bg-[var(--black)] flex justify-between gap-3">
                   <button 
                     onClick={() => handleDelete(selectedUserForFicha.id)}
@@ -929,7 +1015,7 @@ Obs: No primeiro acesso você deverá alterar a senha temporária para ativar su
                   
                   <button 
                     onClick={() => handleOpenEdit(selectedUserForFicha)}
-                    className="btn btn-primary flex items-center gap-2 text-xs py-2.5 px-6 rounded-xl cursor-pointer text-black"
+                    className="btn btn-primary flex items-center gap-2 text-xs py-2.5 px-6 rounded-xl cursor-pointer text-black font-bold"
                   >
                     <Edit2 size={13} /> Editar Dados
                   </button>
