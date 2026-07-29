@@ -629,6 +629,12 @@ a, button, input, select, textarea {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.kanban-cards::-webkit-scrollbar {
+  display: none;
 }
 
 .kanban-empty {
@@ -681,6 +687,7 @@ a, button, input, select, textarea {
   position: relative;
   overflow: hidden;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 /* Left accent bar */
