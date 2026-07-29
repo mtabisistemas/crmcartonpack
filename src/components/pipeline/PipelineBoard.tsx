@@ -163,7 +163,7 @@ function KanbanColumn({
 
 // ─── Bottom Drop Zones (Won / Lost) ───────────────────────────
 function BottomDropZones({ activeId }: { activeId: string | null }) {
-  const { setNodeRef: setWonRef, isOver: isOverWon } = useDroppable({ id: 'drop-zone-pos_venda' })
+  const { setNodeRef: setWonRef, isOver: isOverWon } = useDroppable({ id: 'drop-zone-pedido' })
   const { setNodeRef: setLostRef, isOver: isOverLost } = useDroppable({ id: 'drop-zone-perdido' })
 
   return (
@@ -177,7 +177,7 @@ function BottomDropZones({ activeId }: { activeId: string | null }) {
         }`}
       >
         <Trophy size={16} />
-        <span>Ganho - Pós-Vendas</span>
+        <span>Ganho - Pedido</span>
       </div>
 
       <div 
@@ -740,25 +740,50 @@ export function PipelineBoard() {
         const res = await fetch('/api/deals', { cache: 'no-store' })
         const json = await res.json()
         if (json.success && Array.isArray(json.deals) && json.deals.length > 0) {
-          const mappedDeals: Deal[] = json.deals.map((item: any) => ({
-            id: item.id,
-            title: item.title,
-            contact_id: item.contact_id || `c_${Date.now()}`,
-            stage: item.stage,
-            position: item.position || 0,
-            estimated_value: item.estimated_value || 0,
-            final_value: item.final_value || 0,
-            assigned_to: item.assigned_to || '',
-            stage_entered_at: item.stage_entered_at || item.created_at || new Date().toISOString(),
-            created_at: item.created_at || new Date().toISOString(),
-            updated_at: item.updated_at || new Date().toISOString(),
-            contact: {
-              id: item.contact_id || `c_${Date.now()}`,
-              name: item.title,
-              company: item.title,
-              representative: item.assigned_to || ''
+          let contacts: any[] = []
+          try {
+            const raw = localStorage.getItem('crm_contacts')
+            if (raw) contacts = JSON.parse(raw)
+          } catch (e) {}
+
+          const mappedDeals: Deal[] = json.deals.map((item: any) => {
+            const comp = (item.title || '').trim().toLowerCase()
+            const matched = contacts.find((c: any) =>
+              (item.contact_id && c.id === item.contact_id) ||
+              (comp && (c.company || c.name || '').trim().toLowerCase() === comp)
+            )
+
+            const normalizedStage = item.stage === 'pos_venda' ? 'pedido' : item.stage
+
+            return {
+              id: item.id,
+              title: item.title,
+              contact_id: item.contact_id || matched?.id || `c_${Date.now()}`,
+              stage: normalizedStage as DealStage,
+              position: item.position || 0,
+              estimated_value: item.estimated_value || 0,
+              final_value: item.final_value || 0,
+              assigned_to: item.assigned_to || matched?.representative || '',
+              stage_entered_at: item.stage_entered_at || item.created_at || new Date().toISOString(),
+              created_at: item.created_at || new Date().toISOString(),
+              updated_at: item.updated_at || new Date().toISOString(),
+              contact: {
+                id: item.contact_id || matched?.id || `c_${Date.now()}`,
+                name: matched?.name || item.title,
+                company: matched?.company || item.title,
+                phone: matched?.phone || '',
+                email: matched?.email || '',
+                cnpj: matched?.cnpj || '',
+                address: matched?.address || '',
+                bairro: matched?.bairro || '',
+                cep: matched?.cep || '',
+                city: matched?.city || '',
+                state: matched?.state || '',
+                curve: matched?.curve || 'C',
+                representative: item.assigned_to || matched?.representative || ''
+              } as any
             }
-          }))
+          })
           setDeals(mappedDeals)
           if (typeof window !== 'undefined') {
             localStorage.setItem('cp_crm_pipeline_deals', JSON.stringify(mappedDeals))
@@ -963,8 +988,8 @@ export function PipelineBoard() {
 
     // Target stage can be from drop zone or column
     let newStage: DealStage | undefined = undefined
-    if (over.id === 'drop-zone-pos_venda') {
-      newStage = 'pos_venda'
+    if (over.id === 'drop-zone-pedido' || over.id === 'drop-zone-pos_venda') {
+      newStage = 'pedido'
     } else if (over.id === 'drop-zone-perdido') {
       newStage = 'perdido'
     } else if (activeStages.includes(over.id as DealStage)) {

@@ -84,6 +84,18 @@ export async function POST(req: Request) {
       }
 
       let dealId = isUUID(d.id) ? d.id : null
+      if (!dealId && d.title) {
+        const { data: existingDeal } = await supabaseAdmin
+          .from('deals')
+          .select('id')
+          .ilike('title', d.title.trim())
+          .limit(1)
+
+        if (existingDeal && existingDeal.length > 0) {
+          dealId = existingDeal[0].id
+        }
+      }
+
       if (!dealId) {
         dealId = crypto.randomUUID()
       }
