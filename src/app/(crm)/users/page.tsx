@@ -243,18 +243,35 @@ export default function UsersPage() {
     }
   }
 
-  // Resets temporary password (Admin only)
-  const handleResetTempPassword = async (user: TeamUser) => {
-    const newTempPassword = 'CP@' + Math.floor(100000 + Math.random() * 900000)
+  // Reset Password Modal states
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false)
+  const [resetUser, setResetUser] = useState<TeamUser | null>(null)
+  const [customResetPassword, setCustomResetPassword] = useState('')
+
+  const handleOpenResetModal = (user: TeamUser) => {
+    setResetUser(user)
+    setCustomResetPassword('CP@' + Math.floor(100000 + Math.random() * 900000))
+    setShowResetPasswordModal(true)
+  }
+
+  const handleConfirmResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!resetUser || !customResetPassword.trim()) return
+
+    const passToUse = customResetPassword.trim()
     const updatedUser: TeamUser = {
-      ...user,
-      tempPassword: newTempPassword,
+      ...resetUser,
+      tempPassword: passToUse,
       isFirstAccess: true
     }
+
     const updatedList = users.map(u => 
-      u.id === user.id ? updatedUser : u
+      u.id === resetUser.id ? updatedUser : u
     )
     saveUsers(updatedList)
+    if (selectedUserForFicha?.id === resetUser.id) {
+      setSelectedUserForFicha(updatedUser)
+    }
 
     try {
       await fetch('/api/users', {
@@ -262,11 +279,24 @@ export default function UsersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedUser)
       })
-      setToastMessage(`Senha temporária redefinida para ${user.name}: ${newTempPassword}`)
-      setTimeout(() => setToastMessage(''), 6000)
     } catch (e) {
       console.error('Failed to reset temp password on API', e)
     }
+
+    setShowResetPasswordModal(false)
+
+    // Trigger copy credentials modal
+    const userLogin = resetUser.email || resetUser.username || ''
+    const isCarton = userLogin.endsWith('@cartonpack.com.br')
+    setCreatedUserCredentials({
+      name: resetUser.name,
+      usernameOrEmail: userLogin,
+      tempPassword: passToUse,
+      type: isCarton ? 'cartonpack' : 'externo'
+    })
+    setShowCopyModal(true)
+    setToastMessage(`Senha temporária de ${resetUser.name} redefinida com sucesso!`)
+    setTimeout(() => setToastMessage(''), 4000)
   }
 
   // Save Modal (Create or Edit)
@@ -832,7 +862,7 @@ export default function UsersPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className={`grid ${!editingUser ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
                   {role === 'representante' || !email.toLowerCase().endsWith('@cartonpack.com') ? (
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">Nome de Usuário *</label>
@@ -854,19 +884,21 @@ export default function UsersPage() {
                     </div>
                   )}
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider flex items-center justify-between">
-                      <span>Senha Temporária *</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      className="input w-full font-mono text-xs font-bold text-[var(--lime)] bg-[var(--card)]"
-                      placeholder="123456"
-                      value={tempPassword}
-                      onChange={(e) => setTempPassword(e.target.value)}
-                    />
-                  </div>
+                  {!editingUser && (
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider flex items-center justify-between">
+                        <span>Senha Temporária *</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        className="input w-full font-mono text-xs font-bold text-[var(--lime)] bg-[var(--card)]"
+                        placeholder="123456"
+                        value={tempPassword}
+                        onChange={(e) => setTempPassword(e.target.value)}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -945,6 +977,66 @@ Obs: No primeiro acesso você deverá alterar a senha temporária para ativar su
         </div>
       )}
 
+      {/* Modal Redefinir Senha Temporária */}
+      {showResetPasswordModal && resetUser && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+          <div className="bg-[var(--charcoal)] border border-[var(--lime)]/50 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 animate-fade-up">
+            <div className="flex justify-between items-start border-b border-[var(--line)] pb-3">
+              <div>
+                <h3 className="font-display text-base text-[var(--white)] font-bold">
+                  Redefinir Senha Temporária
+                </h3>
+                <p className="text-xs text-[var(--gray)] mt-0.5 font-mono">
+                  Usuário: <strong className="text-[var(--lime)]">{resetUser.name}</strong>
+                </p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setShowResetPasswordModal(false)} 
+                className="text-gray-400 hover:text-[var(--white)] p-1 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmResetPassword} className="flex flex-col gap-4">
+              <p className="text-xs text-[var(--gray2)] leading-relaxed">
+                Digite a nova senha temporária abaixo. Após confirmar, a mensagem formatada para envio será gerada automaticamente.
+              </p>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">
+                  Nova Senha Temporária *
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="input w-full font-mono text-sm font-bold text-[var(--lime)] bg-[var(--card)] border-[var(--lime)]/40 focus:border-[var(--lime)]"
+                  value={customResetPassword}
+                  onChange={(e) => setCustomResetPassword(e.target.value)}
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-[var(--line)] pt-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowResetPasswordModal(false)}
+                  className="btn btn-secondary py-2 px-4 text-xs font-bold uppercase tracking-wider cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary py-2 px-4 text-xs font-bold uppercase tracking-wider text-[#060606] cursor-pointer"
+                >
+                  Confirmar e Gerar Mensagem
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Ficha do Usuário (Drawer) */}
       {selectedUserForFicha && (
         <div className="fixed inset-0 z-50 overflow-hidden">
@@ -960,7 +1052,7 @@ Obs: No primeiro acesso você deverá alterar a senha temporária para ativar su
                   </h3>
                   <div className="mt-2">
                     {(() => {
-                      const roleInfo = getRoleDetails(selectedUserForFicha.role)
+                      const roleInfo = getRoleDetails(selectedUserForFicha.role, selectedUserForFicha)
                       return (
                         <span
                           className="font-mono text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider inline-block"
@@ -1032,8 +1124,8 @@ Obs: No primeiro acesso você deverá alterar a senha temporária para ativar su
                   )}
                 </div>
 
-                {/* Admin-only Password Management */}
-                {isAdmin && (
+                {/* Password Management */}
+                {(isAdmin || isGestor) && (
                   <div className="card p-5 border-[var(--line)] bg-[var(--card)] space-y-4">
                     <h4 className="text-[10px] font-mono uppercase font-bold text-[var(--lime)] tracking-widest border-b border-[var(--line)] pb-2">
                       Gestão de Segurança e Senha
@@ -1041,7 +1133,7 @@ Obs: No primeiro acesso você deverá alterar a senha temporária para ativar su
 
                     <button
                       type="button"
-                      onClick={() => handleResetTempPassword(selectedUserForFicha)}
+                      onClick={() => handleOpenResetModal(selectedUserForFicha)}
                       className="w-full py-3 px-3 rounded-xl border border-[var(--lime)]/40 bg-[var(--lime)]/10 text-[var(--lime)] text-xs font-bold font-mono flex items-center justify-center gap-2 hover:bg-[var(--lime)]/20 transition-all cursor-pointer shadow-lg"
                     >
                       <Key size={14} />
