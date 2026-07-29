@@ -538,41 +538,44 @@ export default function MetasPage() {
 
           {/* Cards Resumo Geral da Equipe */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="card p-4 bg-[var(--card)] border border-[rgba(180,217,50,0.2)] flex items-center justify-between">
+            {/* Card 1: Meta Faturamento */}
+            <div className="card p-4 bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-[var(--lime)] flex items-center justify-between shadow-sm">
               <div>
                 <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Meta Faturamento (Equipe)</span>
-                <div className="text-xl font-display font-black text-[var(--lime)] mt-1">
+                <div className="text-xl font-display font-black text-[var(--white)] mt-1">
                   R$ {(viewMode === 'mensal' ? teamTotals.sales : viewMode === 'semanal' ? teamTotals.sales / 4.4 : teamTotals.sales / businessDays).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                   <span className="text-[10px] font-mono text-[var(--gray2)] font-normal ml-1">/{viewMode === 'mensal' ? 'mês' : viewMode === 'semanal' ? 'sem' : 'dia'}</span>
                 </div>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-[rgba(180,217,50,0.1)] border border-[var(--lime)]/20 flex items-center justify-center text-[var(--lime)]">
+              <div className="w-10 h-10 rounded-xl bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center text-[var(--lime)]">
                 <DollarSign size={20} />
               </div>
             </div>
 
-            <div className="card p-4 bg-[var(--card)] border border-sky-500/20 flex items-center justify-between">
+            {/* Card 2: Meta Visitas */}
+            <div className="card p-4 bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-[var(--lime)] flex items-center justify-between shadow-sm">
               <div>
                 <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Meta Visitas/Contatos</span>
-                <div className="text-xl font-display font-black text-sky-400 mt-1">
+                <div className="text-xl font-display font-black text-[var(--white)] mt-1">
                   {Math.round(viewMode === 'mensal' ? teamTotals.visits : viewMode === 'semanal' ? teamTotals.visits / 4.4 : teamTotals.visits / businessDays).toLocaleString('pt-BR')} visitas
                   <span className="text-[10px] font-mono text-[var(--gray2)] font-normal ml-1">/{viewMode === 'mensal' ? 'mês' : viewMode === 'semanal' ? 'sem' : 'dia'}</span>
                 </div>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+              <div className="w-10 h-10 rounded-xl bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center text-[var(--white)]">
                 <Users size={20} />
               </div>
             </div>
 
-            <div className="card p-4 bg-[var(--card)] border border-emerald-500/20 flex items-center justify-between">
+            {/* Card 3: Meta Novos Clientes */}
+            <div className="card p-4 bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-[var(--lime)] flex items-center justify-between shadow-sm">
               <div>
                 <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Meta Novos Clientes (Pedido Fechado)</span>
-                <div className="text-xl font-display font-black text-emerald-400 mt-1">
+                <div className="text-xl font-display font-black text-[var(--white)] mt-1">
                   {Math.round(viewMode === 'mensal' ? teamTotals.newClients : viewMode === 'semanal' ? teamTotals.newClients / 4.4 : teamTotals.newClients / businessDays).toLocaleString('pt-BR')} clientes
                   <span className="text-[10px] font-mono text-[var(--gray2)] font-normal ml-1">/{viewMode === 'mensal' ? 'mês' : viewMode === 'semanal' ? 'sem' : 'dia'}</span>
                 </div>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <div className="w-10 h-10 rounded-xl bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center text-[var(--lime)]">
                 <Award size={20} />
               </div>
             </div>
@@ -619,7 +622,7 @@ export default function MetasPage() {
                         <tr key={u.id || u.name} className="hover:bg-[var(--charcoal)]/50 transition-colors">
                           <td className="py-3.5 px-3 font-bold text-[var(--white)]">
                             <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-full bg-[var(--lime)]/10 text-[var(--lime)] font-mono font-bold flex items-center gap-1 justify-center text-xs shrink-0 border border-[var(--lime)]/20">
+                              <div className="w-7 h-7 rounded-full bg-[var(--charcoal)] text-[var(--white)] font-mono font-bold flex items-center gap-1 justify-center text-xs shrink-0 border border-[var(--line)]">
                                 {u.name ? u.name.slice(0, 2).toUpperCase() : 'US'}
                               </div>
                               <span>{u.name}</span>
@@ -630,7 +633,7 @@ export default function MetasPage() {
                               const isThaiane = (u.email || '').toLowerCase().includes('thaiane') || (u.name || '').toLowerCase().includes('thaiane')
                               if (isThaiane) {
                                 return (
-                                  <span className="px-2 py-0.5 rounded font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                  <span className="px-2 py-0.5 rounded font-bold uppercase bg-[var(--charcoal)] text-[var(--white)] border border-[var(--line)]">
                                     GESTOR COMERCIAL
                                   </span>
                                 )
@@ -638,27 +641,27 @@ export default function MetasPage() {
                               const rLower = (u.role || '').toLowerCase()
                               if (rLower.includes('admin')) {
                                 return (
-                                  <span className="px-2 py-0.5 rounded font-bold uppercase bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                  <span className="px-2 py-0.5 rounded font-bold uppercase bg-[var(--charcoal)] text-[var(--white)] border border-[var(--line)]">
                                     ADMINISTRADOR
                                   </span>
                                 )
                               }
                               if (rLower.includes('gestor')) {
                                 return (
-                                  <span className="px-2 py-0.5 rounded font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                  <span className="px-2 py-0.5 rounded font-bold uppercase bg-[var(--charcoal)] text-[var(--white)] border border-[var(--line)]">
                                     GESTOR COMERCIAL
                                   </span>
                                 )
                               }
                               if (rLower.includes('vend')) {
                                 return (
-                                  <span className="px-2 py-0.5 rounded font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                  <span className="px-2 py-0.5 rounded font-bold uppercase bg-[var(--charcoal)] text-[var(--white)] border border-[var(--line)]">
                                     VENDEDOR
                                   </span>
                                 )
                               }
                               return (
-                                <span className="px-2 py-0.5 rounded font-bold uppercase bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                                <span className="px-2 py-0.5 rounded font-bold uppercase bg-[var(--charcoal)] text-[var(--lime)] border border-[var(--line)]">
                                   REPRESENTANTE
                                 </span>
                               )
@@ -679,14 +682,14 @@ export default function MetasPage() {
                                   if (viewMode === 'diaria') val = Math.round(val * businessDays)
                                   handleUpdateGoalField(key, 'salesGoal', val.toString())
                                 }}
-                                className="bg-transparent border-none outline-none text-xs font-bold text-[var(--lime)] text-right w-24 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] text-right w-24 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               />
                             </div>
                           </td>
 
                           {/* Campo Meta Visitas/Contatos */}
                           <td className="py-3.5 px-3 text-right font-mono">
-                            <div className="inline-flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2.5 py-1 focus-within:border-sky-400">
+                            <div className="inline-flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2.5 py-1 focus-within:border-[var(--lime)]">
                               <input
                                 type="text"
                                 inputMode="numeric"
@@ -697,7 +700,7 @@ export default function MetasPage() {
                                   if (viewMode === 'diaria') val = Math.round(val * businessDays)
                                   handleUpdateGoalField(key, 'visitsGoal', val.toString())
                                 }}
-                                className="bg-transparent border-none outline-none text-xs font-bold text-sky-400 text-right w-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] text-right w-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               />
                               <span className="text-[10px] text-[var(--gray2)]">visitas</span>
                             </div>
@@ -705,7 +708,7 @@ export default function MetasPage() {
 
                           {/* Campo Meta Novos Clientes */}
                           <td className="py-3.5 px-3 text-right font-mono">
-                            <div className="inline-flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2.5 py-1 focus-within:border-emerald-400">
+                            <div className="inline-flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2.5 py-1 focus-within:border-[var(--lime)]">
                               <input
                                 type="text"
                                 inputMode="numeric"
@@ -716,7 +719,7 @@ export default function MetasPage() {
                                   if (viewMode === 'diaria') val = Math.round(val * businessDays)
                                   handleUpdateGoalField(key, 'newClientsGoal', val.toString())
                                 }}
-                                className="bg-transparent border-none outline-none text-xs font-bold text-emerald-400 text-right w-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] text-right w-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               />
                               <span className="text-[10px] text-[var(--gray2)]">clientes</span>
                             </div>
