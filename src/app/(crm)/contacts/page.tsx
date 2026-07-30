@@ -2536,7 +2536,16 @@ export default function ContactsPage() {
   // Load contacts list on mount
   useEffect(() => {
     const loadContacts = async () => {
-      // 1. Fetch imported_contacts.json FIRST to have the authoritative 32,639 multi-order map
+      if (typeof window !== 'undefined') {
+        const CURRENT_CACHE_VERSION = 'v15_cnpj_separated_2026_07_30'
+        const savedVersion = localStorage.getItem('crm_contacts_cache_version')
+        if (savedVersion !== CURRENT_CACHE_VERSION) {
+          localStorage.removeItem('crm_contacts')
+          localStorage.setItem('crm_contacts_cache_version', CURRENT_CACHE_VERSION)
+        }
+      }
+
+      // 1. Fetch imported_contacts.json FIRST to have the authoritative CNPJ-separated multi-order map
       let importedMap = new Map<string, any>()
       let rawImportedContacts: MockContact[] = []
       try {
@@ -2545,9 +2554,10 @@ export default function ContactsPage() {
           rawImportedContacts = await impRes.json()
           const norm = (s?: string) => (s || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^\w]/g, "")
           rawImportedContacts.forEach((ic: any) => {
+            const cleanCnpj = (ic.cnpj || '').replace(/\D/g, '')
+            if (cleanCnpj) importedMap.set(cleanCnpj, ic)
             if (ic.id) importedMap.set(ic.id, ic)
             if (ic.company) importedMap.set(norm(ic.company), ic)
-            if (ic.cnpj) importedMap.set((ic.cnpj || '').replace(/\D/g, ''), ic)
           })
         }
       } catch (e) {}
@@ -2584,7 +2594,8 @@ export default function ContactsPage() {
               const itemCompNorm = norm(item.company)
               const itemCnpjClean = (item.cnpj || '').replace(/\D/g, '')
 
-              const baseRef = importedMap.get(item.id) || (itemCompNorm ? importedMap.get(itemCompNorm) : null) || (itemCnpjClean ? importedMap.get(itemCnpjClean) : null)
+              // Match by CNPJ FIRST so branches with the same company name get distinct sales histories
+              const baseRef = (itemCnpjClean ? importedMap.get(itemCnpjClean) : null) || importedMap.get(item.id) || (itemCompNorm ? importedMap.get(itemCompNorm) : null)
 
               const resolvedOrders = (notesObj.orders && notesObj.orders.length > 0)
                 ? notesObj.orders
