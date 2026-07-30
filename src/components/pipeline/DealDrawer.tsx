@@ -54,6 +54,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const [estimatedValue, setEstimatedValue] = useState<number | undefined>(undefined)
   const [estimatedValueInput, setEstimatedValueInput] = useState('')
   const [stage, setStage] = useState<DealStage>('leads')
+  const [orderNumber, setOrderNumber] = useState('')
   const [contactName, setContactName] = useState('')
   const [contactPhone, setContactPhone] = useState('')
   const [contactEmail, setContactEmail] = useState('')
@@ -163,6 +164,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       setEstimatedValue(val > 0 ? val : undefined)
       setEstimatedValueInput(formatNumberToCurrencyStr(val))
       setStage(deal.stage)
+      setOrderNumber(deal.order_number || '')
 
       if ((deal as any).budget) {
         const b = (deal as any).budget
@@ -415,6 +417,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       title: upperTitle,
       estimated_value: estimatedValue,
       stage,
+      order_number: orderNumber || deal.order_number,
       assigned_to: representative,
       contact: {
         ...deal.contact,
@@ -440,6 +443,41 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
     const todayStr = new Date().toISOString().split('T')[0]
 
     onUpdateDeal(updatedDeal)
+
+    // Sync closed order log in localStorage crm_contacts with representative snapshot
+    if (stage === 'pedido' && (orderNumber || deal.order_number) && typeof window !== 'undefined') {
+      try {
+        const rawContacts = localStorage.getItem('crm_contacts')
+        if (rawContacts) {
+          const list = JSON.parse(rawContacts)
+          const cleanComp = (contactCompany || title || '').trim().toLowerCase()
+          const finalOrdNum = orderNumber || deal.order_number || `PED-${Date.now().toString().slice(-6)}`
+          const dealVal = (deal.final_value && deal.final_value > 0) ? deal.final_value : (estimatedValue || deal.estimated_value || 0)
+
+          const updatedContacts = list.map((c: any) => {
+            const matchesId = c.id === deal.contact_id || c.id === deal.contact?.id
+            const matchesComp = cleanComp && (c.company || c.name || '').trim().toLowerCase() === cleanComp
+            if (matchesId || matchesComp) {
+              const newOrderObj = {
+                id: `ord_${Date.now()}`,
+                order_number: finalOrdNum,
+                deal_id: deal.id,
+                deal_title: title,
+                value: dealVal,
+                date: todayStr,
+                vendor: representative || c.representative || c.assignedTo || c.assigned_to || 'Vendedor'
+              }
+              const existingOrders = Array.isArray(c.orders) ? c.orders : []
+              const updatedOrders = [newOrderObj, ...existingOrders.filter((o: any) => o.order_number !== finalOrdNum)]
+              return { ...c, orders: updatedOrders, lastPurchaseDate: todayStr }
+            }
+            return c
+          })
+          localStorage.setItem('crm_contacts', JSON.stringify(updatedContacts))
+          window.dispatchEvent(new Event('storage-contacts-changed'))
+        }
+      } catch (e) {}
+    }
 
     // Save deal update to Supabase via /api/deals
     try {
@@ -706,6 +744,22 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     </select>
                   </div>
                 </div>
+
+                {(stage === 'pedido' || orderNumber) && (
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-[var(--charcoal)] border border-[var(--lime)]/40 animate-fade-in">
+                    <label className="text-xs font-mono font-bold text-[var(--lime)] uppercase flex items-center justify-between">
+                      <span>Número do Pedido</span>
+                      <span className="text-[10px] text-amber-400 font-normal">Obrigatório p/ Pedido Fechado</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="input uppercase text-xs font-mono font-bold text-[var(--white)] bg-[var(--card)] border-[var(--line)] focus:border-[var(--lime)]"
+                      placeholder="Ex: PED-2026-8910"
+                      value={orderNumber}
+                      onChange={(e) => setOrderNumber(e.target.value.toUpperCase())}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Seção Contato / Cliente */}

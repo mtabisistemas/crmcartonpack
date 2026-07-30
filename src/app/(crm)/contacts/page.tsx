@@ -30,7 +30,8 @@ import {
   Globe,
   Users,
   DollarSign,
-  Calendar
+  Calendar,
+  Trophy
 } from 'lucide-react'
 import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString } from '@/lib/utils'
 import { supabase } from '@/services/supabase-client'
@@ -257,7 +258,7 @@ function ContactDrawer({
 }) {
   const representativesList = representatives
   const [isOpen, setIsOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<'geral' | 'planejamento' | 'historico'>('geral')
+  const [activeTab, setActiveTab] = useState<'geral' | 'planejamento' | 'historico' | 'pedidos'>('geral')
 
   // Form states
   const [name, setName] = useState('')
@@ -753,7 +754,13 @@ function ContactDrawer({
             className={`drawer-tab-btn ${activeTab === 'historico' ? 'active' : ''}`}
             onClick={() => setActiveTab('historico')}
           >
-            Histórico
+            Histórico de Atividades
+          </button>
+          <button 
+            className={`drawer-tab-btn ${activeTab === 'pedidos' ? 'active' : ''}`}
+            onClick={() => setActiveTab('pedidos')}
+          >
+            Histórico de Pedidos
           </button>
         </div>
 
@@ -1476,6 +1483,108 @@ function ContactDrawer({
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* TAB 4: HISTÓRICO DE PEDIDOS DO CLIENTE */}
+          {activeTab === 'pedidos' && (
+            <div className="flex flex-col gap-4 animate-fade-in pb-12">
+              {(() => {
+                let savedOrders: any[] = (contact as any).orders || []
+                
+                // Also pull orders from cp_crm_pipeline_deals for this client
+                try {
+                  const rawDeals = localStorage.getItem('cp_crm_pipeline_deals')
+                  if (rawDeals) {
+                    const deals = JSON.parse(rawDeals)
+                    const cleanComp = (company || name || '').trim().toLowerCase()
+                    deals.forEach((d: any) => {
+                      const matchesId = d.contact_id === contact.id
+                      const matchesComp = cleanComp && (d.contact?.company || d.title || '').trim().toLowerCase() === cleanComp
+                      if ((matchesId || matchesComp) && (d.stage === 'pedido' || d.order_number)) {
+                        const ordNum = d.order_number || `PED-${Date.now().toString().slice(-6)}`
+                        const exists = savedOrders.some((o: any) => o.order_number === ordNum || o.deal_id === d.id)
+                        if (!exists) {
+                          savedOrders.push({
+                            id: `ord_${d.id}`,
+                            order_number: ordNum,
+                            deal_id: d.id,
+                            deal_title: d.title,
+                            value: (d.final_value && d.final_value > 0) ? d.final_value : (d.estimated_value || 0),
+                            date: (d.closed_at || d.stage_entered_at || d.created_at || '').split('T')[0],
+                            vendor: d.assigned_to || representative || 'Vendedor'
+                          })
+                        }
+                      }
+                    })
+                  }
+                } catch (e) {}
+
+                const totalValue = savedOrders.reduce((sum: number, o: any) => sum + (Number(o.value) || 0), 0)
+
+                return (
+                  <div className="card p-4 border border-[var(--line)] bg-[var(--card)] flex flex-col gap-3 shadow-md">
+                    <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
+                      <div>
+                        <h4 className="text-xs font-mono font-bold text-[var(--lime)] uppercase flex items-center gap-2">
+                          <Trophy size={16} />
+                          <span>Histórico de Pedidos Fechados do Cliente ({savedOrders.length})</span>
+                        </h4>
+                        <p className="text-[11px] text-[var(--gray2)] mt-0.5 font-mono">
+                          Vendas finalizadas com o registro do vendedor responsável da época.
+                        </p>
+                      </div>
+                      <div className="text-right font-mono">
+                        <span className="text-[10px] text-[var(--gray2)] uppercase block">Total Faturado</span>
+                        <span className="text-sm font-black text-[var(--lime)]">{formatCurrency(totalValue)}</span>
+                      </div>
+                    </div>
+
+                    {savedOrders.length === 0 ? (
+                      <div className="p-8 text-center text-xs text-[var(--gray2)] font-mono border border-dashed border-[var(--line)] rounded-xl">
+                        Nenhum pedido fechado registrado para este cliente até o momento.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto border border-[var(--line)] rounded-xl">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="bg-[var(--charcoal)] border-b border-[var(--line)] text-[10px] font-mono text-[var(--gray2)] uppercase">
+                              <th className="py-2.5 px-3">Nº do Pedido</th>
+                              <th className="py-2.5 px-3">Data</th>
+                              <th className="py-2.5 px-3">Oportunidade / Negócio</th>
+                              <th className="py-2.5 px-3">Vendedor (Época da Venda)</th>
+                              <th className="py-2.5 px-3 text-right">Valor Fechado</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[var(--line)]/60 font-mono">
+                            {savedOrders.map((ord: any, idx: number) => (
+                              <tr key={ord.id || idx} className="hover:bg-[var(--lime)]/5 transition-colors">
+                                <td className="py-3 px-3 font-bold text-[var(--lime)]">
+                                  {ord.order_number || 'PED-S/N'}
+                                </td>
+                                <td className="py-3 px-3 text-[var(--white)]">
+                                  {ord.date ? ord.date.split('-').reverse().join('/') : '-'}
+                                </td>
+                                <td className="py-3 px-3 font-sans font-bold text-[var(--white)] uppercase">
+                                  {ord.deal_title || 'Oportunidade'}
+                                </td>
+                                <td className="py-3 px-3 text-[var(--white)] font-sans">
+                                  <span className="px-2 py-0.5 rounded bg-[var(--charcoal)] border border-[var(--line)] text-[11px] font-bold">
+                                    {ord.vendor || 'Não informado'}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-3 text-right font-bold text-[var(--lime)]">
+                                  {formatCurrency(Number(ord.value) || 0)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           )}
 

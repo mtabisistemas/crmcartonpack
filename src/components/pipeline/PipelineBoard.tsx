@@ -208,22 +208,30 @@ function ConfirmMoveModal({
 }: {
   deal: Deal
   targetStage: DealStage
-  onConfirm: () => void
+  onConfirm: (orderNumber?: string) => void
   onCancel: () => void
 }) {
   const currentStageConfig = STAGE_CONFIG[deal.stage]
   const targetStageConfig = STAGE_CONFIG[targetStage]
+  const [orderNumber, setOrderNumber] = useState(deal.order_number || '')
+
+  const isPedido = targetStage === 'pedido'
+  const canConfirm = !isPedido || orderNumber.trim().length > 0
 
   return (
     <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
       <div className="bg-[var(--charcoal)] border border-[var(--lime)]/30 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 animate-fade-up">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-[var(--lime)]/10 border border-[var(--lime)]/30 flex items-center justify-center text-[var(--lime)] font-bold text-lg">
-            ❓
+            {isPedido ? '📦' : '❓'}
           </div>
           <div>
-            <h3 className="font-display text-base text-[var(--white)] font-bold">Confirmar Mudança de Etapa</h3>
-            <p className="text-xs text-[var(--gray)] mt-0.5">Confirma a movimentação deste negócio no pipeline?</p>
+            <h3 className="font-display text-base text-[var(--white)] font-bold">
+              {isPedido ? 'Confirmar Fechamento do Pedido' : 'Confirmar Mudança de Etapa'}
+            </h3>
+            <p className="text-xs text-[var(--gray)] mt-0.5">
+              {isPedido ? 'Informe o número oficial do pedido para registrar a venda.' : 'Confirma a movimentação deste negócio no pipeline?'}
+            </p>
           </div>
         </div>
 
@@ -248,6 +256,23 @@ function ConfirmMoveModal({
           </div>
         </div>
 
+        {isPedido && (
+          <div className="flex flex-col gap-1.5 bg-[var(--card)] p-3 rounded-xl border border-[var(--lime)]/40 animate-fade-in">
+            <label className="text-xs font-mono font-bold text-[var(--lime)] uppercase flex items-center justify-between">
+              <span>Número do Pedido *</span>
+              <span className="text-[10px] text-amber-400 font-normal">Obrigatório</span>
+            </label>
+            <input
+              type="text"
+              autoFocus
+              className="input uppercase text-sm font-mono font-bold text-[var(--white)] bg-[var(--charcoal)] border-[var(--line)] focus:border-[var(--lime)]"
+              placeholder="Ex: PED-2026-8910"
+              value={orderNumber}
+              onChange={(e) => setOrderNumber(e.target.value.toUpperCase())}
+            />
+          </div>
+        )}
+
         <div className="flex justify-end gap-3 pt-2">
           <button 
             type="button" 
@@ -258,8 +283,11 @@ function ConfirmMoveModal({
           </button>
           <button 
             type="button" 
-            onClick={onConfirm}
-            className="btn btn-primary py-2.5 px-4 text-xs font-bold uppercase tracking-wider text-[#060606] cursor-pointer"
+            disabled={!canConfirm}
+            onClick={() => canConfirm && onConfirm(orderNumber.trim())}
+            className={`btn py-2.5 px-4 text-xs font-bold uppercase tracking-wider text-[#060606] transition-all ${
+              canConfirm ? 'btn-primary cursor-pointer' : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
+            }`}
           >
             Confirmar Mudança
           </button>
@@ -325,7 +353,13 @@ function OrderCelebrationModal({
           )}
         </div>
 
-        <div className="w-full bg-[var(--card)] border border-[var(--line)] rounded-2xl p-4 flex flex-col gap-1">
+        <div className="w-full bg-[var(--card)] border border-[var(--line)] rounded-2xl p-4 flex flex-col gap-2">
+          {deal.order_number && (
+            <div className="text-xs font-mono font-bold text-[var(--lime)] bg-[var(--charcoal)] px-3 py-1.5 rounded-xl border border-[var(--lime)]/30 w-fit mx-auto">
+              Nº DO PEDIDO: <strong className="text-white ml-1 font-mono">{deal.order_number}</strong>
+            </div>
+          )}
+
           <span className="text-[10px] font-mono text-[var(--gray2)] uppercase">Valor do Pedido Fechado</span>
           <span className="font-display text-3xl font-black text-[var(--lime)] font-mono">
             {formatCurrency(val)}
@@ -1011,7 +1045,7 @@ export function PipelineBoard() {
     })
   }
 
-  const handleExecuteMove = (reason?: string, notes?: string) => {
+  const handleExecuteMove = (reason?: string, notes?: string, orderNumber?: string) => {
     if (!pendingMove && !lostModalDeal) return
 
     const targetDeal = pendingMove ? pendingMove.deal : lostModalDeal!
@@ -1033,11 +1067,14 @@ export function PipelineBoard() {
     const currentStageLabel = STAGE_CONFIG[targetDeal.stage]?.label || targetDeal.stage
     const targetStageLabel = STAGE_CONFIG[targetStage]?.label || targetStage
 
+    const finalOrderNumber = orderNumber || targetDeal.order_number || (targetStage === 'pedido' ? `PED-${Date.now().toString().slice(-6)}` : undefined)
+    const dealVal = (targetDeal.final_value && targetDeal.final_value > 0) ? targetDeal.final_value : (targetDeal.estimated_value || 0)
+
     let activityText = `Oportunidade movida da etapa [${currentStageLabel}] para [${targetStageLabel}].`
     if (targetStage === 'perdido' && reason) {
       activityText = `Negócio marcado como PERDIDO. Motivo: ${reason}${notes ? ` • Obs: ${notes}` : ''}`
     } else if (targetStage === 'pedido') {
-      activityText = `🎉 PEDIDO FECHADO! Oportunidade confirmada com sucesso!`
+      activityText = `🎉 PEDIDO FECHADO! Pedido Nº ${finalOrderNumber || 'S/N'} • Valor: ${formatCurrency(dealVal)}`
     }
 
     const stageActivity = {
@@ -1056,6 +1093,7 @@ export function PipelineBoard() {
       ...targetDeal,
       stage: targetStage,
       stage_entered_at: new Date().toISOString(),
+      ...(finalOrderNumber ? { order_number: finalOrderNumber } : {}),
       ...(targetStage === 'perdido' ? { lost_reason: reason, lost_notes: notes } : {}),
       activities: [stageActivity, ...(targetDeal.activities || [])]
     }
@@ -1065,7 +1103,7 @@ export function PipelineBoard() {
     const isClosedDeal = targetStage === 'fechamento' || targetStage === 'pedido' || targetStage === 'pos_venda'
     const todayStr = new Date().toISOString().split('T')[0]
 
-    // Sync activity and last purchase date with contacts in localStorage
+    // Sync activity, order history log, and last purchase date with contacts in localStorage
     if (typeof window !== 'undefined') {
       try {
         const rawContacts = localStorage.getItem('crm_contacts')
@@ -1076,10 +1114,26 @@ export function PipelineBoard() {
             const matchesId = c.id === targetDeal.contact_id || c.id === targetDeal.contact?.id
             const matchesComp = cleanComp && (c.company || c.name || '').trim().toLowerCase() === cleanComp
             if (matchesId || matchesComp) {
+              // Create closed order snapshot with the assigned vendor at time of sale
+              const newOrderObj = targetStage === 'pedido' ? {
+                id: `ord_${Date.now()}`,
+                order_number: finalOrderNumber || `PED-${Date.now().toString().slice(-6)}`,
+                deal_id: targetDeal.id,
+                deal_title: targetDeal.title,
+                value: dealVal,
+                date: todayStr,
+                vendor: targetDeal.assigned_to || c.representative || c.assignedTo || c.assigned_to || authorName,
+                vendor_id: targetDeal.assigned_profile?.id
+              } : null
+
+              const existingOrders = Array.isArray(c.orders) ? c.orders : []
+              const updatedOrders = newOrderObj ? [newOrderObj, ...existingOrders.filter((o: any) => o.order_number !== newOrderObj.order_number)] : existingOrders
+
               return {
                 ...c,
                 status: targetStage === 'perdido' ? 'inativo' : 'ativo',
                 pipelineStage: targetStage,
+                orders: updatedOrders,
                 ...(isClosedDeal ? { lastPurchaseDate: todayStr, last_purchase_date: todayStr, lastPurchaseDays: 0 } : {}),
                 activities: [stageActivity, ...(c.activities || [])]
               }
@@ -1099,10 +1153,12 @@ export function PipelineBoard() {
         body: JSON.stringify({
           id: targetDeal.contact_id || targetDeal.contact?.id,
           company: comp,
+          status: targetStage === 'perdido' ? 'inativo' : 'ativo',
+          pipelineStage: targetStage,
           activities: [stageActivity],
-          ...(isClosedDeal ? { lastPurchaseDate: todayStr, status: 'ativo' } : {})
+          ...(isClosedDeal ? { lastPurchaseDate: todayStr } : {})
         })
-      }).catch(() => {})
+      }).catch(err => console.warn('Erro ao atualizar contato no Supabase:', err))
     }
 
     setPendingMove(null)
@@ -1431,7 +1487,7 @@ export function PipelineBoard() {
         <ConfirmMoveModal
           deal={pendingMove.deal}
           targetStage={pendingMove.targetStage}
-          onConfirm={() => handleExecuteMove()}
+          onConfirm={(orderNumber) => handleExecuteMove(undefined, undefined, orderNumber)}
           onCancel={() => setPendingMove(null)}
         />
       )}

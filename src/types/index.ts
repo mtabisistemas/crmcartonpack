@@ -39,6 +39,17 @@ export interface Profile {
   created_at: string
 }
 
+export interface ClientOrder {
+  id: string
+  order_number: string
+  deal_id?: string
+  deal_title: string
+  value: number
+  date: string
+  vendor: string
+  vendor_id?: string
+}
+
 export interface Contact {
   id: string
   name: string
@@ -74,6 +85,9 @@ export interface Contact {
   lastPurchaseDate?: string
   inactivityThresholdDays?: number
   planningNotes?: string
+
+  // Histórico de Pedidos Fechados do Cliente
+  orders?: ClientOrder[]
   
   // Histórico de Alterações Auditado
   history?: Array<{
@@ -98,6 +112,7 @@ export interface Deal {
   assigned_profile?: Profile
   estimated_value?: number
   final_value?: number
+  order_number?: string
   lost_reason?: string
   lost_notes?: string
   activities?: any[]
