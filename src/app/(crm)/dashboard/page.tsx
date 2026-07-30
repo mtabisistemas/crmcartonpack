@@ -1190,18 +1190,15 @@ export default function DashboardPage() {
     { key: 'fechamento', stage: 'Fechamento', count: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda' || d.stage === 'pedido').length, value: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda' || d.stage === 'pedido').reduce((acc, d) => acc + d.value, 0) || null, color: '#22c55e' },
   ]
 
-  // Lista dos Representantes Comerciais Reais dos Clientes da Carteira
+  // Lista dos Usuários Cadastrados no Sistema para o filtro do Dashboard
   const representatives = useMemo(() => {
-    const repSet = new Set<string>()
-    contacts.forEach(c => {
-      if (c.representative) repSet.add(c.representative.trim())
-    })
-    pipelineDeals.forEach(d => {
-      if (d.assigned_to) repSet.add(d.assigned_to.trim())
-      if (d.contact?.representative) repSet.add(d.contact.representative.trim())
-    })
-    return Array.from(repSet).filter(Boolean).sort()
-  }, [contacts, pipelineDeals])
+    if (systemUsers.length === 0) return []
+    return systemUsers
+      .filter(u => u.status !== 'inativo')
+      .map(u => u.name.trim())
+      .filter((name, idx, self) => name && self.indexOf(name) === idx)
+      .sort()
+  }, [systemUsers])
 
   // Suíte Completa de Métricas Avançadas
   const advancedMetrics = useMemo(() => {

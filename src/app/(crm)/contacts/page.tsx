@@ -135,6 +135,19 @@ function formatDateBr(isoDateStr: string | null | undefined) {
   return isoDateStr
 }
 
+export function cleanRepresentativeName(repStr?: string): string {
+  if (!repStr) return ''
+  const trimmed = repStr.trim()
+  if (trimmed.includes(' - ')) {
+    const parts = trimmed.split(' - ').map(s => s.trim())
+    if (parts.length >= 2 && parts[0].toLowerCase() === parts[1].toLowerCase()) {
+      return parts[0]
+    }
+    return parts[0]
+  }
+  return trimmed
+}
+
 function capitalizeString(str: string) {
   return str.toLowerCase().replace(/(^\w|\s\w)/g, m => m.toUpperCase())
 }
@@ -215,9 +228,19 @@ export function getContactActivityAndRepurchaseInfo(contact: MockContact) {
     }
   }
 
+  let daysSinceLastPurchase: number | null = null
+  if (contact.lastPurchaseDate) {
+    const lastDate = parseFlexibleDate(contact.lastPurchaseDate)
+    if (lastDate && !isNaN(lastDate.getTime())) {
+      const diffMs = now.getTime() - lastDate.getTime()
+      daysSinceLastPurchase = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
+    }
+  }
+
   return {
     lastActivityDate,
     daysSinceLastActivity,
+    daysSinceLastPurchase,
     isAutoInactive,
     computedStatus,
     daysToRepurchase,
@@ -2647,21 +2670,20 @@ export default function ContactsPage() {
       }
 
       // Gather representative names dynamically from contacts list
-      const namesFromContacts = Array.from(new Set(contacts.map(c => (c.representative || '').trim()).filter(Boolean))).sort()
+      const namesFromContacts = Array.from(new Set(contacts.map(c => cleanRepresentativeName(c.representative)).filter(Boolean))).sort()
       setRepresentativesList(namesFromContacts)
     }
 
     fetchRegisteredUsers()
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('storage-users-changed', fetchRegisteredUsers)
-      window.addEventListener('storage', fetchRegisteredUsers)
-      return () => {
-        window.removeEventListener('storage-users-changed', fetchRegisteredUsers)
-        window.removeEventListener('storage', fetchRegisteredUsers)
-      }
-    }
   }, [])
+
+  // Sincroniza dinamicamente o filtro de representantes com a carteira de contatos carregada
+  useEffect(() => {
+    if (contacts && contacts.length > 0) {
+      const reps = Array.from(new Set(contacts.map(c => cleanRepresentativeName(c.representative)).filter(Boolean))).sort()
+      setRepresentativesList(reps)
+    }
+  }, [contacts])
 
   const isRep = currentUser?.role === 'representante' || currentUser?.role === 'vendedor'
 
@@ -3178,15 +3200,6 @@ export default function ContactsPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <h4 className="text-xs font-bold text-[var(--white)] truncate">{contact.company || contact.name}</h4>
-                      {repInfo.isOverdue && (
-                        <span 
-                          title={`🔴 Recompra Atrasada (${repInfo.daysOverdue} dias)! Prevista para ${repInfo.nextPurchaseDateStr}`}
-                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] font-mono font-bold animate-pulse shrink-0 cursor-help"
-                        >
-                          <AlertTriangle size={11} className="text-red-400 shrink-0" />
-                          <span>Atrasado ({repInfo.daysOverdue}d)</span>
-                        </span>
-                      )}
                     </div>
                     {contact.company && contact.name && (
                       <span className="text-[9px] font-mono text-[var(--gray)] block mt-0.5 truncate">Contato: {contact.name}</span>
@@ -3214,7 +3227,7 @@ export default function ContactsPage() {
 
                 <div className="flex items-center justify-between text-[9px] font-mono text-[var(--gray2)] mt-0.5">
                   <span>Última compra:</span>
-                  <span className="font-bold text-[var(--white)]">{contact.lastPurchaseDays ? `${contact.lastPurchaseDays}d sem comprar` : 'Sem compras'}</span>
+                  <span className="font-bold text-[var(--white)]">{repInfo.daysSinceLastPurchase !== null ? `${repInfo.daysSinceLastPurchase} dias` : 'Sem compras'}</span>
                 </div>
 
                 <div className="border-t border-[var(--line)] pt-2 flex items-center justify-around gap-1.5">
@@ -3314,18 +3327,9 @@ export default function ContactsPage() {
                           <div className="w-7 h-7 rounded-lg bg-[var(--line)] flex items-center justify-center text-[var(--white)] shrink-0">
                             <Building2 size={14} />
                           </div>
-                          <div className="min-w-0">
-                            <div className="text-xs font-bold text-[var(--white)] flex items-center gap-2 flex-wrap">
-                              <span className="truncate">{contact.company}</span>
-                              {repInfo.isOverdue && (
-                                <span 
-                                  title={`🔴 Recompra Atrasada (${repInfo.daysOverdue} dias)! Prevista para ${repInfo.nextPurchaseDateStr}`}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] font-mono font-bold animate-pulse shrink-0 cursor-help"
-                                >
-                                  <AlertTriangle size={11} className="text-red-400 shrink-0" />
-                                  <span>Atrasado ({repInfo.daysOverdue}d)</span>
-                                </span>
-                              )}
+                          <div className="min-w-0 max-w-[280px]">
+                            <div className="text-xs font-bold text-[var(--white)] flex items-center gap-2">
+                              <span className="truncate" title={contact.company}>{contact.company}</span>
                               {isInactive && (
                                 <span className="font-mono text-[9px] text-[var(--gray)] flex items-center gap-1 font-normal shrink-0" title={repInfo.isAutoInactive ? `Inativado por ${repInfo.daysSinceLastActivity}d sem atividade` : undefined}>
                                   <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
@@ -3387,19 +3391,20 @@ export default function ContactsPage() {
                       </td>
 
                       {/* Representante */}
-                      <td className="py-2 px-3 text-xs font-semibold text-[var(--white)]">
+                      <td className="py-2 px-3 text-xs font-semibold text-[var(--white)] max-w-[200px]">
                         <div className="flex items-center gap-1.5">
                           <User size={11} className="text-[var(--gray)] shrink-0" />
-                          <span className="truncate">{contact.representative ? contact.representative : <span className="text-[var(--gray2)] font-normal italic">Sem representante</span>}</span>
+                          <span className="truncate" title={cleanRepresentativeName(contact.representative)}>
+                            {cleanRepresentativeName(contact.representative) || <span className="text-[var(--gray2)] font-normal italic">Sem representante</span>}
+                          </span>
                         </div>
                       </td>
 
                       {/* Ultima compra */}
-                      <td className="py-2 px-3">
-                        <div className="flex flex-col leading-tight">
-                          <span className="text-xs font-bold text-[var(--white)] font-mono">{contact.lastPurchaseDays} dias</span>
-                          <span className="text-[9px] text-[var(--gray2)] uppercase tracking-wider font-mono">sem comprar</span>
-                        </div>
+                      <td className="py-2 px-3 whitespace-nowrap">
+                        <span className="text-xs font-bold text-[var(--white)] font-mono">
+                          {repInfo.daysSinceLastPurchase !== null ? `${repInfo.daysSinceLastPurchase} dias` : '-'}
+                        </span>
                       </td>
 
                       {/* Localizacao — Google Maps icon */}
