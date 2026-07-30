@@ -1594,12 +1594,37 @@ function ContactDrawer({
           {activeTab === 'pedidos' && (
             <div className="flex flex-col gap-4 animate-fade-in pb-12">
               {(() => {
-                let savedOrders: any[] = [...((contact as any)?.orders || [])]
+                let initialOrders: any[] = [...((contact as any)?.orders || [])]
+                // Clear legacy single dummy fallback item if present
+                if (initialOrders.length === 1 && (initialOrders[0]?.value === 4650 || initialOrders[0]?.order_number === '364789' || initialOrders[0]?.order_number === 'PED-REGISTRADO')) {
+                  initialOrders = []
+                }
                 
                 // Helper para busca insensível a acentos, pontuações e espaços extras
                 const norm = (s?: string) => (s || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^\w]/g, "")
                 const cleanTargetComp = norm(company || name)
                 const cleanTargetCnpj = (cnpj || '').replace(/\D/g, '')
+
+                // If initialOrders is empty, try pulling full orders array from crm_contacts in localStorage
+                if (initialOrders.length === 0 && typeof window !== 'undefined') {
+                  const rawContacts = localStorage.getItem('crm_contacts')
+                  if (rawContacts) {
+                    try {
+                      const parsedContacts = JSON.parse(rawContacts)
+                      const matchedStateContact = parsedContacts.find((c: any) => {
+                        const cComp = norm(c.company || c.name)
+                        const cCnpj = (c.cnpj || '').replace(/\D/g, '')
+                        return (cleanTargetCnpj && cCnpj && cleanTargetCnpj.length >= 8 && cleanTargetCnpj === cCnpj) ||
+                               (cleanTargetComp && cComp && (cleanTargetComp === cComp || cleanTargetComp.includes(cComp) || cComp.includes(cleanTargetComp)))
+                      })
+                      if (matchedStateContact && matchedStateContact.orders && matchedStateContact.orders.length > 0) {
+                        initialOrders = [...matchedStateContact.orders]
+                      }
+                    } catch (e) {}
+                  }
+                }
+
+                let savedOrders: any[] = initialOrders
 
                 // Also pull orders from cp_crm_pipeline_deals for this client
                 try {
@@ -2505,131 +2530,122 @@ export default function ContactsPage() {
   // Dynamic representatives list from CRM Users in localStorage
   const [representativesList, setRepresentativesList] = useState<string[]>([])
 
-  // Load contacts and representatives on mount (fetching from Supabase contacts table)
+  // Load contacts list on mount
   useEffect(() => {
-    // Load current user session
-    if (typeof window !== 'undefined') {
-      const session = localStorage.getItem('crm_current_user')
-      if (session) {
-        try {
-          setCurrentUser(JSON.parse(session))
-        } catch (e) {
-          console.error(e)
-        }
-      }
-    }
-
-    async function loadContacts() {
+    const loadContacts = async () => {
+      // 1. Fetch imported_contacts.json FIRST to have the authoritative 32,639 multi-order map
+      let importedMap = new Map<string, any>()
+      let rawImportedContacts: MockContact[] = []
       try {
-        const res = await fetch('/api/contacts', { cache: 'no-store' })
-        const json = await res.json()
-        if (json.success && Array.isArray(json.contacts) && json.contacts.length > 0) {
-          const mapped: MockContact[] = json.contacts.map((item: any) => {
-            let notesObj: any = {}
-            if (item.notes) {
-              try {
-                notesObj = typeof item.notes === 'string' ? JSON.parse(item.notes) : item.notes
-              } catch (e) {}
-            }
-
-            let loadedActs: Activity[] = notesObj.activities || []
-            if (item.activities) {
-              try {
-                loadedActs = typeof item.activities === 'string' ? JSON.parse(item.activities) : item.activities
-              } catch (e) {}
-            }
-
-            let loadedHistory: any[] = notesObj.history || []
-            if (item.history) {
-              try {
-                loadedHistory = typeof item.history === 'string' ? JSON.parse(item.history) : item.history
-              } catch (e) {}
-            }
-
-            const cleanName = (item.name && item.name.toLowerCase().trim() !== item.company?.toLowerCase().trim()) ? item.name : ''
-
-            return {
-              id: item.id,
-              name: cleanName,
-              company: item.company || '',
-              cnpj: item.cnpj || '',
-              curve: item.curve || 'C',
-              representative: item.representative || item.assigned_to || '',
-              phone: item.phone || '',
-              email: item.email || '',
-              city: item.city || '',
-              state: item.state || '',
-              status: item.status || 'ativo',
-              lastPurchaseDays: 0,
-              tradeName: item.trade_name || item.role || item.company || '',
-              registrationStatus: item.registration_status || 'ATIVA',
-              mainCnae: item.main_cnae || '',
-              address: item.address || '',
-              bairro: item.bairro || '',
-              cep: item.cep || '',
-              sideActivities: item.side_activities ? (typeof item.side_activities === 'string' ? JSON.parse(item.side_activities) : item.side_activities) : [],
-              taxRegime: item.tax_regime || 'Simples Nacional',
-              specialSituation: item.special_situation || 'Nenhuma',
-              specialSituationDate: item.special_situation_date || '-',
-              stateRegistration: item.state_registration || '',
-              website: item.website || '',
-              instagram: item.instagram || '',
-              linkedin: item.linkedin || '',
-              facebook: item.facebook || '',
-              projectedPurchaseValue: notesObj.projectedPurchaseValue ?? item.projected_purchase_value ?? 0,
-              purchaseFrequencyDays: notesObj.purchaseFrequencyDays ?? item.purchase_frequency_days ?? 30,
-              lastPurchaseDate: notesObj.lastPurchaseDate || item.last_purchase_date || '',
-              inactivityThresholdDays: notesObj.inactivityThresholdDays ?? item.inactivity_threshold_days ?? 90,
-              planningNotes: notesObj.planningNotes || item.planning_notes || '',
-              history: loadedHistory,
-              activities: loadedActs,
-              created_at: item.created_at || new Date().toISOString()
-            }
+        const impRes = await fetch('/imported_contacts.json')
+        if (impRes.ok) {
+          rawImportedContacts = await impRes.json()
+          const norm = (s?: string) => (s || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^\w]/g, "")
+          rawImportedContacts.forEach((ic: any) => {
+            if (ic.id) importedMap.set(ic.id, ic)
+            if (ic.company) importedMap.set(norm(ic.company), ic)
+            if (ic.cnpj) importedMap.set((ic.cnpj || '').replace(/\D/g, ''), ic)
           })
-          setContacts(mapped)
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('crm_contacts', JSON.stringify(mapped))
+        }
+      } catch (e) {}
+
+      // 2. Try fetching from Supabase API
+      try {
+        const res = await fetch('/api/contacts')
+        if (res.ok) {
+          const json = await res.json()
+          if (json.success && Array.isArray(json.contacts) && json.contacts.length > 0) {
+            const mapped: MockContact[] = json.contacts.map((item: any) => {
+              let notesObj: any = {}
+              if (item.notes) {
+                try {
+                  notesObj = typeof item.notes === 'string' ? JSON.parse(item.notes) : item.notes
+                } catch (e) {}
+              }
+
+              let loadedActs: Activity[] = notesObj.activities || []
+              if (item.activities) {
+                try {
+                  loadedActs = typeof item.activities === 'string' ? JSON.parse(item.activities) : item.activities
+                } catch (e) {}
+              }
+
+              let loadedHistory: any[] = notesObj.history || []
+              if (item.history) {
+                try {
+                  loadedHistory = typeof item.history === 'string' ? JSON.parse(item.history) : item.history
+                } catch (e) {}
+              }
+
+              const norm = (s?: string) => (s || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^\w]/g, "")
+              const itemCompNorm = norm(item.company)
+              const itemCnpjClean = (item.cnpj || '').replace(/\D/g, '')
+
+              const baseRef = importedMap.get(item.id) || (itemCompNorm ? importedMap.get(itemCompNorm) : null) || (itemCnpjClean ? importedMap.get(itemCnpjClean) : null)
+
+              const resolvedOrders = (notesObj.orders && notesObj.orders.length > 0)
+                ? notesObj.orders
+                : (item.orders && item.orders.length > 0)
+                  ? item.orders
+                  : (baseRef?.orders || [])
+
+              const resolvedLastDate = notesObj.lastPurchaseDate || item.last_purchase_date || baseRef?.lastPurchaseDate || (resolvedOrders[0]?.date || '')
+
+              const cleanName = (item.name && item.name.toLowerCase().trim() !== item.company?.toLowerCase().trim()) ? item.name : ''
+
+              return {
+                id: item.id,
+                name: cleanName,
+                company: item.company || '',
+                cnpj: item.cnpj || '',
+                curve: item.curve || 'C',
+                representative: item.representative || item.assigned_to || '',
+                phone: item.phone || '',
+                email: item.email || '',
+                city: item.city || '',
+                state: item.state || '',
+                status: item.status || 'ativo',
+                lastPurchaseDays: 0,
+                tradeName: item.trade_name || item.role || item.company || '',
+                registrationStatus: item.registration_status || 'ATIVA',
+                mainCnae: item.main_cnae || '',
+                address: item.address || '',
+                bairro: item.bairro || '',
+                cep: item.cep || '',
+                sideActivities: item.side_activities ? (typeof item.side_activities === 'string' ? JSON.parse(item.side_activities) : item.side_activities) : [],
+                taxRegime: item.tax_regime || 'Simples Nacional',
+                specialSituation: item.special_situation || 'Nenhuma',
+                specialSituationDate: item.special_situation_date || '-',
+                stateRegistration: item.state_registration || '',
+                website: item.website || '',
+                instagram: item.instagram || '',
+                linkedin: item.linkedin || '',
+                facebook: item.facebook || '',
+                projectedPurchaseValue: notesObj.projectedPurchaseValue ?? item.projected_purchase_value ?? 0,
+                purchaseFrequencyDays: notesObj.purchaseFrequencyDays ?? item.purchase_frequency_days ?? 30,
+                lastPurchaseDate: resolvedLastDate,
+                inactivityThresholdDays: notesObj.inactivityThresholdDays ?? item.inactivity_threshold_days ?? 90,
+                planningNotes: notesObj.planningNotes || item.planning_notes || '',
+                history: loadedHistory,
+                activities: loadedActs,
+                orders: resolvedOrders,
+                created_at: item.created_at || new Date().toISOString()
+              } as MockContact
+            })
+            setContacts(mapped)
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('crm_contacts', JSON.stringify(mapped))
+            }
+            return
           }
-          return
         }
       } catch (err) {
         console.error('Error fetching contacts from API:', err)
       }
 
-      if (typeof window !== 'undefined') {
-        // Enforce cache version invalidation so all browsers load updated 32,639 multi-order dataset
-        const CURRENT_CACHE_VERSION = 'v10_multi_orders_2026_07_30'
-        const savedVersion = localStorage.getItem('crm_contacts_cache_version')
-
-        if (savedVersion !== CURRENT_CACHE_VERSION) {
-          localStorage.removeItem('crm_contacts')
-          localStorage.setItem('crm_contacts_cache_version', CURRENT_CACHE_VERSION)
-        }
-
-        const savedContacts = localStorage.getItem('crm_contacts')
-        if (savedContacts) {
-          try {
-            const parsed = JSON.parse(savedContacts)
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setContacts(parsed)
-              return
-            }
-          } catch (e) {}
-        }
-
-        try {
-          const impRes = await fetch('/imported_contacts.json')
-          if (impRes.ok) {
-            const impContacts = await impRes.json()
-            if (Array.isArray(impContacts) && impContacts.length > 0) {
-              setContacts(impContacts)
-              localStorage.setItem('crm_contacts', JSON.stringify(impContacts))
-              return
-            }
-          }
-        } catch (e) {}
-
-        setContacts([])
+      if (typeof window !== 'undefined' && rawImportedContacts.length > 0) {
+        setContacts(rawImportedContacts)
+        localStorage.setItem('crm_contacts', JSON.stringify(rawImportedContacts))
       }
     }
 
