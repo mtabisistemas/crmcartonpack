@@ -2597,6 +2597,15 @@ export default function ContactsPage() {
       }
 
       if (typeof window !== 'undefined') {
+        // Enforce cache version invalidation so all browsers load updated 32,639 multi-order dataset
+        const CURRENT_CACHE_VERSION = 'v10_multi_orders_2026_07_30'
+        const savedVersion = localStorage.getItem('crm_contacts_cache_version')
+
+        if (savedVersion !== CURRENT_CACHE_VERSION) {
+          localStorage.removeItem('crm_contacts')
+          localStorage.setItem('crm_contacts_cache_version', CURRENT_CACHE_VERSION)
+        }
+
         const savedContacts = localStorage.getItem('crm_contacts')
         if (savedContacts) {
           try {
