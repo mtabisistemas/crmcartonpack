@@ -25,6 +25,21 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
           setCurrentUser(JSON.parse(session))
         } catch (e) {}
       }
+
+      // Purge cached test data in browser localStorage (preserving user accounts)
+      const dataReset = localStorage.getItem('cp_crm_data_reset_v1')
+      if (!dataReset) {
+        localStorage.removeItem('crm_contacts')
+        localStorage.removeItem('cp_crm_pipeline_deals')
+        localStorage.removeItem('cp_crm_appointments')
+        localStorage.removeItem('cp_crm_activities')
+        localStorage.removeItem('cp_crm_metas')
+        localStorage.removeItem('cp_crm_briefings')
+        localStorage.removeItem('cp_crm_reports')
+        localStorage.setItem('cp_crm_data_reset_v1', 'true')
+        window.dispatchEvent(new Event('storage-contacts-changed'))
+        window.dispatchEvent(new Event('storage-deals-changed'))
+      }
     }
   }, [])
 
