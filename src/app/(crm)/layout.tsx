@@ -27,7 +27,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
       }
 
       // Purge cached test data in browser localStorage (preserving user accounts)
-      const dataReset = localStorage.getItem('cp_crm_data_reset_v1')
+      const dataReset = localStorage.getItem('cp_crm_data_reset_v2')
       if (!dataReset) {
         localStorage.removeItem('crm_contacts')
         localStorage.removeItem('cp_crm_pipeline_deals')
@@ -36,7 +36,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('cp_crm_metas')
         localStorage.removeItem('cp_crm_briefings')
         localStorage.removeItem('cp_crm_reports')
-        localStorage.setItem('cp_crm_data_reset_v1', 'true')
+        localStorage.setItem('cp_crm_data_reset_v2', 'true')
         window.dispatchEvent(new Event('storage-contacts-changed'))
         window.dispatchEvent(new Event('storage-deals-changed'))
       }
