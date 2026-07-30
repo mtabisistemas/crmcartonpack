@@ -10,7 +10,6 @@ import { Loader2 } from 'lucide-react'
 import { ToastContainer } from '@/components/ToastContainer'
 
 import ActivityTracker from '@/components/ActivityTracker'
-import { StagingBanner } from '@/components/StagingBanner'
 
 export default function CRMLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -106,7 +105,6 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-layout">
-      <StagingBanner />
       <ToastContainer />
       <ActivityTracker />
       <Sidebar />
