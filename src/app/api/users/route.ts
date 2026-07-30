@@ -182,3 +182,52 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 })
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'ID do usuário é obrigatório' }, { status: 400 })
+    }
+
+    let targetId: string | null = isUUID(id) ? id : null
+
+    if (!targetId) {
+      // Look up profile by id or email
+      const { data: found } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .or(`id.eq.${id},email.eq.${id}`)
+        .limit(1)
+      if (found && found.length > 0) {
+        targetId = found[0].id
+      }
+    }
+
+    const deleteId = targetId || id
+
+    // Delete from profiles
+    const { error: pErr } = await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('id', deleteId)
+
+    if (pErr) {
+      console.error('[API /users DELETE] Error deleting profile:', pErr)
+    }
+
+    // Delete from auth.users
+    if (isUUID(deleteId)) {
+      await supabaseAdmin.auth.admin.deleteUser(deleteId).catch(err => {
+        console.error('[API /users DELETE] Error deleting auth user:', err)
+      })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (err: any) {
+    console.error('[API /users DELETE] Unexpected error:', err)
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+  }
+}

@@ -416,15 +416,29 @@ export default function UsersPage() {
     setUserToDelete(id)
   }
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!userToDelete) return
-    const updated = users.filter(u => u.id !== userToDelete)
+    const targetId = userToDelete
+    const userObj = users.find(u => u.id === targetId)
+
+    // Optimistic UI update
+    const updated = users.filter(u => u.id !== targetId)
     saveUsers(updated)
 
-    dbService.usuarios.delete(userToDelete).catch(e => console.error('Failed to delete user from API', e))
+    try {
+      await fetch(`/api/users?id=${encodeURIComponent(targetId)}`, {
+        method: 'DELETE'
+      })
+    } catch (e) {
+      console.error('Failed to delete user from API', e)
+    }
 
-    setToastMessage('Usuário excluído com sucesso!')
+    setToastMessage(`Usuário ${userObj?.name || ''} excluído com sucesso!`)
     setTimeout(() => setToastMessage(''), 3000)
+
+    if (selectedUserForFicha?.id === targetId) {
+      setSelectedUserForFicha(null)
+    }
     setUserToDelete(null)
   }
 
@@ -750,6 +764,16 @@ export default function UsersPage() {
                         >
                           <Eye size={13} />
                         </button>
+                        {(isAdmin || (isGestor && (user.role || '').toLowerCase() !== 'admin')) && (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(user.id)}
+                            title="Excluir Usuário"
+                            className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500 transition-all cursor-pointer"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
                       </div>
                     </td>
 
@@ -1038,6 +1062,52 @@ Obs: No primeiro acesso você deverá alterar a senha temporária para ativar su
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação de Exclusão de Usuário */}
+      {userToDelete && (() => {
+        const userObj = users.find(u => u.id === userToDelete)
+        return (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[999999] flex items-center justify-center p-4">
+            <div className="bg-[var(--charcoal)] border border-red-500/50 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 animate-fade-up">
+              <div className="flex items-center gap-3 border-b border-[var(--line)] pb-3">
+                <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center shrink-0">
+                  <AlertTriangle size={20} />
+                </div>
+                <div>
+                  <h3 className="font-display text-base text-white font-bold">
+                    Excluir Usuário?
+                  </h3>
+                  <p className="text-xs text-[var(--gray)] font-mono">
+                    Esta ação removerá o acesso permanentemente.
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-xs text-zinc-300 leading-relaxed font-sans">
+                Tem certeza que deseja excluir permanentemente o usuário <strong className="text-white">{userObj?.name || 'selecionado'}</strong> ({userObj?.email || userObj?.username})?
+              </p>
+
+              <div className="flex justify-end gap-3 pt-2 border-t border-[var(--line)]">
+                <button
+                  type="button"
+                  onClick={() => setUserToDelete(null)}
+                  className="btn btn-secondary py-2 px-4 text-xs font-bold uppercase tracking-wider cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDelete}
+                  className="btn py-2 px-4 text-xs font-bold uppercase tracking-wider bg-red-600 hover:bg-red-500 text-white rounded-xl cursor-pointer shadow-lg flex items-center gap-1.5"
+                >
+                  <Trash2 size={13} />
+                  <span>Sim, Excluir</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Ficha do Usuário (Drawer) */}
       {selectedUserForFicha && (
