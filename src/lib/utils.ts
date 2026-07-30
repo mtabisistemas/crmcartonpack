@@ -80,10 +80,6 @@ export function formatCnaeCode(raw: string | number | undefined | null): string 
   return str
 }
 
-/**
- * Formata strings completas de CNAE (ex: "7112000 - Serviços de engenharia")
- * Retornando o código formatado no padrão oficial da Receita Federal: "7112-0/00 - Serviços de engenharia"
- */
 export function formatCnaeFullString(raw: string | undefined | null): string {
   if (!raw) return ''
   const str = String(raw).trim()
@@ -94,3 +90,73 @@ export function formatCnaeFullString(raw: string | undefined | null): string {
   }
   return formatCnaeCode(str)
 }
+
+/**
+ * Normaliza o nome do representante removendo acentos, duplicidades de hífens,
+ * sufixos e convertendo para minúsculas para agrupamento e comparação perfeita.
+ */
+export function normalizeRepKey(repStr?: string | null): string {
+  if (!repStr) return ''
+  let cleaned = String(repStr).trim()
+  if (cleaned.includes(' - ')) {
+    cleaned = cleaned.split(' - ')[0].trim()
+  }
+  return cleaned
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Retorna o nome canônico formatado de forma limpa e padronizada (ex: "Bottega Representações LTDA")
+ */
+export function formatCanonicalRepName(repStr?: string | null): string {
+  if (!repStr) return ''
+  let cleaned = String(repStr).trim()
+  if (cleaned.includes(' - ')) {
+    cleaned = cleaned.split(' - ')[0].trim()
+  }
+  if (!cleaned) return ''
+
+  const words = cleaned.split(/\s+/)
+  return words.map((w, idx) => {
+    const upper = w.toUpperCase()
+    if (['LTDA', 'LTDA.', 'S.A.', 'S/A', 'S.A', 'E'].includes(upper)) return upper
+    if (w.length <= 2 && idx > 0 && idx < words.length - 1 && !/^[A-Z]\.$/.test(w)) return w.toLowerCase()
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+  }).join(' ')
+}
+
+/**
+ * Agrupa, desduplica e ordena os nomes de representantes comerciais a partir de uma lista bruta.
+ * Funde nomes em maiúsculas/minúsculas/acentuados em um único nome canônico limpo.
+ */
+export function getUniqueCanonicalRepresentatives(rawReps: (string | undefined | null)[]): string[] {
+  const map = new Map<string, string>()
+  
+  for (const raw of rawReps) {
+    if (!raw) continue
+    const key = normalizeRepKey(raw)
+    if (!key) continue
+    
+    if (!map.has(key)) {
+      map.set(key, formatCanonicalRepName(raw))
+    }
+  }
+  
+  return Array.from(map.values()).sort((a, b) => a.localeCompare(b, 'pt-BR'))
+}
+
+/**
+ * Compara se dois representantes correspondem à mesma entidade (insensível a maiúsculas/acentos).
+ */
+export function isSameRepresentative(repA?: string | null, repB?: string | null): boolean {
+  if (!repA || !repB) return false
+  const keyA = normalizeRepKey(repA)
+  const keyB = normalizeRepKey(repB)
+  if (!keyA || !keyB) return false
+  return keyA === keyB
+}
+

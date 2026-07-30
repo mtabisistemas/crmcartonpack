@@ -33,7 +33,7 @@ import {
   Calendar,
   Trophy
 } from 'lucide-react'
-import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString } from '@/lib/utils'
+import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString, getUniqueCanonicalRepresentatives, isSameRepresentative } from '@/lib/utils'
 import { supabase } from '@/services/supabase-client'
 import { ProspeccaoModal } from '@/components/ProspeccaoModal'
 import { RegisterActivityModal } from '@/components/RegisterActivityModal'
@@ -2677,10 +2677,10 @@ export default function ContactsPage() {
     fetchRegisteredUsers()
   }, [])
 
-  // Sincroniza dinamicamente o filtro de representantes com a carteira de contatos carregada
+  // Sincroniza dinamicamente o filtro de representantes com a carteira de contatos carregada (funde maiúsculas/minúsculas)
   useEffect(() => {
     if (contacts && contacts.length > 0) {
-      const reps = Array.from(new Set(contacts.map(c => cleanRepresentativeName(c.representative)).filter(Boolean))).sort()
+      const reps = getUniqueCanonicalRepresentatives(contacts.map(c => c.representative))
       setRepresentativesList(reps)
     }
   }, [contacts])
@@ -2697,7 +2697,7 @@ export default function ContactsPage() {
   // ── Scoped Contacts for Metrics Calculation ──
   const scopedContacts = useMemo(() => {
     return contacts.filter(contact => {
-      if (isRep && contact.representative !== currentUser?.name) return false
+      if (isRep && !isSameRepresentative(contact.representative, currentUser?.name)) return false
       return true
     })
   }, [contacts, isRep, currentUser?.name])
@@ -2734,7 +2734,7 @@ export default function ContactsPage() {
   const filteredContacts = useMemo(() => {
     return contacts.filter(contact => {
       // Enforce rep scope: only own contacts
-      if (isRep && contact.representative !== currentUser?.name) return false
+      if (isRep && !isSameRepresentative(contact.representative, currentUser?.name)) return false
 
       const matchesSearch = 
         contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -2742,7 +2742,7 @@ export default function ContactsPage() {
         contact.cnpj.includes(searchTerm)
       
       const matchesCurve = selectedCurve === 'all' || contact.curve === selectedCurve
-      const matchesRep = selectedRep === 'all' || contact.representative === selectedRep
+      const matchesRep = selectedRep === 'all' || isSameRepresentative(contact.representative, selectedRep)
 
       const repInfo = getContactActivityAndRepurchaseInfo(contact)
       const effectiveStatus = repInfo.computedStatus
