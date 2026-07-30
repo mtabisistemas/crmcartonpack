@@ -1647,10 +1647,11 @@ function ContactDrawer({
                     deal_title: `Base Sistema`,
                     value: fallbackVal,
                     date: lastPurchaseDate,
-                    payment_terms: curve === 'A' ? '30/60/90 Dias' : (curve === 'B' ? '28/56 Dias' : '30 Dias'),
-                    vendor: formatCanonicalRepName(representative || 'Vendedor')
                   })
                 }
+
+                // Sort orders by date descending (newest order first)
+                savedOrders.sort((a: any, b: any) => (b.date || '').localeCompare(a.date || ''))
 
                 const totalValue = savedOrders.reduce((sum: number, o: any) => sum + (Number(o.value) || 0), 0)
 
