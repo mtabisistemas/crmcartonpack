@@ -33,7 +33,7 @@ import {
   Calendar,
   Trophy
 } from 'lucide-react'
-import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString, getUniqueCanonicalRepresentatives, isSameRepresentative } from '@/lib/utils'
+import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString, getUniqueCanonicalRepresentatives, isSameRepresentative, formatCanonicalRepName } from '@/lib/utils'
 import { supabase } from '@/services/supabase-client'
 import { ProspeccaoModal } from '@/components/ProspeccaoModal'
 import { RegisterActivityModal } from '@/components/RegisterActivityModal'
@@ -3330,12 +3330,6 @@ export default function ContactsPage() {
                           <div className="min-w-0 max-w-[280px]">
                             <div className="text-xs font-bold text-[var(--white)] flex items-center gap-2">
                               <span className="truncate" title={contact.company}>{contact.company}</span>
-                              {isInactive && (
-                                <span className="font-mono text-[9px] text-[var(--gray)] flex items-center gap-1 font-normal shrink-0" title={repInfo.isAutoInactive ? `Inativado por ${repInfo.daysSinceLastActivity}d sem atividade` : undefined}>
-                                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
-                                  Inativo
-                                </span>
-                              )}
                             </div>
                             <div className="text-[10px] text-[var(--gray)] font-mono leading-tight">{contact.cnpj}</div>
                           </div>
@@ -3394,8 +3388,8 @@ export default function ContactsPage() {
                       <td className="py-2 px-3 text-xs font-semibold text-[var(--white)] max-w-[200px]">
                         <div className="flex items-center gap-1.5">
                           <User size={11} className="text-[var(--gray)] shrink-0" />
-                          <span className="truncate" title={cleanRepresentativeName(contact.representative)}>
-                            {cleanRepresentativeName(contact.representative) || <span className="text-[var(--gray2)] font-normal italic">Sem representante</span>}
+                          <span className="truncate" title={formatCanonicalRepName(contact.representative)}>
+                            {formatCanonicalRepName(contact.representative) || <span className="text-[var(--gray2)] font-normal italic">Sem representante</span>}
                           </span>
                         </div>
                       </td>
