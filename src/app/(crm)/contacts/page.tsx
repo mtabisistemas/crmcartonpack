@@ -32,7 +32,10 @@ import {
   DollarSign,
   Calendar,
   Trophy,
-  Package
+  Package,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react'
 import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString, getUniqueCanonicalRepresentatives, isSameRepresentative, formatCanonicalRepName } from '@/lib/utils'
 import { supabase } from '@/services/supabase-client'
@@ -2755,6 +2758,22 @@ export default function ContactsPage() {
   // ── Repurchase Category Filter State ──
   const [repurchaseCategoryFilter, setRepurchaseCategoryFilter] = useState<'all' | 'atrasado' | '15dias' | '30dias' | 'inativo'>('all')
 
+  // ── Column Sorting State (Default: Alphabetical A-Z by Razão Social/Company) ──
+  type SortField = 'company' | 'curve' | 'city' | 'state' | 'status' | 'representative' | 'lastPurchaseDate'
+  type SortOrder = 'asc' | 'desc'
+
+  const [sortField, setSortField] = useState<SortField>('company')
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc')
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortOrder(field === 'lastPurchaseDate' ? 'desc' : 'asc')
+    }
+  }
+
   // ── Pagination State ──
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 25
@@ -2787,7 +2806,7 @@ export default function ContactsPage() {
         atrasado++
       } else if (repInfo.daysToRepurchase <= 15) {
         recompra15++
-      } else if (repInfo.daysToRepurchase <= 30) {
+      } else if (repScheduleDaysToRepurchase(c, repInfo) <= 30) {
         recompra30++
       }
     })
@@ -2795,9 +2814,13 @@ export default function ContactsPage() {
     return { total, atrasado, recompra15, recompra30, inativos }
   }, [scopedContacts])
 
-  // Filtering logic — representatives only see their own clients
+  function repScheduleDaysToRepurchase(c: MockContact, repInfo: any) {
+    return repInfo.daysToRepurchase
+  }
+
+  // Filtering & Sorting logic — representatives only see their own clients
   const filteredContacts = useMemo(() => {
-    return contacts.filter(contact => {
+    const list = contacts.filter(contact => {
       // Enforce rep scope: only own contacts
       if (isRep && !isSameRepresentative(contact.representative, currentUser?.name)) return false
 
@@ -2827,12 +2850,53 @@ export default function ContactsPage() {
 
       return matchesSearch && matchesCurve && matchesRep && matchesStatus && matchesCategory
     })
-  }, [contacts, isRep, currentUser?.name, searchTerm, selectedCurve, selectedRep, selectedStatus, repurchaseCategoryFilter])
 
-  // Reset pagination to page 1 whenever filters change
+    // Sort list dynamically based on sortField and sortOrder
+    return [...list].sort((a, b) => {
+      let aVal: any = ''
+      let bVal: any = ''
+
+      switch (sortField) {
+        case 'company':
+          aVal = (a.company || a.name || '').trim().toLowerCase()
+          bVal = (b.company || b.name || '').trim().toLowerCase()
+          break
+        case 'curve':
+          aVal = a.curve || 'Z'
+          bVal = b.curve || 'Z'
+          break
+        case 'city':
+          aVal = (a.city || '').trim().toLowerCase()
+          bVal = (b.city || '').trim().toLowerCase()
+          break
+        case 'state':
+          aVal = (a.state || '').trim().toLowerCase()
+          bVal = (b.state || '').trim().toLowerCase()
+          break
+        case 'status':
+          aVal = getContactActivityAndRepurchaseInfo(a).computedStatus
+          bVal = getContactActivityAndRepurchaseInfo(b).computedStatus
+          break
+        case 'representative':
+          aVal = formatCanonicalRepName(a.representative).toLowerCase()
+          bVal = formatCanonicalRepName(b.representative).toLowerCase()
+          break
+        case 'lastPurchaseDate':
+          aVal = a.lastPurchaseDate || ((a as any).orders && (a as any).orders[0]?.date) || ''
+          bVal = b.lastPurchaseDate || ((b as any).orders && (b as any).orders[0]?.date) || ''
+          break
+      }
+
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1
+      return 0
+    })
+  }, [contacts, isRep, currentUser?.name, searchTerm, selectedCurve, selectedRep, selectedStatus, repurchaseCategoryFilter, sortField, sortOrder])
+
+  // Reset pagination to page 1 whenever filters change or sort changes
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, selectedCurve, selectedRep, selectedStatus, repurchaseCategoryFilter])
+  }, [searchTerm, selectedCurve, selectedRep, selectedStatus, repurchaseCategoryFilter, sortField, sortOrder])
 
   const totalPages = Math.ceil(filteredContacts.length / itemsPerPage) || 1
   const paginatedContacts = useMemo(() => {
@@ -3364,14 +3428,105 @@ export default function ContactsPage() {
           <div className="overflow-x-auto flex-1 overflow-y-auto custom-scrollbar">
             <table className="w-full text-left border-collapse text-xs">
               <thead className="sticky top-0 z-10 bg-[var(--charcoal)] shadow-sm">
-                <tr className="border-b border-[var(--line)] bg-[var(--charcoal)] font-mono text-[9px] text-[var(--gray)] uppercase tracking-wider">
-                  <th className="py-2.5 px-3 pl-4">Cliente / CNPJ</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap">Curva</th>
-                  <th className="py-2.5 px-3">Cidade</th>
-                  <th className="py-2.5 px-3">UF</th>
-                  <th className="py-2.5 px-3">Status</th>
-                  <th className="py-2.5 px-3">Representante</th>
-                  <th className="py-2.5 px-3">Última Compra</th>
+                <tr className="border-b border-[var(--line)] bg-[var(--charcoal)] font-mono text-[9px] text-[var(--gray)] uppercase tracking-wider select-none">
+                  <th 
+                    onClick={() => handleSort('company')} 
+                    className="py-2.5 px-3 pl-4 cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    title="Ordenar por Cliente (A-Z / Z-A)"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Cliente / CNPJ</span>
+                      {sortField === 'company' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
+                      ) : (
+                        <ArrowUpDown size={10} className="opacity-30" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('curve')} 
+                    className="py-2.5 px-3 whitespace-nowrap cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    title="Ordenar por Curva (A, B, C)"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Curva</span>
+                      {sortField === 'curve' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
+                      ) : (
+                        <ArrowUpDown size={10} className="opacity-30" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('city')} 
+                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    title="Ordenar por Cidade"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Cidade</span>
+                      {sortField === 'city' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
+                      ) : (
+                        <ArrowUpDown size={10} className="opacity-30" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('state')} 
+                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    title="Ordenar por UF / Estado"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>UF</span>
+                      {sortField === 'state' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
+                      ) : (
+                        <ArrowUpDown size={10} className="opacity-30" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('status')} 
+                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    title="Ordenar por Status"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Status</span>
+                      {sortField === 'status' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
+                      ) : (
+                        <ArrowUpDown size={10} className="opacity-30" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('representative')} 
+                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    title="Ordenar por Representante Comercial"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Representante</span>
+                      {sortField === 'representative' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
+                      ) : (
+                        <ArrowUpDown size={10} className="opacity-30" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('lastPurchaseDate')} 
+                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    title="Ordenar por Data da Última Compra"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Última Compra</span>
+                      {sortField === 'lastPurchaseDate' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
+                      ) : (
+                        <ArrowUpDown size={10} className="opacity-30" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-2.5 px-3 pr-4 text-right">Localização</th>
                 </tr>
               </thead>
