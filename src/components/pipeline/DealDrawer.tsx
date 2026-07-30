@@ -61,6 +61,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const [contactCompany, setContactCompany] = useState('')
   const [contactCnpj, setContactCnpj] = useState('')
   const [contactAddress, setContactAddress] = useState('')
+  const [contactComplement, setContactComplement] = useState('')
   const [contactBairro, setContactBairro] = useState('')
   const [contactCep, setContactCep] = useState('')
   const [contactCity, setContactCity] = useState('')
@@ -186,6 +187,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       let email = deal.contact?.email ?? ''
       let cnpj = (deal.contact as any)?.cnpj ?? ''
       let address = (deal.contact as any)?.address ?? ''
+      let complement = (deal.contact as any)?.complement ?? ''
       let bairro = (deal.contact as any)?.bairro ?? ''
       let cep = (deal.contact as any)?.cep ?? ''
       let city = (deal.contact as any)?.city ?? ''
@@ -212,6 +214,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
             if (match.email && !email) email = match.email
             if (match.cnpj && !cnpj) cnpj = match.cnpj
             if (match.address && !address) address = match.address
+            if (match.complement && !complement) complement = match.complement
             if (match.bairro && !bairro) bairro = match.bairro
             if (match.cep && !cep) cep = match.cep
             if (match.city && !city) city = match.city
@@ -227,6 +230,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       setContactEmail(email)
       setContactCnpj(cnpj)
       setContactAddress(address)
+      setContactComplement(complement)
       setContactBairro(bairro)
       setContactCep(cep)
       setContactCity(city)
@@ -874,9 +878,9 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                   </div>
                 </div>
 
-                {/* Endereço: Rua / Número + Bairro */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  <div className="sm:col-span-2 flex flex-col gap-1.5">
+                {/* Endereço: Rua / Número + Complemento + Bairro */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                  <div className="sm:col-span-6 flex flex-col gap-1.5">
                     <label className="label">Rua / Número</label>
                     <div className="relative flex items-center">
                       <MapPin size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
@@ -890,7 +894,18 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1.5">
+                  <div className="sm:col-span-3 flex flex-col gap-1.5">
+                    <label className="label">Complemento</label>
+                    <input 
+                      type="text" 
+                      readOnly
+                      className="input w-full uppercase text-xs font-mono bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
+                      placeholder="Sala, Bloco..."
+                      value={contactComplement} 
+                    />
+                  </div>
+
+                  <div className="sm:col-span-3 flex flex-col gap-1.5">
                     <label className="label">Bairro</label>
                     <input 
                       type="text" 

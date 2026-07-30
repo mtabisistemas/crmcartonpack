@@ -69,6 +69,7 @@ export interface Contact {
   status?: string
   cnpj?: string
   street?: string
+  complement?: string
   neighborhood?: string
   cep?: string
   cnae?: string

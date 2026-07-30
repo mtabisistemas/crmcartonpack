@@ -73,6 +73,7 @@ export interface MockContact {
   registrationStatus?: string
   mainCnae?: string
   address?: string
+  complement?: string
   bairro?: string
   cep?: string
   taxRegime?: 'MEI' | 'Simples Nacional' | 'Lucro Presumido' | 'Lucro Real'
@@ -281,6 +282,7 @@ function ContactDrawer({
   const [registrationStatus, setRegistrationStatus] = useState('')
   const [mainCnae, setMainCnae] = useState('')
   const [address, setAddress] = useState('')
+  const [complement, setComplement] = useState('')
   const [taxRegime, setTaxRegime] = useState<'MEI' | 'Simples Nacional' | 'Lucro Presumido' | 'Lucro Real'>('Simples Nacional')
   const [specialSituation, setSpecialSituation] = useState('')
   const [specialSituationDate, setSpecialSituationDate] = useState('')
@@ -402,6 +404,7 @@ function ContactDrawer({
       }
 
       setAddress(parsedAddress)
+      setComplement(contact.complement ?? (contact as any).street_complement ?? '')
       setBairro(parsedBairro)
       setCep(parsedCep)
       setSideActivities(contact.sideActivities ?? [])
@@ -546,6 +549,7 @@ function ContactDrawer({
       registrationStatus,
       mainCnae,
       address,
+      complement,
       taxRegime,
       specialSituation,
       specialSituationDate,
@@ -934,9 +938,9 @@ function ContactDrawer({
                       </div>
                     </div>
 
-                    {/* Rua / Número + Bairro */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      <div className="sm:col-span-2 flex flex-col gap-0.5">
+                    {/* Rua / Número + Complemento + Bairro */}
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                      <div className="sm:col-span-6 flex flex-col gap-0.5">
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Rua / Número</label>
                         <input 
                           type="text" 
@@ -946,7 +950,17 @@ function ContactDrawer({
                           onChange={(e) => setAddress(e.target.value.toUpperCase())}
                         />
                       </div>
-                      <div className="flex flex-col gap-0.5">
+                      <div className="sm:col-span-3 flex flex-col gap-0.5">
+                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Complemento</label>
+                        <input 
+                          type="text" 
+                          className="input text-xs py-1 px-2.5 uppercase" 
+                          placeholder="Sala, Bloco..."
+                          value={complement}
+                          onChange={(e) => setComplement(e.target.value.toUpperCase())}
+                        />
+                      </div>
+                      <div className="sm:col-span-3 flex flex-col gap-0.5">
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Bairro</label>
                         <input 
                           type="text" 
@@ -1626,6 +1640,7 @@ function NewContactModal({
   const [sideActivities, setSideActivities] = useState<{id: string; text: string}[]>([])
   const [showSideActivities, setShowSideActivities] = useState(false)
   const [address, setAddress] = useState('')
+  const [complement, setComplement] = useState('')
   const [bairro, setBairro] = useState('')
   const [cep, setCep] = useState('')
   const [taxRegime, setTaxRegime] = useState<'MEI' | 'Simples Nacional' | 'Lucro Presumido' | 'Lucro Real'>('Simples Nacional')
@@ -1803,6 +1818,7 @@ function NewContactModal({
       registrationStatus,
       mainCnae,
       address,
+      complement,
       bairro,
       cep,
       sideActivities,
@@ -1966,9 +1982,9 @@ function NewContactModal({
                 </div>
               </div>
 
-              {/* Rua / Número + Bairro */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                <div className="sm:col-span-2 flex flex-col gap-0.5">
+              {/* Rua / Número + Complemento + Bairro */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                <div className="sm:col-span-6 flex flex-col gap-0.5">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Rua / Número</label>
                   <input 
                     type="text" 
@@ -1978,7 +1994,17 @@ function NewContactModal({
                     onChange={(e) => setAddress(e.target.value)}
                   />
                 </div>
-                <div className="flex flex-col gap-0.5">
+                <div className="sm:col-span-3 flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Complemento</label>
+                  <input 
+                    type="text" 
+                    className="input text-xs py-1 px-2.5" 
+                    placeholder="Sala, Bloco..."
+                    value={complement}
+                    onChange={(e) => setComplement(e.target.value)}
+                  />
+                </div>
+                <div className="sm:col-span-3 flex flex-col gap-0.5">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Bairro</label>
                   <input 
                     type="text" 
@@ -2867,7 +2893,7 @@ export default function ContactsPage() {
           }`}
         >
           <div>
-            <span className="text-[9px] font-mono text-red-500 uppercase tracking-wider block font-bold">Recompra Atrasada</span>
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Recompra Atrasada</span>
             <span className="text-xl font-black text-red-500 font-display mt-0.5 block">{metrics.atrasado}</span>
           </div>
           <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center shrink-0">
@@ -2888,7 +2914,7 @@ export default function ContactsPage() {
           }`}
         >
           <div>
-            <span className="text-[9px] font-mono text-amber-500 uppercase tracking-wider block font-bold">Recompra 15 Dias</span>
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Recompra 15 Dias</span>
             <span className="text-xl font-black text-amber-500 font-display mt-0.5 block">{metrics.recompra15}</span>
           </div>
           <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
