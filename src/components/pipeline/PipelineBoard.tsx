@@ -942,10 +942,8 @@ export function PipelineBoard() {
         }
       }
 
-      const repsFromDeals = deals.map(d => (d.assigned_to || d.contact?.representative || '').trim()).filter(Boolean)
-      const combined = Array.from(new Set([...repsFromUsers, ...repsFromDeals].filter(Boolean)))
-
-      setRepresentativesList(combined)
+      const repsFromDeals = Array.from(new Set(deals.map(d => (d.assigned_to || d.contact?.representative || '').trim()).filter(Boolean))).sort()
+      setRepresentativesList(repsFromDeals)
     }
 
     fetchUsers()

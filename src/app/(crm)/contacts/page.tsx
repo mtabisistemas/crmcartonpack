@@ -2646,11 +2646,9 @@ export default function ContactsPage() {
         }
       }
 
-      // Also gather names from contacts list if available
-      const namesFromContacts = contacts.map(c => (c.representative || '').trim()).filter(Boolean)
-      const combined = Array.from(new Set([...registeredNames, ...namesFromContacts].filter(Boolean)))
-
-      setRepresentativesList(combined)
+      // Gather representative names dynamically from contacts list
+      const namesFromContacts = Array.from(new Set(contacts.map(c => (c.representative || '').trim()).filter(Boolean))).sort()
+      setRepresentativesList(namesFromContacts)
     }
 
     fetchRegisteredUsers()
@@ -3392,7 +3390,7 @@ export default function ContactsPage() {
                       <td className="py-2 px-3 text-xs font-semibold text-[var(--white)]">
                         <div className="flex items-center gap-1.5">
                           <User size={11} className="text-[var(--gray)] shrink-0" />
-                          <span className="truncate">{contact.representative && !['Diéssica Hartmann', 'Josimar Soares', 'Elci Alcantara'].includes(contact.representative) ? contact.representative : <span className="text-[var(--gray2)] font-normal italic">Sem representante</span>}</span>
+                          <span className="truncate">{contact.representative ? contact.representative : <span className="text-[var(--gray2)] font-normal italic">Sem representante</span>}</span>
                         </div>
                       </td>
 
