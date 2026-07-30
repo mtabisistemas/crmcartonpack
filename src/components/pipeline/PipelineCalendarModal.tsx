@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { Appointment } from '@/types'
 import { getAppointments, updateAppointment, deleteAppointment, saveAppointment } from '@/services/appointment-service'
+import { getPipelineDeals } from '@/services/pipeline-service'
 import { 
-  X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Plus, Edit2, Trash2, Check, AlertTriangle
+  X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Plus, Edit2, Trash2, Check, AlertTriangle, Building2, ChevronDown, Search
 } from 'lucide-react'
 
 interface PipelineCalendarModalProps {
@@ -38,8 +39,84 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
   const [formCompany, setFormCompany] = useState('')
   const [formNotes, setFormNotes] = useState('')
 
+  // Company / Client Search Dropdown State
+  const [companiesList, setCompaniesList] = useState<{ id: string; name: string; subtitle?: string }[]>([])
+  const [showCreateCompanyDropdown, setShowCreateCompanyDropdown] = useState(false)
+  const [showEditCompanyDropdown, setShowEditCompanyDropdown] = useState(false)
+  const createCompanyDropdownRef = useRef<HTMLDivElement>(null)
+  const editCompanyDropdownRef = useRef<HTMLDivElement>(null)
+
   // Scroll ref for week view
   const weekGridRef = useRef<HTMLDivElement>(null)
+
+  // Load available companies from contacts and deals
+  const loadCompanies = () => {
+    const map = new Map<string, { id: string; name: string; subtitle?: string }>()
+    
+    if (typeof window !== 'undefined') {
+      try {
+        const rawC = localStorage.getItem('crm_contacts')
+        if (rawC) {
+          const parsed = JSON.parse(rawC)
+          if (Array.isArray(parsed)) {
+            parsed.forEach(c => {
+              const compName = (c.company || c.name || c.razao_social || '').trim()
+              if (compName) {
+                const key = compName.toLowerCase()
+                if (!map.has(key)) {
+                  const loc = [c.city, c.state].filter(Boolean).join('/')
+                  map.set(key, {
+                    id: c.id || key,
+                    name: compName,
+                    subtitle: c.cnpj ? `${c.cnpj} ${loc ? `• ${loc}` : ''}` : (loc || 'Cliente Salvo')
+                  })
+                }
+              }
+            })
+          }
+        }
+      } catch (e) {}
+    }
+
+    try {
+      const deals = getPipelineDeals()
+      deals.forEach(d => {
+        const compName = (d.contact?.company || (d as any).company || d.title || '').trim()
+        if (compName) {
+          const key = compName.toLowerCase()
+          if (!map.has(key)) {
+            map.set(key, {
+              id: d.id || key,
+              name: compName,
+              subtitle: 'Oportunidade do Pipeline'
+            })
+          }
+        }
+      })
+    } catch (e) {}
+
+    setCompaniesList(Array.from(map.values()))
+  }
+
+  useEffect(() => {
+    if (isOpen) {
+      loadCompanies()
+    }
+  }, [isOpen, isCreating, isEditing])
+
+  // Click outside to close company dropdowns
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (createCompanyDropdownRef.current && !createCompanyDropdownRef.current.contains(e.target as Node)) {
+        setShowCreateCompanyDropdown(false)
+      }
+      if (editCompanyDropdownRef.current && !editCompanyDropdownRef.current.contains(e.target as Node)) {
+        setShowEditCompanyDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Load appointments and listen for changes
   const loadApts = () => {
@@ -749,15 +826,65 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                   />
                 </div>
 
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 relative" ref={createCompanyDropdownRef}>
                   <label className="label">Empresa / Cliente (Opcional)</label>
-                  <input
-                    type="text"
-                    className="input text-[var(--white)]"
-                    placeholder="Ex: CartonPack Embalagens"
-                    value={formCompany}
-                    onChange={(e) => setFormCompany(e.target.value)}
-                  />
+                  <div className="relative flex items-center">
+                    <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--gray2)] z-10 pointer-events-none" />
+                    <input
+                      type="text"
+                      style={{ paddingLeft: '2.5rem', paddingRight: '2rem' }}
+                      className="input text-[var(--white)] w-full"
+                      placeholder="Ex: Digite para buscar empresa ou cliente..."
+                      value={formCompany}
+                      onChange={(e) => {
+                        setFormCompany(e.target.value)
+                        setShowCreateCompanyDropdown(true)
+                      }}
+                      onFocus={() => setShowCreateCompanyDropdown(true)}
+                    />
+                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--gray2)] pointer-events-none" />
+                  </div>
+
+                  {/* Autocomplete Dropdown List */}
+                  {showCreateCompanyDropdown && (
+                    <div className="absolute top-full left-0 right-0 mt-1 z-[100005] max-h-52 overflow-y-auto bg-[#141416] border border-[var(--line)] rounded-xl shadow-2xl divide-y divide-[var(--line)] animate-fade-in">
+                      <div className="px-3 py-1.5 text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider bg-[var(--charcoal)] sticky top-0 flex items-center justify-between">
+                        <span>Selecione uma Empresa ({companiesList.filter(c => c.name.toLowerCase().includes(formCompany.toLowerCase().trim())).length})</span>
+                        <Search size={12} />
+                      </div>
+                      {companiesList
+                        .filter(c => c.name.toLowerCase().includes(formCompany.toLowerCase().trim()))
+                        .map((comp) => (
+                          <div
+                            key={comp.id}
+                            onClick={() => {
+                              setFormCompany(comp.name)
+                              setShowCreateCompanyDropdown(false)
+                            }}
+                            className="p-2.5 hover:bg-[var(--lime)]/10 cursor-pointer transition-colors flex items-center justify-between gap-2 group"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="text-xs font-bold text-white group-hover:text-[var(--lime)] transition-colors truncate">
+                                {comp.name}
+                              </div>
+                              {comp.subtitle && (
+                                <div className="text-[10px] text-[var(--gray2)] font-mono truncate mt-0.5">
+                                  {comp.subtitle}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-[10px] font-mono text-[var(--lime)] bg-[var(--lime)]/10 px-2 py-0.5 rounded border border-[var(--lime)]/20 shrink-0 opacity-80 group-hover:opacity-100">
+                              Selecionar
+                            </span>
+                          </div>
+                        ))}
+                      {companiesList.filter(c => c.name.toLowerCase().includes(formCompany.toLowerCase().trim())).length === 0 && (
+                        <div className="p-3 text-xs text-[var(--gray2)] text-center font-mono">
+                          {formCompany.trim() ? `Empresa "${formCompany}" não cadastrada. (Será salva como texto livre)` : 'Nenhuma empresa encontrada.'}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
@@ -957,14 +1084,65 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                     />
                   </div>
 
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-1 relative" ref={editCompanyDropdownRef}>
                     <label className="label">Empresa / Cliente</label>
-                    <input
-                      type="text"
-                      className="input"
-                      value={formCompany}
-                      onChange={(e) => setFormCompany(e.target.value)}
-                    />
+                    <div className="relative flex items-center">
+                      <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--gray2)] z-10 pointer-events-none" />
+                      <input
+                        type="text"
+                        style={{ paddingLeft: '2.5rem', paddingRight: '2rem' }}
+                        className="input w-full"
+                        placeholder="Ex: Digite para buscar empresa ou cliente..."
+                        value={formCompany}
+                        onChange={(e) => {
+                          setFormCompany(e.target.value)
+                          setShowEditCompanyDropdown(true)
+                        }}
+                        onFocus={() => setShowEditCompanyDropdown(true)}
+                      />
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--gray2)] pointer-events-none" />
+                    </div>
+
+                    {/* Autocomplete Dropdown List */}
+                    {showEditCompanyDropdown && (
+                      <div className="absolute top-full left-0 right-0 mt-1 z-[100005] max-h-52 overflow-y-auto bg-[#141416] border border-[var(--line)] rounded-xl shadow-2xl divide-y divide-[var(--line)] animate-fade-in">
+                        <div className="px-3 py-1.5 text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider bg-[var(--charcoal)] sticky top-0 flex items-center justify-between">
+                          <span>Selecione uma Empresa ({companiesList.filter(c => c.name.toLowerCase().includes(formCompany.toLowerCase().trim())).length})</span>
+                          <Search size={12} />
+                        </div>
+                        {companiesList
+                          .filter(c => c.name.toLowerCase().includes(formCompany.toLowerCase().trim()))
+                          .map((comp) => (
+                            <div
+                              key={comp.id}
+                              onClick={() => {
+                                setFormCompany(comp.name)
+                                setShowEditCompanyDropdown(false)
+                              }}
+                              className="p-2.5 hover:bg-[var(--lime)]/10 cursor-pointer transition-colors flex items-center justify-between gap-2 group"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs font-bold text-white group-hover:text-[var(--lime)] transition-colors truncate">
+                                  {comp.name}
+                                </div>
+                                {comp.subtitle && (
+                                  <div className="text-[10px] text-[var(--gray2)] font-mono truncate mt-0.5">
+                                    {comp.subtitle}
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-[10px] font-mono text-[var(--lime)] bg-[var(--lime)]/10 px-2 py-0.5 rounded border border-[var(--lime)]/20 shrink-0 opacity-80 group-hover:opacity-100">
+                                Selecionar
+                              </span>
+                            </div>
+                          ))}
+                        {companiesList.filter(c => c.name.toLowerCase().includes(formCompany.toLowerCase().trim())).length === 0 && (
+                          <div className="p-3 text-xs text-[var(--gray2)] text-center font-mono">
+                            {formCompany.trim() ? `Empresa "${formCompany}" não cadastrada. (Será salva como texto livre)` : 'Nenhuma empresa encontrada.'}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
