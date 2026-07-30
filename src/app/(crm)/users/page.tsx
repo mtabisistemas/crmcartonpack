@@ -764,16 +764,6 @@ export default function UsersPage() {
                         >
                           <Eye size={13} />
                         </button>
-                        {(isAdmin || (isGestor && (user.role || '').toLowerCase() !== 'admin')) && (
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(user.id)}
-                            title="Excluir Usuário"
-                            className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500 transition-all cursor-pointer"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        )}
                       </div>
                     </td>
 
