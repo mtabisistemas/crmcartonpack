@@ -64,6 +64,7 @@ export interface MockContact {
   representative: string
   lastPurchaseDays: number
   phone: string
+  phone2?: string
   city: string
   state: string
   status: 'ativo' | 'inativo' | 'prospeccao'
@@ -269,6 +270,8 @@ function ContactDrawer({
   const [curve, setCurve] = useState<'A' | 'B' | 'C' | 'D'>('C')
   const [representative, setRepresentative] = useState('')
   const [phone, setPhone] = useState('')
+  const [phone2, setPhone2] = useState('')
+  const [showPhone2, setShowPhone2] = useState(false)
   const [email, setEmail] = useState('')
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
@@ -360,6 +363,9 @@ function ContactDrawer({
       setCurve(contact.curve)
       setRepresentative(contact.representative)
       setPhone(contact.phone)
+      const secPhone = contact.phone2 ?? (contact as any).secondary_phone ?? ''
+      setPhone2(secPhone)
+      setShowPhone2(!!secPhone)
       setEmail(contact.email ?? '')
       setCity(contact.city)
       setState(contact.state)
@@ -542,6 +548,7 @@ function ContactDrawer({
       curve,
       representative,
       phone,
+      phone2,
       email,
       city,
       state,
@@ -888,7 +895,22 @@ function ContactDrawer({
                       </div>
 
                       <div className="flex flex-col gap-0.5">
-                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
+                        <div className="flex justify-between items-center">
+                          <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
+                          <button
+                            type="button"
+                            onClick={() => setShowPhone2(prev => !prev)}
+                            className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border transition-colors flex items-center gap-1 cursor-pointer ${
+                              phone2 
+                                ? 'bg-[var(--lime)]/15 text-[var(--lime)] border-[var(--lime)]/30 hover:bg-[var(--lime)]/25' 
+                                : 'bg-[var(--charcoal)] text-[var(--gray)] border-[var(--line)] hover:text-white'
+                            }`}
+                            title={phone2 ? 'Telefone Secundário cadastrado. Clique para recolher/expandir' : 'Adicionar 2º Telefone'}
+                          >
+                            <Plus size={10} />
+                            <span>{phone2 ? '2º TEL ATIVO' : 'ADD 2º TEL'}</span>
+                          </button>
+                        </div>
                         <div className="relative flex items-center">
                           <input 
                             type="text" 
@@ -909,6 +931,49 @@ function ContactDrawer({
                             </a>
                           )}
                         </div>
+
+                        {/* Telefone Secundário / Adicional */}
+                        {(showPhone2 || phone2) && (
+                          <div className="flex flex-col gap-1 p-2 rounded-xl bg-[var(--charcoal)]/60 border border-[var(--line)] animate-fade-in mt-1">
+                            <div className="flex items-center justify-between">
+                              <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">Telefone Secundário</label>
+                              {phone2 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const temp = phone
+                                    setPhone(phone2)
+                                    setPhone2(temp)
+                                  }}
+                                  className="text-[9px] font-mono font-bold text-[var(--lime)] hover:underline flex items-center gap-1 cursor-pointer"
+                                  title="Trocar o telefone principal pelo secundário"
+                                >
+                                  <span>⇄ INVERTER C/ PRINCIPAL</span>
+                                </button>
+                              )}
+                            </div>
+                            <div className="relative flex items-center">
+                              <input 
+                                type="text" 
+                                className="input text-xs py-1 px-2.5 pr-8 w-full" 
+                                placeholder="(00) 00000-0000"
+                                value={phone2}
+                                onChange={(e) => setPhone2(formatPhoneBr(e.target.value))}
+                              />
+                              {phone2 && (
+                                <a
+                                  href={whatsappLink(phone2)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="absolute right-2 text-emerald-400 hover:text-emerald-300 transition-transform hover:scale-110 cursor-pointer p-0.5"
+                                  title="Chamar 2º Telefone no WhatsApp"
+                                >
+                                  <WhatsappIcon size={15} />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex flex-col gap-0.5">
@@ -1630,6 +1695,8 @@ function NewContactModal({
   const [curve, setCurve] = useState<'A' | 'B' | 'C' | 'D'>('C')
   const [representative, setRepresentative] = useState('')
   const [phone, setPhone] = useState('')
+  const [phone2, setPhone2] = useState('')
+  const [showPhone2, setShowPhone2] = useState(false)
   const [email, setEmail] = useState('')
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
@@ -1673,9 +1740,16 @@ function NewContactModal({
       setCompany(compName)
       setTradeName(data.alias || compName)
       
-      const phoneObj = data.phones?.[0]
-      const rawPhone = phoneObj ? `${phoneObj.area}${phoneObj.number}` : ''
-      setPhone(formatPhoneBr(rawPhone))
+      const phoneObj1 = data.phones?.[0]
+      const rawPhone1 = phoneObj1 ? `${phoneObj1.area}${phoneObj1.number}` : ''
+      setPhone(formatPhoneBr(rawPhone1))
+
+      const phoneObj2 = data.phones?.[1]
+      if (phoneObj2) {
+        const rawPhone2 = `${phoneObj2.area}${phoneObj2.number}`
+        setPhone2(formatPhoneBr(rawPhone2))
+        setShowPhone2(true)
+      }
       
       const retrievedEmail = data.emails?.[0]?.address || ''
       setEmail(retrievedEmail)
@@ -1812,6 +1886,7 @@ function NewContactModal({
       curve,
       representative,
       phone,
+      phone2,
       email,
       city,
       state,
@@ -1932,7 +2007,22 @@ function NewContactModal({
                 </div>
 
                 <div className="flex flex-col gap-0.5">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowPhone2(prev => !prev)}
+                      className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border transition-colors flex items-center gap-1 cursor-pointer ${
+                        phone2 
+                          ? 'bg-[var(--lime)]/15 text-[var(--lime)] border-[var(--lime)]/30 hover:bg-[var(--lime)]/25' 
+                          : 'bg-[var(--charcoal)] text-[var(--gray)] border-[var(--line)] hover:text-white'
+                      }`}
+                      title={phone2 ? 'Telefone Secundário cadastrado. Clique para recolher/expandir' : 'Adicionar 2º Telefone'}
+                    >
+                      <Plus size={10} />
+                      <span>{phone2 ? '2º TEL ATIVO' : 'ADD 2º TEL'}</span>
+                    </button>
+                  </div>
                   <div className="relative flex items-center">
                     <input 
                       type="text" 
@@ -1953,6 +2043,49 @@ function NewContactModal({
                       </a>
                     )}
                   </div>
+
+                  {/* Telefone Secundário / Adicional */}
+                  {(showPhone2 || phone2) && (
+                    <div className="flex flex-col gap-1 p-2 rounded-xl bg-[var(--charcoal)]/60 border border-[var(--line)] animate-fade-in mt-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">Telefone Secundário</label>
+                        {phone2 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const temp = phone
+                              setPhone(phone2)
+                              setPhone2(temp)
+                            }}
+                            className="text-[9px] font-mono font-bold text-[var(--lime)] hover:underline flex items-center gap-1 cursor-pointer"
+                            title="Trocar o telefone principal pelo secundário"
+                          >
+                            <span>⇄ INVERTER C/ PRINCIPAL</span>
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative flex items-center">
+                        <input 
+                          type="text" 
+                          className="input text-xs py-1 px-2.5 pr-8 w-full" 
+                          placeholder="(00) 00000-0000"
+                          value={phone2}
+                          onChange={(e) => setPhone2(formatPhoneBr(e.target.value))}
+                        />
+                        {phone2 && (
+                          <a
+                            href={whatsappLink(phone2)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="absolute right-2 text-emerald-400 hover:text-emerald-300 transition-transform hover:scale-110 cursor-pointer p-0.5"
+                            title="Chamar 2º Telefone no WhatsApp"
+                          >
+                            <WhatsappIcon size={15} />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-0.5">

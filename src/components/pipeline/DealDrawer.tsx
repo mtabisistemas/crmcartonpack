@@ -57,6 +57,8 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const [orderNumber, setOrderNumber] = useState('')
   const [contactName, setContactName] = useState('')
   const [contactPhone, setContactPhone] = useState('')
+  const [contactPhone2, setContactPhone2] = useState('')
+  const [showContactPhone2, setShowContactPhone2] = useState(false)
   const [contactEmail, setContactEmail] = useState('')
   const [contactCompany, setContactCompany] = useState('')
   const [contactCnpj, setContactCnpj] = useState('')
@@ -184,6 +186,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       if (initialContactName === deal.title) initialContactName = ''
 
       let phone = deal.contact?.phone ?? ''
+      let phone2 = (deal.contact as any)?.phone2 ?? (deal.contact as any)?.secondary_phone ?? ''
       let email = deal.contact?.email ?? ''
       let cnpj = (deal.contact as any)?.cnpj ?? ''
       let address = (deal.contact as any)?.address ?? ''
@@ -211,6 +214,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
             if (match.company && !initialContactCompany) initialContactCompany = match.company
             if (match.name && !initialContactName) initialContactName = match.name
             if (match.phone && !phone) phone = match.phone
+            if (match.phone2 && !phone2) phone2 = match.phone2
             if (match.email && !email) email = match.email
             if (match.cnpj && !cnpj) cnpj = match.cnpj
             if (match.address && !address) address = match.address
@@ -227,6 +231,8 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       setContactName(initialContactName)
       setContactCompany(initialContactCompany || deal.contact?.company || '')
       setContactPhone(phone)
+      setContactPhone2(phone2)
+      setShowContactPhone2(!!phone2)
       setContactEmail(email)
       setContactCnpj(cnpj)
       setContactAddress(address)
@@ -822,7 +828,22 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="label">Telefone (WhatsApp)</label>
+                    <div className="flex justify-between items-center">
+                      <label className="label">Telefone (WhatsApp)</label>
+                      <button
+                        type="button"
+                        onClick={() => setShowContactPhone2(prev => !prev)}
+                        className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border transition-colors flex items-center gap-1 cursor-pointer ${
+                          contactPhone2 
+                            ? 'bg-[var(--lime)]/15 text-[var(--lime)] border-[var(--lime)]/30 hover:bg-[var(--lime)]/25' 
+                            : 'bg-[var(--charcoal)] text-[var(--gray)] border-[var(--line)] hover:text-white'
+                        }`}
+                        title={contactPhone2 ? 'Telefone Secundário cadastrado. Clique para recolher/expandir' : 'Adicionar 2º Telefone'}
+                      >
+                        <Plus size={10} />
+                        <span>{contactPhone2 ? '2º TEL ATIVO' : 'ADD 2º TEL'}</span>
+                      </button>
+                    </div>
                     <div className="relative flex items-center">
                       <Phone size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                       <input 
@@ -844,6 +865,50 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                         </a>
                       )}
                     </div>
+
+                    {/* Telefone Secundário / Adicional */}
+                    {(showContactPhone2 || contactPhone2) && (
+                      <div className="flex flex-col gap-1 p-2 rounded-xl bg-[var(--charcoal)]/60 border border-[var(--line)] animate-fade-in mt-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">Telefone Secundário</label>
+                          {contactPhone2 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const temp = contactPhone
+                                setContactPhone(contactPhone2)
+                                setContactPhone2(temp)
+                              }}
+                              className="text-[9px] font-mono font-bold text-[var(--lime)] hover:underline flex items-center gap-1 cursor-pointer"
+                              title="Trocar o telefone principal pelo secundário"
+                            >
+                              <span>⇄ INVERTER C/ PRINCIPAL</span>
+                            </button>
+                          )}
+                        </div>
+                        <div className="relative flex items-center">
+                          <Phone size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
+                          <input 
+                            type="text" 
+                            readOnly
+                            className="input w-full !pl-9 !pr-9 font-mono text-xs bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
+                            placeholder="(00) 00000-0000"
+                            value={contactPhone2} 
+                          />
+                          {contactPhone2 && (
+                            <a
+                              href={whatsappLink(contactPhone2)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="absolute right-2.5 text-emerald-400 hover:text-emerald-300 transition-transform hover:scale-110 cursor-pointer p-0.5"
+                              title="Chamar 2º Telefone no WhatsApp"
+                            >
+                              <WhatsappIcon size={15} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

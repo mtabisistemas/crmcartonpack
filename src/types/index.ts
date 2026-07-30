@@ -57,6 +57,7 @@ export interface Contact {
   role?: string
   email?: string
   phone?: string
+  phone2?: string
   whatsapp?: string
   city?: string
   state?: string
