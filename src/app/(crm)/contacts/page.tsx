@@ -2376,11 +2376,26 @@ export default function ContactsPage() {
         if (savedContacts) {
           try {
             const parsed = JSON.parse(savedContacts)
-            setContacts(parsed)
-          } catch (e) {
-            setContacts([])
-          }
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setContacts(parsed)
+              return
+            }
+          } catch (e) {}
         }
+
+        try {
+          const impRes = await fetch('/imported_contacts.json')
+          if (impRes.ok) {
+            const impContacts = await impRes.json()
+            if (Array.isArray(impContacts) && impContacts.length > 0) {
+              setContacts(impContacts)
+              localStorage.setItem('crm_contacts', JSON.stringify(impContacts))
+              return
+            }
+          }
+        } catch (e) {}
+
+        setContacts([])
       }
     }
 

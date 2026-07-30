@@ -173,6 +173,53 @@ input:-webkit-autofill:active {
   color: #0f172a;
 }
 
+/* ── Sidebar Escura Contrastante no Modo Claro ── */
+[data-theme="light"] .sidebar {
+  background: #0d1117 !important;
+  border-right: 1px solid #21262d !important;
+  color: #f0f6fc !important;
+}
+
+[data-theme="light"] .sidebar .nav-item {
+  color: #8b949e !important;
+}
+
+[data-theme="light"] .sidebar .nav-item:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .sidebar .nav-item.active {
+  background: rgba(180, 217, 50, 0.15) !important;
+  color: #b4d932 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .sidebar .nav-item.active::before {
+  background: #b4d932 !important;
+}
+
+[data-theme="light"] .sidebar-logo-sub {
+  color: #8b949e !important;
+}
+
+[data-theme="light"] .sidebar-footer {
+  border-top-color: #21262d !important;
+}
+
+[data-theme="light"] .sidebar .border-t,
+[data-theme="light"] .sidebar .border-b {
+  border-color: #21262d !important;
+}
+
+[data-theme="light"] .sidebar .text-\[var\(--white\)\] {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .sidebar .text-\[var\(--gray2\)\] {
+  color: #8b949e !important;
+}
+
 
 /* ══════════════ RESET ══════════════ */
 *, *::before, *::after {
