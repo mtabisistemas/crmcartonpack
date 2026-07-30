@@ -31,7 +31,8 @@ import {
   Users,
   DollarSign,
   Calendar,
-  Trophy
+  Trophy,
+  Package
 } from 'lucide-react'
 import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString, getUniqueCanonicalRepresentatives, isSameRepresentative, formatCanonicalRepName } from '@/lib/utils'
 import { supabase } from '@/services/supabase-client'
@@ -1593,35 +1594,57 @@ function ContactDrawer({
           {activeTab === 'pedidos' && (
             <div className="flex flex-col gap-4 animate-fade-in pb-12">
               {(() => {
-                let savedOrders: any[] = (contact as any).orders || []
+                let savedOrders: any[] = [...((contact as any)?.orders || [])]
                 
+                // Helper para busca insensível a acentos, pontuações e espaços extras
+                const norm = (s?: string) => (s || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^\w]/g, "")
+                const cleanTargetComp = norm(company || name)
+                const cleanTargetCnpj = (cnpj || '').replace(/\D/g, '')
+
                 // Also pull orders from cp_crm_pipeline_deals for this client
                 try {
                   const rawDeals = localStorage.getItem('cp_crm_pipeline_deals')
                   if (rawDeals) {
                     const deals = JSON.parse(rawDeals)
-                    const cleanComp = (company || name || '').trim().toLowerCase()
                     deals.forEach((d: any) => {
-                      const matchesId = d.contact_id === contact.id
-                      const matchesComp = cleanComp && (d.contact?.company || d.title || '').trim().toLowerCase() === cleanComp
-                      if ((matchesId || matchesComp) && (d.stage === 'pedido' || d.order_number)) {
-                        const ordNum = d.order_number || `PED-${Date.now().toString().slice(-6)}`
+                      const matchesId = d.contact_id === contact?.id || d.contact?.id === contact?.id
+                      const dealComp = norm(d.contact?.company || d.title || d.contact?.name)
+                      const matchesComp = cleanTargetComp && dealComp && (dealComp === cleanTargetComp || dealComp.includes(cleanTargetComp) || cleanTargetComp.includes(dealComp))
+                      const dealCnpj = (d.contact?.cnpj || '').replace(/\D/g, '')
+                      const matchesCnpj = cleanTargetCnpj && cleanTargetCnpj.length >= 8 && dealCnpj.length >= 8 && dealCnpj === cleanTargetCnpj
+
+                      const isClosed = d.stage === 'pedido' || d.stage === 'pos_venda' || d.stage === 'fechamento' || Boolean(d.order_number)
+
+                      if ((matchesId || matchesComp || matchesCnpj) && isClosed) {
+                        const ordNum = d.order_number || `PED-${d.id.slice(-6).toUpperCase()}`
                         const exists = savedOrders.some((o: any) => o.order_number === ordNum || o.deal_id === d.id)
                         if (!exists) {
                           savedOrders.push({
                             id: `ord_${d.id}`,
                             order_number: ordNum,
                             deal_id: d.id,
-                            deal_title: d.title,
+                            deal_title: d.title || d.contact?.company || 'Pedido Fechado',
                             value: (d.final_value && d.final_value > 0) ? d.final_value : (d.estimated_value || 0),
                             date: (d.closed_at || d.stage_entered_at || d.created_at || '').split('T')[0],
-                            vendor: d.assigned_to || representative || 'Vendedor'
+                            vendor: formatCanonicalRepName(d.assigned_to || representative || d.contact?.representative || 'Vendedor')
                           })
                         }
                       }
                     })
                   }
                 } catch (e) {}
+
+                // Synthetic fallback: se não houver pedidos na lista mas houver última compra gravada
+                if (savedOrders.length === 0 && lastPurchaseDate) {
+                  savedOrders.push({
+                    id: `ord_last_${contact?.id || Date.now()}`,
+                    order_number: `PED-REGISTRADO`,
+                    deal_title: `Último Pedido Faturado do Cliente`,
+                    value: projectedPurchaseValue || 0,
+                    date: lastPurchaseDate,
+                    vendor: formatCanonicalRepName(representative || 'Vendedor')
+                  })
+                }
 
                 const totalValue = savedOrders.reduce((sum: number, o: any) => sum + (Number(o.value) || 0), 0)
 
@@ -1644,8 +1667,9 @@ function ContactDrawer({
                     </div>
 
                     {savedOrders.length === 0 ? (
-                      <div className="p-8 text-center text-xs text-[var(--gray2)] font-mono border border-dashed border-[var(--line)] rounded-xl">
-                        Nenhum pedido fechado registrado para este cliente até o momento.
+                      <div className="p-8 text-center text-xs text-[var(--gray2)] font-mono border border-dashed border-[var(--line)] rounded-xl flex flex-col items-center gap-2">
+                        <Package size={24} className="text-[var(--gray2)] opacity-40" />
+                        <span>Nenhum pedido fechado registrado para este cliente até o momento.</span>
                       </div>
                     ) : (
                       <div className="overflow-x-auto border border-[var(--line)] rounded-xl">
@@ -1662,7 +1686,7 @@ function ContactDrawer({
                           <tbody className="divide-y divide-[var(--line)]/60 font-mono">
                             {savedOrders.map((ord: any, idx: number) => (
                               <tr key={ord.id || idx} className="hover:bg-[var(--lime)]/5 transition-colors">
-                                <td className="py-3 px-3 font-bold text-[var(--lime)]">
+                                <td className="py-3 px-3 font-bold text-[var(--lime)] font-mono">
                                   {ord.order_number || 'PED-S/N'}
                                 </td>
                                 <td className="py-3 px-3 text-[var(--white)]">
@@ -1673,11 +1697,11 @@ function ContactDrawer({
                                 </td>
                                 <td className="py-3 px-3 text-[var(--white)] font-sans">
                                   <span className="px-2 py-0.5 rounded bg-[var(--charcoal)] border border-[var(--line)] text-[11px] font-bold">
-                                    {ord.vendor || 'Não informado'}
+                                    {formatCanonicalRepName(ord.vendor || representative || 'Vendedor')}
                                   </span>
                                 </td>
-                                <td className="py-3 px-3 text-right font-bold text-[var(--lime)]">
-                                  {formatCurrency(Number(ord.value) || 0)}
+                                <td className="py-3 px-3 text-right font-black text-[var(--lime)]">
+                                  {ord.value > 0 ? formatCurrency(ord.value) : '—'}
                                 </td>
                               </tr>
                             ))}
