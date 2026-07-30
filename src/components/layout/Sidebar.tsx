@@ -107,7 +107,7 @@ export function Sidebar() {
       {/* Logo Oficial Carton Pack com troca de tema */}
       <div className="px-5 py-5 border-b border-[var(--line)] flex flex-col gap-1 select-none">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <CartonPackLogo height={28} />
+          <CartonPackLogo height={28} isLightMode={false} />
         </Link>
         <span className="text-[10px] font-mono text-[var(--gray2)] tracking-widest uppercase pl-0.5">
           CRM Comercial & Operacional
