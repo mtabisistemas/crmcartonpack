@@ -14,16 +14,27 @@ const isUUID = (str: any) =>
 
 export async function GET() {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('contacts')
-      .select('*')
-      .order('created_at', { ascending: false })
+    let allContacts: any[] = []
+    let from = 0
+    const step = 1000
 
-    if (error) {
-      return NextResponse.json({ success: false, error: error.message, contacts: [] }, { status: 500 })
+    while (true) {
+      const { data, error } = await supabaseAdmin
+        .from('contacts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + step - 1)
+
+      if (error) {
+        return NextResponse.json({ success: false, error: error.message, contacts: [] }, { status: 500 })
+      }
+      if (!data || data.length === 0) break
+      allContacts = allContacts.concat(data)
+      if (data.length < step) break
+      from += step
     }
 
-    const mappedContacts = (data || []).map((item: any) => {
+    const mappedContacts = (allContacts || []).map((item: any) => {
       let notesObj: any = {}
       if (item.notes) {
         try {
@@ -31,8 +42,11 @@ export async function GET() {
         } catch (e) {}
       }
 
+      const cleanName = (item.name && item.name.toLowerCase().trim() !== item.company?.toLowerCase().trim()) ? item.name : ''
+
       return {
         ...item,
+        name: cleanName,
         projectedPurchaseValue: notesObj.projectedPurchaseValue ?? item.projected_purchase_value ?? 0,
         purchaseFrequencyDays: notesObj.purchaseFrequencyDays ?? item.purchase_frequency_days ?? 30,
         lastPurchaseDate: notesObj.lastPurchaseDate || item.last_purchase_date || '',
@@ -151,10 +165,13 @@ export async function POST(req: Request) {
 
     const repName = contact.representative || contact.assigned_to || existingContactRow?.representative || ''
 
+    const isNameSameAsComp = (contact.name || '').trim().toLowerCase() === (contact.company || '').trim().toLowerCase()
+    const cleanContactName = isNameSameAsComp ? '' : (contact.name ?? existingContactRow?.name ?? '')
+
     const payload: any = {
       id: targetUUID,
-      name: contact.name || existingContactRow?.name || contact.company || existingContactRow?.company || 'Contato Sem Nome',
-      company: contact.company || existingContactRow?.company || contact.name || existingContactRow?.name || 'Empresa Sem Nome',
+      name: cleanContactName,
+      company: contact.company || existingContactRow?.company || 'Empresa Sem Nome',
       role: contact.tradeName || existingContactRow?.role || contact.company || 'Empresa Sem Nome',
       trade_name: contact.tradeName || existingContactRow?.trade_name || null,
       phone: contact.phone || existingContactRow?.phone || '',

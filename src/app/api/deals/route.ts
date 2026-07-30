@@ -45,16 +45,27 @@ const mapDBStageToFrontend = (stage: string): string => {
 
 export async function GET() {
   try {
-    const { data: deals, error: dErr } = await supabaseAdmin
-      .from('deals')
-      .select('*, contacts(id, name, company, representative, phone, email, cnpj, address, bairro, cep, city, state, curve, notes)')
-      .order('created_at', { ascending: false })
+    let allDeals: any[] = []
+    let from = 0
+    const step = 1000
 
-    if (dErr) {
-      return NextResponse.json({ success: false, error: dErr.message, deals: [] }, { status: 500 })
+    while (true) {
+      const { data: deals, error: dErr } = await supabaseAdmin
+        .from('deals')
+        .select('*, contacts(id, name, company, representative, phone, email, cnpj, address, bairro, cep, city, state, curve, notes)')
+        .order('created_at', { ascending: false })
+        .range(from, from + step - 1)
+
+      if (dErr) {
+        return NextResponse.json({ success: false, error: dErr.message, deals: [] }, { status: 500 })
+      }
+      if (!deals || deals.length === 0) break
+      allDeals = allDeals.concat(deals)
+      if (deals.length < step) break
+      from += step
     }
 
-    const mappedDeals = (deals || []).map(d => {
+    const mappedDeals = (allDeals || []).map(d => {
       const c = d.contacts as any
       let contactObj = null
       if (c) {

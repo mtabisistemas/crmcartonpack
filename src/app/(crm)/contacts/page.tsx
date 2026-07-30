@@ -869,12 +869,11 @@ function ContactDrawer({
                       </div>
 
                       <div className="flex flex-col gap-0.5">
-                        <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">Responsável (Pessoa Física) *</label>
+                        <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">Responsável (Pessoa Física)</label>
                         <input 
                           type="text" 
-                          required
                           className="input text-xs py-1 px-2.5 font-bold border-dashed border-[var(--lime)] uppercase" 
-                          placeholder="Nome do Contato Principal"
+                          placeholder="Nome do Contato Principal (Opcional)"
                           value={name}
                           onChange={(e) => setName(e.target.value.toUpperCase())}
                         />
@@ -884,7 +883,9 @@ function ContactDrawer({
                     {/* CNPJ + Telefone + Email */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                       <div className="flex flex-col gap-0.5">
-                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNPJ</label>
+                        <div className="flex items-center justify-between h-5">
+                          <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNPJ</label>
+                        </div>
                         <input 
                           type="text" 
                           className="input text-xs py-1 px-2.5 font-mono" 
@@ -895,7 +896,7 @@ function ContactDrawer({
                       </div>
 
                       <div className="flex flex-col gap-0.5">
-                        <div className="flex justify-between items-center">
+                        <div className="flex items-center justify-between h-5">
                           <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Telefone</label>
                           <button
                             type="button"
@@ -2482,10 +2483,12 @@ export default function ContactsPage() {
               } catch (e) {}
             }
 
+            const cleanName = (item.name && item.name.toLowerCase().trim() !== item.company?.toLowerCase().trim()) ? item.name : ''
+
             return {
               id: item.id,
-              name: item.name || item.company || '',
-              company: item.company || item.name || '',
+              name: cleanName,
+              company: item.company || '',
               cnpj: item.cnpj || '',
               curve: item.curve || 'C',
               representative: item.representative || item.assigned_to || '',

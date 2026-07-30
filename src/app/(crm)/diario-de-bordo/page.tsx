@@ -1032,7 +1032,7 @@ export default function DiarioDeBordoPage() {
           isOpen={!!selectedContactForActivity}
           onClose={() => setSelectedContactForActivity(null)}
           onSuccess={fetchData}
-          contactsList={contacts.map(c => ({ id: c.id, name: c.name, company: c.name, representative: c.representative }))}
+          contactsList={contacts.map(c => ({ id: c.id, name: c.name || '', company: c.company || '', representative: c.representative || '' }))}
           preselectedContactId={selectedContactForActivity.id}
         />
       )}
