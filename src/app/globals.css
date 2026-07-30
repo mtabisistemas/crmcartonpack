@@ -173,26 +173,31 @@ input:-webkit-autofill:active {
   color: #0f172a;
 }
 
-/* ── Sidebar Escura Contrastante no Modo Claro ── */
+/* ── Sidebar 100% Idêntica ao Modo Escuro em Qualquer Tema ── */
 [data-theme="light"] .sidebar {
-  background: #0d1117 !important;
-  border-right: 1px solid #21262d !important;
-  color: #f0f6fc !important;
+  background: #121212 !important;
+  border-right: 1px solid #2a2a2a !important;
+  color: #fafafa !important;
+}
+
+[data-theme="light"] .sidebar .border-t,
+[data-theme="light"] .sidebar .border-b {
+  border-color: #2a2a2a !important;
 }
 
 [data-theme="light"] .sidebar .nav-item {
-  color: #8b949e !important;
+  color: #9a9a9a !important;
 }
 
 [data-theme="light"] .sidebar .nav-item:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
-  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #fafafa !important;
 }
 
 [data-theme="light"] .sidebar .nav-item.active {
-  background: rgba(180, 217, 50, 0.15) !important;
+  background: rgba(180, 217, 50, 0.10) !important;
   color: #b4d932 !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
 }
 
 [data-theme="light"] .sidebar .nav-item.active::before {
@@ -200,24 +205,23 @@ input:-webkit-autofill:active {
 }
 
 [data-theme="light"] .sidebar-logo-sub {
-  color: #8b949e !important;
+  color: #666666 !important;
 }
 
 [data-theme="light"] .sidebar-footer {
-  border-top-color: #21262d !important;
-}
-
-[data-theme="light"] .sidebar .border-t,
-[data-theme="light"] .sidebar .border-b {
-  border-color: #21262d !important;
+  border-top-color: #2a2a2a !important;
 }
 
 [data-theme="light"] .sidebar .text-\[var\(--white\)\] {
-  color: #ffffff !important;
+  color: #fafafa !important;
 }
 
 [data-theme="light"] .sidebar .text-\[var\(--gray2\)\] {
-  color: #8b949e !important;
+  color: #666666 !important;
+}
+
+[data-theme="light"] .sidebar .bg-\[var\(--charcoal\)\]\/40 {
+  background-color: rgba(18, 18, 18, 0.4) !important;
 }
 
 
