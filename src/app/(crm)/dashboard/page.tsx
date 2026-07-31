@@ -1268,7 +1268,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ========================================================
-          2. LINHA DE 6 KPI CARDS (ÍCONE VETORIAL LUMISOSO NO TOPO DIREITO)
+          2. LINHA DE 6 KPI CARDS (MARCA D'ÁGUA 3D GRANDE NO TOPO DIREITO)
          ======================================================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         
@@ -1303,14 +1303,16 @@ export default function DashboardPage() {
           }}
           className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(16,185,129,0.25)] hover:border-emerald-500/50 transition-all duration-200 group select-none"
         >
-          {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
+          {/* FAIXA LATERAL ESQUERDA NEON */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#10b981] rounded-l-2xl z-20 shadow-[0_0_10px_#10b981]" />
 
+          {/* MARCA D'ÁGUA 3D GRANDE NO CANTO SUPERIOR DIREITO */}
+          <Trophy size={56} className="absolute -right-2 -top-2 text-[#10b981] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300 z-0" />
+
           <div className="flex items-start justify-between gap-2 z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[130px]">
               PEDIDO EMITIDO / FATURADO
             </span>
-            <Trophy size={22} className="text-[#10b981] drop-shadow-[0_0_8px_rgba(16,185,129,0.8)] opacity-90 group-hover:scale-110 transition-transform shrink-0" />
           </div>
 
           <div className="my-3 z-10">
@@ -1342,14 +1344,16 @@ export default function DashboardPage() {
           }}
           className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(245,158,11,0.25)] hover:border-amber-500/50 transition-all duration-200 group select-none"
         >
-          {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
+          {/* FAIXA LATERAL ESQUERDA NEON */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#f59e0b] rounded-l-2xl z-20 shadow-[0_0_10px_#f59e0b]" />
 
+          {/* MARCA D'ÁGUA 3D GRANDE NO CANTO SUPERIOR DIREITO */}
+          <Briefcase size={56} className="absolute -right-2 -top-2 text-[#f59e0b] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300 z-0" />
+
           <div className="flex items-start justify-between gap-2 z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[130px]">
               EM NEGOCIAÇÃO
             </span>
-            <Briefcase size={22} className="text-[#f59e0b] drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] opacity-90 group-hover:scale-110 transition-transform shrink-0" />
           </div>
 
           <div className="my-3 z-10">
@@ -1381,14 +1385,16 @@ export default function DashboardPage() {
           }}
           className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(6,182,212,0.25)] hover:border-cyan-500/50 transition-all duration-200 group select-none"
         >
-          {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
+          {/* FAIXA LATERAL ESQUERDA NEON */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#06b6d4] rounded-l-2xl z-20 shadow-[0_0_10px_#06b6d4]" />
 
+          {/* MARCA D'ÁGUA 3D GRANDE NO CANTO SUPERIOR DIREITO */}
+          <CheckCircle2 size={56} className="absolute -right-2 -top-2 text-[#06b6d4] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300 z-0" />
+
           <div className="flex items-start justify-between gap-2 z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[130px]">
               APROVAÇÃO / BRIEFING
             </span>
-            <CheckCircle2 size={22} className="text-[#06b6d4] drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] opacity-90 group-hover:scale-110 transition-transform shrink-0" />
           </div>
 
           <div className="my-3 z-10">
@@ -1421,14 +1427,16 @@ export default function DashboardPage() {
           }}
           className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(239,68,68,0.25)] hover:border-red-500/50 transition-all duration-200 group select-none"
         >
-          {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
+          {/* FAIXA LATERAL ESQUERDA NEON */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#ef4444] rounded-l-2xl z-20 shadow-[0_0_10px_#ef4444]" />
 
+          {/* MARCA D'ÁGUA 3D GRANDE NO CANTO SUPERIOR DIREITO */}
+          <XCircle size={56} className="absolute -right-2 -top-2 text-[#ef4444] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300 z-0" />
+
           <div className="flex items-start justify-between gap-2 z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[130px]">
               NEGÓCIOS PERDIDOS
             </span>
-            <XCircle size={22} className="text-[#ef4444] drop-shadow-[0_0_8px_rgba(239,68,68,0.8)] opacity-90 group-hover:scale-110 transition-transform shrink-0" />
           </div>
 
           <div className="my-3 z-10">
@@ -1463,14 +1471,16 @@ export default function DashboardPage() {
           }}
           className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(168,85,247,0.25)] hover:border-purple-500/50 transition-all duration-200 group select-none"
         >
-          {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
+          {/* FAIXA LATERAL ESQUERDA NEON */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#8b5cf6] rounded-l-2xl z-20 shadow-[0_0_10px_#8b5cf6]" />
 
+          {/* MARCA D'ÁGUA 3D GRANDE NO CANTO SUPERIOR DIREITO */}
+          <DollarSign size={56} className="absolute -right-2 -top-2 text-[#8b5cf6] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300 z-0" />
+
           <div className="flex items-start justify-between gap-2 z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[130px]">
               TICKET MÉDIO
             </span>
-            <DollarSign size={22} className="text-[#8b5cf6] drop-shadow-[0_0_8px_rgba(168,85,247,0.8)] opacity-90 group-hover:scale-110 transition-transform shrink-0" />
           </div>
 
           <div className="my-3 z-10">
@@ -1502,14 +1512,16 @@ export default function DashboardPage() {
           }}
           className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(249,115,22,0.25)] hover:border-orange-500/50 transition-all duration-200 group select-none"
         >
-          {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
+          {/* FAIXA LATERAL ESQUERDA NEON */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#f97316] rounded-l-2xl z-20 shadow-[0_0_10px_#f97316]" />
 
+          {/* MARCA D'ÁGUA 3D GRANDE NO CANTO SUPERIOR DIREITO */}
+          <Clock size={56} className="absolute -right-2 -top-2 text-[#f97316] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300 z-0" />
+
           <div className="flex items-start justify-between gap-2 z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[130px]">
               CICLO MÉDIO
             </span>
-            <Clock size={22} className="text-[#f97316] drop-shadow-[0_0_8px_rgba(249,115,22,0.8)] opacity-90 group-hover:scale-110 transition-transform shrink-0" />
           </div>
 
           <div className="my-3 z-10">
@@ -1528,7 +1540,7 @@ export default function DashboardPage() {
       {/* ========================================================
           3. PAINEL DE RESULTADO VS META DO MÊS (FULL-WIDTH 100%)
          ======================================================== */}
-      <div className="card bg-[var(--card)] border border-[var(--line)] p-5.5 rounded-2xl flex flex-col gap-5 shadow-xl relative overflow-hidden">
+      <div className="card bg-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl flex flex-col gap-5 shadow-xl relative overflow-hidden w-full">
         
         {/* Header com Título & Indicador de Status Neon */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--line)] pb-4">
