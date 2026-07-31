@@ -1185,13 +1185,19 @@ export default function DashboardPage() {
             ]
             openDrillDown('PEDIDOS EMITIDOS / FATURADO', 'Lista de todas as vendas e pedidos faturados no período', items, '#10b981')
           }}
-          className="card bg-[var(--card)] border-t border-b border-r border-[var(--line)] border-l-4 border-l-[#10b981] p-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(16,185,129,0.2)] hover:border-emerald-500/50 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(16,185,129,0.25)] hover:border-emerald-500/50 transition-all duration-200 group select-none"
         >
+          {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
+          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#10b981] rounded-l-2xl z-20 shadow-[0_0_10px_#10b981]" />
+
+          {/* ÍCONE WATERMARK 3D DE FUNDO */}
+          <Trophy size={54} className="absolute -right-2 -bottom-2 text-[#10b981] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300" />
+
           <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               PEDIDO EMITIDO / FATURADO
             </span>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-900/10 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(16,185,129,0.3)] group-hover:scale-110 transition-transform">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/25 to-emerald-900/10 border border-emerald-500/40 text-[#10b981] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.4)] group-hover:scale-110 transition-transform">
               <Trophy size={18} />
             </div>
           </div>
@@ -1223,13 +1229,19 @@ export default function DashboardPage() {
             }))
             openDrillDown('EM NEGOCIAÇÃO / PIPELINE', 'Oportunidades ativas em andamento nas etapas do funil', items, '#f59e0b')
           }}
-          className="card bg-[var(--card)] border-t border-b border-r border-[var(--line)] border-l-4 border-l-amber-500 p-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(245,158,11,0.2)] hover:border-amber-500/50 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(245,158,11,0.25)] hover:border-amber-500/50 transition-all duration-200 group select-none"
         >
+          {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
+          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#f59e0b] rounded-l-2xl z-20 shadow-[0_0_10px_#f59e0b]" />
+
+          {/* ÍCONE WATERMARK 3D DE FUNDO */}
+          <Briefcase size={54} className="absolute -right-2 -bottom-2 text-[#f59e0b] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300" />
+
           <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               EM NEGOCIAÇÃO
             </span>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-900/10 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(245,158,11,0.3)] group-hover:scale-110 transition-transform">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/25 to-amber-900/10 border border-amber-500/40 text-[#f59e0b] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.4)] group-hover:scale-110 transition-transform">
               <Briefcase size={18} />
             </div>
           </div>
@@ -1261,13 +1273,19 @@ export default function DashboardPage() {
             }))
             openDrillDown('OPORTUNIDADES APROVADAS', 'Negócios em fase de briefing, orçamento e aprovação final', items, '#06b6d4')
           }}
-          className="card bg-[var(--card)] border-t border-b border-r border-[var(--line)] border-l-4 border-l-cyan-500 p-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(6,182,212,0.2)] hover:border-cyan-500/50 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(6,182,212,0.25)] hover:border-cyan-500/50 transition-all duration-200 group select-none"
         >
+          {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
+          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#06b6d4] rounded-l-2xl z-20 shadow-[0_0_10px_#06b6d4]" />
+
+          {/* ÍCONE WATERMARK 3D DE FUNDO */}
+          <CheckCircle2 size={54} className="absolute -right-2 -bottom-2 text-[#06b6d4] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300" />
+
           <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               APROVAÇÃO / BRIEFING
             </span>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-900/10 border border-cyan-500/40 text-cyan-400 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(6,182,212,0.3)] group-hover:scale-110 transition-transform">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/25 to-cyan-900/10 border border-cyan-500/40 text-[#06b6d4] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.4)] group-hover:scale-110 transition-transform">
               <CheckCircle2 size={18} />
             </div>
           </div>
@@ -1300,13 +1318,19 @@ export default function DashboardPage() {
             }))
             openDrillDown('NEGÓCIOS PERDIDOS', 'Histórico de negociações não concluídas no período', items, '#e2483d')
           }}
-          className="card bg-[var(--card)] border-t border-b border-r border-[var(--line)] border-l-4 border-l-red-500 p-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(239,68,68,0.2)] hover:border-red-500/50 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(239,68,68,0.25)] hover:border-red-500/50 transition-all duration-200 group select-none"
         >
+          {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
+          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#ef4444] rounded-l-2xl z-20 shadow-[0_0_10px_#ef4444]" />
+
+          {/* ÍCONE WATERMARK 3D DE FUNDO */}
+          <XCircle size={54} className="absolute -right-2 -bottom-2 text-[#ef4444] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300" />
+
           <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               NEGÓCIOS PERDIDOS
             </span>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500/20 to-red-900/10 border border-red-500/40 text-red-400 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(239,68,68,0.3)] group-hover:scale-110 transition-transform">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500/25 to-red-900/10 border border-red-500/40 text-[#ef4444] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(239,68,68,0.4)] group-hover:scale-110 transition-transform">
               <XCircle size={18} />
             </div>
           </div>
@@ -1341,13 +1365,19 @@ export default function DashboardPage() {
             ]
             openDrillDown('ANÁLISE DE TICKET MÉDIO', 'Distribuição dos valores por pedido fechado na carteira', items, '#8b5cf6')
           }}
-          className="card bg-[var(--card)] border-t border-b border-r border-[var(--line)] border-l-4 border-l-purple-500 p-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(168,85,247,0.2)] hover:border-purple-500/50 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(168,85,247,0.25)] hover:border-purple-500/50 transition-all duration-200 group select-none"
         >
+          {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
+          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#8b5cf6] rounded-l-2xl z-20 shadow-[0_0_10px_#8b5cf6]" />
+
+          {/* ÍCONE WATERMARK 3D DE FUNDO */}
+          <DollarSign size={54} className="absolute -right-2 -bottom-2 text-[#8b5cf6] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300" />
+
           <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               TICKET MÉDIO
             </span>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-900/10 border border-purple-500/40 text-purple-400 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(168,85,247,0.3)] group-hover:scale-110 transition-transform">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500/25 to-purple-900/10 border border-purple-500/40 text-[#8b5cf6] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.4)] group-hover:scale-110 transition-transform">
               <DollarSign size={18} />
             </div>
           </div>
@@ -1379,13 +1409,19 @@ export default function DashboardPage() {
             }))
             openDrillDown('CICLO MÉDIO DE FECHAMENTO', 'Tempo médio em dias entre a criação da oportunidade e o aceite', items, '#f97316')
           }}
-          className="card bg-[var(--card)] border-t border-b border-r border-[var(--line)] border-l-4 border-l-orange-500 p-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(249,115,22,0.2)] hover:border-orange-500/50 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(249,115,22,0.25)] hover:border-orange-500/50 transition-all duration-200 group select-none"
         >
+          {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
+          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#f97316] rounded-l-2xl z-20 shadow-[0_0_10px_#f97316]" />
+
+          {/* ÍCONE WATERMARK 3D DE FUNDO */}
+          <Clock size={54} className="absolute -right-2 -bottom-2 text-[#f97316] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300" />
+
           <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               CICLO MÉDIO
             </span>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-900/10 border border-orange-500/40 text-orange-400 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(249,115,22,0.3)] group-hover:scale-110 transition-transform">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500/25 to-orange-900/10 border border-orange-500/40 text-[#f97316] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(249,115,22,0.4)] group-hover:scale-110 transition-transform">
               <Clock size={18} />
             </div>
           </div>
