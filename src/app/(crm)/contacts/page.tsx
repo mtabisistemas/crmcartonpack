@@ -36,7 +36,11 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Info
+  Info,
+  TrendingUp,
+  Activity,
+  BarChart2,
+  UserX
 } from 'lucide-react'
 import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString, getUniqueCanonicalRepresentatives, isSameRepresentative, formatCanonicalRepName } from '@/lib/utils'
 import { supabase } from '@/services/supabase-client'
@@ -2938,12 +2942,16 @@ export default function ContactsPage() {
     })
   }, [contacts, isRep, currentUser?.name, searchTerm, selectedCurve, selectedRep])
 
-  // ── Metrics Calculation (Total, Ativos <= 180d, Reativação > 180d, Prospecção) ──
+  // ── Metrics Calculation (Total, Ativos, Reativação, Prospecção + Curvas A, B, C, D com % ) ──
   const metrics = useMemo(() => {
     let total = 0
     let ativos = 0
     let reativacao = 0
     let prospeccao = 0
+    let curveA = 0
+    let curveB = 0
+    let curveC = 0
+    let curveD = 0
 
     scopedContactsForMetrics.forEach(c => {
       total++
@@ -2956,9 +2964,28 @@ export default function ContactsPage() {
       } else if (repInfo.computedStatus === 'prospeccao') {
         prospeccao++
       }
+
+      if (c.curve === 'A') curveA++
+      else if (c.curve === 'B') curveB++
+      else if (c.curve === 'C') curveC++
+      else if (c.curve === 'D') curveD++
     })
 
-    return { total, ativos, reativacao, prospeccao }
+    const pctAtivos = total > 0 ? ((ativos / total) * 100).toFixed(1) : '0.0'
+    const pctReativacao = total > 0 ? ((reativacao / total) * 100).toFixed(1) : '0.0'
+    const pctProspeccao = total > 0 ? ((prospeccao / total) * 100).toFixed(1) : '0.0'
+
+    const pctCurveA = total > 0 ? ((curveA / total) * 100).toFixed(1) : '0.0'
+    const pctCurveB = total > 0 ? ((curveB / total) * 100).toFixed(1) : '0.0'
+    const pctCurveC = total > 0 ? ((curveC / total) * 100).toFixed(1) : '0.0'
+    const pctCurveD = total > 0 ? ((curveD / total) * 100).toFixed(1) : '0.0'
+
+    return { 
+      total, ativos, reativacao, prospeccao, 
+      pctAtivos, pctReativacao, pctProspeccao,
+      curveA, curveB, curveC, curveD,
+      pctCurveA, pctCurveB, pctCurveC, pctCurveD
+    }
   }, [scopedContactsForMetrics])
 
   function repScheduleDaysToRepurchase(c: MockContact, repInfo: any) {
@@ -3289,88 +3316,168 @@ export default function ContactsPage() {
         </div>
       </div>
 
-      {/* ── KPI METRICS SUMMARY CARDS ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+      {/* ── KPI METRICS SUMMARY CARDS (8 Cards: 4 Status + 4 Curvas com Percentuais Elegantes) ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-2.5">
         {/* Card 1: Total de Clientes */}
         <div 
           onClick={() => {
             setSelectedStatus('all')
+            setSelectedCurve('all')
           }}
-          className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            selectedStatus === 'all' 
-              ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
-              : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
+          className={`card p-2.5 flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] ${
+            selectedStatus === 'all' && selectedCurve === 'all'
+              ? 'border-[var(--lime)]/60 bg-[var(--charcoal)] shadow-md' 
+              : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/40'
           }`}
+          title="Exibir todos os clientes"
         >
-          <div>
-            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Total de Clientes</span>
-            <span className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">{metrics.total}</span>
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider font-bold truncate">Total</span>
+            <span className="text-[9px] font-mono font-bold text-[var(--gray2)] bg-[var(--charcoal)] border border-[var(--line)] px-1.5 py-0.2 rounded">100%</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--lime)] flex items-center justify-center shrink-0">
-            <Users size={15} />
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-black text-[var(--white)] font-display">{metrics.total}</span>
+            <Users size={13} className="text-[var(--lime)] opacity-80" />
           </div>
         </div>
 
-        {/* Card 2: Clientes Ativos (<= 180d) */}
+        {/* Card 2: Clientes Ativos */}
         <div 
-          onClick={() => {
-            setSelectedStatus(prev => prev === 'ativo' ? 'all' : 'ativo')
-          }}
-          className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+          onClick={() => setSelectedStatus(prev => prev === 'ativo' ? 'all' : 'ativo')}
+          className={`card p-2.5 flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] ${
             selectedStatus === 'ativo' 
               ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
-              : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
+              : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/40'
           }`}
           title={selectedStatus === 'ativo' ? 'Clique para desfiltrar' : 'Filtrar por Clientes Ativos'}
         >
-          <div>
-            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Clientes Ativos</span>
-            <span className="text-xl font-black text-[var(--lime)] font-display mt-0.5 block">{metrics.ativos}</span>
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider font-bold truncate">Ativos</span>
+            <span className="text-[9px] font-mono font-bold text-[var(--lime)] bg-[var(--lime)]/10 border border-[var(--lime)]/20 px-1.5 py-0.2 rounded">{metrics.pctAtivos}%</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-[var(--lime)]/10 border border-[var(--lime)]/20 text-[var(--lime)] flex items-center justify-center shrink-0">
-            <CheckCircle size={15} />
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-black text-[var(--lime)] font-display">{metrics.ativos}</span>
+            <CheckCircle size={13} className="text-[var(--lime)] opacity-80" />
           </div>
         </div>
 
-        {/* Card 3: Reativação (> 180d) */}
+        {/* Card 3: Reativação */}
         <div 
-          onClick={() => {
-            setSelectedStatus(prev => prev === 'reativacao' ? 'all' : 'reativacao')
-          }}
-          className={`card p-3 border-l-4 border-l-orange-500 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+          onClick={() => setSelectedStatus(prev => prev === 'reativacao' ? 'all' : 'reativacao')}
+          className={`card p-2.5 flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] ${
             selectedStatus === 'reativacao' 
               ? 'border-orange-500 bg-[var(--charcoal)] shadow-md' 
-              : 'border-[var(--line)] bg-[var(--card)] hover:border-orange-500/50'
+              : 'border-[var(--line)] bg-[var(--card)] hover:border-orange-500/40'
           }`}
           title={selectedStatus === 'reativacao' ? 'Clique para desfiltrar' : 'Filtrar por Reativação'}
         >
-          <div>
-            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Reativação</span>
-            <span className="text-xl font-black text-orange-400 font-display mt-0.5 block">{metrics.reativacao}</span>
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider font-bold truncate">Reativação</span>
+            <span className="text-[9px] font-mono font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-1.5 py-0.2 rounded">{metrics.pctReativacao}%</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center shrink-0">
-            <AlertCircle size={15} />
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-black text-orange-400 font-display">{metrics.reativacao}</span>
+            <AlertCircle size={13} className="text-orange-400 opacity-80" />
           </div>
         </div>
 
-        {/* Card 4: Prospecção (sem compras) */}
+        {/* Card 4: Prospecção */}
         <div 
-          onClick={() => {
-            setSelectedStatus(prev => prev === 'prospeccao' ? 'all' : 'prospeccao')
-          }}
-          className={`card p-3 border-l-4 border-l-amber-400 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+          onClick={() => setSelectedStatus(prev => prev === 'prospeccao' ? 'all' : 'prospeccao')}
+          className={`card p-2.5 flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] ${
             selectedStatus === 'prospeccao' 
               ? 'border-amber-400 bg-[var(--charcoal)] shadow-md' 
-              : 'border-[var(--line)] bg-[var(--card)] hover:border-amber-400/50'
+              : 'border-[var(--line)] bg-[var(--card)] hover:border-amber-400/40'
           }`}
           title={selectedStatus === 'prospeccao' ? 'Clique para desfiltrar' : 'Filtrar por Prospecção'}
         >
-          <div>
-            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Prospecção</span>
-            <span className="text-xl font-black text-amber-300 font-display mt-0.5 block">{metrics.prospeccao}</span>
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider font-bold truncate">Prospecção</span>
+            <span className="text-[9px] font-mono font-bold text-amber-300 bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.2 rounded">{metrics.pctProspeccao}%</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/20 text-amber-300 flex items-center justify-center shrink-0">
-            <UserPlus size={15} />
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-black text-amber-300 font-display">{metrics.prospeccao}</span>
+            <UserPlus size={13} className="text-amber-300 opacity-80" />
+          </div>
+        </div>
+
+        {/* Card 5: Curva A */}
+        <div 
+          onClick={() => setSelectedCurve(prev => prev === 'A' ? 'all' : 'A')}
+          className={`card p-2.5 flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] ${
+            selectedCurve === 'A' 
+              ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
+              : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/40'
+          }`}
+          title={selectedCurve === 'A' ? 'Clique para desfiltrar' : 'Filtrar pela Curva A'}
+        >
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider font-bold truncate">Curva A</span>
+            <span className="text-[9px] font-mono font-bold text-[var(--lime)] bg-[var(--lime)]/10 border border-[var(--lime)]/20 px-1.5 py-0.2 rounded">{metrics.pctCurveA}%</span>
+          </div>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-black text-[var(--lime)] font-display">{metrics.curveA}</span>
+            <TrendingUp size={13} className="text-[var(--lime)] opacity-80" />
+          </div>
+        </div>
+
+        {/* Card 6: Curva B */}
+        <div 
+          onClick={() => setSelectedCurve(prev => prev === 'B' ? 'all' : 'B')}
+          className={`card p-2.5 flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] ${
+            selectedCurve === 'B' 
+              ? 'border-[var(--yellow)] bg-[var(--charcoal)] shadow-md' 
+              : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--yellow)]/40'
+          }`}
+          title={selectedCurve === 'B' ? 'Clique para desfiltrar' : 'Filtrar pela Curva B'}
+        >
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider font-bold truncate">Curva B</span>
+            <span className="text-[9px] font-mono font-bold text-[var(--yellow)] bg-[var(--yellow)]/10 border border-[var(--yellow)]/20 px-1.5 py-0.2 rounded">{metrics.pctCurveB}%</span>
+          </div>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-black text-[var(--yellow)] font-display">{metrics.curveB}</span>
+            <Activity size={13} className="text-[var(--yellow)] opacity-80" />
+          </div>
+        </div>
+
+        {/* Card 7: Curva C */}
+        <div 
+          onClick={() => setSelectedCurve(prev => prev === 'C' ? 'all' : 'C')}
+          className={`card p-2.5 flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] ${
+            selectedCurve === 'C' 
+              ? 'border-slate-300 bg-[var(--charcoal)] shadow-md' 
+              : 'border-[var(--line)] bg-[var(--card)] hover:border-slate-300/40'
+          }`}
+          title={selectedCurve === 'C' ? 'Clique para desfiltrar' : 'Filtrar pela Curva C'}
+        >
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider font-bold truncate">Curva C</span>
+            <span className="text-[9px] font-mono font-bold text-slate-300 bg-slate-500/10 border border-slate-500/20 px-1.5 py-0.2 rounded">{metrics.pctCurveC}%</span>
+          </div>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-black text-slate-200 font-display">{metrics.curveC}</span>
+            <BarChart2 size={13} className="text-slate-300 opacity-80" />
+          </div>
+        </div>
+
+        {/* Card 8: Curva D */}
+        <div 
+          onClick={() => setSelectedCurve(prev => prev === 'D' ? 'all' : 'D')}
+          className={`card p-2.5 flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] ${
+            selectedCurve === 'D' 
+              ? 'border-zinc-400 bg-[var(--charcoal)] shadow-md' 
+              : 'border-[var(--line)] bg-[var(--card)] hover:border-zinc-400/40'
+          }`}
+          title={selectedCurve === 'D' ? 'Clique para desfiltrar' : 'Filtrar pela Curva D'}
+        >
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider font-bold truncate">Curva D</span>
+            <span className="text-[9px] font-mono font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 px-1.5 py-0.2 rounded">{metrics.pctCurveD}%</span>
+          </div>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-black text-zinc-400 font-display">{metrics.curveD}</span>
+            <UserX size={13} className="text-zinc-400 opacity-80" />
           </div>
         </div>
       </div>
