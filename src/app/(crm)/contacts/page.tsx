@@ -712,8 +712,8 @@ function ContactDrawer({
       phone,
       phone2,
       email,
-      city,
-      state,
+      city: city ? city.toUpperCase() : '',
+      state: state ? state.toUpperCase() : '',
       status,
       registrationStatus,
       mainCnae,
@@ -3466,7 +3466,7 @@ export default function ContactsPage() {
                     {contact.company && contact.name && (
                       <span className="text-[9px] font-mono text-[var(--gray)] block mt-0.5 truncate">Contato: {contact.name}</span>
                     )}
-                    <span className="text-[9px] text-[var(--gray)] font-mono block">{contact.city}{contact.state ? ` · ${contact.state}` : ''}</span>
+                    <span className="text-[9px] text-[var(--gray)] font-mono block">{(contact.city || '').toUpperCase()}{contact.state ? ` · ${contact.state.toUpperCase()}` : ''}</span>
                   </div>
                   {(() => {
                     if (effectiveStatus === 'prospeccao') return (
@@ -3705,7 +3705,7 @@ export default function ContactsPage() {
 
                       {/* Cidade */}
                       <td className="py-2 px-3">
-                        <span className="text-[11px] text-[var(--white)] font-mono">{contact.city || <span className="text-[var(--gray2)]">-</span>}</span>
+                        <span className="text-[11px] text-[var(--white)] font-mono">{(contact.city || '').toUpperCase() || <span className="text-[var(--gray2)]">-</span>}</span>
                       </td>
 
                       {/* UF */}

@@ -699,7 +699,7 @@ function NewDealModal({
                       {c.company || c.name}
                     </div>
                     <div className="text-[10px] text-[var(--gray)] font-mono truncate mt-0.5 uppercase">
-                      {c.cnpj ? `${c.cnpj} ` : ''}{c.city ? `• ${c.city}/${c.state}` : ''}
+                      {c.cnpj ? `${c.cnpj} ` : ''}{c.city ? `• ${c.city.toUpperCase()}/${c.state ? c.state.toUpperCase() : ''}` : ''}
                     </div>
                   </div>
                   <span className="text-[10px] font-mono text-[var(--lime)] bg-[var(--lime)]/10 px-2 py-0.5 rounded border border-[var(--lime)]/20 shrink-0 opacity-80 group-hover:opacity-100">
