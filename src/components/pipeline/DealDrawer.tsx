@@ -847,43 +847,34 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
 
                 <div className="flex flex-col gap-1.5">
                   <label className="label">Nome do Contato</label>
-                  <div className="relative flex items-center">
-                    <User size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
-                    <input 
-                      type="text" 
-                      readOnly
-                      className="input w-full !pl-9 uppercase bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
-                      value={contactName} 
-                    />
-                  </div>
+                  <input 
+                    type="text" 
+                    readOnly
+                    className="input w-full uppercase bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
+                    value={contactName} 
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <label className="label">Empresa</label>
-                  <div className="relative flex items-center">
-                    <Building size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
-                    <input 
-                      type="text" 
-                      readOnly
-                      className="input w-full !pl-9 uppercase bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
-                      value={contactCompany} 
-                    />
-                  </div>
+                  <input 
+                    type="text" 
+                    readOnly
+                    className="input w-full uppercase bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
+                    value={contactCompany} 
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="label">CNPJ</label>
-                    <div className="relative flex items-center">
-                      <FileText size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
-                      <input 
-                        type="text" 
-                        readOnly
-                        className="input w-full !pl-9 font-mono text-xs bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
-                        placeholder="00.000.000/0000-00"
-                        value={contactCnpj} 
-                      />
-                    </div>
+                    <input 
+                      type="text" 
+                      readOnly
+                      className="input w-full font-mono text-xs bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
+                      placeholder="00.000.000/0000-00"
+                      value={contactCnpj} 
+                    />
                   </div>
 
                   <div className="flex flex-col gap-1.5">
@@ -904,11 +895,10 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
                       </button>
                     </div>
                     <div className="relative flex items-center">
-                      <Phone size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                       <input 
                         type="text" 
                         readOnly
-                        className="input w-full !pl-9 !pr-9 font-mono text-xs bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
+                        className="input w-full !pr-9 font-mono text-xs bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
                         placeholder="(00) 00000-0000"
                         value={contactPhone} 
                       />
@@ -946,11 +936,10 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
                           )}
                         </div>
                         <div className="relative flex items-center">
-                          <Phone size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
                           <input 
                             type="text" 
                             readOnly
-                            className="input w-full !pl-9 !pr-9 font-mono text-xs bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
+                            className="input w-full !pr-9 font-mono text-xs bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
                             placeholder="(00) 00000-0000"
                             value={contactPhone2} 
                           />
@@ -990,32 +979,26 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
                       </button>
                     )}
                   </div>
-                  <div className="relative flex items-center">
-                    <Mail size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
-                    <input 
-                      type="email" 
-                      readOnly
-                      className="input w-full !pl-9 font-mono text-xs bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
-                      placeholder="email@empresa.com.br"
-                      value={contactEmail}
-                    />
-                  </div>
+                  <input 
+                    type="email" 
+                    readOnly
+                    className="input w-full font-mono text-xs bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
+                    placeholder="email@empresa.com.br"
+                    value={contactEmail}
+                  />
                 </div>
 
                 {/* Endereço: Rua / Número + Complemento + Bairro */}
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
                   <div className="sm:col-span-6 flex flex-col gap-1.5">
                     <label className="label">Rua / Número</label>
-                    <div className="relative flex items-center">
-                      <MapPin size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
-                      <input 
-                        type="text" 
-                        readOnly
-                        className="input w-full !pl-9 uppercase text-xs font-mono bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
-                        placeholder="Rua, Número"
-                        value={contactAddress} 
-                      />
-                    </div>
+                    <input 
+                      type="text" 
+                      readOnly
+                      className="input w-full uppercase text-xs font-mono bg-black/40 opacity-90 cursor-not-allowed border-[var(--line)]" 
+                      placeholder="Rua, Número"
+                      value={contactAddress} 
+                    />
                   </div>
 
                   <div className="sm:col-span-3 flex flex-col gap-1.5">
