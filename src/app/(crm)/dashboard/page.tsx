@@ -834,20 +834,33 @@ export default function DashboardPage() {
 
   // Total Target Goal calculation from goalsMap or fallback
   const metaCalculated = useMemo(() => {
-    const monthKey = `${yearFilter}_${monthFilter}`
     let sumGoal = 0
 
     Object.keys(goalsMap).forEach(k => {
-      if (k.startsWith(monthKey) || (yearFilter === 'all' && k.includes(monthFilter))) {
+      const parts = k.split('_')
+      const gYear = parts[0]
+      const gMonth = parts[1]
+
+      if (yearFilter !== 'all' && gYear !== yearFilter) return
+
+      if (monthFilter === 'all') {
+        // Acumular metas de todos os meses do ano selecionado
+        sumGoal += (goalsMap[k]?.salesGoal || (goalsMap[k] as any)?.metaMonthly || 0)
+      } else if (gMonth === monthFilter) {
+        // Mês específico selecionado
         sumGoal += (goalsMap[k]?.salesGoal || (goalsMap[k] as any)?.metaMonthly || 0)
       }
     })
 
-    const totalGoal = sumGoal > 0 ? sumGoal : 1500000
+    // Caso não haja metas cadastradas no goalsMap, usa fallback (1.5M * 12 no ano ou 1.5M no mês)
+    const fallbackBase = 1500000
+    const fallbackTotal = monthFilter === 'all' ? fallbackBase * 12 : fallbackBase
+    const totalGoal = sumGoal > 0 ? sumGoal : fallbackTotal
+
     const faturado = kpis.totalFaturadoR$
     const pct = totalGoal > 0 ? (faturado / totalGoal) * 100 : 0
     const falta = Math.max(0, totalGoal - faturado)
-    const projecao = faturado > 0 ? faturado * 1.15 : 0
+    const projecao = faturado > 0 ? (monthFilter === 'all' ? faturado * 1.05 : faturado * 1.15) : 0
 
     return {
       totalGoal,
@@ -1497,13 +1510,13 @@ export default function DashboardPage() {
             </div>
             <div>
               <h3 className="font-display text-sm sm:text-base font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2">
-                <span>RESULTADO VS META DO MÊS</span>
+                <span>{monthFilter === 'all' ? 'RESULTADO VS META DO ANO' : 'RESULTADO VS META DO MÊS'}</span>
                 <span className="text-xs font-mono font-normal text-[var(--gray2)]">
                   ({monthFilter !== 'all' ? `${MONTH_NAMES_MAP[monthFilter]} / ${yearFilter}` : `Ano ${yearFilter}`})
                 </span>
               </h3>
               <p className="text-xs font-mono text-[var(--gray2)] mt-0.5">
-                Acompanhamento em tempo real do faturamento acumulado frente ao objetivo mensal
+                {monthFilter === 'all' ? 'Acompanhamento em tempo real do faturamento acumulado frente ao objetivo anual' : 'Acompanhamento em tempo real do faturamento acumulado frente ao objetivo mensal'}
               </p>
             </div>
           </div>
@@ -1526,7 +1539,7 @@ export default function DashboardPage() {
         {/* 4 KPIs NUMÉRICOS COM DESIGN IDÊNTICO AOS CARDS DO TOPO (FAIXAS NEON + MARCA D'ÁGUA 3D) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
-          {/* KPI 1: META DO MÊS */}
+          {/* KPI 1: META DO MÊS / ANO */}
           <div className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
             {/* FAIXA LATERAL ESQUERDA NEON */}
             <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#94a3b8] rounded-l-2xl z-20 shadow-[0_0_10px_#94a3b8]" />
@@ -1536,7 +1549,7 @@ export default function DashboardPage() {
 
             <div className="flex items-start justify-between gap-2 z-10">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
-                OBJETIVO / META DO MÊS
+                {monthFilter === 'all' ? 'OBJETIVO / META DO ANO' : 'OBJETIVO / META DO MÊS'}
               </span>
             </div>
 
