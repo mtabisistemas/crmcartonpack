@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { 
   Search, 
   Filter, 
@@ -9,6 +9,7 @@ import {
   Building2, 
   AlertCircle, 
   MapPin, 
+  List,
   Plus, 
   X, 
   Send, 
@@ -2666,6 +2667,118 @@ export default function ContactsPage() {
   // Dynamic representatives list from CRM Users in localStorage
   const [representativesList, setRepresentativesList] = useState<string[]>([])
 
+  // View mode state (Lista / Mapa) & Leaflet Map setup
+  const [viewMode, setViewMode] = useState<'lista' | 'mapa'>('lista')
+  const contactsMapRef = useRef<HTMLDivElement>(null)
+  const contactsMapInstanceRef = useRef<any>(null)
+  const [leafletReady, setLeafletReady] = useState(false)
+
+  const getCityCoords = (cityStr?: string): [number, number] | undefined => {
+    if (!cityStr) return undefined
+    const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+    const clean = norm(cityStr)
+    const coordsMap: Record<string, [number, number]> = {
+      'novo hamburgo': [-29.6842, -51.1303],
+      'dois irmaos': [-29.5800, -51.0833],
+      'porto alegre': [-30.0346, -51.2177],
+      'gravatai': [-29.9419, -50.9925],
+      'canoas': [-29.9189, -51.1781],
+      'sapucaia do sul': [-29.8272, -51.1444],
+      'sao leopoldo': [-29.7606, -51.1472],
+      'estancia velha': [-29.6508, -51.1783],
+      'campo bom': [-29.6781, -51.0558],
+      'ivoti': [-29.5939, -51.1606],
+      'canela': [-29.3658, -50.8092],
+      'gramado': [-29.3787, -50.8739],
+      'caxias do sul': [-29.1681, -51.1794],
+      'bento goncalves': [-29.1706, -51.5186],
+      'sapiranga': [-29.6381, -51.0069],
+      'nova hartz': [-29.5819, -50.9031],
+      'igrejinha': [-29.5742, -50.7936],
+      'tres coroas': [-29.5175, -50.7778],
+      'parobe': [-29.6289, -50.8344],
+      'taquara': [-29.6517, -50.7817],
+      'sao jose': [-27.6136, -48.6366],
+      'tubarao': [-28.4736, -49.0069],
+      'santa rita do sapucai': [-22.2519, -45.7042],
+      'balneario camboriu': [-26.9926, -48.6349],
+      'balneario gaivota': [-29.1561, -49.5786],
+      'blumenau': [-26.9194, -49.0661],
+      'florianopolis': [-27.5954, -48.5480],
+      'joinville': [-26.3044, -48.8464],
+      'chapeco': [-27.1004, -52.6152],
+      'criciuma': [-28.6775, -49.3703],
+      'itajai': [-26.9078, -48.6619],
+      'palhoca': [-27.6453, -48.6683],
+      'curitiba': [-25.4284, -49.2733],
+      'londrina': [-23.3045, -51.1696],
+      'maringa': [-23.4210, -51.9331],
+      'ponta grossa': [-25.0950, -50.1619],
+      'cascavel': [-24.9558, -53.4552],
+      'foz do iguacu': [-25.5163, -54.5854],
+      'toledo': [-24.7244, -53.7431],
+      'osasco': [-23.5329, -46.7920],
+      'sao paulo': [-23.5505, -46.6333],
+      'campinas': [-22.9099, -47.0626],
+      'guarulhos': [-23.4542, -46.5337],
+      'sao bernardo do campo': [-23.6944, -46.5654],
+      'santo andre': [-23.6639, -46.5383],
+      'sorocaba': [-23.5015, -47.4526],
+      'ribeirao preto': [-21.1704, -47.8103],
+      'sao jose dos campos': [-23.1896, -45.8841],
+      'rio de janeiro': [-22.9068, -43.1729],
+      'belo horizonte': [-19.9167, -43.9345],
+      'brasilia': [-15.7975, -47.8919],
+      'goiania': [-16.6869, -49.2648],
+      'salvador': [-12.9777, -38.5016],
+      'itabuna': [-14.7878, -39.2783],
+      'vitoria da conquista': [-14.8661, -40.8394],
+      'manaus': [-3.1190, -60.0217],
+      'rio branco': [-9.9749, -67.8100]
+    }
+    return coordsMap[clean]
+  }
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    let interval: any = null
+
+    if ((window as any).L) {
+      setLeafletReady(true)
+    } else {
+      if (!document.getElementById('leaflet-css')) {
+        const link = document.createElement('link')
+        link.id = 'leaflet-css'
+        link.rel = 'stylesheet'
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+        document.head.appendChild(link)
+      }
+      if (!document.getElementById('leaflet-js')) {
+        const script = document.createElement('script')
+        script.id = 'leaflet-js'
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+        script.onload = () => setLeafletReady(true)
+        document.head.appendChild(script)
+      } else {
+        interval = setInterval(() => {
+          if ((window as any).L) {
+            setLeafletReady(true)
+            clearInterval(interval)
+          }
+        }, 100)
+      }
+    }
+
+    (window as any).handleMapVerFichaContact = (contactId: string) => {
+      const found = contacts.find(c => c.id === contactId)
+      if (found) setSelectedContact(found)
+    }
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [contacts])
+
   // Load contacts list on mount
   useEffect(() => {
     const loadContacts = async () => {
@@ -3081,6 +3194,150 @@ export default function ContactsPage() {
     const start = (currentPage - 1) * itemsPerPage
     return filteredContacts.slice(start, start + itemsPerPage)
   }, [filteredContacts, currentPage, itemsPerPage])
+
+  // Plot markers on contactsMapRef whenever viewMode === 'mapa', leafletReady or filteredContacts changes
+  useEffect(() => {
+    if (viewMode !== 'mapa' || !leafletReady || !contactsMapRef.current) return
+
+    const L_Global = (window as any).L
+    if (!L_Global) return
+
+    if (contactsMapInstanceRef.current) {
+      contactsMapInstanceRef.current.remove()
+      contactsMapInstanceRef.current = null
+    }
+
+    const map = L_Global.map(contactsMapRef.current, {
+      zoomControl: false,
+      attributionControl: false
+    })
+    contactsMapInstanceRef.current = map
+
+    L_Global.control.zoom({ position: 'bottomright' }).addTo(map)
+
+    L_Global.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      subdomains: 'abc',
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map)
+
+    const coordsCount: Record<string, number> = {}
+    const bounds: [number, number][] = []
+
+    filteredContacts.forEach((contact) => {
+      const repInfo = getContactActivityAndRepurchaseInfo(contact)
+      const computedStatus = repInfo.computedStatus
+
+      let pinColor = '#f59e0b' // prospeccao amber
+      if (computedStatus === 'ativo') pinColor = '#B4D932' // lime
+      else if (computedStatus === 'reativacao') pinColor = '#f97316' // orange
+      else if ((computedStatus as string) === 'inativo') pinColor = '#64748b' // gray
+
+      let baseCoords = getCityCoords(contact.city) || [-29.6842, -51.1303]
+      const key = `${baseCoords[0].toFixed(3)}_${baseCoords[1].toFixed(3)}`
+      const indexInCity = coordsCount[key] || 0
+      coordsCount[key] = indexInCity + 1
+
+      let finalLat = baseCoords[0]
+      let finalLng = baseCoords[1]
+
+      if (indexInCity > 0) {
+        const angle = indexInCity * 1.8
+        const distance = 0.003 * Math.sqrt(indexInCity)
+        finalLat += distance * Math.cos(angle)
+        finalLng += distance * Math.sin(angle)
+      }
+
+      const finalLatLng: [number, number] = [finalLat, finalLng]
+      bounds.push(finalLatLng)
+
+      const customIcon = L_Global.divIcon({
+        className: 'clear-custom-pin',
+        html: `
+          <div style="display: flex; align-items: center; justify-content: center; width: 22px; height: 26px; background: transparent !important; border: none !important;">
+            <svg viewBox="0 0 20 24" width="22" height="26" style="filter: drop-shadow(0 3px 5px rgba(0,0,0,0.4)); pointer-events: none;">
+              <path d="M10 0C4.477 0 0 4.477 0 10c0 7.5 10 14 10 14s10-6.5 10-14c0-5.523-4.477-10-10-10z" fill="${pinColor}" stroke="#ffffff" stroke-width="1.5" />
+              <circle cx="10" cy="10" r="3.5" fill="#ffffff" />
+            </svg>
+          </div>
+        `,
+        iconSize: [22, 26],
+        iconAnchor: [11, 26]
+      })
+
+      const marker = L_Global.marker(finalLatLng, { icon: customIcon }).addTo(map)
+
+      const compName = contact.company || contact.name || 'Cliente'
+      const cityStr = contact.city || 'Cidade não informada'
+      const stateStr = contact.state || ''
+      const addressStr = contact.address || ''
+      const bairroStr = contact.bairro || ''
+      const cnpjStr = contact.cnpj || ''
+      const phoneStr = contact.phone || ''
+
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([compName, addressStr, bairroStr, cityStr, stateStr, cnpjStr].filter(Boolean).join(', '))}`
+      const waUrl = phoneStr ? whatsappLink(phoneStr, `Olá ${contact.name || compName}, tudo bem?`) : 'https://wa.me/5551999999999'
+
+      marker.bindTooltip(`
+        <div style="font-family: sans-serif; padding: 6px 10px; background: #0f172a; color: #ffffff; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.5); min-width: 150px;">
+          <strong style="font-size: 12px; display: block; color: #ffffff;">${compName}</strong>
+          <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">${cityStr} ${stateStr ? `· ${stateStr}` : ''}</div>
+          <div style="font-size: 10px; font-weight: bold; color: ${pinColor}; margin-top: 3px; text-transform: uppercase;">
+            Status: ${computedStatus.toUpperCase()} • Curva ${contact.curve || 'D'}
+          </div>
+        </div>
+      `, { direction: 'top', className: 'custom-leaflet-tooltip' })
+
+      marker.bindPopup(`
+        <div style="font-family: sans-serif; padding: 8px; color: #ffffff; background: #14161E; border-radius: 12px; min-width: 220px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; border-bottom: 1px solid #262938; padding-bottom: 6px; margin-bottom: 8px;">
+            <div>
+              <strong style="font-size: 13px; color: #ffffff; display: block; line-height: 1.2;">${compName}</strong>
+              <span style="font-size: 10px; color: #94a3b8;">${cityStr} ${stateStr ? `· ${stateStr}` : ''}</span>
+            </div>
+            <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: ${pinColor}25; color: ${pinColor}; border: 1px solid ${pinColor}40; text-transform: uppercase;">${computedStatus}</span>
+          </div>
+
+          <div style="font-size: 10px; color: #cbd5e1; margin-bottom: 10px; line-height: 1.5;">
+            <div><strong>CNPJ:</strong> ${cnpjStr || 'Não informado'}</div>
+            <div><strong>Curva ABC:</strong> Curva ${contact.curve || 'D'}</div>
+            <div><strong>Representante:</strong> ${formatCanonicalRepName(contact.representative) || 'Sem representante'}</div>
+            <div><strong>Última Compra:</strong> ${repInfo.daysSinceLastPurchase !== null ? `${repInfo.daysSinceLastPurchase} dias` : 'Sem compras'}</div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <a href="${mapsUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #0284c7; color: #ffffff; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; text-decoration: none; text-transform: uppercase;">
+              📍 Ver Rota
+            </a>
+            <button onclick="window.handleMapRegistrarAtividade('${contact.id}', '${compName}')" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #B4D932; color: #060606; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase;">
+              📝 Atividade
+            </button>
+            <a href="${waUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #25D366; color: #ffffff; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; text-decoration: none; text-transform: uppercase;">
+              💬 WhatsApp
+            </a>
+            <button onclick="window.handleMapVerFichaContact('${contact.id}')" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #334155; color: #ffffff; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase;">
+              📄 Ver Ficha
+            </button>
+          </div>
+        </div>
+      `)
+    })
+
+    if (bounds.length > 0) {
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 })
+    } else {
+      map.setView([-29.7, -51.15], 9)
+    }
+
+    const t = setTimeout(() => contactsMapInstanceRef.current?.invalidateSize(), 200)
+    return () => {
+      clearTimeout(t)
+      if (contactsMapInstanceRef.current) {
+        contactsMapInstanceRef.current.remove()
+        contactsMapInstanceRef.current = null
+      }
+    }
+  }, [viewMode, leafletReady, filteredContacts])
 
   function openMap(e: React.MouseEvent, contact: MockContact) {
     e.stopPropagation()
@@ -3500,10 +3757,10 @@ export default function ContactsPage() {
         </div>
       </div>
 
-      {/* Filters Bar — 12 Column Layout for Proportional Widths */}
+      {/* Filters Bar — 12 Column Layout with Toggle Lista / Mapa */}
       <div className="card p-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-        {/* Search — Compact width */}
-        <div className={`${isRep ? 'md:col-span-4' : 'md:col-span-3'} flex items-center gap-2 input w-full py-1.5 px-3`}>
+        {/* Search */}
+        <div className={`${isRep ? 'md:col-span-3' : 'md:col-span-3'} flex items-center gap-2 input w-full py-1.5 px-3`}>
           <Search size={13} className="text-[var(--gray2)] shrink-0" />
           <input
             className="bg-transparent border-none outline-none w-full text-xs text-[var(--white)] placeholder-[var(--gray2)]"
@@ -3513,18 +3770,18 @@ export default function ContactsPage() {
           />
         </div>
 
-        {/* Curva Filter — Expanded width */}
-        <div className={`${isRep ? 'md:col-span-5' : 'md:col-span-3'} flex items-center gap-1.5`}>
+        {/* Curva Filter — Clean Labels without Parenthetical Text */}
+        <div className={`${isRep ? 'md:col-span-3' : 'md:col-span-2'} flex items-center gap-1.5`}>
           <select 
-            className="input w-full text-xs py-1.5 px-2.5"
+            className="input w-full text-xs py-1.5 px-2.5 font-medium"
             value={selectedCurve}
             onChange={(e) => setSelectedCurve(e.target.value)}
           >
-            <option value="all">Todas as Curvas (ABC)</option>
-            <option value="A">Curva A (Faturamento Alto)</option>
-            <option value="B">Curva B (Faturamento Médio)</option>
-            <option value="C">Curva C (Faturamento Baixo)</option>
-            <option value="D">Curva D (Prospecção)</option>
+            <option value="all">Todas as Curvas</option>
+            <option value="A">Curva A</option>
+            <option value="B">Curva B</option>
+            <option value="C">Curva C</option>
+            <option value="D">Curva D</option>
           </select>
           <button 
             type="button"
@@ -3536,9 +3793,9 @@ export default function ContactsPage() {
           </button>
         </div>
 
-        {/* Rep Filter — Expanded width */}
+        {/* Rep Filter — Reduced Width */}
         {!isRep && (
-          <div className="md:col-span-4">
+          <div className="md:col-span-3">
             <select 
               className="input w-full text-xs py-1.5 px-2.5"
               value={selectedRep}
@@ -3552,7 +3809,7 @@ export default function ContactsPage() {
           </div>
         )}
 
-        {/* Status Filter */}
+        {/* Status Filter — Increased Width */}
         <div className={`${isRep ? 'md:col-span-3' : 'md:col-span-2'}`}>
           <select 
             className="input w-full text-xs py-1.5 px-2.5"
@@ -3565,10 +3822,49 @@ export default function ContactsPage() {
             <option value="prospeccao">Prospecção (Sem compras)</option>
           </select>
         </div>
+
+        {/* Toggle Lista / Mapa */}
+        <div className={`${isRep ? 'md:col-span-3' : 'md:col-span-2'} flex items-center bg-[var(--charcoal)] border border-[var(--line)] rounded-xl p-0.5 w-full`}>
+          <button
+            type="button"
+            onClick={() => setViewMode('lista')}
+            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              viewMode === 'lista'
+                ? 'bg-[var(--lime)] text-[#060606] shadow-sm'
+                : 'text-[var(--gray)] hover:text-white'
+            }`}
+          >
+            <List size={13} />
+            <span>LISTA</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setViewMode('mapa')}
+            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              viewMode === 'mapa'
+                ? 'bg-[var(--lime)] text-[#060606] shadow-sm'
+                : 'text-[var(--gray)] hover:text-white'
+            }`}
+          >
+            <MapPin size={13} />
+            <span>MAPA</span>
+          </button>
+        </div>
       </div>
 
-      {/* List Container — Card Grid for reps, Table for admins */}
-      {isRep ? (
+      {/* Main View Container — Switch between List (Cards/Table) and Leaflet Map */}
+      {viewMode === 'mapa' ? (
+        <div className="card p-2 h-[680px] relative w-full overflow-hidden border border-[var(--line)] rounded-2xl animate-fade-in shadow-2xl">
+          <div ref={contactsMapRef} className="w-full h-full rounded-xl z-0" />
+          <div className="absolute top-4 right-4 z-10 bg-[#0f172a]/90 backdrop-blur-md border border-[var(--line)] rounded-xl px-3 py-2 text-[10px] font-mono text-white flex items-center gap-3 shadow-xl">
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#B4D932]"></span> Ativo</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#f97316]"></span> Reativação</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></span> Prospecção</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#64748b]"></span> Inativo</span>
+          </div>
+        </div>
+      ) : isRep ? (
         /* ── REPRESENTATIVE CARD GRID VIEW ── */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {paginatedContacts.map(contact => {
@@ -3600,7 +3896,7 @@ export default function ContactsPage() {
                       </span>
                     )
                     if (effectiveStatus === 'reativacao') return (
-                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-400 border border-orange-500/30 shrink-0" title="Sem compras há mais de 180 dias">
+                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-400 border border-orange-500/30 shrink-0">
                         Reativação
                       </span>
                     )
@@ -3612,51 +3908,34 @@ export default function ContactsPage() {
                   })()}
                 </div>
 
-                <div className="flex items-center justify-between text-[9px] font-mono text-[var(--gray2)] mt-0.5">
-                  <span>Última compra:</span>
-                  <span className="font-bold text-[var(--white)]">{repInfo.daysSinceLastPurchase !== null ? `${repInfo.daysSinceLastPurchase} dias` : 'Sem compras'}</span>
+                <div className="text-[10px] font-mono text-[var(--gray2)] flex flex-col gap-0.5 border-t border-[var(--line)] pt-2 mt-1">
+                  <div className="flex justify-between">
+                    <span>Curva ABC:</span>
+                    <span className="font-bold text-[var(--lime)]">Curva {contact.curve || 'D'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Última Compra:</span>
+                    <span className="font-bold text-white">{repInfo.daysSinceLastPurchase !== null ? `${repInfo.daysSinceLastPurchase}d` : '-'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Representante:</span>
+                    <span className="font-bold text-white truncate max-w-[120px]">{formatCanonicalRepName(contact.representative)}</span>
+                  </div>
                 </div>
 
-                <div className="border-t border-[var(--line)] pt-2 flex items-center justify-around gap-1.5">
-                  {/* Google Maps Navigation */}
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([contact.company || contact.name, contact.address, contact.bairro, contact.city, contact.state, contact.cnpj].filter(Boolean).join(', '))}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    title="Navegar / Como chegar"
-                    className="btn btn-secondary p-1.5 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[var(--lime)] text-[var(--lime)] transition-transform hover:scale-105"
-                  >
-                    <MapPin size={13} />
-                  </a>
-
-                  {/* Phone Call */}
+                <div className="flex items-center justify-end gap-1 border-t border-[var(--line)] pt-2">
                   {contact.phone && (
                     <a
-                      href={`tel:${contact.phone.replace(/\D/g, '')}`}
-                      onClick={(e) => e.stopPropagation()}
-                      title="Ligar para o Cliente"
-                      className="btn btn-secondary p-1.5 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-sky-500 text-sky-400 transition-transform hover:scale-105"
-                    >
-                      <Phone size={13} />
-                    </a>
-                  )}
-
-                  {/* WhatsApp (Original Green #25D366) */}
-                  {contact.phone && (
-                    <a
-                      href={whatsappLink(contact.phone, `Olá ${contact.name}, tudo bem?`)}
+                      href={whatsappLink(contact.phone)}
                       target="_blank"
                       rel="noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      title="Chamar no WhatsApp"
-                      className="btn btn-secondary p-1.5 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[#25D366]/50 text-[#25D366] transition-transform hover:scale-105"
+                      className="p-1 rounded bg-[var(--lime)]/10 text-[var(--lime)] hover:bg-[var(--lime)]/20 transition-colors"
+                      title="WhatsApp"
                     >
-                      <WhatsappIcon size={14} className="text-[#25D366]" />
+                      <WhatsappIcon size={12} />
                     </a>
                   )}
-
-                  {/* Registrar Atividade */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -3664,33 +3943,27 @@ export default function ContactsPage() {
                       setSelectedContactForActivity(contact.id)
                       setShowActivityModal(true)
                     }}
+                    className="p-1 rounded bg-[var(--charcoal)] border border-[var(--line)] text-[var(--gray)] hover:text-white transition-colors"
                     title="Registrar Atividade"
-                    className="btn btn-secondary p-1.5 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[var(--lime)] text-[var(--lime)] transition-transform hover:scale-105"
                   >
-                    <CheckCircle size={13} />
+                    <Plus size={12} />
                   </button>
                 </div>
               </div>
             )
           })}
-
-          {filteredContacts.length === 0 && (
-            <div className="col-span-full card p-8 text-center text-xs text-[var(--gray2)] font-mono border-dashed">
-              Nenhum cliente encontrado na sua carteira.
-            </div>
-          )}
         </div>
       ) : (
-        /* ── ADMIN / MANAGER COMPACT TABLE VIEW ── */
-        <div className="card overflow-hidden flex flex-col flex-1">
-          <div className="overflow-x-auto flex-1 overflow-y-auto custom-scrollbar">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead className="sticky top-0 z-10 bg-[var(--charcoal)] shadow-sm">
-                <tr className="border-b border-[var(--line)] bg-[var(--charcoal)] font-mono text-[9px] text-[var(--gray)] uppercase tracking-wider select-none">
+        /* ── ADMIN / GESTOR TABLE VIEW ── */
+        <div className="card overflow-hidden border border-[var(--line)] rounded-2xl flex flex-col">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[var(--line)] bg-[var(--charcoal)]/50 text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider">
                   <th 
                     onClick={() => handleSort('company')} 
-                    className="py-2.5 px-3 pl-4 cursor-pointer hover:text-[var(--lime)] transition-colors"
-                    title="Ordenar por Cliente (A-Z / Z-A)"
+                    className="py-2.5 px-4 cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    title="Ordenar por Cliente / CNPJ"
                   >
                     <div className="flex items-center gap-1">
                       <span>Cliente / CNPJ</span>
@@ -3703,10 +3976,10 @@ export default function ContactsPage() {
                   </th>
                   <th 
                     onClick={() => handleSort('curve')} 
-                    className="py-2.5 px-3 whitespace-nowrap cursor-pointer hover:text-[var(--lime)] transition-colors"
-                    title="Ordenar por Curva (A, B, C)"
+                    className="py-2.5 px-3 text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    title="Ordenar por Curva ABC"
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center justify-center gap-1">
                       <span>Curva</span>
                       {sortField === 'curve' ? (
                         sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
@@ -3716,25 +3989,11 @@ export default function ContactsPage() {
                     </div>
                   </th>
                   <th 
-                    onClick={() => handleSort('city')} 
-                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--lime)] transition-colors"
-                    title="Ordenar por Cidade"
-                  >
-                    <div className="flex items-center gap-1">
-                      <span>Cidade</span>
-                      {sortField === 'city' ? (
-                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
-                      ) : (
-                        <ArrowUpDown size={10} className="opacity-30" />
-                      )}
-                    </div>
-                  </th>
-                  <th 
                     onClick={() => handleSort('state')} 
-                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--lime)] transition-colors"
-                    title="Ordenar por UF / Estado"
+                    className="py-2.5 px-3 text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    title="Ordenar por Estado (UF)"
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center justify-center gap-1">
                       <span>UF</span>
                       {sortField === 'state' ? (
                         sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
@@ -3745,10 +4004,10 @@ export default function ContactsPage() {
                   </th>
                   <th 
                     onClick={() => handleSort('status')} 
-                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    className="py-2.5 px-3 text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
                     title="Ordenar por Status"
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center justify-center gap-1">
                       <span>Status</span>
                       {sortField === 'status' ? (
                         sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
@@ -3757,99 +4016,66 @@ export default function ContactsPage() {
                       )}
                     </div>
                   </th>
-                  <th 
-                    onClick={() => handleSort('representative')} 
-                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--lime)] transition-colors"
-                    title="Ordenar por Representante Comercial"
-                  >
-                    <div className="flex items-center gap-1">
-                      <span>Representante</span>
-                      {sortField === 'representative' ? (
-                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
-                      ) : (
-                        <ArrowUpDown size={10} className="opacity-30" />
-                      )}
-                    </div>
-                  </th>
-                  <th 
-                    onClick={() => handleSort('lastPurchaseDate')} 
-                    className="py-2.5 px-3 text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
-                    title="Ordenar por Data da Última Compra"
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      <span>Última Compra</span>
-                      {sortField === 'lastPurchaseDate' ? (
-                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
-                      ) : (
-                        <ArrowUpDown size={10} className="opacity-30" />
-                      )}
-                    </div>
-                  </th>
-                  <th className="py-2.5 px-3 pr-4 text-center">Localização</th>
+                  <th className="py-2.5 px-3 text-center">Localização</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--line)]">
                 {paginatedContacts.map(contact => {
                   const repInfo = getContactActivityAndRepurchaseInfo(contact)
                   const effectiveStatus = repInfo.computedStatus
-                  const isInactive = effectiveStatus === 'reativacao'
+
                   return (
                     <tr 
                       key={contact.id} 
                       onClick={() => setSelectedContact(contact)}
-                      className={`transition-all duration-150 cursor-pointer ${isInactive ? 'bg-[rgba(226,72,61,0.08)] hover:bg-[rgba(226,72,61,0.15)] border-l-4 border-l-[var(--red)]' : 'hover:bg-[var(--charcoal)]'}`}
+                      className="hover:bg-[var(--lime)]/5 transition-colors cursor-pointer group"
                     >
-                      {/* Cliente Info */}
-                      <td className="py-2 px-3 pl-4">
+                      {/* Cliente / CNPJ */}
+                      <td className="py-2.5 px-4">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-lg bg-[var(--line)] flex items-center justify-center text-[var(--white)] shrink-0">
-                            <Building2 size={14} />
+                          <div className="w-7 h-7 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--gray)] group-hover:border-[var(--lime)]/40 group-hover:text-[var(--lime)] flex items-center justify-center shrink-0 transition-colors">
+                            <Building2 size={13} />
                           </div>
-                          <div className="min-w-0 max-w-[280px]">
-                            <div className="text-xs font-bold text-[var(--white)] flex items-center gap-2">
-                              <span className="truncate" title={contact.company}>{contact.company}</span>
-                            </div>
-                            <div className="text-[10px] text-[var(--gray)] font-mono leading-tight">{contact.cnpj}</div>
+                          <div className="min-w-0">
+                            <span className="text-xs font-bold text-[var(--white)] group-hover:text-[var(--lime)] transition-colors block truncate">
+                              {contact.company || contact.name}
+                            </span>
+                            <span className="text-[10px] font-mono text-[var(--gray2)] block">
+                              {contact.cnpj || 'CNPJ não informado'}
+                            </span>
                           </div>
                         </div>
                       </td>
 
-                      {/* Curva */}
-                      <td className="py-2 px-3 whitespace-nowrap">
-                        <span 
-                          className="font-mono text-[10px] font-black px-2 py-0.5 rounded whitespace-nowrap inline-block shrink-0"
-                          style={{
-                            background: contact.curve === 'A' ? 'rgba(180,217,50,0.12)' : contact.curve === 'B' ? 'rgba(240,196,25,0.1)' : 'rgba(255,255,25,0.05)',
-                            color: contact.curve === 'A' ? 'var(--lime)' : contact.curve === 'B' ? 'var(--yellow)' : 'var(--gray)',
-                            border: `1px solid ${contact.curve === 'A' ? 'rgba(180,217,50,0.25)' : contact.curve === 'B' ? 'rgba(240,196,25,0.2)' : 'var(--line)'}`
-                          }}
-                        >
-                          Curva {contact.curve}
+                      {/* Curva ABC */}
+                      <td className="py-2 px-3 text-center">
+                        <span className="inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[var(--charcoal)] border border-[var(--line)] text-[var(--gray)]">
+                          Curva {contact.curve || 'D'}
                         </span>
                       </td>
 
                       {/* Cidade */}
-                      <td className="py-2 px-3">
-                        <span className="text-[11px] text-[var(--white)] font-mono">{(contact.city || '').toUpperCase() || <span className="text-[var(--gray2)]">-</span>}</span>
+                      <td className="py-2 px-3 text-xs text-[var(--gray)] font-mono uppercase">
+                        {contact.city || '-'}
                       </td>
 
                       {/* UF */}
-                      <td className="py-2 px-3">
-                        <span className="text-[11px] font-bold text-[var(--gray)] font-mono uppercase">{contact.state || '-'}</span>
+                      <td className="py-2 px-3 text-xs text-center text-[var(--gray)] font-mono uppercase">
+                        {contact.state || '-'}
                       </td>
 
                       {/* Status */}
-                      <td className="py-2 px-3">
+                      <td className="py-2 px-3 text-center whitespace-nowrap">
                         {(() => {
                           if (effectiveStatus === 'prospeccao') return (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-amber-400/10 border border-amber-400/25 text-amber-300">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-pulse" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
                               Prospecção
                             </span>
                           )
                           if (effectiveStatus === 'reativacao') return (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-orange-500/10 border border-orange-500/25 text-orange-400" title="Sem compras há mais de 180 dias">
-                              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" />
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-orange-500/10 border border-orange-500/25 text-orange-400">
+                              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 inline-block animate-pulse" />
                               Reativação
                             </span>
                           )
@@ -3861,49 +4087,14 @@ export default function ContactsPage() {
                           )
                         })()}
                       </td>
-
-                      {/* Representante */}
-                      <td className="py-2 px-3 text-xs font-semibold text-[var(--white)] max-w-[200px]">
-                        <div className="flex items-center gap-1.5">
-                          <User size={11} className="text-[var(--gray)] shrink-0" />
-                          <span className="truncate" title={formatCanonicalRepName(contact.representative)}>
-                            {formatCanonicalRepName(contact.representative) || <span className="text-[var(--gray2)] font-normal italic">Sem representante</span>}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Ultima compra */}
-                      <td className="py-2 px-3 whitespace-nowrap text-center">
-                        <span className="text-xs font-bold text-[var(--white)] font-mono">
-                          {repInfo.daysSinceLastPurchase !== null ? `${repInfo.daysSinceLastPurchase} dias` : '-'}
-                        </span>
-                      </td>
-
-                      {/* Localizacao — Google Maps icon */}
-                      <td className="py-2 px-3 pr-4 text-center">
-                        <button 
-                          onClick={(e) => openMap(e, contact)}
-                          title="Ver no Google Maps"
-                          className={`inline-flex items-center justify-center transition-colors ${
-                            (contact.address || contact.city)
-                              ? 'text-[var(--lime)] hover:opacity-70 cursor-pointer'
-                              : 'text-[var(--gray2)] opacity-30 pointer-events-none'
-                          }`}
-                        >
-                          <MapPin size={15} />
+                      <td className="py-2 px-3 text-center">
+                        <button onClick={(e) => openMap(e, contact)} className="text-[var(--gray2)] hover:text-[var(--lime)] transition-colors">
+                          <MapPin size={14} />
                         </button>
                       </td>
                     </tr>
                   )
                 })}
-
-                {filteredContacts.length === 0 && (
-                  <tr>
-                    <td colSpan={8} className="p-8 text-center text-xs text-[var(--gray2)] font-mono">
-                      Nenhum cliente encontrado com os filtros selecionados.
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
@@ -3924,7 +4115,7 @@ export default function ContactsPage() {
                   &larr; Anterior
                 </button>
 
-                <span className="text-[11px] font-mono font-bold text-[var(--lime)] px-2">
+                <span className="text-xs font-mono font-bold text-[var(--lime)] px-2">
                   Página {currentPage} de {totalPages}
                 </span>
 
