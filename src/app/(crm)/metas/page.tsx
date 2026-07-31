@@ -18,7 +18,8 @@ import {
   ToggleRight,
   GripVertical,
   RefreshCw,
-  X
+  X,
+  Search
 } from 'lucide-react'
 import { UserGoal, LossReason, DEFAULT_LOSS_REASONS } from '@/types'
 import { supabase } from '@/services/supabase-client'
@@ -114,6 +115,9 @@ export default function MetasPage() {
     })
   }
 
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedRole, setSelectedRole] = useState('all')
+
   const isGestor = (currentUser?.role || '').toLowerCase().includes('gestor')
 
   // Gestor só visualiza Vendedores, Representantes e outros Gestores (Oculta Administradores)
@@ -127,6 +131,28 @@ export default function MetasPage() {
       return true
     })
   }, [registeredUsers, isGestor])
+
+  const filteredTeamUsers = useMemo(() => {
+    return visibleUsersForMetas.filter(u => {
+      const nameMatch = (u.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+      const emailMatch = (u.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesSearch = nameMatch || emailMatch
+
+      const isThaiane = (u.email || '').toLowerCase().includes('thaiane') || (u.name || '').toLowerCase().includes('thaiane')
+      const rLower = (u.role || '').toLowerCase()
+      const effectiveRole = isThaiane ? 'gestor' : rLower
+
+      let matchesRole = true
+      if (selectedRole !== 'all') {
+        if (selectedRole === 'gestor') matchesRole = effectiveRole.includes('gestor')
+        else if (selectedRole === 'vendedor') matchesRole = effectiveRole.includes('vend')
+        else if (selectedRole === 'representante') matchesRole = effectiveRole.includes('rep')
+        else if (selectedRole === 'admin') matchesRole = effectiveRole.includes('admin')
+      }
+
+      return matchesSearch && matchesRole
+    })
+  }, [visibleUsersForMetas, searchTerm, selectedRole])
 
   // Verificação de Acesso (Somente Admin e Gestor)
   useEffect(() => {
@@ -495,6 +521,23 @@ export default function MetasPage() {
                 />
                 <span className="text-[10px] text-[var(--gray2)] font-mono">dias</span>
               </div>
+
+              {/* Filtro por Função (Igual ao estilo da Página de Usuários) */}
+              <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-3 py-1.5 rounded-xl">
+                <Users size={13} className="text-[var(--lime)]" />
+                <span className="text-[10px] font-mono font-bold text-[var(--gray2)] uppercase">Função:</span>
+                <select
+                  value={selectedRole}
+                  onChange={e => setSelectedRole(e.target.value)}
+                  className="bg-transparent text-xs font-mono font-bold text-[var(--white)] outline-none cursor-pointer"
+                >
+                  <option value="all" className="bg-[var(--charcoal)]">Todas as Funções</option>
+                  <option value="gestor" className="bg-[var(--charcoal)]">Gestor Comercial</option>
+                  <option value="vendedor" className="bg-[var(--charcoal)]">Vendedor</option>
+                  <option value="representante" className="bg-[var(--charcoal)]">Representante</option>
+                  <option value="admin" className="bg-[var(--charcoal)]">Administrador</option>
+                </select>
+              </div>
             </div>
 
             {/* Alternador de Visualização (Mensal / Semanal / Diária) */}
@@ -583,19 +626,33 @@ export default function MetasPage() {
 
           {/* Tabela de Definição de Metas por Vendedor / Representante */}
           <div className="card p-5 bg-[var(--card)] border border-[var(--line)] flex flex-col gap-4 overflow-hidden">
-            <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
               <h3 className="text-sm font-bold text-[var(--white)] font-display flex items-center gap-2">
                 <Users size={16} className="text-[var(--lime)]" />
-                <span>Metas Individuais da Equipe Comercial ({visibleUsersForMetas.length} Usuários)</span>
+                <span>Metas Individuais da Equipe Comercial ({filteredTeamUsers.length} Usuários)</span>
               </h3>
-              <span className="text-[10px] font-mono text-[var(--gray2)] uppercase">
-                {MONTH_NAMES[parseInt(selectedMonth, 10) - 1]} / {selectedYear}
-              </span>
+
+              <div className="flex items-center gap-3">
+                {/* Search Bar — Exact match to Users Page */}
+                <div className="flex items-center gap-2 input py-1.5 px-3 w-full sm:w-64">
+                  <Search size={13} className="text-[var(--gray2)] shrink-0" />
+                  <input
+                    className="bg-transparent border-none outline-none w-full text-xs text-[var(--white)] placeholder-[var(--gray2)]"
+                    placeholder="Buscar por nome..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+
+                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase shrink-0">
+                  {MONTH_NAMES[parseInt(selectedMonth, 10) - 1]} / {selectedYear}
+                </span>
+              </div>
             </div>
 
-            {visibleUsersForMetas.length === 0 ? (
+            {filteredTeamUsers.length === 0 ? (
               <div className="p-8 text-center text-xs font-mono text-[var(--gray2)] border border-dashed border-[var(--line)] rounded-xl">
-                Nenhum usuário comercial ativo encontrado no cadastro.
+                Nenhum usuário comercial encontrado com os filtros aplicados.
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -610,7 +667,7 @@ export default function MetasPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--line)]/50 text-xs">
-                    {visibleUsersForMetas.map(u => {
+                    {filteredTeamUsers.map(u => {
                       const key = `${selectedYear}_${selectedMonth}_${u.id || u.name}`
                       const g = goalsMap[key] || { salesGoal: 30000, visitsGoal: 10, newClientsGoal: 2 }
 
