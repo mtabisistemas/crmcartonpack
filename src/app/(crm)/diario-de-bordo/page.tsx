@@ -19,7 +19,8 @@ import {
   X,
   ExternalLink,
   Users,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -408,13 +409,14 @@ export default function DiarioDeBordoPage() {
 
     filteredDeals.forEach(d => {
       if (d.stage === 'fechamento' || d.stage === 'perdido') return
+      const refDateStr = d.stage_entered_at || d.updated_at || d.created_at
+      if (!refDateStr) return
+      const refDate = new Date(refDateStr)
+      if (isNaN(refDate.getTime())) return
 
-      const lastDate = parseFlexibleDate(d.updated_at || d.created_at)
-      if (lastDate) {
-        const diffDays = Math.floor((now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24))
-        if (diffDays >= 7) {
-          stagnantDeals.push({ deal: d, days: diffDays })
-        }
+      const diffDays = Math.floor((now.getTime() - refDate.getTime()) / (1000 * 3600 * 24))
+      if (diffDays >= 7) {
+        stagnantDeals.push({ deal: d, days: diffDays })
       }
     })
 
@@ -424,6 +426,47 @@ export default function DiarioDeBordoPage() {
       stagnantDeals
     }
   }, [filteredDeals])
+
+  // Clientes com Recompra Próxima (dentro de 30 dias)
+  const upcomingRepurchases = useMemo(() => {
+    const list: Array<{
+      contact: Contact
+      daysToRepurchase: number
+      daysSinceLastPurchase: number
+      avgIntervalDays: number
+      lastPurchaseDate: string
+      lastPurchaseValue: number
+    }> = []
+
+    filteredContacts.forEach(c => {
+      const orders = c.orders && Array.isArray(c.orders) ? c.orders : []
+      let lastDateStr = c.lastPurchaseDate || (orders[0]?.date) || ''
+      if (!lastDateStr) return
+
+      const lastDt = new Date(lastDateStr)
+      if (isNaN(lastDt.getTime())) return
+
+      const now = new Date()
+      const daysSinceLast = Math.floor((now.getTime() - lastDt.getTime()) / (1000 * 60 * 60 * 24))
+      const avgInterval = c.purchaseFrequencyDays || 60
+      const daysToRepurchase = avgInterval - daysSinceLast
+
+      // Clientes próximos da recompra: dentro de 30 dias
+      if (daysToRepurchase >= -15 && daysToRepurchase <= 30) {
+        const lastVal = orders[0]?.value ? Number(orders[0].value) : 0
+        list.push({
+          contact: c,
+          daysToRepurchase,
+          daysSinceLastPurchase: daysSinceLast,
+          avgIntervalDays: avgInterval,
+          lastPurchaseDate: lastDateStr,
+          lastPurchaseValue: lastVal
+        })
+      }
+    })
+
+    return list.sort((a, b) => a.daysToRepurchase - b.daysToRepurchase)
+  }, [filteredContacts])
 
   return (
     <div className="page-content animate-fade-in w-full h-full flex flex-col gap-5 max-w-[1400px] mx-auto px-4 sm:px-6 py-6 pb-24 select-none overflow-y-auto custom-scrollbar bg-[var(--black)] text-[var(--white)]">
@@ -596,11 +639,11 @@ export default function DiarioDeBordoPage() {
       )}
 
       {/* ========================================================
-          3. GRADE INFERIOR LIMPA (2 COLUNAS)
+          3. GRADE INFERIOR EQUILIBRADA (3 COLUNAS)
          ======================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 flex-1 min-h-[380px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 flex-1 min-h-[380px]">
         
-        {/* COLUNA ESQUERDA: Agenda Comercial do Dia */}
+        {/* COLUNA 1: Agenda Comercial do Dia */}
         <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-lg h-full">
           <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 shrink-0">
             <div className="flex items-center gap-2">
@@ -695,7 +738,7 @@ export default function DiarioDeBordoPage() {
           )}
         </div>
 
-        {/* COLUNA DIREITA: Negócios Estagnados (>7 dias) */}
+        {/* COLUNA 2: Negócios Estagnados (>7 dias) */}
         <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-lg h-full">
           <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 shrink-0">
             <div className="flex items-center gap-2">
@@ -748,6 +791,75 @@ export default function DiarioDeBordoPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* COLUNA 3: Recompra Próxima (Até 30 dias) */}
+        <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-lg h-full">
+          <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 shrink-0">
+            <div className="flex items-center gap-2">
+              <RefreshCw size={16} className="text-[var(--lime)]" />
+              <h3 className="font-display text-xs font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2">
+                <span>Recompra Próxima (Até 30 dias)</span>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--charcoal)] border border-[var(--line)] text-[var(--lime)]">
+                  {upcomingRepurchases.length}
+                </span>
+              </h3>
+            </div>
+          </div>
+
+          {upcomingRepurchases.length === 0 ? (
+            <div className="py-12 flex-1 min-h-[260px] text-center flex flex-col items-center justify-center gap-2 bg-[var(--charcoal)] rounded-xl border border-[var(--line)]">
+              <CheckCircle2 size={32} className="text-[var(--lime)] mb-1" />
+              <p className="text-xs font-mono text-[var(--lime)] font-bold">
+                ✓ Nenhum cliente com previsão de recompra nos próximos 30 dias!
+              </p>
+              <p className="text-[11px] font-mono text-[var(--gray2)]">
+                Toda a carteira está com o ciclo em dia.
+              </p>
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col gap-2.5 min-h-[260px] max-h-[500px] overflow-y-auto custom-scrollbar">
+              {upcomingRepurchases.map(({ contact, daysToRepurchase, lastPurchaseValue }) => {
+                const isUrgent = daysToRepurchase <= 7
+                return (
+                  <div
+                    key={contact.id}
+                    className="p-3.5 rounded-xl bg-[var(--charcoal)] border border-[var(--line)] hover:border-[var(--lime)]/50 transition-all flex flex-col gap-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <strong className="text-xs font-bold text-white block truncate">{contact.company || contact.name}</strong>
+                        <span className="text-[10px] font-mono text-[var(--gray2)] truncate block">{contact.representative || 'Sem rep'}</span>
+                      </div>
+                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
+                        daysToRepurchase < 0
+                          ? 'bg-red-500/15 border-red-500/30 text-red-400'
+                          : isUrgent
+                          ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                          : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                      }`}>
+                        {daysToRepurchase < 0 
+                          ? `Atrasado ${Math.abs(daysToRepurchase)}d`
+                          : daysToRepurchase === 0 
+                          ? 'Recompra Hoje' 
+                          : `Em ${daysToRepurchase} dias`}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] font-mono text-[var(--gray2)] pt-1 border-t border-[var(--line)]/50">
+                      <span>Última Compra: <strong className="text-white font-bold">{formatCurrency(lastPurchaseValue)}</strong></span>
+                      <button
+                        onClick={() => setSelectedContactForActivity(contact)}
+                        className="text-[10px] font-bold text-[var(--lime)] hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        📝 Atividade
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
