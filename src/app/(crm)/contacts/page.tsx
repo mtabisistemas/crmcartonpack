@@ -3408,7 +3408,11 @@ export default function ContactsPage() {
           </div>
         </div>
       `)
+
+      markersGroup.addLayer(marker)
     })
+
+    map.addLayer(markersGroup)
 
     if (bounds.length > 0) {
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 })
