@@ -255,30 +255,31 @@ export default function DiarioDeBordoPage() {
   const isAdminOrManager = (currentUser?.role || '').toLowerCase().includes('admin') || 
                            (currentUser?.role || '').toLowerCase().includes('gestor')
 
-  // Filtered contacts based on selected user filter
+  // Filtered contacts based on selected user filter (ou restrito ao próprio vendedor/representante)
   const filteredContacts = useMemo(() => {
-    if (userFilter === 'all') return contacts
-    const selUser = usersList.find(u => u.id === userFilter || u.name === userFilter)
-    const targetName = (selUser?.name || userFilter).toLowerCase()
+    const activeFilter = (!isAdminOrManager && currentUser?.name) ? currentUser.name : userFilter
+    if (activeFilter === 'all') return contacts
+    const selUser = usersList.find(u => u.id === activeFilter || u.name === activeFilter)
+    const targetName = (selUser?.name || activeFilter).toLowerCase().trim()
 
     return contacts.filter(c => 
       (c.representative || '').toLowerCase().includes(targetName) ||
-      c.assigned_to === userFilter ||
-      c.id === userFilter
+      (c.assigned_to || '').toLowerCase().includes(targetName)
     )
-  }, [contacts, userFilter, usersList])
+  }, [contacts, userFilter, usersList, isAdminOrManager, currentUser?.name])
 
-  // Filtered deals based on selected user filter
+  // Filtered deals based on selected user filter (ou restrito ao próprio vendedor/representante)
   const filteredDeals = useMemo(() => {
-    if (userFilter === 'all') return deals
-    const selUser = usersList.find(u => u.id === userFilter || u.name === userFilter)
-    const targetName = (selUser?.name || userFilter).toLowerCase()
+    const activeFilter = (!isAdminOrManager && currentUser?.name) ? currentUser.name : userFilter
+    if (activeFilter === 'all') return deals
+    const selUser = usersList.find(u => u.id === activeFilter || u.name === activeFilter)
+    const targetName = (selUser?.name || activeFilter).toLowerCase().trim()
 
     return deals.filter(d => 
-      d.assigned_to === userFilter ||
+      (d.assigned_to || '').toLowerCase().includes(targetName) ||
       (d.contact?.representative || '').toLowerCase().includes(targetName)
     )
-  }, [deals, userFilter, usersList])
+  }, [deals, userFilter, usersList, isAdminOrManager, currentUser?.name])
 
   // Appointments today
   const todayAppointments = useMemo(() => {

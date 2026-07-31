@@ -1379,9 +1379,9 @@ export function PipelineBoard() {
       </div>
 
       {/* ── BARRA DE FILTROS DO PIPELINE (ESTILO IDÊNTICO A CONTATOS) ── */}
-      <div className="card p-3 grid grid-cols-1 md:grid-cols-6 gap-3 items-center shrink-0">
-        {/* Busca — ocupa 2 colunas */}
-        <div className="md:col-span-2 flex items-center gap-2 input w-full py-1.5 px-3">
+      <div className="card p-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-center shrink-0">
+        {/* Busca — ocupa 3 colunas */}
+        <div className="md:col-span-3 flex items-center gap-2 input w-full py-1.5 px-3">
           <Search size={13} className="text-[var(--gray2)] shrink-0" />
           <input
             type="text"
@@ -1392,8 +1392,8 @@ export function PipelineBoard() {
           />
         </div>
 
-        {/* Ano */}
-        <div>
+        {/* Ano — ocupa 2 colunas */}
+        <div className="md:col-span-2">
           <select
             className="input w-full py-1.5 px-3 text-xs cursor-pointer"
             value={selectedYear}
@@ -1405,8 +1405,8 @@ export function PipelineBoard() {
           </select>
         </div>
 
-        {/* Mês */}
-        <div>
+        {/* Mês — ocupa 2 colunas */}
+        <div className="md:col-span-2">
           <select
             className="input w-full py-1.5 px-3 text-xs cursor-pointer"
             value={selectedMonth}
@@ -1428,8 +1428,8 @@ export function PipelineBoard() {
           </select>
         </div>
 
-        {/* Representantes */}
-        <div>
+        {/* Representantes — Ocupa 3 colunas (EXPANDIDO) */}
+        <div className="md:col-span-3">
           <select
             disabled={isRep}
             className={`input w-full py-1.5 px-3 text-xs truncate ${
@@ -1455,14 +1455,14 @@ export function PipelineBoard() {
           </select>
         </div>
 
-        {/* Curva ABC */}
-        <div>
+        {/* Curva ABC — ocupa 2 colunas */}
+        <div className="md:col-span-2">
           <select
             className="input w-full py-1.5 px-3 text-xs cursor-pointer"
             value={selectedCurve}
             onChange={(e) => setSelectedCurve(e.target.value)}
           >
-            <option value="all" className="bg-[var(--charcoal)] text-white">Todas as Curvas (ABC)</option>
+            <option value="all" className="bg-[var(--charcoal)] text-white">Todas as Curvas</option>
             <option value="A" className="bg-[var(--charcoal)] text-white">Curva A</option>
             <option value="B" className="bg-[var(--charcoal)] text-white">Curva B</option>
             <option value="C" className="bg-[var(--charcoal)] text-white">Curva C</option>

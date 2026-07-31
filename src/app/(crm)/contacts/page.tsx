@@ -2667,6 +2667,23 @@ export default function ContactsPage() {
   // Dynamic representatives list from CRM Users in localStorage
   const [representativesList, setRepresentativesList] = useState<string[]>([])
 
+  // Load session user on mount & lock representative filter if seller or representative
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const session = localStorage.getItem('crm_current_user')
+      if (session) {
+        try {
+          const parsed = JSON.parse(session)
+          setCurrentUser(parsed)
+          const roleLower = (parsed.role || '').toLowerCase()
+          if (roleLower === 'vendedor' || roleLower === 'representante') {
+            setSelectedRep(parsed.name)
+          }
+        } catch (e) {}
+      }
+    }
+  }, [])
+
   // View mode state (Lista / Mapa) & Leaflet Map setup
   const [viewMode, setViewMode] = useState<'lista' | 'mapa'>('lista')
   const contactsMapRef = useRef<HTMLDivElement>(null)
@@ -3794,10 +3811,10 @@ export default function ContactsPage() {
         </div>
 
         {/* Rep Filter — Reduced Width */}
-        {!isRep && (
+        {!isRep ? (
           <div className="md:col-span-3">
             <select 
-              className="input w-full text-xs py-1.5 px-2.5"
+              className="input w-full text-xs py-1.5 px-2.5 cursor-pointer"
               value={selectedRep}
               onChange={(e) => setSelectedRep(e.target.value)}
             >
@@ -3805,6 +3822,16 @@ export default function ContactsPage() {
               {representativesList.map(rep => (
                 <option key={rep} value={rep}>{rep}</option>
               ))}
+            </select>
+          </div>
+        ) : (
+          <div className="md:col-span-3">
+            <select 
+              disabled
+              className="input w-full text-xs py-1.5 px-2.5 opacity-85 bg-[var(--charcoal)] border-[var(--lime)]/40 text-[var(--lime)] font-bold cursor-not-allowed shadow-inner"
+              value={currentUser?.name || ''}
+            >
+              <option value={currentUser?.name || ''}>🔒 {currentUser?.name}</option>
             </select>
           </div>
         )}
