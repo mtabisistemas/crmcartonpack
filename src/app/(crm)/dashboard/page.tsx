@@ -63,6 +63,12 @@ function formatValueWithoutCurrency(val: number): string {
   return val.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 
+const MONTH_NAMES_MAP: Record<string, string> = {
+  '01': 'Janeiro', '02': 'Fevereiro', '03': 'Março', '04': 'Abril',
+  '05': 'Maio', '06': 'Junho', '07': 'Julho', '08': 'Agosto',
+  '09': 'Setembro', '10': 'Outubro', '11': 'Novembro', '12': 'Dezembro'
+}
+
 // Coordenadas Reais de Cidades para Plotagem Precisa no Mapa
 const CITY_COORDINATES: Record<string, [number, number]> = {
   'PORTO ALEGRE': [-30.0346, -51.2177],
@@ -825,6 +831,32 @@ export default function DashboardPage() {
     }))
   }, [filteredData])
 
+  // Total Target Goal calculation from goalsMap or fallback
+  const metaCalculated = useMemo(() => {
+    const monthKey = `${yearFilter}_${monthFilter}`
+    let sumGoal = 0
+
+    Object.keys(goalsMap).forEach(k => {
+      if (k.startsWith(monthKey) || (yearFilter === 'all' && k.includes(monthFilter))) {
+        sumGoal += (goalsMap[k]?.salesGoal || (goalsMap[k] as any)?.metaMonthly || 0)
+      }
+    })
+
+    const totalGoal = sumGoal > 0 ? sumGoal : 1500000
+    const faturado = kpis.totalFaturadoR$
+    const pct = totalGoal > 0 ? (faturado / totalGoal) * 100 : 0
+    const falta = Math.max(0, totalGoal - faturado)
+    const projecao = faturado > 0 ? faturado * 1.15 : 0
+
+    return {
+      totalGoal,
+      faturado,
+      pct,
+      falta,
+      projecao
+    }
+  }, [goalsMap, yearFilter, monthFilter, kpis.totalFaturadoR$])
+
   // MapItems filtrados exatamente pelos pedidos e negocios do periodo selecionado (ex: 56 pedidos em Julho)
   const mapItems = useMemo(() => {
     const items: Array<{
@@ -1236,7 +1268,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ========================================================
-          2. LINHA DE 6 KPI CARDS (ESTILO FOTOS 1 E 2)
+          2. LINHA DE 6 KPI CARDS (ÍCONE VETORIAL LUMISOSO NO TOPO DIREITO)
          ======================================================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         
@@ -1274,16 +1306,11 @@ export default function DashboardPage() {
           {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#10b981] rounded-l-2xl z-20 shadow-[0_0_10px_#10b981]" />
 
-          {/* ÍCONE WATERMARK 3D DE FUNDO */}
-          <Trophy size={54} className="absolute -right-2 -bottom-2 text-[#10b981] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300" />
-
-          <div className="flex items-center justify-between gap-2 z-10">
+          <div className="flex items-start justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               PEDIDO EMITIDO / FATURADO
             </span>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/25 to-emerald-900/10 border border-emerald-500/40 text-[#10b981] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.4)] group-hover:scale-110 transition-transform">
-              <Trophy size={18} />
-            </div>
+            <Trophy size={22} className="text-[#10b981] drop-shadow-[0_0_8px_rgba(16,185,129,0.8)] opacity-90 group-hover:scale-110 transition-transform shrink-0" />
           </div>
 
           <div className="my-3 z-10">
@@ -1318,16 +1345,11 @@ export default function DashboardPage() {
           {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#f59e0b] rounded-l-2xl z-20 shadow-[0_0_10px_#f59e0b]" />
 
-          {/* ÍCONE WATERMARK 3D DE FUNDO */}
-          <Briefcase size={54} className="absolute -right-2 -bottom-2 text-[#f59e0b] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300" />
-
-          <div className="flex items-center justify-between gap-2 z-10">
+          <div className="flex items-start justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               EM NEGOCIAÇÃO
             </span>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/25 to-amber-900/10 border border-amber-500/40 text-[#f59e0b] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.4)] group-hover:scale-110 transition-transform">
-              <Briefcase size={18} />
-            </div>
+            <Briefcase size={22} className="text-[#f59e0b] drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] opacity-90 group-hover:scale-110 transition-transform shrink-0" />
           </div>
 
           <div className="my-3 z-10">
@@ -1362,16 +1384,11 @@ export default function DashboardPage() {
           {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#06b6d4] rounded-l-2xl z-20 shadow-[0_0_10px_#06b6d4]" />
 
-          {/* ÍCONE WATERMARK 3D DE FUNDO */}
-          <CheckCircle2 size={54} className="absolute -right-2 -bottom-2 text-[#06b6d4] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300" />
-
-          <div className="flex items-center justify-between gap-2 z-10">
+          <div className="flex items-start justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               APROVAÇÃO / BRIEFING
             </span>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/25 to-cyan-900/10 border border-cyan-500/40 text-[#06b6d4] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.4)] group-hover:scale-110 transition-transform">
-              <CheckCircle2 size={18} />
-            </div>
+            <CheckCircle2 size={22} className="text-[#06b6d4] drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] opacity-90 group-hover:scale-110 transition-transform shrink-0" />
           </div>
 
           <div className="my-3 z-10">
@@ -1407,16 +1424,11 @@ export default function DashboardPage() {
           {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#ef4444] rounded-l-2xl z-20 shadow-[0_0_10px_#ef4444]" />
 
-          {/* ÍCONE WATERMARK 3D DE FUNDO */}
-          <XCircle size={54} className="absolute -right-2 -bottom-2 text-[#ef4444] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300" />
-
-          <div className="flex items-center justify-between gap-2 z-10">
+          <div className="flex items-start justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               NEGÓCIOS PERDIDOS
             </span>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500/25 to-red-900/10 border border-red-500/40 text-[#ef4444] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(239,68,68,0.4)] group-hover:scale-110 transition-transform">
-              <XCircle size={18} />
-            </div>
+            <XCircle size={22} className="text-[#ef4444] drop-shadow-[0_0_8px_rgba(239,68,68,0.8)] opacity-90 group-hover:scale-110 transition-transform shrink-0" />
           </div>
 
           <div className="my-3 z-10">
@@ -1454,16 +1466,11 @@ export default function DashboardPage() {
           {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#8b5cf6] rounded-l-2xl z-20 shadow-[0_0_10px_#8b5cf6]" />
 
-          {/* ÍCONE WATERMARK 3D DE FUNDO */}
-          <DollarSign size={54} className="absolute -right-2 -bottom-2 text-[#8b5cf6] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300" />
-
-          <div className="flex items-center justify-between gap-2 z-10">
+          <div className="flex items-start justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               TICKET MÉDIO
             </span>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500/25 to-purple-900/10 border border-purple-500/40 text-[#8b5cf6] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.4)] group-hover:scale-110 transition-transform">
-              <DollarSign size={18} />
-            </div>
+            <DollarSign size={22} className="text-[#8b5cf6] drop-shadow-[0_0_8px_rgba(168,85,247,0.8)] opacity-90 group-hover:scale-110 transition-transform shrink-0" />
           </div>
 
           <div className="my-3 z-10">
@@ -1498,16 +1505,11 @@ export default function DashboardPage() {
           {/* FAIXA LATERAL ESQUERDA NEON (DIV ABSOLUTA GARANTIDA) */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#f97316] rounded-l-2xl z-20 shadow-[0_0_10px_#f97316]" />
 
-          {/* ÍCONE WATERMARK 3D DE FUNDO */}
-          <Clock size={54} className="absolute -right-2 -bottom-2 text-[#f97316] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300" />
-
-          <div className="flex items-center justify-between gap-2 z-10">
+          <div className="flex items-start justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               CICLO MÉDIO
             </span>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500/25 to-orange-900/10 border border-orange-500/40 text-[#f97316] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(249,115,22,0.4)] group-hover:scale-110 transition-transform">
-              <Clock size={18} />
-            </div>
+            <Clock size={22} className="text-[#f97316] drop-shadow-[0_0_8px_rgba(249,115,22,0.8)] opacity-90 group-hover:scale-110 transition-transform shrink-0" />
           </div>
 
           <div className="my-3 z-10">
@@ -1522,246 +1524,170 @@ export default function DashboardPage() {
         </div>
 
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+      {/* ========================================================
+          3. PAINEL DE RESULTADO VS META DO MÊS (FULL-WIDTH 100%)
+         ======================================================== */}
+      <div className="card bg-[var(--card)] border border-[var(--line)] p-5.5 rounded-2xl flex flex-col gap-5 shadow-xl relative overflow-hidden">
         
-        {/* CARD 7: STATUS DA CARTEIRA DE CLIENTES */}
-        <div className="card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between shadow-lg">
-          <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 mb-4">
-            <div className="flex items-center gap-2">
-              <Users size={16} className="text-[#10b981]" />
-              <h3 className="font-display text-xs font-bold text-[var(--white)] uppercase tracking-wider">
-                Status da Carteira de Clientes
-              </h3>
+        {/* Header com Título & Indicador de Status Neon */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--line)] pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/25 to-emerald-900/10 border border-emerald-500/40 text-[#10b981] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+              <Target size={20} />
             </div>
-            <span className="text-[10px] font-mono text-[var(--gray2)] font-bold">
-              Total de Clientes: <strong className="text-white ml-1 font-black">{kpis.totalContactsCount.toLocaleString('pt-BR')}</strong>
-            </span>
+            <div>
+              <h3 className="font-display text-sm sm:text-base font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2">
+                <span>RESULTADO VS META DO MÊS</span>
+                <span className="text-xs font-mono font-normal text-[var(--gray2)]">
+                  ({monthFilter !== 'all' ? `${MONTH_NAMES_MAP[monthFilter]} / ${yearFilter}` : `Ano ${yearFilter}`})
+                </span>
+              </h3>
+              <p className="text-xs font-mono text-[var(--gray2)] mt-0.5">
+                Acompanhamento em tempo real do faturamento acumulado frente ao objetivo mensal
+              </p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            
-            {/* ATIVOS */}
-            <div 
-              onClick={() => {
-                const items: DrillDownItem[] = filteredData.contacts.filter(c => (c.status || 'ativo') === 'ativo').map(c => ({
-                  id: c.id,
-                  title: c.company || c.name,
-                  company: c.company || c.name,
-                  cnpj: c.cnpj,
-                  representative: c.representative || 'Sem rep',
-                  value: (c.orders && c.orders[0]) ? Number(c.orders[0].value) : 0,
-                  stageOrStatus: 'ATIVO',
-                  curve: c.curve || 'C',
-                  city: c.city,
-                  state: c.state
-                }))
-                openDrillDown('CLIENTES ATIVOS', 'Clientes com compras regulares dentro do prazo de ciclo', items, '#10b981')
-              }}
-              className="bg-[var(--charcoal)] border border-[var(--line)] p-3 rounded-xl hover:border-emerald-500/40 transition-colors cursor-pointer group"
-            >
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="w-2 h-2 rounded-full bg-[#10b981] inline-block animate-pulse" />
-                <span className="text-[10px] font-mono font-bold uppercase text-[var(--gray2)]">Ativos</span>
-              </div>
-              <div className="text-lg font-mono font-black text-[var(--white)] group-hover:text-[#10b981] transition-colors">
-                {kpis.countAtivos}
-              </div>
-              <div className="text-[10px] font-mono text-[#10b981] font-bold mt-0.5">
-                {kpis.pctAtivos}% da carteira
-              </div>
+          {/* Status Badge */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold border flex items-center gap-1.5 ${
+              metaCalculated.pct >= 100
+                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                : metaCalculated.pct >= 70
+                ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.3)]'
+                : 'bg-amber-500/15 text-amber-400 border-amber-500/30 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
+            }`}>
+              <Sparkles size={14} />
+              <span>{metaCalculated.pct >= 100 ? 'META ATINGIDA! 🎉' : metaCalculated.pct >= 70 ? 'EM BOM RITMO 🚀' : 'ACELERAR VENDAS ⚡'}</span>
             </div>
-
-            {/* REATIVAÇÃO */}
-            <div 
-              onClick={() => {
-                const items: DrillDownItem[] = filteredData.contacts.filter(c => c.status === 'reativacao').map(c => ({
-                  id: c.id,
-                  title: c.company || c.name,
-                  company: c.company || c.name,
-                  cnpj: c.cnpj,
-                  representative: c.representative || 'Sem rep',
-                  value: (c.orders && c.orders[0]) ? Number(c.orders[0].value) : 0,
-                  stageOrStatus: 'REATIVAÇÃO',
-                  curve: c.curve || 'C',
-                  city: c.city,
-                  state: c.state
-                }))
-                openDrillDown('CLIENTES EM REATIVAÇÃO', 'Clientes sem compras há mais de 180 dias', items, '#f97316')
-              }}
-              className="bg-[var(--charcoal)] border border-[var(--line)] p-3 rounded-xl hover:border-orange-500/40 transition-colors cursor-pointer group"
-            >
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" />
-                <span className="text-[10px] font-mono font-bold uppercase text-[var(--gray2)]">Reativação</span>
-              </div>
-              <div className="text-lg font-mono font-black text-[var(--white)] group-hover:text-orange-400 transition-colors">
-                {kpis.countReativacao}
-              </div>
-              <div className="text-[10px] font-mono text-orange-400 font-bold mt-0.5">
-                {kpis.pctReativacao}% da carteira
-              </div>
-            </div>
-
-            {/* PROSPECÇÃO */}
-            <div 
-              onClick={() => {
-                const items: DrillDownItem[] = filteredData.contacts.filter(c => c.status === 'prospeccao').map(c => ({
-                  id: c.id,
-                  title: c.company || c.name,
-                  company: c.company || c.name,
-                  cnpj: c.cnpj,
-                  representative: c.representative || 'Sem rep',
-                  value: 0,
-                  stageOrStatus: 'PROSPECÇÃO',
-                  curve: c.curve || 'D',
-                  city: c.city,
-                  state: c.state
-                }))
-                openDrillDown('CLIENTES EM PROSPECÇÃO', 'Leads em prospeccao sem historico de compras faturadas', items, '#f59e0b')
-              }}
-              className="bg-[var(--charcoal)] border border-[var(--line)] p-3 rounded-xl hover:border-amber-500/40 transition-colors cursor-pointer group"
-            >
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-                <span className="text-[10px] font-mono font-bold uppercase text-[var(--gray2)]">Prospecção</span>
-              </div>
-              <div className="text-lg font-mono font-black text-[var(--white)] group-hover:text-amber-400 transition-colors">
-                {kpis.countProspeccao}
-              </div>
-              <div className="text-[10px] font-mono text-amber-400 font-bold mt-0.5">
-                {kpis.pctProspeccao}% da carteira
-              </div>
-            </div>
-
           </div>
         </div>
 
-        {/* CARD 8: PAINEL CURVA ABC DE FATURAMENTO */}
-        <div className="card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between shadow-lg">
-          <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 mb-4">
-            <div className="flex items-center gap-2">
-              <Target size={16} className="text-[#10b981]" />
-              <h3 className="font-display text-xs font-bold text-[var(--white)] uppercase tracking-wider">
-                Distribuição por Curva ABC
-              </h3>
+        {/* 4 KPIs numéricos em linha */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          {/* KPI 1: META DO MÊS */}
+          <div className="bg-[var(--charcoal)] border border-[var(--line)] p-4 rounded-xl flex flex-col justify-between relative overflow-hidden group">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)]">
+              OBJETIVO / META DO MÊS
+            </span>
+            <div className="text-xl sm:text-2xl font-mono font-black text-white mt-2">
+              {formatCurrency(metaCalculated.totalGoal)}
             </div>
-            <span className="text-[10px] font-mono text-[var(--gray2)]">Pareto Faturamento 80/15/5</span>
+            <span className="text-[10px] font-mono text-slate-400 mt-1">
+              Target planejado para a equipe
+            </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            
-            {/* CURVA A */}
-            <div 
-              onClick={() => {
-                const items: DrillDownItem[] = filteredData.contacts.filter(c => c.curve === 'A').map(c => ({
-                  id: c.id,
-                  title: c.company || c.name,
-                  company: c.company || c.name,
-                  cnpj: c.cnpj,
-                  representative: c.representative || 'Sem rep',
-                  value: c.orders ? c.orders.reduce((s, o) => s + (Number(o.value) || 0), 0) : 0,
-                  stageOrStatus: 'CURVA A',
-                  curve: 'A',
-                  city: c.city,
-                  state: c.state
-                }))
-                openDrillDown('CLIENTES CURVA A (VIP)', 'Principais clientes responsaveis pelos primeiros 80% do faturamento', items, '#10b981')
-              }}
-              className="bg-[var(--charcoal)] border border-emerald-500/30 p-2.5 rounded-xl hover:border-emerald-400 transition-colors cursor-pointer group"
-            >
-              <span className="text-[10px] font-mono font-bold text-[#10b981] bg-[#10b981]/10 px-1.5 py-0.5 rounded uppercase">Curva A</span>
-              <div className="text-base font-mono font-black text-[var(--white)] mt-1 group-hover:text-[#10b981] transition-colors">
-                {formatCompactCurrency(kpis.curveA_R$)}
-              </div>
-              <div className="text-[10px] font-mono text-[var(--gray2)]">
-                <strong className="text-white">{kpis.curveA_Count}</strong> clientes
-              </div>
+          {/* KPI 2: REALIZADO / FATURADO */}
+          <div className="bg-[var(--charcoal)] border border-emerald-500/30 p-4 rounded-xl flex flex-col justify-between relative overflow-hidden group">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+              FATURADO REALIZADO
+            </span>
+            <div className="text-xl sm:text-2xl font-mono font-black text-emerald-400 mt-2">
+              {formatCurrency(metaCalculated.faturado)}
             </div>
+            <span className="text-[10px] font-mono text-emerald-500/80 font-bold mt-1">
+              {kpis.totalPedidosQtd} pedidos confirmados
+            </span>
+          </div>
 
-            {/* CURVA B */}
-            <div 
-              onClick={() => {
-                const items: DrillDownItem[] = filteredData.contacts.filter(c => c.curve === 'B').map(c => ({
-                  id: c.id,
-                  title: c.company || c.name,
-                  company: c.company || c.name,
-                  cnpj: c.cnpj,
-                  representative: c.representative || 'Sem rep',
-                  value: c.orders ? c.orders.reduce((s, o) => s + (Number(o.value) || 0), 0) : 0,
-                  stageOrStatus: 'CURVA B',
-                  curve: 'B',
-                  city: c.city,
-                  state: c.state
-                }))
-                openDrillDown('CLIENTES CURVA B (ESTRATÉGICOS)', 'Clientes intermediarios (faixa 80% a 95% do faturamento)', items, '#f0c419')
-              }}
-              className="bg-[var(--charcoal)] border border-amber-500/30 p-2.5 rounded-xl hover:border-amber-400 transition-colors cursor-pointer group"
-            >
-              <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded uppercase">Curva B</span>
-              <div className="text-base font-mono font-black text-[var(--white)] mt-1 group-hover:text-amber-400 transition-colors">
-                {formatCompactCurrency(kpis.curveB_R$)}
-              </div>
-              <div className="text-[10px] font-mono text-[var(--gray2)]">
-                <strong className="text-white">{kpis.curveB_Count}</strong> clientes
-              </div>
+          {/* KPI 3: FALTA PARA A META */}
+          <div className="bg-[var(--charcoal)] border border-amber-500/30 p-4 rounded-xl flex flex-col justify-between relative overflow-hidden group">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400">
+              DIFERENÇA / RESTANTE
+            </span>
+            <div className="text-xl sm:text-2xl font-mono font-black text-amber-400 mt-2">
+              {metaCalculated.falta > 0 ? formatCurrency(metaCalculated.falta) : 'R$ 0,00'}
             </div>
+            <span className="text-[10px] font-mono text-amber-500/80 font-bold mt-1">
+              {metaCalculated.falta > 0 ? 'Falta para atingir 100%' : 'Meta 100% superada!'}
+            </span>
+          </div>
 
-            {/* CURVA C */}
-            <div 
-              onClick={() => {
-                const items: DrillDownItem[] = filteredData.contacts.filter(c => c.curve === 'C').map(c => ({
-                  id: c.id,
-                  title: c.company || c.name,
-                  company: c.company || c.name,
-                  cnpj: c.cnpj,
-                  representative: c.representative || 'Sem rep',
-                  value: c.orders ? c.orders.reduce((s, o) => s + (Number(o.value) || 0), 0) : 0,
-                  stageOrStatus: 'CURVA C',
-                  curve: 'C',
-                  city: c.city,
-                  state: c.state
-                }))
-                openDrillDown('CLIENTES CURVA C', 'Clientes com menor faturamento acumulado (ultimos 5% da receita)', items, '#94a3b8')
-              }}
-              className="bg-[var(--charcoal)] border border-[var(--line)] p-2.5 rounded-xl hover:border-slate-400 transition-colors cursor-pointer group"
-            >
-              <span className="text-[10px] font-mono font-bold text-zinc-400 bg-zinc-700/30 px-1.5 py-0.5 rounded uppercase">Curva C</span>
-              <div className="text-base font-mono font-black text-[var(--white)] mt-1 group-hover:text-zinc-300 transition-colors">
-                {formatCompactCurrency(kpis.curveC_R$)}
-              </div>
-              <div className="text-[10px] font-mono text-[var(--gray2)]">
-                <strong className="text-white">{kpis.curveC_Count}</strong> clientes
-              </div>
+          {/* KPI 4: PROJEÇÃO ESTIMADA */}
+          <div className="bg-[var(--charcoal)] border border-cyan-500/30 p-4 rounded-xl flex flex-col justify-between relative overflow-hidden group">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400">
+              PROJEÇÃO DE FECHAMENTO
+            </span>
+            <div className="text-xl sm:text-2xl font-mono font-black text-cyan-400 mt-2">
+              {formatCurrency(metaCalculated.projecao > 0 ? metaCalculated.projecao : metaCalculated.faturado)}
             </div>
+            <span className="text-[10px] font-mono text-cyan-500/80 font-bold mt-1">
+              Ritmo atual + pipeline em andamento
+            </span>
+          </div>
 
-            {/* CURVA D */}
+        </div>
+
+        {/* BARRA DE PROGRESSO NEON 3D COMPLETA COM BANDEIRA % */}
+        <div className="flex flex-col gap-2 pt-1">
+          <div className="flex items-center justify-between text-xs font-mono">
+            <span className="font-bold text-white flex items-center gap-1.5">
+              <span>Progresso Geral de Atingimento:</span>
+              <strong className="text-emerald-400 font-mono text-sm">{metaCalculated.pct.toFixed(1)}%</strong>
+            </span>
+            <span className="text-[var(--gray2)]">
+              {metaCalculated.faturado >= metaCalculated.totalGoal ? '100% Concluído' : `${(100 - metaCalculated.pct).toFixed(1)}% Restantes`}
+            </span>
+          </div>
+
+          {/* Barra Tridimensional Glowing */}
+          <div className="w-full h-4 rounded-full bg-[#090d16] p-0.5 border border-slate-700/60 overflow-hidden relative shadow-inner">
             <div 
-              onClick={() => {
-                const items: DrillDownItem[] = filteredData.contacts.filter(c => (c.curve || 'D') === 'D').map(c => ({
-                  id: c.id,
-                  title: c.company || c.name,
-                  company: c.company || c.name,
-                  cnpj: c.cnpj,
-                  representative: c.representative || 'Sem rep',
-                  value: 0,
-                  stageOrStatus: 'CURVA D (LEAD)',
-                  curve: 'D',
-                  city: c.city,
-                  state: c.state
-                }))
-                openDrillDown('CLIENTES CURVA D (PROSPECÇÃO)', 'Clientes sem historico de faturamento cadastrado', items, '#64748b')
-              }}
-              className="bg-[var(--charcoal)] border border-[var(--line)] p-2.5 rounded-xl hover:border-slate-500 transition-colors cursor-pointer group"
-            >
-              <span className="text-[10px] font-mono font-bold text-zinc-500 bg-zinc-800/40 px-1.5 py-0.5 rounded uppercase">Curva D</span>
-              <div className="text-base font-mono font-black text-[var(--white)] mt-1 group-hover:text-zinc-400 transition-colors">
-                R$ 0,00
-              </div>
-              <div className="text-[10px] font-mono text-[var(--gray2)]">
-                <strong className="text-white">{kpis.curveD_Count}</strong> leads
-              </div>
-            </div>
+              className="bg-gradient-to-r from-[#0284c7] via-[#06b6d4] to-[#10b981] h-full rounded-full transition-all duration-700 shadow-[0_0_15px_rgba(16,185,129,0.6)]"
+              style={{ width: `${Math.min(100, Math.max(2, metaCalculated.pct))}%` }}
+            />
+          </div>
+        </div>
 
+        {/* MINI PAINEL DE DESEMPENHO INDIVIDUAL POR REPRESENTANTE */}
+        <div className="border-t border-[var(--line)] pt-4 mt-1">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--gray2)] flex items-center gap-1.5">
+              <Users size={14} className="text-[#10b981]" />
+              <span>Desempenho por Representante no Mês</span>
+            </span>
+            <span className="text-[10px] font-mono text-slate-400">
+              {availableReps.length} representantes ativos
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {availableReps.slice(0, 8).map(repName => {
+              const repOrders = filteredData.orders.filter(o => isSameRepresentative(o.representative, repName))
+              const repRealized = repOrders.reduce((sum, o) => sum + (Number(o.value) || 0), 0)
+              
+              const monthKey = `${yearFilter}_${monthFilter}`
+              const repGoal = (goalsMap[`${monthKey}_${repName}`]?.salesGoal) || ((goalsMap[`${monthKey}_${repName}`] as any)?.metaMonthly) || (metaCalculated.totalGoal / Math.max(1, availableReps.length))
+              const repPct = repGoal > 0 ? Math.min(200, (repRealized / repGoal) * 100) : 0
+
+              return (
+                <div key={repName} className="bg-[var(--charcoal)] border border-[var(--line)] p-3 rounded-xl flex flex-col justify-between gap-2 hover:border-slate-500 transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white truncate max-w-[140px]">{formatCanonicalRepName(repName)}</span>
+                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                      repPct >= 100 ? 'bg-emerald-500/20 text-emerald-400' : repPct >= 70 ? 'bg-cyan-500/20 text-cyan-400' : 'bg-amber-500/20 text-amber-400'
+                    }`}>
+                      {repPct.toFixed(0)}%
+                    </span>
+                  </div>
+
+                  <div className="flex items-baseline justify-between text-xs font-mono">
+                    <span className="text-emerald-400 font-bold">{formatCompactCurrency(repRealized)}</span>
+                    <span className="text-[10px] text-slate-500">Meta: {formatCompactCurrency(repGoal)}</span>
+                  </div>
+
+                  <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full ${repPct >= 100 ? 'bg-emerald-400' : repPct >= 70 ? 'bg-cyan-400' : 'bg-amber-400'}`}
+                      style={{ width: `${Math.min(100, Math.max(4, repPct))}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
 
