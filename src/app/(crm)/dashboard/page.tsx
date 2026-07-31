@@ -1,14 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { CartonPackLogo } from '@/components/CartonPackLogo'
-import { RegisterActivityModal } from '@/components/RegisterActivityModal'
-import { InstallPWAButton } from '@/components/InstallPWA'
 import {
   TrendingUp,
   Package,
-  CheckCircle,
+  CheckCircle2,
   XCircle,
   AlertTriangle,
   ArrowRight,
@@ -16,40 +12,47 @@ import {
   Filter,
   Calendar,
   Phone,
-  Mic,
-  MicOff,
-  Camera,
   MapPin,
   Sparkles,
   Clock,
-  ArrowUpRight,
-  Navigation,
-  LogOut,
-  ChevronLeft,
+  ChevronRight,
   Users,
   Target,
   BarChart3,
-  Building,
+  Building2,
   Layers,
   Search,
   Maximize2,
-  Minimize2,
-  Sun,
-  Moon,
-  DollarSign
+  DollarSign,
+  Trophy,
+  Crown,
+  Award,
+  ChevronDown,
+  X,
+  ExternalLink,
+  Briefcase,
+  Percent,
+  Check,
+  RefreshCw,
+  Eye,
+  FileText
 } from 'lucide-react'
-import { formatCurrency, whatsappLink, isSameRepresentative, getUniqueCanonicalRepresentatives } from '@/lib/utils'
+import { formatCurrency, whatsappLink, isSameRepresentative, getUniqueCanonicalRepresentatives, formatCanonicalRepName } from '@/lib/utils'
 import { getPipelineDeals } from '@/services/pipeline-service'
-import Link from 'next/link'
+import { Contact, Deal, UserGoal } from '@/types'
 
-declare let L: any
-
-function formatAbbreviatedNumber(val: number): string {
-  if (!val) return '0'
-  return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(val)
+// Helper format abbreviated currency numbers (ex: R$ 4,1M or R$ 850K)
+function formatCompactCurrency(val: number): string {
+  if (val >= 1000000) {
+    return `R$ ${(val / 1000000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}M`
+  }
+  if (val >= 1000) {
+    return `R$ ${(val / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}K`
+  }
+  return formatCurrency(val)
 }
 
-const WhatsappIcon = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
+const WhatsappIcon = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
   <svg 
     width={size} 
     height={size} 
@@ -66,513 +69,574 @@ const WhatsappIcon = ({ size = 16, className = "" }: { size?: number; className?
   </svg>
 )
 
-interface DealMock {
+interface DrillDownItem {
   id: string
   title: string
+  company: string
+  cnpj?: string
   representative: string
-  stage: 'leads' | 'prospect' | 'dinamica' | 'potencial' | 'visita' | 'briefing' | 'aprovacao' | 'fechamento' | 'pedido' | 'pos_venda' | 'perdido'
   value: number
-  curve: 'A' | 'B' | 'C' | 'D'
-  daysInactive: number
-  contactName: string
-  phone: string
-  latLng?: [number, number]
+  stageOrStatus: string
+  curve?: string
+  date?: string
   city?: string
-  uf?: string
+  state?: string
+  lostReason?: string
+  rawItem?: any
 }
 
-const MOCK_DEALS: DealMock[] = []
-const MONTHLY_SALES_DATA: any[] = []
-const TEAM_PERFORMANCE: any[] = []
-const TOP_PRODUCTS: any[] = []
-const TOP_CLIENTS: any[] = []
-
 export default function DashboardPage() {
-  // Roles and Current User Session
+  // Session & User Role
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string; role: string; username?: string } | null>(null)
-  const [isSessionLoaded, setIsSessionLoaded] = useState(false)
-  const [contacts, setContacts] = useState<any[]>([])
-  const [pipelineDeals, setPipelineDeals] = useState<any[]>([])
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [deals, setDeals] = useState<Deal[]>([])
   const [systemUsers, setSystemUsers] = useState<Array<{ id: string; name: string; role: string; status?: string }>>([])
+  const [goalsMap, setGoalsMap] = useState<Record<string, UserGoal>>({})
+  const [loading, setLoading] = useState(true)
 
-  // Load real registered users from API/Supabase/localStorage
+  // Filters State
+  const [yearFilter, setYearFilter] = useState<string>('2026')
+  const [monthFilter, setMonthFilter] = useState<string>('all') // 'all', '01'..'12'
+  const [repFilter, setRepFilter] = useState<string>('all')
+  const [curveFilter, setCurveFilter] = useState<string>('all')
+
+  // Drill Down Modal State
+  const [drillDownModal, setDrillDownModal] = useState<{
+    isOpen: boolean
+    title: string
+    subtitle: string
+    items: DrillDownItem[]
+    badgeColor?: string
+  }>({
+    isOpen: false,
+    title: '',
+    subtitle: '',
+    items: []
+  })
+  const [drillSearchTerm, setDrillSearchTerm] = useState('')
+
+  // Detail Modal State (Ficha do Item no Drill Down)
+  const [detailItem, setDetailItem] = useState<DrillDownItem | null>(null)
+
+  // Map References
+  const contactsMapRef = useRef<HTMLDivElement>(null)
+  const contactsMapInstanceRef = useRef<any>(null)
+  const [leafletReady, setLeafletReady] = useState(false)
+  const [isMapExpanded, setIsMapExpanded] = useState(false)
+
+  // 1. Initial Load of Session & Data
   useEffect(() => {
-    async function loadRegisteredUsers() {
-      let loaded: any[] = []
+    async function loadDashboardData() {
+      setLoading(true)
       try {
-        const res = await fetch('/api/users', { cache: 'no-store' })
-        const json = await res.json()
-        if (json.success && Array.isArray(json.users) && json.users.length > 0) {
-          loaded = json.users
-        }
-      } catch (e) {}
-
-      if (loaded.length === 0 && typeof window !== 'undefined') {
-        const keys = ['cp_crm_v7_official_users', 'crm_users']
-        for (const k of keys) {
-          const raw = localStorage.getItem(k)
-          if (raw) {
+        // Load User Session
+        if (typeof window !== 'undefined') {
+          const sessionRaw = localStorage.getItem('crm_current_user')
+          if (sessionRaw) {
             try {
-              const parsed = JSON.parse(raw)
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                loaded = parsed
-                break
+              setCurrentUser(JSON.parse(sessionRaw))
+            } catch (e) {}
+          }
+        }
+
+        // Load Registered Users
+        try {
+          const resU = await fetch('/api/users')
+          if (resU.ok) {
+            const jsonU = await resU.json()
+            const list = jsonU.users || (Array.isArray(jsonU) ? jsonU : [])
+            setSystemUsers(list.filter((u: any) => u.status !== 'inativo'))
+          }
+        } catch (e) {}
+
+        // Load Deals from Pipeline
+        let loadedDeals: Deal[] = []
+        try {
+          const resD = await fetch('/api/deals', { cache: 'no-store' })
+          if (resD.ok) {
+            const jsonD = await resD.json()
+            loadedDeals = Array.isArray(jsonD) ? jsonD : (jsonD.data || [])
+          }
+        } catch (e) {}
+        setDeals(getPipelineDeals(loadedDeals))
+
+        // Load Contacts & Historical Orders
+        let loadedContacts: Contact[] = []
+        try {
+          const resC = await fetch('/api/contacts', { cache: 'no-store' })
+          if (resC.ok) {
+            const jsonC = await resC.json()
+            loadedContacts = Array.isArray(jsonC) ? jsonC : (jsonC.data || [])
+          }
+        } catch (e) {}
+
+        if (typeof window !== 'undefined') {
+          const rawC = localStorage.getItem('crm_contacts')
+          if (rawC) {
+            try {
+              const localC = JSON.parse(rawC)
+              if (Array.isArray(localC) && localC.length > 0) {
+                const mapById = new Map<string, any>()
+                localC.forEach(c => mapById.set(c.id, c))
+                loadedContacts.forEach(c => mapById.set(c.id, c))
+                loadedContacts = Array.from(mapById.values())
               }
             } catch (e) {}
           }
         }
-      }
+        setContacts(loadedContacts)
 
-      if (loaded.length > 0) {
-        setSystemUsers(loaded.filter(u => u.status !== 'inativo'))
-      }
-    }
-
-    loadRegisteredUsers()
-    if (typeof window !== 'undefined') {
-      window.addEventListener('storage-user-changed', loadRegisteredUsers)
-      window.addEventListener('storage', loadRegisteredUsers)
-    }
-    return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('storage-user-changed', loadRegisteredUsers)
-        window.removeEventListener('storage', loadRegisteredUsers)
-      }
-    }
-  }, [])
-
-  // Theme state (for mobile toggle)
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
-
-  // Dashboard Filters: Year, Month, Rep, Curve ABC
-  const [selectedYear, setSelectedYear] = useState<string>('2026')
-  const [selectedMonth, setSelectedMonth] = useState<string>('07') // Default July
-  const [selectedRep, setSelectedRep] = useState<string>('all')
-  const [selectedCurve, setSelectedCurve] = useState<string>('all')
-
-  // Drilldown Chart State: null = monthly view
-  const [selectedDrilldownMonth, setSelectedDrilldownMonth] = useState<typeof MONTHLY_SALES_DATA[0] | null>(null)
-
-  // Leaflet Map states & Fullscreen controls
-  const mapContainerRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<any>(null)
-  const fullscreenMapContainerRef = useRef<HTMLDivElement>(null)
-  const fullscreenMapInstanceRef = useRef<any>(null)
-  
-  const [leafletReady, setLeafletReady] = useState(false)
-  const [isMapFullscreen, setIsMapFullscreen] = useState(false)
-  const [isMobileMapFullscreen, setIsMobileMapFullscreen] = useState(false)
-
-  const mobileFullscreenMapContainerRef = useRef<HTMLDivElement>(null)
-  const mobileFullscreenMapInstanceRef = useRef<any>(null)
-  const recognitionRef = useRef<any>(null)
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize()
-      }
-      if (mobileMapInstanceRef.current) {
-        mobileMapInstanceRef.current.invalidateSize()
-      }
-    }, 150)
-    return () => clearTimeout(t)
-  }, [isMapFullscreen, isMobileMapFullscreen])
-
-  // Representative Portal States
-  const searchParams = useSearchParams()
-  const tabParam = searchParams?.get('tab') as 'painel' | 'clientes' | 'mapa' | 'dashboard' | null
-
-  const [activeTab, setActiveTab] = useState<'painel' | 'clientes' | 'mapa' | 'dashboard'>('dashboard')
-
-  useEffect(() => {
-    if (tabParam) {
-      setActiveTab(tabParam)
-    } else if (currentUser?.role === 'representante') {
-      setActiveTab('painel')
-    }
-  }, [tabParam, currentUser?.role])
-
-  const [mobileSearch, setMobileSearch] = useState('')
-  const [mobileFilterStatus, setMobileFilterStatus] = useState<'todos' | 'pendentes' | 'concluidos'>('todos')
-  const mobileMapContainerRef = useRef<HTMLDivElement>(null)
-  const mobileMapInstanceRef = useRef<any>(null)
-  
-  const [visitsGoal, setVisitsGoal] = useState(15)
-  const [completedVisits, setCompletedVisits] = useState(0)
-  const [showCheckinModal, setShowCheckinModal] = useState(false)
-  const [selectedContactId, setSelectedContactId] = useState('')
-  const [selectedPipelineStage, setSelectedPipelineStage] = useState('visita')
-  const [isRecording, setIsRecording] = useState(false)
-  const [isTranscribing, setIsTranscribing] = useState(false)
-  const [recordingTime, setRecordingTime] = useState(0)
-  const [audioTranscription, setAudioTranscription] = useState('')
-  const [photoUrl, setPhotoUrl] = useState('')
-  const [checkinSuccessToast, setCheckinSuccessToast] = useState(false)
-
-  // Load Session and Database
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const session = localStorage.getItem('crm_current_user')
-      if (session) {
+        // Load Metas / Goals Map
         try {
-          const user = JSON.parse(session)
-          setCurrentUser(user)
-          if (user.role === 'representante' || user.role === 'vendedor') {
-            setSelectedRep(user.name)
+          const resM = await fetch('/api/metas', { cache: 'no-store' })
+          if (resM.ok) {
+            const jsonM = await resM.json()
+            if (jsonM.goalsMap) setGoalsMap(jsonM.goalsMap)
           }
-        } catch (e) {
-          console.error(e)
-        }
-      } else {
-        setCurrentUser({ id: '4', name: 'Inácio Siqueira', email: 'julio.admin@cartonpack.com', role: 'admin' })
-      }
-
-      const savedContacts = localStorage.getItem('crm_contacts')
-      if (savedContacts) {
-        try {
-          setContacts(JSON.parse(savedContacts))
-        } catch (e) {
-          console.error(e)
-        }
-      } else {
-        setContacts([])
-        localStorage.setItem('crm_contacts', JSON.stringify([]))
-      }
-
-      setIsSessionLoaded(true)
-
-      // Load real pipeline deals
-      const loadDeals = () => {
-        const loaded = getPipelineDeals([])
-        setPipelineDeals(loaded)
-      }
-      loadDeals()
-
-      window.addEventListener('storage-deals-changed', loadDeals)
-      window.addEventListener('storage', loadDeals)
-      window.addEventListener('storage-contacts-changed', loadDeals)
-
-      // Initialize theme from DOM
-      const activeTheme = (document.documentElement.getAttribute('data-theme') || 'dark') as 'dark' | 'light'
-      setTheme(activeTheme)
-
-      return () => {
-        window.removeEventListener('storage-deals-changed', loadDeals)
-        window.removeEventListener('storage', loadDeals)
-        window.removeEventListener('storage-contacts-changed', loadDeals)
+        } catch (e) {}
+      } catch (e) {
+        console.error('Error loading dashboard data:', e)
+      } finally {
+        setLoading(false)
       }
     }
+
+    loadDashboardData()
   }, [])
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      (window as any).handleMapRegistrarAtividade = (contactId: string, companyName?: string) => {
-        const found = contacts.find(c => c.id === contactId || c.company === companyName || c.name === companyName)
-        if (found) {
-          setSelectedContactId(found.id)
-        } else if (contactId) {
-          setSelectedContactId(contactId)
-        }
-        setAudioTranscription('')
-        setPhotoUrl('')
-        setShowCheckinModal(true)
-      };
-
-      (window as any).handleMapVerFicha = (contactId: string, companyName?: string) => {
-        window.location.href = '/contacts'
-      };
-    }
-  }, [contacts])
-
-  // Robust client-side loader for Leaflet resources (CSS + JS)
+  // Leaflet Dynamic Loading
   useEffect(() => {
     if (typeof window === 'undefined') return
+    let interval: any = null
 
-    const loadLeafletResources = () => {
-      if ((window as any).L) {
-        setLeafletReady(true)
-        return
+    const loadCluster = () => {
+      if (!document.getElementById('leaflet-cluster-css')) {
+        const l1 = document.createElement('link')
+        l1.id = 'leaflet-cluster-css'
+        l1.rel = 'stylesheet'
+        l1.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css'
+        document.head.appendChild(l1)
+
+        const l2 = document.createElement('link')
+        l2.id = 'leaflet-cluster-default-css'
+        l2.rel = 'stylesheet'
+        l2.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css'
+        document.head.appendChild(l2)
       }
 
-      // Append Leaflet Stylesheet dynamically if missing
+      if (!document.getElementById('leaflet-cluster-js')) {
+        const s = document.createElement('script')
+        s.id = 'leaflet-cluster-js'
+        s.src = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js'
+        s.onload = () => setLeafletReady(true)
+        document.head.appendChild(s)
+      } else {
+        setLeafletReady(true)
+      }
+    }
+
+    if ((window as any).L && (window as any).L.markerClusterGroup) {
+      setLeafletReady(true)
+    } else if ((window as any).L) {
+      loadCluster()
+    } else {
       if (!document.getElementById('leaflet-css')) {
         const link = document.createElement('link')
         link.id = 'leaflet-css'
         link.rel = 'stylesheet'
         link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
-        link.crossOrigin = ''
         document.head.appendChild(link)
       }
-
-      // Append Leaflet JS Library dynamically if missing
       if (!document.getElementById('leaflet-js')) {
         const script = document.createElement('script')
         script.id = 'leaflet-js'
         script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
-        script.crossOrigin = ''
-        script.onload = () => {
-          setLeafletReady(true)
-        }
-        document.body.appendChild(script)
+        script.onload = () => loadCluster()
+        document.head.appendChild(script)
       } else {
-        // Fallback polling in case the script is already added but loading
-        const interval = setInterval(() => {
+        interval = setInterval(() => {
           if ((window as any).L) {
-            setLeafletReady(true)
+            loadCluster()
             clearInterval(interval)
           }
         }, 100)
-        return () => clearInterval(interval)
       }
     }
-
-    loadLeafletResources()
-  }, [])
-
-  // Helper function to map stages to high-contrast colors (for light basemaps)
-  const getStageColor = (stage: string) => {
-    const colors: Record<string, string> = {
-      leads: 'var(--stage-leads)',       
-      prospect: 'var(--stage-prospect)',    
-      dinamica: 'var(--stage-dinamica)',    
-      potencial: 'var(--stage-potencial)',   
-      visita: 'var(--stage-visita)',      
-      briefing: 'var(--stage-briefing)',    
-      aprovacao: 'var(--stage-aprovacao)',   
-      fechamento: 'var(--stage-fechamento)',  
-      perdido: 'var(--stage-perdido)'      
-    }
-    return colors[stage] || 'var(--stage-prospect)'
-  }
-
-  // Helper function to render unique Lucide icons for each funnel stage
-  const getStageIcon = (key: string, color: string, customSize?: number) => {
-    const size = customSize || 11
-    switch (key) {
-      case 'leads': return <Target size={size} style={{ color }} />
-      case 'prospect': return <Users size={size} style={{ color }} />
-      case 'dinamica': return <Clock size={size} style={{ color }} />
-      case 'potencial': return <TrendingUp size={size} style={{ color }} />
-      case 'visita': return <MapPin size={size} style={{ color }} />
-      case 'briefing': return <Layers size={size} style={{ color }} />
-      case 'aprovacao': return <CheckCircle size={size} style={{ color }} />
-      case 'fechamento': return <Sparkles size={size} style={{ color }} />
-      default: return <Package size={size} style={{ color }} />
-    }
-  }
-
-
-  // Initialize Leaflet Map for Negotiating Clients (OSM Light / Voyager version)
-  useEffect(() => {
-    if (!leafletReady || currentUser?.role === 'representante') return
-    if (!mapContainerRef.current) return
-
-    const L_Global = (window as any).L
-    if (!L_Global) return
-
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.remove()
-      mapInstanceRef.current = null
-    }
-
-    const map = L_Global.map(mapContainerRef.current, {
-      zoomControl: false,
-      attributionControl: false
-    })
-
-    mapInstanceRef.current = map
-
-    L_Global.control.zoom({ position: 'bottomright' }).addTo(map)
-
-    // OpenStreetMap Standard Basemap (vibrant terrain, rivers, highways, state borders)
-    const basemapUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-
-    L_Global.tileLayer(basemapUrl, {
-      subdomains: 'abc',
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map)
-
-    // Overlay layer: IBGE official municipal borders for all of Brazil (visible at zoom >= 7 to prevent clutter)
-    L_Global.tileLayer.wms('https://geoservicos.ibge.gov.br/geoserver/wms', {
-      layers: 'CGEO:municipio',
-      format: 'image/png',
-      transparent: true,
-      minZoom: 7,
-      version: '1.1.1',
-      attribution: '&copy; IBGE'
-    }).addTo(map)
-
-    // Add Markers for all active deals in negotiation and closing stages
-    const activeDealsForMap = mappedDeals.filter(d => {
-      if (d.stage === 'perdido') return false
-      if (!selectedRep || selectedRep === 'all') return true
-      return isSameRepresentative(d.representative, selectedRep)
-    })
-    const coordsCount: Record<string, number> = {}
-    const bounds: [number, number][] = []
-
-    activeDealsForMap.forEach((deal) => {
-      let baseCoords: [number, number] = deal.latLng || getCityCoords(deal.city) || [-29.6842, -51.1303]
-      const key = `${baseCoords[0].toFixed(3)}_${baseCoords[1].toFixed(3)}`
-      const indexInCity = coordsCount[key] || 0
-      coordsCount[key] = indexInCity + 1
-
-      let finalLat = baseCoords[0]
-      let finalLng = baseCoords[1]
-
-      if (indexInCity > 0) {
-        const angle = indexInCity * 1.8 // Spread pins outwards in a spiral
-        const distance = 0.003 * Math.sqrt(indexInCity)
-        finalLat += distance * Math.cos(angle)
-        finalLng += distance * Math.sin(angle)
-      }
-
-      const finalLatLng: [number, number] = [finalLat, finalLng]
-      bounds.push(finalLatLng)
-      const stageColor = getStageColor(deal.stage)
-
-      // Scaled-down SVG drop-pin custom icon (size 18x22)
-      const customIcon = L_Global.divIcon({
-        className: 'clear-custom-pin', // overrides leaflet default backgrounds via globals.css
-        html: `
-          <div style="display: flex; align-items: center; justify-content: center; width: 18px; height: 22px; background: transparent !important; border: none !important;">
-            <svg viewBox="0 0 20 24" width="18" height="22" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); pointer-events: none;">
-              <!-- Outer teardrop shape filled with stage color -->
-              <path d="M10 0C4.477 0 0 4.477 0 10c0 7.5 10 14 10 14s10-6.5 10-14c0-5.523-4.477-10-10-10z" fill="${stageColor}" stroke="#ffffff" stroke-width="1.3" />
-              <!-- Inner accent circle -->
-              <circle cx="10" cy="10" r="3" fill="#ffffff" />
-            </svg>
-          </div>
-        `,
-        iconSize: [18, 22],
-        iconAnchor: [9, 22] // accurately anchors bottom point of teardrop
-      })
-
-      const marker = L_Global.marker(finalLatLng, { icon: customIcon }).addTo(map)
-      marker.bindTooltip(`
-        <div style="font-family: sans-serif; padding: 4px 6px; background: #ffffff; color: #0f172a; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-          <strong style="font-size: 12px; display: block;">${deal.title}</strong>
-          <span style="color: ${stageColor}; font-family: monospace; font-size: 11px; font-weight: bold;">${formatCurrency(deal.value)}</span>
-          <div style="font-size: 10px; margin-top: 2px;">${deal.contactName} (${deal.city || 'Novo Hamburgo'})</div>
-          <div style="font-size: 9px; text-transform: uppercase; opacity: 0.8; font-weight: bold; color: ${stageColor}; margin-top: 2px;">Etapa: ${deal.stage}</div>
-        </div>
-      `, {
-        direction: 'top',
-        className: 'custom-leaflet-tooltip'
-      })
-    })
-
-    // Calculate bounds containing all markers responsively
-    if (bounds.length > 0) {
-      map.fitBounds(bounds, {
-        padding: [30, 30],
-        maxZoom: 12
-      })
-    } else {
-      map.setView([-29.7, -51.15], 9)
-    }
-
-    // Resize Observer to dynamically invalidate map size whenever container layout changes
-    const resizeObserver = new ResizeObserver(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize()
-      }
-    })
-
-    if (mapContainerRef.current) {
-      resizeObserver.observe(mapContainerRef.current)
-    }
-
-    const t1 = setTimeout(() => mapInstanceRef.current?.invalidateSize(), 50)
-    const t2 = setTimeout(() => mapInstanceRef.current?.invalidateSize(), 250)
-    const t3 = setTimeout(() => mapInstanceRef.current?.invalidateSize(), 600)
 
     return () => {
-      clearTimeout(t1)
-      clearTimeout(t2)
-      clearTimeout(t3)
-      resizeObserver.disconnect()
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove()
-        mapInstanceRef.current = null
-      }
+      if (interval) clearInterval(interval)
     }
-  }, [leafletReady, currentUser, pipelineDeals])
+  }, [])
 
-  // Initialize Dedicated Fullscreen Leaflet Map Modal (Admin/Desktop)
+  // User Role Checking
+  const isAdminOrManager = currentUser?.role === 'admin' || currentUser?.role === 'gestor'
+  const effectiveRepFilter = (!isAdminOrManager && currentUser?.name) ? currentUser.name : repFilter
+
+  // Available Representatives list for Filter
+  const availableReps = useMemo(() => {
+    const fromContacts = contacts.map(c => c.representative).filter(Boolean) as string[]
+    const fromDeals = deals.map(d => d.assigned_to).filter(Boolean) as string[]
+    const merged = Array.from(new Set([...fromContacts, ...fromDeals]))
+    return getUniqueCanonicalRepresentatives(merged)
+  }, [contacts, deals])
+
+  // Consolidated Orders & Deals dataset filtered by Year, Month, Rep & Curve
+  const filteredData = useMemo(() => {
+    const norm = (s?: string) => (s || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+
+    // 1. Filter Contacts by Rep & Curve
+    const validContacts = contacts.filter(c => {
+      if (effectiveRepFilter !== 'all' && !isSameRepresentative(c.representative, effectiveRepFilter)) return false
+      if (curveFilter !== 'all' && (c.curve || 'D') !== curveFilter) return false
+      return true
+    })
+    const validContactIds = new Set(validContacts.map(c => c.id))
+    const validContactNames = new Set(validContacts.map(c => norm(c.company || c.name)))
+
+    // 2. Filter Deals
+    const matchedDeals = deals.filter(d => {
+      if (effectiveRepFilter !== 'all' && !isSameRepresentative(d.assigned_to, effectiveRepFilter)) return false
+      if (curveFilter !== 'all' && d.contact?.curve && d.contact.curve !== curveFilter) return false
+
+      if (yearFilter !== 'all' || monthFilter !== 'all') {
+        const dtStr = d.closed_at || d.stage_entered_at || d.created_at
+        if (dtStr) {
+          const dt = new Date(dtStr)
+          if (!isNaN(dt.getTime())) {
+            if (yearFilter !== 'all' && String(dt.getFullYear()) !== yearFilter) return false
+            if (monthFilter !== 'all' && String(dt.getMonth() + 1).padStart(2, '0') !== monthFilter) return false
+          }
+        }
+      }
+      return true
+    })
+
+    // 3. Historical Closed Orders from Contacts
+    const matchedOrders: Array<{
+      id: string
+      order_number: string
+      company: string
+      cnpj?: string
+      representative: string
+      value: number
+      date: string
+      curve?: string
+      contact?: Contact
+    }> = []
+
+    validContacts.forEach(c => {
+      if (c.orders && Array.isArray(c.orders)) {
+        c.orders.forEach(ord => {
+          if (ord.date) {
+            const dt = new Date(ord.date)
+            if (!isNaN(dt.getTime())) {
+              if (yearFilter !== 'all' && String(dt.getFullYear()) !== yearFilter) return
+              if (monthFilter !== 'all' && String(dt.getMonth() + 1).padStart(2, '0') !== monthFilter) return
+            }
+          }
+          const ordVal = Number(ord.value) || 0
+          matchedOrders.push({
+            id: ord.id || `ord-${ord.order_number}`,
+            order_number: ord.order_number || 'S/N',
+            company: c.company || c.name,
+            cnpj: c.cnpj,
+            representative: ord.vendor || c.representative || 'Sem representante',
+            value: ordVal,
+            date: ord.date || '',
+            curve: c.curve || 'C',
+            contact: c
+          })
+        })
+      }
+    })
+
+    return {
+      contacts: validContacts,
+      deals: matchedDeals,
+      orders: matchedOrders
+    }
+  }, [contacts, deals, yearFilter, monthFilter, effectiveRepFilter, curveFilter])
+
+  // ── METRIC CALCULATIONS ──
+  const kpis = useMemo(() => {
+    // 1. Pedidos Emitidos / Faturado (Soma de ordens historicas no periodo + deals em etapa 'pedido' ou 'fechamento')
+    const historicalFaturadoR$ = filteredData.orders.reduce((sum, o) => sum + o.value, 0)
+    const pipelineWonDeals = filteredData.deals.filter(d => d.stage === 'pedido' || d.stage === 'fechamento')
+    const pipelineWonR$ = pipelineWonDeals.reduce((sum, d) => sum + (d.final_value || d.estimated_value || 0), 0)
+    
+    // Total Faturado Unificado
+    const totalFaturadoR$ = historicalFaturadoR$ + pipelineWonR$
+    const totalPedidosQtd = filteredData.orders.length + pipelineWonDeals.length
+
+    // 2. Em Negociação (Pipeline etapas 'leads'..'aprovacao')
+    const openDeals = filteredData.deals.filter(d => d.stage !== 'pedido' && d.stage !== 'fechamento' && d.stage !== 'perdido')
+    const openR$ = openDeals.reduce((sum, d) => sum + (d.estimated_value || 0), 0)
+    const openQtd = openDeals.length
+
+    // 3. Aprovados / Oportunidades Quentes ('aprovacao' ou 'briefing')
+    const approvedDeals = filteredData.deals.filter(d => d.stage === 'aprovacao' || d.stage === 'briefing')
+    const approvedR$ = approvedDeals.reduce((sum, d) => sum + (d.estimated_value || 0), 0)
+    const approvedQtd = approvedDeals.length
+
+    // 4. Perdidos
+    const lostDeals = filteredData.deals.filter(d => d.stage === 'perdido')
+    const lostR$ = lostDeals.reduce((sum, d) => sum + (d.estimated_value || 0), 0)
+    const lostQtd = lostDeals.length
+    const totalEvaluatedDeals = filteredData.deals.length
+    const lossRatePct = totalEvaluatedDeals > 0 ? ((lostQtd / totalEvaluatedDeals) * 100).toFixed(1) : '0.0'
+
+    // 5. Ticket Médio
+    const ticketMedio = totalPedidosQtd > 0 ? (totalFaturadoR$ / totalPedidosQtd) : 0
+
+    // 6. Ciclo Médio em Dias (dias no pipeline dos negócios fechados)
+    let totalCycleDays = 0
+    let cycleCount = 0
+    pipelineWonDeals.forEach(d => {
+      if (d.created_at && (d.closed_at || d.stage_entered_at)) {
+        const start = new Date(d.created_at).getTime()
+        const end = new Date(d.closed_at || d.stage_entered_at).getTime()
+        const diffDays = Math.max(1, Math.round((end - start) / (1000 * 3600 * 24)))
+        if (!isNaN(diffDays)) {
+          totalCycleDays += diffDays
+          cycleCount++
+        }
+      }
+    })
+    const avgCycleDays = cycleCount > 0 ? Math.round(totalCycleDays / cycleCount) : 14
+
+    // 7. Status da Carteira
+    let countAtivos = 0
+    let countReativacao = 0
+    let countProspeccao = 0
+
+    filteredData.contacts.forEach(c => {
+      const st = c.status || 'ativo'
+      if (st === 'prospeccao') countProspeccao++
+      else if (st === 'reativacao') countReativacao++
+      else countAtivos++
+    })
+
+    const totalContactsCount = filteredData.contacts.length || 1
+    const pctAtivos = ((countAtivos / totalContactsCount) * 100).toFixed(1)
+    const pctReativacao = ((countReativacao / totalContactsCount) * 100).toFixed(1)
+    const pctProspeccao = ((countProspeccao / totalContactsCount) * 100).toFixed(1)
+
+    // 8. Curva ABC de Faturamento
+    let curveA_R$ = 0, curveA_Count = 0
+    let curveB_R$ = 0, curveB_Count = 0
+    let curveC_R$ = 0, curveC_Count = 0
+    let curveD_R$ = 0, curveD_Count = 0
+
+    filteredData.contacts.forEach(c => {
+      const crv = c.curve || 'D'
+      let clientTotalFaturado = 0
+      if (c.orders && Array.isArray(c.orders)) {
+        clientTotalFaturado = c.orders.reduce((s, o) => s + (Number(o.value) || 0), 0)
+      }
+
+      if (crv === 'A') { curveA_R$ += clientTotalFaturado; curveA_Count++ }
+      else if (crv === 'B') { curveB_R$ += clientTotalFaturado; curveB_Count++ }
+      else if (crv === 'C') { curveC_R$ += clientTotalFaturado; curveC_Count++ }
+      else { curveD_Count++ }
+    })
+
+    return {
+      totalFaturadoR$,
+      totalPedidosQtd,
+      openR$,
+      openQtd,
+      approvedR$,
+      approvedQtd,
+      lostR$,
+      lostQtd,
+      lossRatePct,
+      ticketMedio,
+      avgCycleDays,
+      countAtivos,
+      pctAtivos,
+      countReativacao,
+      pctReativacao,
+      countProspeccao,
+      pctProspeccao,
+      totalContactsCount,
+      curveA_R$, curveA_Count,
+      curveB_R$, curveB_Count,
+      curveC_R$, curveC_Count,
+      curveD_R$, curveD_Count,
+      historicalOrders: filteredData.orders,
+      openDealsList: openDeals,
+      approvedDealsList: approvedDeals,
+      lostDealsList: lostDeals
+    }
+  }, [filteredData])
+
+  // ── MONTHLY SALES GRAPH DATA ──
+  const monthlyGraphData = useMemo(() => {
+    const monthsNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    const result = monthsNames.map((name, idx) => {
+      const mStr = String(idx + 1).padStart(2, '0')
+      
+      // Historical Orders in month
+      const monthOrders = filteredData.orders.filter(o => {
+        if (!o.date) return false
+        const dt = new Date(o.date)
+        return String(dt.getMonth() + 1).padStart(2, '0') === mStr
+      })
+      const faturadoR$ = monthOrders.reduce((s, o) => s + o.value, 0)
+
+      // Won Deals in month
+      const wonMonthDeals = filteredData.deals.filter(d => {
+        if (d.stage !== 'pedido' && d.stage !== 'fechamento') return false
+        const dtStr = d.closed_at || d.stage_entered_at || d.created_at
+        if (!dtStr) return false
+        const dt = new Date(dtStr)
+        return String(dt.getMonth() + 1).padStart(2, '0') === mStr
+      })
+      const wonR$ = wonMonthDeals.reduce((s, d) => s + (d.final_value || d.estimated_value || 0), 0)
+
+      const totalMonthR$ = faturadoR$ + wonR$
+
+      return {
+        monthIndex: mStr,
+        monthName: name,
+        faturadoR$: totalMonthR$,
+        qtd: monthOrders.length + wonMonthDeals.length,
+        orders: monthOrders,
+        deals: wonMonthDeals
+      }
+    })
+
+    const maxVal = Math.max(1, ...result.map(r => r.faturadoR$))
+    return result.map(r => ({ ...r, heightPct: Math.round((r.faturadoR$ / maxVal) * 100) }))
+  }, [filteredData])
+
+  // ── PODIUM TEAM RANKING DATA ──
+  const teamRanking = useMemo(() => {
+    const repMap: Record<string, {
+      name: string
+      totalR$: number
+      pedidosCount: number
+      wonDeals: any[]
+      orders: any[]
+    }> = {}
+
+    // Process Orders
+    filteredData.orders.forEach(ord => {
+      const rep = formatCanonicalRepName(ord.representative)
+      if (!repMap[rep]) repMap[rep] = { name: rep, totalR$: 0, pedidosCount: 0, wonDeals: [], orders: [] }
+      repMap[rep].totalR$ += ord.value
+      repMap[rep].pedidosCount += 1
+      repMap[rep].orders.push(ord)
+    })
+
+    // Process Won Deals
+    filteredData.deals.forEach(d => {
+      if (d.stage === 'pedido' || d.stage === 'fechamento') {
+        const rep = formatCanonicalRepName(d.assigned_to)
+        if (!repMap[rep]) repMap[rep] = { name: rep, totalR$: 0, pedidosCount: 0, wonDeals: [], orders: [] }
+        const val = d.final_value || d.estimated_value || 0
+        repMap[rep].totalR$ += val
+        repMap[rep].pedidosCount += 1
+        repMap[rep].wonDeals.push(d)
+      }
+    })
+
+    const sorted = Object.values(repMap).sort((a, b) => b.totalR$ - a.totalR$)
+    
+    const top1 = sorted[0] || null
+    const top2 = sorted[1] || null
+    const top3 = sorted[2] || null
+    const remaining = sorted.slice(3)
+
+    return { top1, top2, top3, remaining, all: sorted }
+  }, [filteredData])
+
+  // ── MOTIVOS DE PERDA DATA ──
+  const lostReasonsData = useMemo(() => {
+    const reasonsMap: Record<string, { reason: string; totalR$: number; count: number; deals: Deal[] }> = {}
+
+    filteredData.deals.forEach(d => {
+      if (d.stage === 'perdido') {
+        const reason = d.lost_reason || 'Outro motivo'
+        if (!reasonsMap[reason]) reasonsMap[reason] = { reason, totalR$: 0, count: 0, deals: [] }
+        const val = d.estimated_value || 0
+        reasonsMap[reason].totalR$ += val
+        reasonsMap[reason].count += 1
+        reasonsMap[reason].deals.push(d)
+      }
+    })
+
+    const sorted = Object.values(reasonsMap).sort((a, b) => b.totalR$ - a.totalR$)
+    const maxVal = Math.max(1, ...sorted.map(s => s.totalR$))
+    return sorted.map(s => ({
+      ...s,
+      pctOfMax: Math.round((s.totalR$ / maxVal) * 100)
+    }))
+  }, [filteredData])
+
+  // Map Initialization & Plotting Effect
   useEffect(() => {
-    if (!isMapFullscreen || !leafletReady) return
-    if (!fullscreenMapContainerRef.current) return
-
+    if (!leafletReady || !contactsMapRef.current) return
     const L_Global = (window as any).L
     if (!L_Global) return
 
-    if (fullscreenMapInstanceRef.current) {
-      fullscreenMapInstanceRef.current.remove()
-      fullscreenMapInstanceRef.current = null
+    if (contactsMapInstanceRef.current) {
+      contactsMapInstanceRef.current.remove()
+      contactsMapInstanceRef.current = null
     }
 
-    const map = L_Global.map(fullscreenMapContainerRef.current, {
+    const map = L_Global.map(contactsMapRef.current, {
       zoomControl: false,
       attributionControl: false
     })
-
-    fullscreenMapInstanceRef.current = map
+    contactsMapInstanceRef.current = map
 
     L_Global.control.zoom({ position: 'bottomright' }).addTo(map)
 
-    // OpenStreetMap Standard Basemap
-    const basemapUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-
-    L_Global.tileLayer(basemapUrl, {
+    L_Global.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       subdomains: 'abc',
       maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      attribution: '&copy; OpenStreetMap'
     }).addTo(map)
 
-    // Overlay layer: IBGE official municipal borders for all of Brazil
-    L_Global.tileLayer.wms('https://geoservicos.ibge.gov.br/geoserver/wms', {
-      layers: 'CGEO:municipio',
-      format: 'image/png',
-      transparent: true,
-      minZoom: 7,
-      version: '1.1.1',
-      attribution: '&copy; IBGE'
-    }).addTo(map)
+    const markersGroup = (L_Global.markerClusterGroup) ? L_Global.markerClusterGroup({
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      maxClusterRadius: 40
+    }) : L_Global.layerGroup()
 
-    // Add Markers for all active deals in negotiation and closing stages
-    const activeDealsForMap = mappedDeals.filter(d => d.stage !== 'perdido')
-    const coordsCount: Record<string, number> = {}
     const bounds: [number, number][] = []
 
-    activeDealsForMap.forEach((deal) => {
-      let baseCoords: [number, number] = deal.latLng || getCityCoords(deal.city) || [-29.6842, -51.1303]
-      const key = `${baseCoords[0].toFixed(3)}_${baseCoords[1].toFixed(3)}`
-      const indexInCity = coordsCount[key] || 0
-      coordsCount[key] = indexInCity + 1
+    const hashStr = (str: string) => {
+      let h = 0
+      for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0
+      return h
+    }
 
-      let finalLat = baseCoords[0]
-      let finalLng = baseCoords[1]
+    filteredData.contacts.forEach((contact) => {
+      const computedStatus = contact.status || 'ativo'
+      let pinColor = '#f59e0b'
+      if (computedStatus === 'ativo') pinColor = '#10b981'
+      else if (computedStatus === 'reativacao') pinColor = '#f97316'
 
-      if (indexInCity > 0) {
-        const angle = indexInCity * 1.8
-        const distance = 0.003 * Math.sqrt(indexInCity)
-        finalLat += distance * Math.cos(angle)
-        finalLng += distance * Math.sin(angle)
-      }
+      const baseCoords: [number, number] = [-29.6842, -51.1303]
+      const key = contact.id || contact.cnpj || contact.company || contact.name || 'c'
+      const h1 = Math.sin(hashStr(key) * 888.8)
+      const h2 = Math.cos(hashStr(key + '_lng') * 777.7)
+
+      const finalLat = baseCoords[0] + (h1 * 0.01)
+      const finalLng = baseCoords[1] + (h2 * 0.01)
 
       const finalLatLng: [number, number] = [finalLat, finalLng]
       bounds.push(finalLatLng)
-      const stageColor = getStageColor(deal.stage)
 
       const customIcon = L_Global.divIcon({
         className: 'clear-custom-pin',
         html: `
           <div style="display: flex; align-items: center; justify-content: center; width: 22px; height: 26px; background: transparent !important; border: none !important;">
             <svg viewBox="0 0 20 24" width="22" height="26" style="filter: drop-shadow(0 3px 5px rgba(0,0,0,0.4)); pointer-events: none;">
-              <path d="M10 0C4.477 0 0 4.477 0 10c0 7.5 10 14 10 14s10-6.5 10-14c0-5.523-4.477-10-10-10z" fill="${stageColor}" stroke="#ffffff" stroke-width="1.5" />
+              <path d="M10 0C4.477 0 0 4.477 0 10c0 7.5 10 14 10 14s10-6.5 10-14c0-5.523-4.477-10-10-10z" fill="${pinColor}" stroke="#ffffff" stroke-width="1.5" />
               <circle cx="10" cy="10" r="3.5" fill="#ffffff" />
             </svg>
           </div>
@@ -581,2218 +645,1253 @@ export default function DashboardPage() {
         iconAnchor: [11, 26]
       })
 
-      const marker = L_Global.marker(finalLatLng, { icon: customIcon }).addTo(map)
-
-      const dealCnpj = ((deal as any).cnpj || (deal as any).contact?.cnpj || '').replace(/\D/g, '')
-      const contactObj = (deal as any).contact_id
-        ? contacts.find(c => c.id === (deal as any).contact_id)
-        : (dealCnpj
-          ? contacts.find(c => (c.cnpj || '').replace(/\D/g, '') === dealCnpj)
-          : contacts.find(c => (c.company || c.name || '').trim().toLowerCase() === (deal.title || '').trim().toLowerCase())
-        )
-
-      const compName = deal.title || contactObj?.company || contactObj?.name || 'Cliente'
-      const cnpjStr = (deal as any).cnpj || contactObj?.cnpj || (deal as any).contact?.cnpj || ''
-      const phoneStr = contactObj?.phone || (deal as any).contact?.phone || ''
-      const cityStr = deal.city || contactObj?.city || 'Novo Hamburgo'
-      const stateStr = deal.uf || (deal as any).state || contactObj?.state || 'RS'
-      const addressStr = (deal as any).address || contactObj?.address || ''
-      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([compName, addressStr, cityStr, stateStr, cnpjStr].filter(Boolean).join(', '))}`
-      const waUrl = phoneStr ? whatsappLink(phoneStr, `Olá ${deal.contactName || compName}, tudo bem?`) : 'https://wa.me/5551999999999'
-
-      // Tooltip on Hover (Exibe ao passar o mouse)
+      const marker = L_Global.marker(finalLatLng, { icon: customIcon })
       marker.bindTooltip(`
-        <div style="font-family: sans-serif; padding: 6px 10px; background: #0f172a; color: #ffffff; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.5); min-width: 150px;">
-          <strong style="font-size: 12px; display: block; color: #ffffff;">${compName}</strong>
-          <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">${cityStr} ${stateStr ? `· ${stateStr}` : ''}</div>
-          <div style="font-size: 11px; font-family: monospace; font-weight: bold; color: ${stageColor}; margin-top: 3px;">${formatCurrency(deal.value)}</div>
-          <div style="font-size: 9px; text-transform: uppercase; font-weight: bold; color: ${stageColor}; margin-top: 2px;">Etapa: ${deal.stage}</div>
+        <div style="font-family: monospace; font-size: 11px; padding: 4px; background: #0f172a; color: #fff; border-radius: 6px;">
+          <strong>${contact.company || contact.name}</strong>
+          <div style="color: ${pinColor}; font-size: 10px; font-weight: bold; margin-top: 2px;">STATUS: ${computedStatus.toUpperCase()}</div>
         </div>
-      `, {
-        direction: 'top',
-        className: 'custom-leaflet-tooltip'
-      })
+      `, { direction: 'top' })
 
-      // Popup on Click (Botões: Ver Rota, Registrar Atividade, WhatsApp, Ver Ficha)
-      marker.bindPopup(`
-        <div style="font-family: sans-serif; padding: 8px; color: #ffffff; background: #14161E; border-radius: 12px; min-width: 220px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; border-bottom: 1px solid #262938; padding-bottom: 6px; margin-bottom: 8px;">
-            <div>
-              <strong style="font-size: 13px; color: #ffffff; display: block; line-height: 1.2;">${compName}</strong>
-              <span style="font-size: 10px; color: #94a3b8;">${cityStr} ${stateStr ? `· ${stateStr}` : ''}</span>
-            </div>
-            <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(180,217,50,0.15); color: #B4D932; border: 1px solid rgba(180,217,50,0.3); whitespace: nowrap;">${deal.stage}</span>
-          </div>
-
-          <div style="font-size: 10px; color: #cbd5e1; margin-bottom: 10px; line-height: 1.5;">
-            <div><strong>Valor:</strong> <span style="color: #B4D932; font-family: monospace; font-weight: bold;">${formatCurrency(deal.value)}</span></div>
-            <div><strong>CNPJ:</strong> ${cnpjStr || 'Não informado'}</div>
-            <div><strong>Representante:</strong> ${deal.representative || 'Sem representante'}</div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-            <a href="${mapsUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #0284c7; color: #ffffff; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; text-decoration: none; text-transform: uppercase;">
-              📍 Ver Rota
-            </a>
-            <button onclick="window.handleMapRegistrarAtividade('${(deal as any).contact_id || contactObj?.id || ''}', '${compName}')" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #B4D932; color: #060606; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase;">
-              📝 Atividade
-            </button>
-            <a href="${waUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #25D366; color: #ffffff; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; text-decoration: none; text-transform: uppercase;">
-              💬 WhatsApp
-            </a>
-            <button onclick="window.handleMapVerFicha('${(deal as any).contact_id || contactObj?.id || ''}', '${compName}')" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #334155; color: #ffffff; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase;">
-              📄 Ver Ficha
-            </button>
-          </div>
-        </div>
-      `)
+      markersGroup.addLayer(marker)
     })
 
+    map.addLayer(markersGroup)
+
     if (bounds.length > 0) {
-      map.fitBounds(bounds, {
-        padding: [60, 60],
-        maxZoom: 12
-      })
+      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 })
     } else {
       map.setView([-29.7, -51.15], 9)
     }
+  }, [leafletReady, filteredData.contacts])
 
-    const t1 = setTimeout(() => fullscreenMapInstanceRef.current?.invalidateSize(), 100)
-    const t2 = setTimeout(() => fullscreenMapInstanceRef.current?.invalidateSize(), 350)
-
-    return () => {
-      clearTimeout(t1)
-      clearTimeout(t2)
-      if (fullscreenMapInstanceRef.current) {
-        fullscreenMapInstanceRef.current.remove()
-        fullscreenMapInstanceRef.current = null
-      }
-    }
-  }, [isMapFullscreen, leafletReady, pipelineDeals])
-
-  // Initialize Leaflet Map for Mobile Representative / Vendedor View (activeTab === 'mapa')
-  useEffect(() => {
-    const isRepOrVend = currentUser?.role === 'representante' || currentUser?.role === 'vendedor'
-    if (!leafletReady || !isRepOrVend || activeTab !== 'mapa') return
-    if (!mobileMapContainerRef.current) return
-
-    const L_Global = (window as any).L
-    if (!L_Global) return
-
-    if (mobileMapInstanceRef.current) {
-      mobileMapInstanceRef.current.remove()
-      mobileMapInstanceRef.current = null
-    }
-
-    const map = L_Global.map(mobileMapContainerRef.current, {
-      zoomControl: false,
-      attributionControl: false
+  // Drill Down Helper Openers
+  const openDrillDown = (title: string, subtitle: string, items: DrillDownItem[], color = '#10b981') => {
+    setDrillDownModal({
+      isOpen: true,
+      title,
+      subtitle,
+      items,
+      badgeColor: color
     })
-
-    mobileMapInstanceRef.current = map
-
-    L_Global.control.zoom({ position: 'bottomright' }).addTo(map)
-
-    // OpenStreetMap Standard Basemap
-    const basemapUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-    L_Global.tileLayer(basemapUrl, {
-      subdomains: 'abc',
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map)
-
-    // Overlay layer: IBGE official municipal borders (visible at zoom >= 7)
-    L_Global.tileLayer.wms('https://geoservicos.ibge.gov.br/geoserver/wms', {
-      layers: 'CGEO:municipio',
-      format: 'image/png',
-      transparent: true,
-      minZoom: 7,
-      version: '1.1.1',
-      attribution: '&copy; IBGE'
-    }).addTo(map)
-
-    // Add Markers for all deals assigned to this representative
-    const userNorm = currentUser?.name ? currentUser.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ''
-    const repDeals = mappedDeals.filter(d => {
-      if (d.stage === 'perdido') return false
-      if (!userNorm) return true
-      const dNorm = (d.representative || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
-      return dNorm === userNorm || dNorm.includes(userNorm) || userNorm.includes(dNorm)
-    })
-    const coordsCount: Record<string, number> = {}
-    const bounds: [number, number][] = []
-
-    repDeals.forEach((deal) => {
-      let baseCoords: [number, number] = deal.latLng || getCityCoords(deal.city) || [-29.6842, -51.1303]
-      const key = `${baseCoords[0].toFixed(3)}_${baseCoords[1].toFixed(3)}`
-      const indexInCity = coordsCount[key] || 0
-      coordsCount[key] = indexInCity + 1
-
-      let finalLat = baseCoords[0]
-      let finalLng = baseCoords[1]
-
-      if (indexInCity > 0) {
-        const angle = indexInCity * 1.8
-        const distance = 0.003 * Math.sqrt(indexInCity)
-        finalLat += distance * Math.cos(angle)
-        finalLng += distance * Math.sin(angle)
-      }
-
-      const finalLatLng: [number, number] = [finalLat, finalLng]
-      bounds.push(finalLatLng)
-      const stageColor = getStageColor(deal.stage)
-
-      // Custom DivIcon for mobile map pins (clean & high contrast)
-      const customIcon = L_Global.divIcon({
-        className: 'clear-custom-pin',
-        html: `
-          <div style="display: flex; align-items: center; justify-content: center; width: 18px; height: 22px; background: transparent !important; border: none !important;">
-            <svg viewBox="0 0 20 24" width="18" height="22" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); pointer-events: none;">
-              <path d="M10 0C4.477 0 0 4.477 0 10c0 7.5 10 14 10 14s10-6.5 10-14c0-5.523-4.477-10-10-10z" fill="${stageColor}" stroke="#ffffff" stroke-width="1.3" />
-              <circle cx="10" cy="10" r="3" fill="#ffffff" />
-            </svg>
-          </div>
-        `,
-        iconSize: [18, 22],
-        iconAnchor: [9, 22]
-      })
-
-      const marker = L_Global.marker(finalLatLng, { icon: customIcon }).addTo(map)
-
-      const contactObj = contacts.find(c => c.id === (deal as any).contact_id || c.company === (deal as any).contact?.company || c.name === deal.title)
-      const cnpjStr = contactObj?.cnpj || (deal as any).contact?.cnpj || ''
-      const phoneStr = contactObj?.phone || (deal as any).contact?.phone || ''
-      const cityStr = deal.city || contactObj?.city || 'Novo Hamburgo'
-      const stateStr = (deal as any).state || contactObj?.state || 'RS'
-      const compName = deal.title || contactObj?.company || contactObj?.name || 'Cliente'
-      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${compName} ${cityStr}`)}`
-      const waUrl = phoneStr ? whatsappLink(phoneStr, `Olá ${deal.contactName || compName}, tudo bem?`) : 'https://wa.me/5551999999999'
-
-      // Tooltip on Mouse Hover (Exibe informações ao passar o mouse por cima)
-      marker.bindTooltip(`
-        <div style="font-family: sans-serif; padding: 6px 10px; background: #0f172a; color: #ffffff; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.5); min-width: 150px;">
-          <strong style="font-size: 12px; display: block; color: #ffffff;">${compName}</strong>
-          <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">${cityStr} ${stateStr ? `· ${stateStr}` : ''}</div>
-          <div style="font-size: 11px; font-family: monospace; font-weight: bold; color: ${stageColor}; margin-top: 3px;">${formatCurrency(deal.value)}</div>
-          <div style="font-size: 9px; text-transform: uppercase; font-weight: bold; color: ${stageColor}; margin-top: 2px;">Etapa: ${deal.stage}</div>
-        </div>
-      `, {
-        direction: 'top',
-        className: 'custom-leaflet-tooltip'
-      })
-
-      // Popup on Click (Botões: Ver Rota, Registrar Atividade, WhatsApp, Ver Ficha)
-      marker.bindPopup(`
-        <div style="font-family: sans-serif; padding: 8px; color: #ffffff; background: #14161E; border-radius: 12px; min-width: 220px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; border-bottom: 1px solid #262938; padding-bottom: 6px; margin-bottom: 8px;">
-            <div>
-              <strong style="font-size: 13px; color: #ffffff; display: block; line-height: 1.2;">${compName}</strong>
-              <span style="font-size: 10px; color: #94a3b8;">${cityStr} ${stateStr ? `· ${stateStr}` : ''}</span>
-            </div>
-            <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(180,217,50,0.15); color: #B4D932; border: 1px solid rgba(180,217,50,0.3); whitespace: nowrap;">${deal.stage}</span>
-          </div>
-
-          <div style="font-size: 10px; color: #cbd5e1; margin-bottom: 10px; line-height: 1.5;">
-            <div><strong>Valor:</strong> <span style="color: #B4D932; font-family: monospace; font-weight: bold;">${formatCurrency(deal.value)}</span></div>
-            <div><strong>CNPJ:</strong> ${cnpjStr || 'Não informado'}</div>
-            <div><strong>Representante:</strong> ${deal.representative || 'Sem representante'}</div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-            <a href="${mapsUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #0284c7; color: #ffffff; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; text-decoration: none; text-transform: uppercase;">
-              📍 Ver Rota
-            </a>
-            <button onclick="window.handleMapRegistrarAtividade('${(deal as any).contact_id || contactObj?.id || ''}', '${compName}')" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #B4D932; color: #060606; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase;">
-              📝 Atividade
-            </button>
-            <a href="${waUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #25D366; color: #ffffff; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; text-decoration: none; text-transform: uppercase;">
-              💬 WhatsApp
-            </a>
-            <button onclick="window.handleMapVerFicha('${(deal as any).contact_id || contactObj?.id || ''}', '${compName}')" style="display: flex; align-items: center; justify-content: center; gap: 4px; background: #334155; color: #ffffff; padding: 6px 4px; border-radius: 6px; font-size: 9px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase;">
-              📄 Ver Ficha
-            </button>
-          </div>
-        </div>
-      `)
-    })
-
-    // Calculate bounds containing all representative's markers
-    if (bounds.length > 0) {
-      map.fitBounds(bounds, {
-        padding: [30, 30],
-        maxZoom: 12
-      })
-    } else {
-      map.setView([-29.7, -51.15], 9)
-    }
-
-    const resizeObserver = new ResizeObserver(() => {
-      if (mobileMapInstanceRef.current) {
-        mobileMapInstanceRef.current.invalidateSize()
-      }
-    })
-
-    if (mobileMapContainerRef.current) {
-      resizeObserver.observe(mobileMapContainerRef.current)
-    }
-
-    const t1 = setTimeout(() => mobileMapInstanceRef.current?.invalidateSize(), 50)
-    const t2 = setTimeout(() => mobileMapInstanceRef.current?.invalidateSize(), 250)
-    const t3 = setTimeout(() => mobileMapInstanceRef.current?.invalidateSize(), 600)
-
-    return () => {
-      clearTimeout(t1)
-      clearTimeout(t2)
-      clearTimeout(t3)
-      resizeObserver.disconnect()
-      if (mobileMapInstanceRef.current) {
-        mobileMapInstanceRef.current.remove()
-        mobileMapInstanceRef.current = null
-      }
-    }
-  }, [leafletReady, currentUser, activeTab])
-
-  // Timer for Audio Record simulation
-  useEffect(() => {
-    let interval: any
-    if (isRecording) {
-      interval = setInterval(() => {
-        setRecordingTime(t => t + 1)
-      }, 1000)
-    } else {
-      setRecordingTime(0)
-    }
-    return () => clearInterval(interval)
-  }, [isRecording])
-
-  const saveContacts = (updated: any[]) => {
-    setContacts(updated)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('crm_contacts', JSON.stringify(updated))
-    }
+    setDrillSearchTerm('')
   }
 
-  const handleLogout = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('crm_current_user')
-      document.cookie = 'cp_crm_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
-      window.location.replace('/login')
-    }
-  }
+  // Filtered Drill Down Items
+  const filteredDrillItems = useMemo(() => {
+    if (!drillSearchTerm) return drillDownModal.items
+    const term = drillSearchTerm.toLowerCase()
+    return drillDownModal.items.filter(item => 
+      item.company.toLowerCase().includes(term) ||
+      (item.cnpj && item.cnpj.includes(term)) ||
+      item.representative.toLowerCase().includes(term) ||
+      (item.title && item.title.toLowerCase().includes(term))
+    )
+  }, [drillDownModal.items, drillSearchTerm])
 
-  const toggleTheme = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark'
-    setTheme(newTheme)
-    document.documentElement.setAttribute('data-theme', newTheme)
-    localStorage.setItem('cp_crm_theme', newTheme)
-    localStorage.setItem('theme', newTheme)
-    document.cookie = `cp_crm_theme=${newTheme}; path=/; max-age=31536000; SameSite=Lax`
-  }
-
-  // Helper to resolve city coordinates for Leaflet map pins
-  const getCityCoords = (cityStr?: string): [number, number] | undefined => {
-    if (!cityStr) return undefined
-    const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
-    const clean = norm(cityStr)
-    const coordsMap: Record<string, [number, number]> = {
-      'novo hamburgo': [-29.6842, -51.1303],
-      'dois irmaos': [-29.5800, -51.0833],
-      'porto alegre': [-30.0346, -51.2177],
-      'gravatai': [-29.9419, -50.9925],
-      'canoas': [-29.9189, -51.1781],
-      'sapucaia do sul': [-29.8272, -51.1444],
-      'sao leopoldo': [-29.7606, -51.1472],
-      'estancia velha': [-29.6508, -51.1783],
-      'campo bom': [-29.6781, -51.0558],
-      'ivoti': [-29.5939, -51.1606],
-      'canela': [-29.3658, -50.8092],
-      'gramado': [-29.3787, -50.8739],
-      'caxias do sul': [-29.1681, -51.1794],
-      'bento goncalves': [-29.1706, -51.5186],
-      'sapiranga': [-29.6381, -51.0069],
-      'nova hartz': [-29.5819, -50.9031],
-      'igrejinha': [-29.5742, -50.7936],
-      'tres coroas': [-29.5175, -50.7778],
-      'parobe': [-29.6289, -50.8344],
-      'taquara': [-29.6517, -50.7817],
-      'sao jose': [-27.6136, -48.6366],
-      'tubarao': [-28.4736, -49.0069],
-      'santa rita do sapucai': [-22.2519, -45.7042],
-      'balneario camboriu': [-26.9926, -48.6349],
-      'balneario gaivota': [-29.1561, -49.5786],
-      'blumenau': [-26.9194, -49.0661],
-      'florianopolis': [-27.5954, -48.5480],
-      'joinville': [-26.3044, -48.8464],
-      'chapeco': [-27.1004, -52.6152],
-      'criciuma': [-28.6775, -49.3703],
-      'itajai': [-26.9078, -48.6619],
-      'palhoca': [-27.6453, -48.6683],
-      'curitiba': [-25.4284, -49.2733],
-      'londrina': [-23.3045, -51.1696],
-      'maringa': [-23.4210, -51.9331],
-      'ponta grossa': [-25.0950, -50.1619],
-      'cascavel': [-24.9558, -53.4552],
-      'foz do iguacu': [-25.5163, -54.5854],
-      'toledo': [-24.7244, -53.7431],
-      'osasco': [-23.5329, -46.7920],
-      'sao paulo': [-23.5505, -46.6333],
-      'campinas': [-22.9099, -47.0626],
-      'guarulhos': [-23.4542, -46.5337],
-      'sao bernardo do campo': [-23.6944, -46.5654],
-      'santo andre': [-23.6639, -46.5383],
-      'sorocaba': [-23.5015, -47.4526],
-      'ribeirao preto': [-21.1704, -47.8103],
-      'sao jose dos campos': [-23.1896, -45.8841],
-      'rio de janeiro': [-22.9068, -43.1729],
-      'belo horizonte': [-19.9167, -43.9345],
-      'brasilia': [-15.7975, -47.8919],
-      'goiania': [-16.6869, -49.2648],
-      'salvador': [-12.9777, -38.5016],
-      'itabuna': [-14.7878, -39.2783],
-      'vitoria da conquista': [-14.8661, -40.8394],
-      'manaus': [-3.1190, -60.0217],
-      'rio branco': [-9.9749, -67.8100]
-    }
-    return coordsMap[clean]
-  }
-
-  // Convert pipeline deals to dashboard deal format, matching with real contacts to get city
-  const mappedDeals: DealMock[] = useMemo(() => {
-    const contactsMapById = new Map<string, any>()
-    const contactsMapByCnpj = new Map<string, any>()
-    const contactsMapByName = new Map<string, any>()
-
-    contacts.forEach(c => {
-      if (c.id) contactsMapById.set(c.id, c)
-      const cleanCnpj = (c.cnpj || '').replace(/\D/g, '')
-      if (cleanCnpj) contactsMapByCnpj.set(cleanCnpj, c)
-      if (c.company) contactsMapByName.set(c.company.toLowerCase().trim(), c)
-      if (c.name) contactsMapByName.set(c.name.toLowerCase().trim(), c)
-    })
-
-    return pipelineDeals.map(d => {
-      const val = (d.final_value && d.final_value > 0) ? d.final_value : (d.estimated_value || 0)
+  return (
+    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-5 max-w-[1400px] mx-auto px-4 sm:px-6 py-6 pb-24 select-none overflow-y-auto custom-scrollbar bg-[var(--black)] text-[var(--white)]">
       
-      const dealCnpj = (d.contact?.cnpj || (d as any).cnpj || (d as any).contact_cnpj || '').replace(/\D/g, '')
-
-      // PRIORIDADE MÁXIMA: Busca por ID de Contato e CNPJ exato para diferenciar filiais
-      const matchedContact = (d.contact_id && contactsMapById.get(d.contact_id)) ||
-                             (dealCnpj && contactsMapByCnpj.get(dealCnpj)) ||
-                             (d.contact?.company && contactsMapByName.get(d.contact.company.toLowerCase().trim())) ||
-                             (d.contact?.name && contactsMapByName.get(d.contact.name.toLowerCase().trim())) ||
-                             (d.title && contactsMapByName.get(d.title.toLowerCase().trim()))
-
-      const companyName = matchedContact?.company || d.contact?.company || d.title || 'Cliente'
-      const city = matchedContact?.city || d.contact?.city || d.city || 'Novo Hamburgo'
-      const uf = matchedContact?.state || d.contact?.state || d.uf || 'RS'
-      const rep = matchedContact?.representative || d.assigned_to || d.contact?.representative || 'Sem representante'
-      const curve = matchedContact?.curve || d.contact?.curve || 'C'
-
-      return {
-        id: d.id,
-        title: companyName,
-        representative: rep,
-        stage: d.stage as any,
-        value: val,
-        curve: curve as any,
-        daysInactive: 0,
-        contactName: matchedContact?.name || d.contact?.name || companyName,
-        phone: matchedContact?.phone || d.contact?.phone || '',
-        city: city,
-        uf: uf,
-        cnpj: matchedContact?.cnpj || d.contact?.cnpj || '',
-        address: matchedContact?.address || d.contact?.address || '',
-        bairro: matchedContact?.bairro || d.contact?.bairro || '',
-        contact_id: matchedContact?.id || d.contact_id,
-        latLng: getCityCoords(city)
-      }
-    })
-  }, [pipelineDeals, contacts])
-
-  // Deals estritamente filtrados pelo Representante / Vendedor selecionado no topo
-  const repFilteredDeals = useMemo(() => {
-    if (!selectedRep || selectedRep === 'all') return pipelineDeals
-    const repNorm = selectedRep.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
-    return pipelineDeals.filter(d => {
-      const assigned = d.assigned_to || d.contact?.representative || ''
-      const assignedNorm = assigned.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
-      return assignedNorm === repNorm || assignedNorm.includes(repNorm) || repNorm.includes(assignedNorm)
-    })
-  }, [pipelineDeals, selectedRep])
-
-  // 1. Dynamic Monthly Sales Data (Vendas do Ano — Somente Fechamentos Reais do Rep Selecionado)
-  const MONTHLY_SALES_DATA = useMemo(() => {
-    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-    return months.map((mName, mIdx) => {
-      const mStr = String(mIdx + 1).padStart(2, '0')
-      
-      const dealsInMonth = repFilteredDeals.filter(d => {
-        if (d.stage !== 'pedido' && d.stage !== 'pos_venda') return false
-        const dDate = new Date(d.created_at || d.stage_entered_at || Date.now())
-        const y = dDate.getFullYear().toString()
-        const m = String(dDate.getMonth() + 1).padStart(2, '0')
-        if (selectedYear !== 'all' && y !== selectedYear) return false
-        return m === mStr
-      })
-
-      const totalVal = dealsInMonth.reduce((sum, d) => sum + (d.final_value || d.estimated_value || 0), 0)
-      
-      const dailyMap: Record<number, number> = {}
-      for (let day = 1; day <= 31; day++) dailyMap[day] = 0
-
-      dealsInMonth.forEach(d => {
-        const dayNum = new Date(d.created_at || d.stage_entered_at || Date.now()).getDate()
-        if (dailyMap[dayNum] !== undefined) {
-          dailyMap[dayNum] += (d.final_value || d.estimated_value || 0)
-        }
-      })
-
-      const daily = Object.keys(dailyMap).map(day => ({
-        day: parseInt(day),
-        value: dailyMap[parseInt(day)]
-      }))
-
-      return {
-        month: mName,
-        monthIndex: mIdx + 1,
-        value: totalVal,
-        dealsCount: dealsInMonth.length,
-        daily
-      }
-    })
-  }, [repFilteredDeals, selectedYear])
-
-  // 2. Dynamic Team Performance (Performance APENAS dos Usuários Cadastrados na Tela de Usuários /users)
-  const TEAM_PERFORMANCE = useMemo(() => {
-    const normalize = (str: string) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ''
-
-    const repMap: Record<string, { name: string; role: string; closedCount: number; sales: number; avatarColor: string }> = {}
-    
-    // Popula repMap UNICAMENTE com os usuários reais cadastrados no sistema (/users)
-    const activeRegisteredUsers = systemUsers.filter(u => u.status !== 'inativo')
-
-    activeRegisteredUsers.forEach(u => {
-      if (!u.name) return
-      const cleanName = u.name.trim()
-      const key = normalize(cleanName)
-      const formattedRole = 
-        u.role === 'admin' || u.role === 'administrador' ? 'Administrador' :
-        u.role === 'gestor' || u.role === 'gestor comercial' ? 'Gestor Comercial' :
-        u.role === 'vendedor' ? 'Vendedor Comercial' :
-        u.role === 'representante' ? 'Representante Comercial' : 'Usuário Comercial'
-
-      repMap[key] = {
-        name: cleanName,
-        role: formattedRole,
-        closedCount: 0,
-        sales: 0,
-        avatarColor: u.role === 'representante' ? '#38bdf8' : u.role === 'vendedor' ? '#48c767' : '#B4D932'
-      }
-    })
-
-    // Carrega mapa de contatos para associar o cliente de fechamento ao seu representante correto da carteira
-    const contactsMap = new Map<string, string>()
-    if (typeof window !== 'undefined') {
-      try {
-        const rawC = localStorage.getItem('crm_contacts')
-        if (rawC) {
-          const cList = JSON.parse(rawC)
-          cList.forEach((c: any) => {
-            if (c.company && c.representative) {
-              contactsMap.set(normalize(c.company), c.representative)
-            }
-            if (c.name && c.representative) {
-              contactsMap.set(normalize(c.name), c.representative)
-            }
-            if (c.id && c.representative) {
-              contactsMap.set(c.id, c.representative)
-            }
-          })
-        }
-      } catch (e) {}
-    }
-
-    // Processa APENAS vendas fechadas e credita unicamente se o responsável for um USUÁRIO CADASTRADO válido
-    pipelineDeals.forEach(d => {
-      if (d.stage !== 'pedido' && d.stage !== 'pos_venda') return
-
-      const compName = normalize(d.contact?.company || d.title || '')
-      const contactId = d.contact_id || d.contact?.id || ''
-
-      const repFromCarteira = contactsMap.get(contactId) || contactsMap.get(compName)
-      const assignedRepRaw = repFromCarteira || d.assigned_to || d.contact?.representative || ''
-      const assignedRepNorm = normalize(assignedRepRaw)
-
-      if (!assignedRepNorm) return
-
-      const matchedUserKey = Object.keys(repMap).find(k => k === assignedRepNorm || assignedRepNorm.includes(k) || k.includes(assignedRepNorm))
-
-      if (matchedUserKey && repMap[matchedUserKey]) {
-        repMap[matchedUserKey].closedCount += 1
-        repMap[matchedUserKey].sales += (d.final_value || d.estimated_value || 0)
-      }
-    })
-
-    // Exibe no indicador da equipe apenas os representantes/vendedores comerciais ou gestores cadastrados (ordenados por maior faturamento)
-    const commercialTeam = Object.values(repMap)
-      .filter(r => {
-        const roleNorm = r.role.toLowerCase()
-        const isCommercial = roleNorm.includes('vendedor') || roleNorm.includes('representante') || roleNorm.includes('gestor')
-        const hasSales = r.closedCount > 0 || r.sales > 0
-        return isCommercial || hasSales
-      })
-      .sort((a, b) => b.sales - a.sales)
-
-    return commercialTeam.map((r, idx) => ({ id: `rep-${idx}`, ...r }))
-  }, [systemUsers, pipelineDeals])
-
-  // 3. Dynamic Top Clients (Principais Clientes do Rep Selecionado — Somente Fechamentos Reais)
-  const TOP_CLIENTS = useMemo(() => {
-    const clientMap: Record<string, { name: string; value: number; type: string }> = {}
-
-    repFilteredDeals.forEach(d => {
-      if (d.stage !== 'pedido' && d.stage !== 'pos_venda') return
-
-      const name = d.contact?.company || d.contact?.name || d.title || 'Cliente'
-      const val = d.final_value || d.estimated_value || 0
-      const curve = d.contact?.curve ? `Curva ${d.contact.curve}` : 'Ativo'
-      if (!clientMap[name]) {
-        clientMap[name] = { name, value: 0, type: curve }
-      }
-      clientMap[name].value += val
-    })
-
-    const sorted = Object.values(clientMap).sort((a, b) => b.value - a.value).slice(0, 5)
-    return sorted.map((cli, idx) => ({ rank: idx + 1, ...cli }))
-  }, [repFilteredDeals])
-
-  // Dynamic Top Products
-  const TOP_PRODUCTS = useMemo(() => {
-    const closedDeals = repFilteredDeals.filter(d => d.stage === 'pedido' || d.stage === 'pos_venda')
-    const productMap: Record<string, { name: string; quantityCount: number; value: number }> = {}
-
-    closedDeals.forEach(d => {
-      const val = d.final_value || d.estimated_value || 0
-      const rawType = (d as any).box_type || (d as any).product_name || ''
-
-      let prodName = 'Caixas Cartão Duplex'
-      if (rawType.includes('acoplada')) {
-        prodName = 'Caixas Acopladas Micro-ondulado'
-      } else if (rawType.includes('triplex')) {
-        prodName = 'Caixas Cartão Triplex'
-      } else if (rawType.includes('duplex')) {
-        prodName = 'Caixas Cartão Duplex'
-      } else if (d.title?.toLowerCase().includes('inpel') || d.contact?.company?.toLowerCase().includes('inpel')) {
-        prodName = 'Caixas Master Papelão K200'
-      } else if (d.title?.toLowerCase().includes('spezia') || d.contact?.company?.toLowerCase().includes('spezia')) {
-        prodName = 'Caixas Térmicas EPS (Hortifruti)'
-      }
-
-      const qty = (d as any).quantity || Math.round(val / 2.8) || 1000
-
-      if (!productMap[prodName]) {
-        productMap[prodName] = { name: prodName, quantityCount: 0, value: 0 }
-      }
-      productMap[prodName].quantityCount += qty
-      productMap[prodName].value += val
-    })
-
-    const sorted = Object.values(productMap).sort((a, b) => b.value - a.value)
-    return sorted.map((prod, idx) => ({
-      rank: idx + 1,
-      name: prod.name,
-      quantity: `${prod.quantityCount.toLocaleString('pt-BR')} un`,
-      value: prod.value
-    }))
-  }, [repFilteredDeals])
-
-  // Filter deals based on state
-  const filteredDeals = mappedDeals.filter(deal => {
-    const repNorm = (selectedRep || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
-    const dealRepNorm = (deal.representative || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
-    const matchesRep = selectedRep === 'all' || dealRepNorm === repNorm || dealRepNorm.includes(repNorm) || repNorm.includes(dealRepNorm)
-    const matchesCurve = selectedCurve === 'all' || deal.curve === selectedCurve
-    return matchesRep && matchesCurve
-  })
-
-  // Compute stats dynamically from real pipeline deals
-  const activeDealsCount = filteredDeals.filter(d => d.stage !== 'fechamento' && d.stage !== 'pos_venda' && d.stage !== 'perdido').length
-  const inNegotiationCount = filteredDeals.filter(d => ['dinamica', 'potencial', 'visita', 'briefing', 'aprovacao'].includes(d.stage)).length
-  
-  const fechamentoValue = filteredDeals
-    .filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda' || d.stage === 'pedido')
-    .reduce((acc, d) => acc + d.value, 0)
-    
-  const perdidoValue = filteredDeals
-    .filter(d => d.stage === 'perdido')
-    .reduce((acc, d) => acc + d.value, 0)
-
-  // Connected Horizontal Funnel Stages with distinct stage colors
-  const funnelSummary = [
-    { key: 'leads', stage: 'Leads', count: filteredDeals.filter(d => d.stage === 'leads').length, value: filteredDeals.filter(d => d.stage === 'leads').reduce((acc, d) => acc + d.value, 0) || null, color: '#f59e0b' },
-    { key: 'prospect', stage: 'Prospect', count: filteredDeals.filter(d => d.stage === 'prospect').length, value: filteredDeals.filter(d => d.stage === 'prospect').reduce((acc, d) => acc + d.value, 0) || null, color: '#3b82f6' },
-    { key: 'dinamica', stage: 'Dinâmica', count: filteredDeals.filter(d => d.stage === 'dinamica').length, value: filteredDeals.filter(d => d.stage === 'dinamica').reduce((acc, d) => acc + d.value, 0) || null, color: '#a855f7' },
-    { key: 'potencial', stage: 'Potencial', count: filteredDeals.filter(d => d.stage === 'potencial').length, value: filteredDeals.filter(d => d.stage === 'potencial').reduce((acc, d) => acc + d.value, 0) || null, color: '#eab308' },
-    { key: 'visita', stage: 'Visita', count: filteredDeals.filter(d => d.stage === 'visita').length, value: filteredDeals.filter(d => d.stage === 'visita').reduce((acc, d) => acc + d.value, 0) || null, color: '#06b6d4' },
-    { key: 'briefing', stage: 'Briefing', count: filteredDeals.filter(d => d.stage === 'briefing').length, value: filteredDeals.filter(d => d.stage === 'briefing').reduce((acc, d) => acc + d.value, 0) || null, color: '#f97316' },
-    { key: 'aprovacao', stage: 'Aprovação', count: filteredDeals.filter(d => d.stage === 'aprovacao').length, value: filteredDeals.filter(d => d.stage === 'aprovacao').reduce((acc, d) => acc + d.value, 0) || null, color: '#6366f1' },
-    { key: 'fechamento', stage: 'Fechamento', count: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda' || d.stage === 'pedido').length, value: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda' || d.stage === 'pedido').reduce((acc, d) => acc + d.value, 0) || null, color: '#22c55e' },
-  ]
-
-  // Lista dos Usuários Cadastrados no Sistema para o filtro do Dashboard (com formatação padronizada e sem Usuário Master)
-  const representatives = useMemo(() => {
-    if (systemUsers.length === 0) return []
-    const names = systemUsers.filter(u => u.status !== 'inativo').map(u => u.name)
-    return getUniqueCanonicalRepresentatives(names)
-  }, [systemUsers])
-
-  // Suíte Completa de Métricas Avançadas
-  const advancedMetrics = useMemo(() => {
-    const closedDeals = filteredDeals.filter(d => d.stage === 'pedido' || d.stage === 'pos_venda' || d.stage === 'fechamento')
-    const totalClosedVal = closedDeals.reduce((sum, d) => sum + (d.value || 0), 0)
-    const closedCount = closedDeals.length
-
-    // 1. Ticket Médio (R$)
-    const ticketMedio = closedCount > 0 ? totalClosedVal / closedCount : 0
-
-    // 2. Taxa de Conversão do Funil (%)
-    const totalPipelineDealsCount = filteredDeals.length
-    const conversionRate = totalPipelineDealsCount > 0 ? (closedCount / totalPipelineDealsCount) * 100 : 0
-
-    // 3. Ciclo Médio de Vendas (Dias)
-    let totalCycleDays = 0
-    let dealsWithCycle = 0
-    closedDeals.forEach(d => {
-      if ((d as any).created_at || (d as any).stage_entered_at) {
-        const start = new Date((d as any).created_at || (d as any).stage_entered_at).getTime()
-        const end = Date.now()
-        const days = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)))
-        totalCycleDays += days
-        dealsWithCycle++
-      }
-    })
-    const averageCycleDays = dealsWithCycle > 0 ? Math.round(totalCycleDays / dealsWithCycle) : 12
-
-    // 4. Motivos de Perda Breakdown
-    const lostDeals = filteredDeals.filter(d => d.stage === 'perdido')
-    const lossMap: Record<string, { label: string; count: number; value: number }> = {}
-    lostDeals.forEach(d => {
-      const reason = (d as any).lost_reason || (d as any).loss_reason || 'Não informado'
-      if (!lossMap[reason]) {
-        lossMap[reason] = { label: reason, count: 0, value: 0 }
-      }
-      lossMap[reason].count += 1
-      lossMap[reason].value += (d.value || 0)
-    })
-    const lossBreakdown = Object.values(lossMap).sort((a, b) => b.count - a.count)
-
-    return {
-      ticketMedio,
-      conversionRate,
-      averageCycleDays,
-      lossBreakdown,
-      lostDealsCount: lostDeals.length
-    }
-  }, [filteredDeals])
-
-  const handleStartRecording = () => {
-    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-      try {
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-        const recognition = new SpeechRecognition()
-        recognition.continuous = true
-        recognition.interimResults = true
-        recognition.lang = 'pt-BR'
-
-        recognition.onresult = (event: any) => {
-          let currentTranscript = ''
-          for (let i = 0; i < event.results.length; i++) {
-            currentTranscript += event.results[i][0].transcript
-          }
-          setAudioTranscription(currentTranscript)
-        }
-
-        recognition.onerror = (event: any) => {
-          console.error('Speech recognition error:', event.error)
-          setIsRecording(false)
-        }
-
-        recognition.onend = () => {
-          setIsRecording(false)
-        }
-
-        recognitionRef.current = recognition
-        recognition.start()
-        setIsRecording(true)
-      } catch (e) {
-        console.error('Speech recognition start failed:', e)
-        setIsRecording(true)
-      }
-    } else {
-      setIsRecording(true)
-    }
-  }
-
-  const handleStopRecording = () => {
-    setIsRecording(false)
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop()
-      } catch (e) {}
-    }
-  }
-
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      const url = URL.createObjectURL(file)
-      setPhotoUrl(url)
-    }
-  }
-
-  const handleCheckinSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedContactId) return
-
-    const selectedContact = contacts.find(c => c.id === selectedContactId)
-    if (!selectedContact) return
-
-    const checkinActivity = {
-      date: new Date().toLocaleDateString('pt-BR'),
-      title: 'Check-in de Visita Comercial (Voz & Foto)',
-      description: audioTranscription || 'Visita presencial efetuada pelo representante.',
-      type: 'visita',
-      stage: selectedPipelineStage,
-      hasAudio: !!audioTranscription,
-      photoUrl: photoUrl || null
-    }
-
-    const updatedContacts = contacts.map(c => {
-      if (c.id === selectedContactId) {
-        return {
-          ...c,
-          status: selectedPipelineStage === 'perdido' ? 'inativo' : 'ativo',
-          pipelineStage: selectedPipelineStage,
-          lastPurchaseDays: 1,
-          activities: [checkinActivity, ...(c.activities || [])]
-        }
-      }
-      return c
-    })
-
-    // Also update deal in pipeline if stored in cp_crm_pipeline_deals
-    try {
-      const rawDeals = localStorage.getItem('cp_crm_pipeline_deals')
-      if (rawDeals) {
-        const deals = JSON.parse(rawDeals)
-        let found = false
-        const updatedDeals = deals.map((d: any) => {
-          if (d.contact_id === selectedContactId || d.company?.toLowerCase() === selectedContact.company?.toLowerCase()) {
-            found = true
-            return { ...d, stage: selectedPipelineStage, updated_at: new Date().toISOString() }
-          }
-          return d
-        })
-        if (!found && selectedContact) {
-          updatedDeals.unshift({
-            id: 'deal_' + Date.now(),
-            title: selectedContact.company || selectedContact.name,
-            contact_id: selectedContact.id,
-            stage: selectedPipelineStage,
-            estimated_value: 0,
-            stage_entered_at: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            contact: {
-              id: selectedContact.id,
-              name: selectedContact.name,
-              company: selectedContact.company,
-              phone: selectedContact.phone,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }
-          })
-        }
-        localStorage.setItem('cp_crm_pipeline_deals', JSON.stringify(updatedDeals))
-        window.dispatchEvent(new Event('storage-deals-changed'))
-      }
-    } catch (e) {
-      console.error('Error updating pipeline deals on checkin:', e)
-    }
-
-    saveContacts(updatedContacts)
-    setCompletedVisits(v => v + 1)
-    setShowCheckinModal(false)
-    setSelectedContactId('')
-    setAudioTranscription('')
-    setPhotoUrl('')
-    setCheckinSuccessToast(true)
-    setTimeout(() => setCheckinSuccessToast(false), 4000)
-  }
-
-  const repContactsNeedingAttention = contacts.filter(c => {
-    const isOwner = !currentUser || c.representative === currentUser.name
-    const isInactive = c.status === 'inativo' || (c.lastPurchaseDays && c.lastPurchaseDays > 30)
-    return isOwner && isInactive
-  })
-
-  const formatTimer = (s: number) => {
-    const min = Math.floor(s / 60)
-    const sec = s % 60
-    return `${min}:${sec < 10 ? '0' : ''}${sec}`
-  }
-
-
-  const maxSalesValue = selectedDrilldownMonth 
-    ? Math.max(...selectedDrilldownMonth.daily.map((d: any) => d.value), 1)
-    : Math.max(...MONTHLY_SALES_DATA.map((m: any) => m.value), 1)
-
-  // ==================== ROLE: REPRESENTANTE / VENDEDOR (MOBILE PORTAL) ====================
-  if (currentUser?.role === 'representante' || currentUser?.role === 'vendedor') {
-    const userNameNorm = currentUser?.name ? currentUser.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ''
-    const userUsernameNorm = currentUser?.username ? currentUser.username.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ''
-    const userEmailNorm = currentUser?.email ? currentUser.email.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ''
-
-    const repAllContacts = contacts.filter(c => {
-      if (!c.representative) return false
-      const cRepNorm = c.representative.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
-      return (userNameNorm && cRepNorm === userNameNorm) ||
-             (userUsernameNorm && cRepNorm === userUsernameNorm) ||
-             (userEmailNorm && cRepNorm === userEmailNorm)
-    })
-
-    const repContactsNeedingAttention = repAllContacts.filter(c => {
-      return c.status === 'inativo' || (c.lastPurchaseDays && c.lastPurchaseDays > 30)
-    })
-
-    const filteredMobileContacts = repAllContacts.filter(c => {
-      const matchesSearch = c.name.toLowerCase().includes(mobileSearch.toLowerCase()) || 
-                            (c.company && c.company.toLowerCase().includes(mobileSearch.toLowerCase())) ||
-                            (c.city && c.city.toLowerCase().includes(mobileSearch.toLowerCase()))
-      
-      if (!matchesSearch) return false
-
-      const isInactive = c.status === 'inativo' || (c.lastPurchaseDays && c.lastPurchaseDays > 30)
-      if (mobileFilterStatus === 'pendentes') return isInactive
-      if (mobileFilterStatus === 'concluidos') return !isInactive
-      return true
-    })
-
-    return (
-      <div className="page-content animate-fade-in w-full h-full flex flex-col gap-4 max-w-[1400px] mx-auto px-3 sm:px-6 py-4 pb-28 md:pb-6 select-none">
-        {/* Clean Page Title Header */}
-        <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 shrink-0">
-          <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
-            {activeTab === 'dashboard' && 'Dashboard Comercial'}
-            {activeTab === 'painel' && 'Painel do Representante'}
-            {activeTab === 'mapa' && 'Mapa de Clientes'}
-            {activeTab === 'clientes' && 'Carteira de Clientes'}
+      {/* ========================================================
+          1. BARRA SUPERIOR DE CABEÇALHO & FILTROS (ESTILO CONTATOS)
+         ======================================================== */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden shrink-0">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[#10b981] text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <BarChart3 size={12} />
+              Dashboard Comercial
+            </span>
+            <span className="text-xs text-[var(--gray2)] font-mono">Visão Consolidada CRM</span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-display font-black text-[var(--white)] tracking-tight flex items-center gap-2 mt-1">
+            Performance Comercial & Inteligência de Vendas
           </h1>
-          {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="hidden lg:block">
-              <button
-                onClick={() => {
-                  setSelectedContactId('')
-                  setAudioTranscription('')
-                  setPhotoUrl('')
-                  setShowCheckinModal(true)
-                }}
-                className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-2 cursor-pointer text-white font-bold shadow-lg"
+        </div>
+
+        {/* Filters Controls Row */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 z-10">
+          
+          {/* Ano Filter */}
+          <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl text-xs font-mono">
+            <span className="text-[var(--gray2)] text-[10px] uppercase font-bold">Ano:</span>
+            <select
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+              className="bg-transparent text-[var(--white)] font-bold outline-none cursor-pointer"
+            >
+              <option value="2026" className="bg-[var(--card)]">2026</option>
+              <option value="2025" className="bg-[var(--card)]">2025</option>
+              <option value="2024" className="bg-[var(--card)]">2024</option>
+              <option value="all" className="bg-[var(--card)]">Todos</option>
+            </select>
+          </div>
+
+          {/* Mês Filter */}
+          <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl text-xs font-mono">
+            <span className="text-[var(--gray2)] text-[10px] uppercase font-bold">Mês:</span>
+            <select
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value)}
+              className="bg-transparent text-[var(--white)] font-bold outline-none cursor-pointer"
+            >
+              <option value="all" className="bg-[var(--card)]">Todos os Meses</option>
+              <option value="01" className="bg-[var(--card)]">Janeiro</option>
+              <option value="02" className="bg-[var(--card)]">Fevereiro</option>
+              <option value="03" className="bg-[var(--card)]">Março</option>
+              <option value="04" className="bg-[var(--card)]">Abril</option>
+              <option value="05" className="bg-[var(--card)]">Maio</option>
+              <option value="06" className="bg-[var(--card)]">Junho</option>
+              <option value="07" className="bg-[var(--card)]">Julho</option>
+              <option value="08" className="bg-[var(--card)]">Agosto</option>
+              <option value="09" className="bg-[var(--card)]">Setembro</option>
+              <option value="10" className="bg-[var(--card)]">Outubro</option>
+              <option value="11" className="bg-[var(--card)]">Novembro</option>
+              <option value="12" className="bg-[var(--card)]">Dezembro</option>
+            </select>
+          </div>
+
+          {/* Representante Filter (Apenas se Admin ou Gestor) */}
+          {isAdminOrManager && (
+            <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl text-xs font-mono max-w-[210px]">
+              <User size={13} className="text-[#10b981] shrink-0" />
+              <select
+                value={repFilter}
+                onChange={(e) => setRepFilter(e.target.value)}
+                className="bg-transparent text-[var(--white)] font-bold outline-none cursor-pointer truncate w-full"
               >
-                <CheckCircle size={14} />
-                <span>Registrar Atividade</span>
+                <option value="all" className="bg-[var(--card)]">Toda a Equipe</option>
+                {availableReps
+                  .filter(rep => {
+                    const normR = rep.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+                    return !normR.includes('mauricio') && !normR.includes('maciel')
+                  })
+                  .map(rep => (
+                    <option key={rep} value={rep} className="bg-[var(--card)]">{rep}</option>
+                  ))}
+              </select>
+            </div>
+          )}
+
+          {/* Curva ABC Filter */}
+          <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl text-xs font-mono">
+            <span className="text-[var(--gray2)] text-[10px] uppercase font-bold">Curva:</span>
+            <select
+              value={curveFilter}
+              onChange={(e) => setCurveFilter(e.target.value)}
+              className="bg-transparent text-[var(--white)] font-bold outline-none cursor-pointer"
+            >
+              <option value="all" className="bg-[var(--card)]">Todas as Curvas</option>
+              <option value="A" className="bg-[var(--card)]">Curva A</option>
+              <option value="B" className="bg-[var(--card)]">Curva B</option>
+              <option value="C" className="bg-[var(--card)]">Curva C</option>
+              <option value="D" className="bg-[var(--card)]">Curva D</option>
+            </select>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ========================================================
+          2. GRID DE CARDS KPI PRINCIPAIS (ESTILO FOTO 2)
+         ======================================================== */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        
+        {/* CARD 1: PEDIDOS EMITIDOS / FATURADO */}
+        <div 
+          onClick={() => {
+            const items: DrillDownItem[] = [
+              ...kpis.historicalOrders.map(o => ({
+                id: o.id,
+                title: `Pedido Fechado #${o.order_number}`,
+                company: o.company,
+                cnpj: o.cnpj,
+                representative: o.representative,
+                value: o.value,
+                stageOrStatus: 'FATURADO',
+                curve: o.curve,
+                date: o.date
+              })),
+              ...filteredData.deals.filter(d => d.stage === 'pedido' || d.stage === 'fechamento').map(d => ({
+                id: d.id,
+                title: d.title,
+                company: d.contact?.company || d.contact?.name || 'Cliente',
+                cnpj: d.contact?.cnpj,
+                representative: d.assigned_to || 'Representante',
+                value: d.final_value || d.estimated_value || 0,
+                stageOrStatus: 'PEDIDO FECHADO',
+                curve: d.contact?.curve || 'C',
+                date: d.closed_at || d.stage_entered_at
+              }))
+            ]
+            openDrillDown('PEDIDOS EMITIDOS / FATURADO', 'Lista de todas as vendas e pedidos faturados no período', items, '#10b981')
+          }}
+          className="card bg-[var(--card)] border border-[var(--line)] border-t-4 border-t-[#10b981] p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-emerald-500/40 transition-all duration-200 group select-none"
+        >
+          <div className="flex items-center justify-between z-10">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)]">
+              PEDIDO EMITIDO / FATURADO
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[#10b981] flex items-center justify-center shrink-0">
+              <Trophy size={14} />
+            </div>
+          </div>
+
+          <div className="my-2 z-10">
+            <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-[#10b981] transition-colors">
+              {formatCompactCurrency(kpis.totalFaturadoR$)}
+            </div>
+            <div className="text-[11px] font-mono text-[var(--gray2)] mt-0.5">
+              <strong className="text-[var(--white)] font-bold">{kpis.totalPedidosQtd}</strong> pedidos faturados
+            </div>
+          </div>
+
+          <div className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1 pt-2 border-t border-[var(--line)]/50 z-10">
+            <span>Ver detalhamento analítico</span>
+            <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+          </div>
+
+          {/* Watermark Icon */}
+          <CheckCircle2 size={70} className="absolute -right-3 -bottom-3 text-emerald-500/5 group-hover:text-emerald-500/10 transition-colors pointer-events-none" />
+        </div>
+
+        {/* CARD 2: EM NEGOCIAÇÃO (PIPELINE ABERTO) */}
+        <div 
+          onClick={() => {
+            const items: DrillDownItem[] = kpis.openDealsList.map(d => ({
+              id: d.id,
+              title: d.title,
+              company: d.contact?.company || d.contact?.name || 'Cliente',
+              cnpj: d.contact?.cnpj,
+              representative: d.assigned_to || 'Representante',
+              value: d.estimated_value || 0,
+              stageOrStatus: d.stage.toUpperCase(),
+              curve: d.contact?.curve || 'D',
+              date: d.created_at
+            }))
+            openDrillDown('EM NEGOCIAÇÃO / PIPELINE', 'Oportunidades ativas em andamento nas etapas do funil', items, '#f59e0b')
+          }}
+          className="card bg-[var(--card)] border border-[var(--line)] border-t-4 border-t-amber-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-amber-500/40 transition-all duration-200 group select-none"
+        >
+          <div className="flex items-center justify-between z-10">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)]">
+              EM NEGOCIAÇÃO
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+              <Briefcase size={14} />
+            </div>
+          </div>
+
+          <div className="my-2 z-10">
+            <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-amber-400 transition-colors">
+              {formatCompactCurrency(kpis.openR$)}
+            </div>
+            <div className="text-[11px] font-mono text-[var(--gray2)] mt-0.5">
+              <strong className="text-[var(--white)] font-bold">{kpis.openQtd}</strong> negócios no funil
+            </div>
+          </div>
+
+          <div className="text-[10px] font-mono text-amber-400 font-bold flex items-center gap-1 pt-2 border-t border-[var(--line)]/50 z-10">
+            <span>Ver oportunidades ativas</span>
+            <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+          </div>
+
+          {/* Watermark Icon */}
+          <Layers size={70} className="absolute -right-3 -bottom-3 text-amber-500/5 group-hover:text-amber-500/10 transition-colors pointer-events-none" />
+        </div>
+
+        {/* CARD 3: OPORTUNIDADES APROVADAS */}
+        <div 
+          onClick={() => {
+            const items: DrillDownItem[] = kpis.approvedDealsList.map(d => ({
+              id: d.id,
+              title: d.title,
+              company: d.contact?.company || d.contact?.name || 'Cliente',
+              cnpj: d.contact?.cnpj,
+              representative: d.assigned_to || 'Representante',
+              value: d.estimated_value || 0,
+              stageOrStatus: d.stage.toUpperCase(),
+              curve: d.contact?.curve || 'C',
+              date: d.created_at
+            }))
+            openDrillDown('OPORTUNIDADES APROVADAS', 'Negócios em fase de briefing, orçamento e aprovação final', items, '#06b6d4')
+          }}
+          className="card bg-[var(--card)] border border-[var(--line)] border-t-4 border-t-cyan-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-cyan-500/40 transition-all duration-200 group select-none"
+        >
+          <div className="flex items-center justify-between z-10">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)]">
+              APROVAÇÃO / BRIEFING
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+              <CheckCircle2 size={14} />
+            </div>
+          </div>
+
+          <div className="my-2 z-10">
+            <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-cyan-400 transition-colors">
+              {formatCompactCurrency(kpis.approvedR$)}
+            </div>
+            <div className="text-[11px] font-mono text-[var(--gray2)] mt-0.5">
+              <strong className="text-[var(--white)] font-bold">{kpis.approvedQtd}</strong> propostas aprovadas
+            </div>
+          </div>
+
+          <div className="text-[10px] font-mono text-cyan-400 font-bold flex items-center gap-1 pt-2 border-t border-[var(--line)]/50 z-10">
+            <span>Ver negócios em aprovação</span>
+            <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+          </div>
+
+          {/* Watermark Icon */}
+          <Sparkles size={70} className="absolute -right-3 -bottom-3 text-cyan-500/5 group-hover:text-cyan-500/10 transition-colors pointer-events-none" />
+        </div>
+
+        {/* CARD 4: NEGÓCIOS PERDIDOS & TAXA % */}
+        <div 
+          onClick={() => {
+            const items: DrillDownItem[] = kpis.lostDealsList.map(d => ({
+              id: d.id,
+              title: d.title,
+              company: d.contact?.company || d.contact?.name || 'Cliente',
+              cnpj: d.contact?.cnpj,
+              representative: d.assigned_to || 'Representante',
+              value: d.estimated_value || 0,
+              stageOrStatus: 'PERDIDO',
+              lostReason: d.lost_reason || 'Outro motivo',
+              curve: d.contact?.curve || 'D',
+              date: d.closed_at || d.created_at
+            }))
+            openDrillDown('NEGÓCIOS PERDIDOS', 'Histórico de negociações não concluídas no período', items, '#e2483d')
+          }}
+          className="card bg-[var(--card)] border border-[var(--line)] border-t-4 border-t-red-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-red-500/40 transition-all duration-200 group select-none"
+        >
+          <div className="flex items-center justify-between z-10">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)]">
+              NEGÓCIOS PERDIDOS
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+              <XCircle size={14} />
+            </div>
+          </div>
+
+          <div className="my-2 z-10">
+            <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-red-400 transition-colors">
+              {formatCompactCurrency(kpis.lostR$)}
+            </div>
+            <div className="text-[11px] font-mono text-[var(--gray2)] mt-0.5 flex items-center justify-between">
+              <span><strong className="text-[var(--white)] font-bold">{kpis.lostQtd}</strong> negócios</span>
+              <span className="text-red-400 font-bold bg-red-500/10 px-1.5 py-0.5 rounded text-[10px] border border-red-500/20">{kpis.lossRatePct}% Perda</span>
+            </div>
+          </div>
+
+          <div className="text-[10px] font-mono text-red-400 font-bold flex items-center gap-1 pt-2 border-t border-[var(--line)]/50 z-10">
+            <span>Ver motivos de perda</span>
+            <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+          </div>
+
+          {/* Watermark Icon */}
+          <XCircle size={70} className="absolute -right-3 -bottom-3 text-red-500/5 group-hover:text-red-500/10 transition-colors pointer-events-none" />
+        </div>
+
+        {/* CARD 5: TICKET MÉDIO ACUMULADO */}
+        <div 
+          onClick={() => {
+            const items: DrillDownItem[] = [
+              ...kpis.historicalOrders.map(o => ({
+                id: o.id,
+                title: `Pedido Fechado #${o.order_number}`,
+                company: o.company,
+                cnpj: o.cnpj,
+                representative: o.representative,
+                value: o.value,
+                stageOrStatus: 'PEDIDO FATURADO',
+                curve: o.curve,
+                date: o.date
+              }))
+            ]
+            openDrillDown('ANÁLISE DE TICKET MÉDIO', 'Distribuição dos valores por pedido fechado na carteira', items, '#8b5cf6')
+          }}
+          className="card bg-[var(--card)] border border-[var(--line)] border-t-4 border-t-purple-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-purple-500/40 transition-all duration-200 group select-none"
+        >
+          <div className="flex items-center justify-between z-10">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)]">
+              TICKET MÉDIO
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+              <DollarSign size={14} />
+            </div>
+          </div>
+
+          <div className="my-2 z-10">
+            <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-purple-400 transition-colors">
+              {formatCurrency(kpis.ticketMedio)}
+            </div>
+            <div className="text-[11px] font-mono text-[var(--gray2)] mt-0.5">
+              Valor médio por pedido fechado
+            </div>
+          </div>
+
+          <div className="text-[10px] font-mono text-purple-400 font-bold flex items-center gap-1 pt-2 border-t border-[var(--line)]/50 z-10">
+            <span>Ver composição por pedido</span>
+            <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+          </div>
+
+          {/* Watermark Icon */}
+          <DollarSign size={70} className="absolute -right-3 -bottom-3 text-purple-500/5 group-hover:text-purple-500/10 transition-colors pointer-events-none" />
+        </div>
+
+        {/* CARD 6: CICLO MÉDIO DE VENDAS */}
+        <div 
+          onClick={() => {
+            const items: DrillDownItem[] = filteredData.deals.map(d => ({
+              id: d.id,
+              title: d.title,
+              company: d.contact?.company || d.contact?.name || 'Cliente',
+              cnpj: d.contact?.cnpj,
+              representative: d.assigned_to || 'Representante',
+              value: d.estimated_value || 0,
+              stageOrStatus: d.stage.toUpperCase(),
+              curve: d.contact?.curve || 'C',
+              date: d.created_at
+            }))
+            openDrillDown('CICLO MÉDIO DE FECHAMENTO', 'Tempo médio em dias entre a criação da oportunidade e o aceite', items, '#f97316')
+          }}
+          className="card bg-[var(--card)] border border-[var(--line)] border-t-4 border-t-orange-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-orange-500/40 transition-all duration-200 group select-none"
+        >
+          <div className="flex items-center justify-between z-10">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)]">
+              CICLO MÉDIO
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center shrink-0">
+              <Clock size={14} />
+            </div>
+          </div>
+
+          <div className="my-2 z-10">
+            <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-orange-400 transition-colors">
+              {kpis.avgCycleDays} <span className="text-sm font-normal text-[var(--gray2)]">dias</span>
+            </div>
+            <div className="text-[11px] font-mono text-[var(--gray2)] mt-0.5">
+              Média de tempo até o aceite
+            </div>
+          </div>
+
+          <div className="text-[10px] font-mono text-orange-400 font-bold flex items-center gap-1 pt-2 border-t border-[var(--line)]/50 z-10">
+            <span>Ver tempo no pipeline</span>
+            <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+          </div>
+
+          {/* Watermark Icon */}
+          <Clock size={70} className="absolute -right-3 -bottom-3 text-orange-500/5 group-hover:text-orange-500/10 transition-colors pointer-events-none" />
+        </div>
+
+      </div>
+
+      {/* ========================================================
+          3. SEÇÃO DE CARTEIRA DE CLIENTES & CURVA ABC (ESTILO FOTO 2)
+         ======================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        
+        {/* CARD 7: STATUS DA CARTEIRA DE CLIENTES */}
+        <div className="card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between shadow-lg">
+          <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 mb-4">
+            <div className="flex items-center gap-2">
+              <Users size={16} className="text-[#10b981]" />
+              <h3 className="font-display text-xs font-bold text-[var(--white)] uppercase tracking-wider">
+                Status da Carteira de Clientes ({kpis.totalContactsCount})
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono text-[var(--gray2)]">Visão Ativos vs Inativos</span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            
+            {/* ATIVOS */}
+            <div 
+              onClick={() => {
+                const items: DrillDownItem[] = filteredData.contacts.filter(c => (c.status || 'ativo') === 'ativo').map(c => ({
+                  id: c.id,
+                  title: c.company || c.name,
+                  company: c.company || c.name,
+                  cnpj: c.cnpj,
+                  representative: c.representative || 'Sem rep',
+                  value: (c.orders && c.orders[0]) ? Number(c.orders[0].value) : 0,
+                  stageOrStatus: 'ATIVO',
+                  curve: c.curve || 'C',
+                  city: c.city,
+                  state: c.state
+                }))
+                openDrillDown('CLIENTES ATIVOS', 'Clientes com compras regulares dentro do prazo de ciclo', items, '#10b981')
+              }}
+              className="bg-[var(--charcoal)] border border-[var(--line)] p-3 rounded-xl hover:border-emerald-500/40 transition-colors cursor-pointer group"
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-2 h-2 rounded-full bg-[#10b981] inline-block animate-pulse" />
+                <span className="text-[10px] font-mono font-bold uppercase text-[var(--gray2)]">Ativos</span>
+              </div>
+              <div className="text-lg font-mono font-black text-[var(--white)] group-hover:text-[#10b981] transition-colors">
+                {kpis.countAtivos}
+              </div>
+              <div className="text-[10px] font-mono text-[#10b981] font-bold mt-0.5">
+                {kpis.pctAtivos}% da carteira
+              </div>
+            </div>
+
+            {/* REATIVAÇÃO */}
+            <div 
+              onClick={() => {
+                const items: DrillDownItem[] = filteredData.contacts.filter(c => c.status === 'reativacao').map(c => ({
+                  id: c.id,
+                  title: c.company || c.name,
+                  company: c.company || c.name,
+                  cnpj: c.cnpj,
+                  representative: c.representative || 'Sem rep',
+                  value: (c.orders && c.orders[0]) ? Number(c.orders[0].value) : 0,
+                  stageOrStatus: 'REATIVAÇÃO',
+                  curve: c.curve || 'C',
+                  city: c.city,
+                  state: c.state
+                }))
+                openDrillDown('CLIENTES EM REATIVAÇÃO', 'Clientes sem compras há mais de 180 dias', items, '#f97316')
+              }}
+              className="bg-[var(--charcoal)] border border-[var(--line)] p-3 rounded-xl hover:border-orange-500/40 transition-colors cursor-pointer group"
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" />
+                <span className="text-[10px] font-mono font-bold uppercase text-[var(--gray2)]">Reativação</span>
+              </div>
+              <div className="text-lg font-mono font-black text-[var(--white)] group-hover:text-orange-400 transition-colors">
+                {kpis.countReativacao}
+              </div>
+              <div className="text-[10px] font-mono text-orange-400 font-bold mt-0.5">
+                {kpis.pctReativacao}% da carteira
+              </div>
+            </div>
+
+            {/* PROSPECÇÃO */}
+            <div 
+              onClick={() => {
+                const items: DrillDownItem[] = filteredData.contacts.filter(c => c.status === 'prospeccao').map(c => ({
+                  id: c.id,
+                  title: c.company || c.name,
+                  company: c.company || c.name,
+                  cnpj: c.cnpj,
+                  representative: c.representative || 'Sem rep',
+                  value: 0,
+                  stageOrStatus: 'PROSPECÇÃO',
+                  curve: c.curve || 'D',
+                  city: c.city,
+                  state: c.state
+                }))
+                openDrillDown('CLIENTES EM PROSPECÇÃO', 'Leads em prospeccao sem historico de compras faturadas', items, '#f59e0b')
+              }}
+              className="bg-[var(--charcoal)] border border-[var(--line)] p-3 rounded-xl hover:border-amber-500/40 transition-colors cursor-pointer group"
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                <span className="text-[10px] font-mono font-bold uppercase text-[var(--gray2)]">Prospecção</span>
+              </div>
+              <div className="text-lg font-mono font-black text-[var(--white)] group-hover:text-amber-400 transition-colors">
+                {kpis.countProspeccao}
+              </div>
+              <div className="text-[10px] font-mono text-amber-400 font-bold mt-0.5">
+                {kpis.pctProspeccao}% da carteira
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* CARD 8: PAINEL CURVA ABC DE FATURAMENTO */}
+        <div className="card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between shadow-lg">
+          <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 mb-4">
+            <div className="flex items-center gap-2">
+              <Target size={16} className="text-[#10b981]" />
+              <h3 className="font-display text-xs font-bold text-[var(--white)] uppercase tracking-wider">
+                Distribuição por Curva ABC
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono text-[var(--gray2)]">Pareto Faturamento 80/15/5</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            
+            {/* CURVA A */}
+            <div 
+              onClick={() => {
+                const items: DrillDownItem[] = filteredData.contacts.filter(c => c.curve === 'A').map(c => ({
+                  id: c.id,
+                  title: c.company || c.name,
+                  company: c.company || c.name,
+                  cnpj: c.cnpj,
+                  representative: c.representative || 'Sem rep',
+                  value: c.orders ? c.orders.reduce((s, o) => s + (Number(o.value) || 0), 0) : 0,
+                  stageOrStatus: 'CURVA A',
+                  curve: 'A',
+                  city: c.city,
+                  state: c.state
+                }))
+                openDrillDown('CLIENTES CURVA A (VIP)', 'Principais clientes responsaveis pelos primeiros 80% do faturamento', items, '#10b981')
+              }}
+              className="bg-[var(--charcoal)] border border-emerald-500/30 p-2.5 rounded-xl hover:border-emerald-400 transition-colors cursor-pointer group"
+            >
+              <span className="text-[10px] font-mono font-bold text-[#10b981] bg-[#10b981]/10 px-1.5 py-0.5 rounded uppercase">Curva A</span>
+              <div className="text-base font-mono font-black text-[var(--white)] mt-1 group-hover:text-[#10b981] transition-colors">
+                {formatCompactCurrency(kpis.curveA_R$)}
+              </div>
+              <div className="text-[10px] font-mono text-[var(--gray2)]">
+                <strong className="text-white">{kpis.curveA_Count}</strong> clientes
+              </div>
+            </div>
+
+            {/* CURVA B */}
+            <div 
+              onClick={() => {
+                const items: DrillDownItem[] = filteredData.contacts.filter(c => c.curve === 'B').map(c => ({
+                  id: c.id,
+                  title: c.company || c.name,
+                  company: c.company || c.name,
+                  cnpj: c.cnpj,
+                  representative: c.representative || 'Sem rep',
+                  value: c.orders ? c.orders.reduce((s, o) => s + (Number(o.value) || 0), 0) : 0,
+                  stageOrStatus: 'CURVA B',
+                  curve: 'B',
+                  city: c.city,
+                  state: c.state
+                }))
+                openDrillDown('CLIENTES CURVA B (ESTRATÉGICOS)', 'Clientes intermediarios (faixa 80% a 95% do faturamento)', items, '#f0c419')
+              }}
+              className="bg-[var(--charcoal)] border border-amber-500/30 p-2.5 rounded-xl hover:border-amber-400 transition-colors cursor-pointer group"
+            >
+              <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded uppercase">Curva B</span>
+              <div className="text-base font-mono font-black text-[var(--white)] mt-1 group-hover:text-amber-400 transition-colors">
+                {formatCompactCurrency(kpis.curveB_R$)}
+              </div>
+              <div className="text-[10px] font-mono text-[var(--gray2)]">
+                <strong className="text-white">{kpis.curveB_Count}</strong> clientes
+              </div>
+            </div>
+
+            {/* CURVA C */}
+            <div 
+              onClick={() => {
+                const items: DrillDownItem[] = filteredData.contacts.filter(c => c.curve === 'C').map(c => ({
+                  id: c.id,
+                  title: c.company || c.name,
+                  company: c.company || c.name,
+                  cnpj: c.cnpj,
+                  representative: c.representative || 'Sem rep',
+                  value: c.orders ? c.orders.reduce((s, o) => s + (Number(o.value) || 0), 0) : 0,
+                  stageOrStatus: 'CURVA C',
+                  curve: 'C',
+                  city: c.city,
+                  state: c.state
+                }))
+                openDrillDown('CLIENTES CURVA C', 'Clientes com menor faturamento acumulado (ultimos 5% da receita)', items, '#94a3b8')
+              }}
+              className="bg-[var(--charcoal)] border border-[var(--line)] p-2.5 rounded-xl hover:border-slate-400 transition-colors cursor-pointer group"
+            >
+              <span className="text-[10px] font-mono font-bold text-zinc-400 bg-zinc-700/30 px-1.5 py-0.5 rounded uppercase">Curva C</span>
+              <div className="text-base font-mono font-black text-[var(--white)] mt-1 group-hover:text-zinc-300 transition-colors">
+                {formatCompactCurrency(kpis.curveC_R$)}
+              </div>
+              <div className="text-[10px] font-mono text-[var(--gray2)]">
+                <strong className="text-white">{kpis.curveC_Count}</strong> clientes
+              </div>
+            </div>
+
+            {/* CURVA D */}
+            <div 
+              onClick={() => {
+                const items: DrillDownItem[] = filteredData.contacts.filter(c => (c.curve || 'D') === 'D').map(c => ({
+                  id: c.id,
+                  title: c.company || c.name,
+                  company: c.company || c.name,
+                  cnpj: c.cnpj,
+                  representative: c.representative || 'Sem rep',
+                  value: 0,
+                  stageOrStatus: 'CURVA D (LEAD)',
+                  curve: 'D',
+                  city: c.city,
+                  state: c.state
+                }))
+                openDrillDown('CLIENTES CURVA D (PROSPECÇÃO)', 'Clientes sem historico de faturamento cadastrado', items, '#64748b')
+              }}
+              className="bg-[var(--charcoal)] border border-[var(--line)] p-2.5 rounded-xl hover:border-slate-500 transition-colors cursor-pointer group"
+            >
+              <span className="text-[10px] font-mono font-bold text-zinc-500 bg-zinc-800/40 px-1.5 py-0.5 rounded uppercase">Curva D</span>
+              <div className="text-base font-mono font-black text-[var(--white)] mt-1 group-hover:text-zinc-400 transition-colors">
+                R$ 0,00
+              </div>
+              <div className="text-[10px] font-mono text-[var(--gray2)]">
+                <strong className="text-white">{kpis.curveD_Count}</strong> leads
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      {/* ========================================================
+          4. GRÁFICO MENSAL & GEOLOCALIZAÇÃO NO MAPA (2 COLUNAS)
+         ======================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        {/* GRÁFICO DE EVOLUÇÃO MENSAL (COLUNA 7/12) */}
+        <div className="lg:col-span-7 card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between shadow-lg">
+          <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 mb-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={16} className="text-[#10b981]" />
+              <h3 className="font-display text-xs font-bold text-[var(--white)] uppercase tracking-wider">
+                Vendas do Ano · {yearFilter}
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono text-[var(--gray2)]">Clique no mês para detalhar</span>
+          </div>
+
+          {/* Graphical Bars Container */}
+          <div className="h-56 flex items-end justify-between gap-1.5 pt-6 pb-2 px-2 border-b border-[var(--line)]">
+            {monthlyGraphData.map((m) => (
+              <div 
+                key={m.monthIndex}
+                onClick={() => {
+                  const items: DrillDownItem[] = [
+                    ...m.orders.map((o: any) => ({
+                      id: o.id,
+                      title: `Pedido Fechado #${o.order_number}`,
+                      company: o.company,
+                      cnpj: o.cnpj,
+                      representative: o.representative,
+                      value: o.value,
+                      stageOrStatus: 'PEDIDO FATURADO',
+                      date: o.date
+                    })),
+                    ...m.deals.map((d: any) => ({
+                      id: d.id,
+                      title: d.title,
+                      company: d.contact?.company || d.contact?.name || 'Cliente',
+                      cnpj: d.contact?.cnpj,
+                      representative: d.assigned_to || 'Representante',
+                      value: d.final_value || d.estimated_value || 0,
+                      stageOrStatus: d.stage.toUpperCase(),
+                      date: d.closed_at || d.stage_entered_at
+                    }))
+                  ]
+                  openDrillDown(`DETALHAMENTO: ${m.monthName.toUpperCase()} / ${yearFilter}`, `Vendas realizadas em ${m.monthName} de ${yearFilter}`, items, '#10b981')
+                }}
+                className="flex-1 flex flex-col items-center gap-2 h-full justify-end cursor-pointer group"
+              >
+                <div className="text-[9px] font-mono text-[var(--gray2)] opacity-0 group-hover:opacity-100 transition-opacity font-bold truncate">
+                  {m.faturadoR$ > 0 ? formatCompactCurrency(m.faturadoR$) : ''}
+                </div>
+                
+                <div className="w-full bg-[var(--charcoal)] rounded-t-lg overflow-hidden flex flex-col justify-end h-full p-0.5">
+                  <div 
+                    className="w-full bg-gradient-to-t from-emerald-600 to-[#10b981] rounded-t transition-all duration-500 group-hover:from-emerald-500 group-hover:to-lime-400 group-hover:brightness-125"
+                    style={{ height: `${Math.max(4, m.heightPct)}%` }}
+                  />
+                </div>
+
+                <span className="text-[10px] font-mono font-bold text-[var(--gray2)] group-hover:text-[var(--white)] transition-colors uppercase">
+                  {m.monthName}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] font-mono text-[var(--gray2)] pt-3">
+            <span>Total Acumulado: <strong className="text-white font-bold">{formatCurrency(kpis.totalFaturadoR$)}</strong></span>
+            <span>Média Mensal: <strong className="text-[#10b981] font-bold">{formatCurrency(kpis.totalFaturadoR$ / 12)}</strong></span>
+          </div>
+        </div>
+
+        {/* MAPA DE GEOLOCALIZAÇÃO (COLUNA 5/12) */}
+        <div className="lg:col-span-5 card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl flex flex-col justify-between shadow-lg relative">
+          <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 mb-3">
+            <div className="flex items-center gap-2">
+              <MapPin size={16} className="text-[#10b981]" />
+              <h3 className="font-display text-xs font-bold text-[var(--white)] uppercase tracking-wider">
+                Geolocalização dos Negócios
+              </h3>
+            </div>
+            <button 
+              onClick={() => setIsMapExpanded(!isMapExpanded)}
+              className="btn btn-secondary text-[10px] py-1 px-2.5 rounded-lg flex items-center gap-1 font-mono font-bold"
+            >
+              <Maximize2 size={11} />
+              <span>{isMapExpanded ? 'Reduzir' : 'Ampliar'}</span>
+            </button>
+          </div>
+
+          <div 
+            ref={contactsMapRef}
+            className={`w-[#100%] bg-[#141414] rounded-xl border border-[var(--line)] overflow-hidden transition-all duration-300 ${isMapExpanded ? 'h-96' : 'h-64'}`}
+          />
+
+          <div className="flex items-center justify-between pt-2.5 text-[10px] font-mono text-[var(--gray2)]">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#10b981]" /> Ativo</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500" /> Reativação</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400" /> Prospecção</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ========================================================
+          5. SEÇÃO PODIO DE DESEMPENHO DA EQUIPE (RANKING 3D 1º, 2º e 3º)
+         ======================================================== */}
+      <div className="card bg-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl flex flex-col justify-between shadow-lg">
+        <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 mb-6">
+          <div className="flex items-center gap-2">
+            <Trophy size={18} className="text-[#f0c419]" />
+            <h3 className="font-display text-xs sm:text-sm font-bold text-[var(--white)] uppercase tracking-wider">
+              Pódio de Performance Comercial · Ranking da Equipe
+            </h3>
+          </div>
+          <span className="text-[10px] font-mono text-[var(--gray2)]">Faturamento Realizado por Representante</span>
+        </div>
+
+        {/* PÓDIO 3D CONTAINER */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-8 pt-4">
+          
+          {/* 2º LUGAR (PRATA - ESQUERDA) */}
+          {teamRanking.top2 && (
+            <div 
+              onClick={() => {
+                const rep = teamRanking.top2?.name || ''
+                const items: DrillDownItem[] = [
+                  ...(teamRanking.top2?.orders || []).map((o: any) => ({
+                    id: o.id,
+                    title: `Pedido Fechado #${o.order_number}`,
+                    company: o.company,
+                    cnpj: o.cnpj,
+                    representative: rep,
+                    value: o.value,
+                    stageOrStatus: 'PEDIDO FATURADO',
+                    date: o.date
+                  })),
+                  ...(teamRanking.top2?.wonDeals || []).map((d: any) => ({
+                    id: d.id,
+                    title: d.title,
+                    company: d.contact?.company || d.contact?.name || 'Cliente',
+                    cnpj: d.contact?.cnpj,
+                    representative: rep,
+                    value: d.final_value || d.estimated_value || 0,
+                    stageOrStatus: d.stage.toUpperCase(),
+                    date: d.closed_at || d.stage_entered_at
+                  }))
+                ]
+                openDrillDown(`DESEMPENHO: 2º LUGAR - ${rep}`, `Vendas e contratos faturados por ${rep}`, items, '#e2e8f0')
+              }}
+              className="order-2 md:order-1 bg-[var(--charcoal)] border-2 border-slate-400/40 p-5 rounded-2xl flex flex-col items-center text-center relative hover:-translate-y-1 hover:border-slate-300 transition-all cursor-pointer group shadow-xl"
+            >
+              <div className="w-10 h-10 rounded-full bg-slate-300/20 border-2 border-slate-300 text-slate-200 flex items-center justify-center font-mono font-black text-sm mb-2 shadow-lg">
+                2º
+              </div>
+              <span className="text-xs font-mono font-bold text-[var(--white)] truncate max-w-full">
+                {teamRanking.top2.name}
+              </span>
+              <div className="text-xl font-mono font-black text-slate-200 mt-1">
+                {formatCurrency(teamRanking.top2.totalR$)}
+              </div>
+              <span className="text-[10px] font-mono text-[var(--gray2)] mt-0.5">
+                {teamRanking.top2.pedidosCount} vendas concluídas
+              </span>
+              <Award size={20} className="text-slate-400 mt-2" />
+            </div>
+          )}
+
+          {/* 1º LUGAR (OURO - CENTRO EM DESTAQUE MAIOR) */}
+          {teamRanking.top1 && (
+            <div 
+              onClick={() => {
+                const rep = teamRanking.top1?.name || ''
+                const items: DrillDownItem[] = [
+                  ...(teamRanking.top1?.orders || []).map((o: any) => ({
+                    id: o.id,
+                    title: `Pedido Fechado #${o.order_number}`,
+                    company: o.company,
+                    cnpj: o.cnpj,
+                    representative: rep,
+                    value: o.value,
+                    stageOrStatus: 'PEDIDO FATURADO',
+                    date: o.date
+                  })),
+                  ...(teamRanking.top1?.wonDeals || []).map((d: any) => ({
+                    id: d.id,
+                    title: d.title,
+                    company: d.contact?.company || d.contact?.name || 'Cliente',
+                    cnpj: d.contact?.cnpj,
+                    representative: rep,
+                    value: d.final_value || d.estimated_value || 0,
+                    stageOrStatus: d.stage.toUpperCase(),
+                    date: d.closed_at || d.stage_entered_at
+                  }))
+                ]
+                openDrillDown(`DESEMPENHO: 1º LUGAR (CAMPEÃO) - ${rep}`, `Vendas e contratos faturados por ${rep}`, items, '#f0c419')
+              }}
+              className="order-1 md:order-2 bg-gradient-to-b from-amber-500/10 to-[var(--charcoal)] border-2 border-[#f0c419] p-6 rounded-2xl flex flex-col items-center text-center relative hover:-translate-y-2 transition-all cursor-pointer group shadow-2xl shadow-[#f0c419]/10"
+            >
+              <div className="absolute -top-4 bg-[#f0c419] text-black text-[10px] font-mono font-black px-3 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-md">
+                <Crown size={12} /> CAMPEÃO DE VENDAS
+              </div>
+              <div className="w-12 h-12 rounded-full bg-[#f0c419]/20 border-2 border-[#f0c419] text-[#f0c419] flex items-center justify-center font-mono font-black text-lg mb-2 shadow-lg">
+                1º
+              </div>
+              <span className="text-sm font-mono font-black text-[var(--white)] truncate max-w-full">
+                {teamRanking.top1.name}
+              </span>
+              <div className="text-2xl font-mono font-black text-[#f0c419] mt-1">
+                {formatCurrency(teamRanking.top1.totalR$)}
+              </div>
+              <span className="text-[11px] font-mono text-[var(--gray2)] mt-0.5">
+                {teamRanking.top1.pedidosCount} vendas concluídas
+              </span>
+              <Trophy size={24} className="text-[#f0c419] mt-3 animate-bounce" />
+            </div>
+          )}
+
+          {/* 3º LUGAR (BRONZE - DIREITA) */}
+          {teamRanking.top3 && (
+            <div 
+              onClick={() => {
+                const rep = teamRanking.top3?.name || ''
+                const items: DrillDownItem[] = [
+                  ...(teamRanking.top3?.orders || []).map((o: any) => ({
+                    id: o.id,
+                    title: `Pedido Fechado #${o.order_number}`,
+                    company: o.company,
+                    cnpj: o.cnpj,
+                    representative: rep,
+                    value: o.value,
+                    stageOrStatus: 'PEDIDO FATURADO',
+                    date: o.date
+                  })),
+                  ...(teamRanking.top3?.wonDeals || []).map((d: any) => ({
+                    id: d.id,
+                    title: d.title,
+                    company: d.contact?.company || d.contact?.name || 'Cliente',
+                    cnpj: d.contact?.cnpj,
+                    representative: rep,
+                    value: d.final_value || d.estimated_value || 0,
+                    stageOrStatus: d.stage.toUpperCase(),
+                    date: d.closed_at || d.stage_entered_at
+                  }))
+                ]
+                openDrillDown(`DESEMPENHO: 3º LUGAR - ${rep}`, `Vendas e contratos faturados por ${rep}`, items, '#d97706')
+              }}
+              className="order-3 md:order-3 bg-[var(--charcoal)] border-2 border-amber-700/40 p-5 rounded-2xl flex flex-col items-center text-center relative hover:-translate-y-1 hover:border-amber-600 transition-all cursor-pointer group shadow-xl"
+            >
+              <div className="w-10 h-10 rounded-full bg-amber-700/20 border-2 border-amber-600 text-amber-500 flex items-center justify-center font-mono font-black text-sm mb-2 shadow-lg">
+                3º
+              </div>
+              <span className="text-xs font-mono font-bold text-[var(--white)] truncate max-w-full">
+                {teamRanking.top3.name}
+              </span>
+              <div className="text-xl font-mono font-black text-amber-500 mt-1">
+                {formatCurrency(teamRanking.top3.totalR$)}
+              </div>
+              <span className="text-[10px] font-mono text-[var(--gray2)] mt-0.5">
+                {teamRanking.top3.pedidosCount} vendas concluídas
+              </span>
+              <Award size={20} className="text-amber-600 mt-2" />
+            </div>
+          )}
+
+        </div>
+
+        {/* TABELA CLASSIFICAÇÃO RESTANTE DA EQUIPE */}
+        {teamRanking.remaining.length > 0 && (
+          <div className="border-t border-[var(--line)] pt-4 overflow-x-auto">
+            <h4 className="text-xs font-mono uppercase font-bold text-[var(--gray2)] mb-3">Classificação Geral da Equipe</h4>
+            <table className="w-full text-left border-collapse text-xs font-mono">
+              <thead>
+                <tr className="border-b border-[var(--line)] text-[10px] text-[var(--gray2)] uppercase">
+                  <th className="py-2 px-3 text-center">Posição</th>
+                  <th className="py-2 px-3">Representante Comercial</th>
+                  <th className="py-2 px-3 text-center">Vendas Concluídas</th>
+                  <th className="py-2 px-3 text-right">Faturamento Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--line)]">
+                {teamRanking.remaining.map((item, idx) => (
+                  <tr 
+                    key={item.name}
+                    onClick={() => {
+                      const items: DrillDownItem[] = [
+                        ...item.orders.map((o: any) => ({
+                          id: o.id,
+                          title: `Pedido Fechado #${o.order_number}`,
+                          company: o.company,
+                          cnpj: o.cnpj,
+                          representative: item.name,
+                          value: o.value,
+                          stageOrStatus: 'PEDIDO FATURADO',
+                          date: o.date
+                        })),
+                        ...item.wonDeals.map((d: any) => ({
+                          id: d.id,
+                          title: d.title,
+                          company: d.contact?.company || d.contact?.name || 'Cliente',
+                          cnpj: d.contact?.cnpj,
+                          representative: item.name,
+                          value: d.final_value || d.estimated_value || 0,
+                          stageOrStatus: d.stage.toUpperCase(),
+                          date: d.closed_at || d.stage_entered_at
+                        }))
+                      ]
+                      openDrillDown(`DESEMPENHO: ${idx + 4}º LUGAR - ${item.name}`, `Vendas e contratos faturados por ${item.name}`, items, '#94a3b8')
+                    }}
+                    className="hover:bg-[var(--charcoal)] transition-colors cursor-pointer"
+                  >
+                    <td className="py-2.5 px-3 text-center font-bold text-slate-400">{idx + 4}º</td>
+                    <td className="py-2.5 px-3 font-bold text-white flex items-center gap-2">
+                      <User size={13} className="text-slate-400" />
+                      <span>{item.name}</span>
+                    </td>
+                    <td className="py-2.5 px-3 text-center font-bold text-slate-300">{item.pedidosCount}</td>
+                    <td className="py-2.5 px-3 text-right font-black text-[#10b981]">{formatCurrency(item.totalR$)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+      </div>
+
+      {/* ========================================================
+          6. SEÇÃO MOTIVOS DE NEGÓCIOS PERDIDOS
+         ======================================================== */}
+      <div className="card bg-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl flex flex-col justify-between shadow-lg">
+        <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 mb-4">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={18} className="text-red-400" />
+            <h3 className="font-display text-xs sm:text-sm font-bold text-[var(--white)] uppercase tracking-wider">
+              Análise de Motivos de Negócios Perdidos ({kpis.lostQtd} Perdas)
+            </h3>
+          </div>
+          <span className="text-[10px] font-mono text-red-400 font-bold">Total Perdido: {formatCurrency(kpis.lostR$)}</span>
+        </div>
+
+        {lostReasonsData.length === 0 ? (
+          <div className="py-8 text-center text-xs font-mono text-[var(--gray2)]">
+            Nenhuma perda registrada com os filtros selecionados.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {lostReasonsData.map(r => (
+              <div 
+                key={r.reason}
+                onClick={() => {
+                  const items: DrillDownItem[] = r.deals.map(d => ({
+                    id: d.id,
+                    title: d.title,
+                    company: d.contact?.company || d.contact?.name || 'Cliente',
+                    cnpj: d.contact?.cnpj,
+                    representative: d.assigned_to || 'Representante',
+                    value: d.estimated_value || 0,
+                    stageOrStatus: 'PERDIDO',
+                    lostReason: r.reason,
+                    curve: d.contact?.curve || 'D',
+                    date: d.closed_at || d.created_at
+                  }))
+                  openDrillDown(`MOTIVO DE PERDA: ${r.reason.toUpperCase()}`, `Negócios perdidos por motivo de "${r.reason}"`, items, '#e2483d')
+                }}
+                className="bg-[var(--charcoal)] border border-[var(--line)] p-3 rounded-xl hover:border-red-500/40 transition-colors cursor-pointer group"
+              >
+                <div className="flex items-center justify-between text-xs font-mono mb-1.5">
+                  <span className="font-bold text-white group-hover:text-red-400 transition-colors">
+                    {r.reason}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[var(--gray2)]"><strong className="text-white">{r.count}</strong> oportunidades</span>
+                    <span className="font-black text-red-400">{formatCurrency(r.totalR$)}</span>
+                  </div>
+                </div>
+
+                <div className="w-full h-2 bg-black/40 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-red-600 to-rose-400 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.max(5, r.pctOfMax)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ========================================================
+          7. MODAL DE DRILL DOWN ANALÍTICO (LISTA COMPLETA INTERATIVA)
+         ======================================================== */}
+      {drillDownModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn select-none">
+          <div className="card w-full max-w-4xl max-h-[85vh] bg-[var(--card)] border border-[var(--line)] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative">
+            
+            {/* Header Modal */}
+            <div className="p-4 sm:p-5 border-b border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: drillDownModal.badgeColor || '#10b981' }} />
+                  {drillDownModal.title}
+                </h3>
+                <p className="text-xs text-[var(--gray2)] font-mono mt-0.5">{drillDownModal.subtitle}</p>
+              </div>
+              <button 
+                onClick={() => setDrillDownModal(prev => ({ ...prev, isOpen: false }))}
+                className="text-[var(--gray2)] hover:text-white transition-colors p-1 cursor-pointer"
+              >
+                <X size={20} />
               </button>
             </div>
 
-            <InstallPWAButton variant="mobile_header" className="lg:hidden" />
-            <button
-              onClick={toggleTheme}
-              title={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
-              className="lg:hidden p-2 rounded-xl text-[var(--gray2)] hover:text-[var(--white)] hover:bg-[var(--charcoal)] transition-all bg-transparent border border-[var(--line)] cursor-pointer"
-            >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-          </div>
-        </div>
-
-        {/* Dynamic Tab Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 pb-4">
-          
-          {/* TAB 1: PAINEL */}
-          {activeTab === 'painel' && (
-            <div className="flex flex-col gap-4 animate-fade-in">
-              <div className="card p-5 relative overflow-hidden bg-gradient-to-br from-[var(--charcoal)] to-[#151617] border border-[rgba(180,217,50,0.15)] flex flex-col gap-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="text-[10px] font-mono text-[var(--gray)] font-bold uppercase tracking-wide">Meta de Visitas Mensal</div>
-                    <div className="text-2xl font-display font-black text-[var(--lime)] mt-1">
-                      {completedVisits} <span className="text-xs text-[var(--gray2)] font-mono font-medium">/ {visitsGoal} realizadas</span>
-                    </div>
-                  </div>
-                  <div className="w-14 h-14 rounded-full border-4 border-[rgba(180,217,50,0.1)] flex items-center justify-center relative">
-                    <div className="absolute inset-0 rounded-full border-4 border-[var(--lime)]" style={{ clipPath: `polygon(0 0, 100% 0, 100% ${Math.min(100, Math.floor((completedVisits/visitsGoal)*100))}%, 0 ${Math.min(100, Math.floor((completedVisits/visitsGoal)*100))}%)` }}></div>
-                    <span className="text-xs font-mono font-black text-[var(--white)]">{Math.floor((completedVisits / visitsGoal) * 100)}%</span>
-                  </div>
-                </div>
-
-                <div className="w-full bg-black/40 rounded-full h-2 overflow-hidden border border-[var(--line)]">
-                  <div className="bg-[var(--lime)] h-full transition-all duration-500 ease-out" style={{ width: `${(completedVisits / visitsGoal) * 100}%` }}></div>
-                </div>
-              </div>
-
-              {/* Stats Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="card p-4 flex flex-col gap-1.5 bg-[var(--card)] border border-[var(--line)]">
-                  <span className="text-[9px] font-mono text-[var(--gray2)] uppercase font-bold">Total de Clientes</span>
-                  <span className="text-2xl font-display font-black text-[var(--white)]">{repAllContacts.length}</span>
-                </div>
-                <div className="card p-4 flex flex-col gap-1.5 bg-[var(--card)] border border-[var(--line)]">
-                  <span className="text-[9px] font-mono text-[var(--gray2)] uppercase font-bold">Atenção / Inativos</span>
-                  <span className="text-2xl font-display font-black text-[var(--yellow)]">{repContactsNeedingAttention.length}</span>
-                </div>
-              </div>
-
-              {/* Clientes Sem Contato / Em Risco de Inatividade */}
-              <div className="card p-4 bg-[var(--card)] border border-[var(--line)] rounded-2xl flex flex-col gap-3">
-                <div className="flex justify-between items-center border-b border-[var(--line)] pb-2">
-                  <span className="text-xs font-bold text-[var(--white)] font-display flex items-center gap-2">
-                    <AlertTriangle size={15} className="text-[var(--yellow)]" />
-                    <span>Clientes Prioritários (Sem Contato &gt; 30 dias)</span>
-                  </span>
-                  <span className="text-[10px] font-mono font-bold text-[var(--yellow)] bg-[var(--yellow)]/10 px-2 py-0.5 rounded-full border border-[var(--yellow)]/20">
-                    {repContactsNeedingAttention.length} clientes
-                  </span>
-                </div>
-
-                {repContactsNeedingAttention.length === 0 ? (
-                  <div className="p-4 rounded-xl bg-black/20 border border-[var(--line)] text-center text-xs text-[var(--gray2)] font-mono">
-                    ✓ Todos os clientes da sua carteira estão com compras/contatos em dia.
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
-                    {repContactsNeedingAttention.slice(0, 5).map(c => (
-                      <div key={c.id} className="flex items-center justify-between p-3 rounded-xl bg-[var(--charcoal)] border border-[var(--line)]/60 hover:border-[var(--lime)]/30 transition-all">
-                        <div className="min-w-0 pr-2">
-                          <h4 className="text-xs font-bold text-[var(--white)] truncate">{c.company || c.name}</h4>
-                          <p className="text-[10px] text-[var(--gray2)] font-mono mt-0.5">
-                            {c.city} · Sem compra há {c.lastPurchaseDays || 30} dias
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setSelectedContactId(c.id)
-                            setAudioTranscription('')
-                            setPhotoUrl('')
-                            setShowCheckinModal(true)
-                          }}
-                          className="btn btn-secondary text-[11px] py-1.5 px-3 shrink-0 flex items-center gap-1.5 cursor-pointer text-[var(--lime)] border-[var(--lime)]/30 hover:border-[var(--lime)] font-bold"
-                        >
-                          <CheckCircle size={13} />
-                          <span>Registrar</span>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Últimas Atividades Registradas */}
-              <div className="card p-4 bg-[var(--card)] border border-[var(--line)] rounded-2xl flex flex-col gap-3">
-                <div className="flex justify-between items-center border-b border-[var(--line)] pb-2">
-                  <span className="text-xs font-bold text-[var(--white)] font-display flex items-center gap-2">
-                    <Clock size={15} className="text-[var(--lime)]" />
-                    <span>Últimas Atividades Registradas</span>
-                  </span>
-                </div>
-
-                {(() => {
-                  const recentActivities = repAllContacts
-                    .flatMap(c => (c.activities || []).map((act: any) => ({ ...act, clientCompany: c.company || c.name, clientId: c.id })))
-                    .sort((a: any, b: any) => new Date(b.timestamp || Date.now()).getTime() - new Date(a.timestamp || Date.now()).getTime())
-                    .slice(0, 5)
-
-                  if (recentActivities.length === 0) {
-                    return (
-                      <div className="p-4 rounded-xl bg-black/20 border border-[var(--line)] text-center text-xs text-[var(--gray2)] font-mono">
-                        Nenhuma atividade registrada recentemente na sua carteira.
-                      </div>
-                    )
-                  }
-
-                  return (
-                    <div className="flex flex-col gap-2">
-                      {recentActivities.map((act: any, i: number) => (
-                        <div key={i} className="p-3 rounded-xl bg-[var(--charcoal)] border border-[var(--line)]/60 flex flex-col gap-1">
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs font-bold text-[var(--lime)] truncate">{act.clientCompany}</span>
-                            <span className="text-[10px] font-mono text-[var(--gray2)]">{act.date}</span>
-                          </div>
-                          <p className="text-[11px] text-[var(--white)] font-mono font-medium">{act.title}</p>
-                          {act.description && (
-                            <p className="text-[10px] text-[var(--gray)] font-mono line-clamp-1 italic">
-                              "{act.description}"
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )
-                })()}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: CLIENTES LIST */}
-          {activeTab === 'clientes' && (
-            <div className="flex flex-col gap-3 animate-fade-in">
-              {/* Search input */}
-              <div className="flex items-center gap-2 bg-[var(--card)] border border-[var(--line)] rounded-xl px-3.5 py-3 focus-within:border-[var(--lime)]/50 transition-colors">
-                <Search size={14} className="text-[var(--gray2)] shrink-0" />
-                <input 
+            {/* Search Input Bar */}
+            <div className="p-3 bg-[var(--card)] border-b border-[var(--line)] flex items-center gap-3 shrink-0">
+              <div className="flex-1 flex items-center gap-2 bg-[var(--charcoal)] border border-[var(--line)] px-3 py-1.5 rounded-xl text-xs">
+                <Search size={14} className="text-[var(--gray2)]" />
+                <input
                   type="text"
-                  placeholder="Buscar cliente por nome, empresa ou cidade..."
-                  value={mobileSearch}
-                  onChange={(e) => setMobileSearch(e.target.value)}
-                  className="bg-transparent border-none outline-none text-xs w-full text-[var(--white)] placeholder-[var(--gray2)]"
+                  placeholder="Buscar por cliente, CNPJ, representante ou título..."
+                  value={drillSearchTerm}
+                  onChange={(e) => setDrillSearchTerm(e.target.value)}
+                  className="bg-transparent text-white outline-none w-full font-mono"
                 />
-              </div>
-
-              {/* Status Filters */}
-              <div className="grid grid-cols-3 gap-1 bg-[var(--card)] border border-[var(--line)] p-1 rounded-xl text-[9px] font-bold font-mono">
-                <button 
-                  onClick={() => setMobileFilterStatus('todos')}
-                  className={`py-2 rounded-lg transition-colors ${mobileFilterStatus === 'todos' ? 'bg-[var(--charcoal)] text-[var(--lime)] border border-[var(--line)]' : 'text-[var(--gray)]'}`}
-                >
-                  Todos ({repAllContacts.length})
-                </button>
-                <button 
-                  onClick={() => setMobileFilterStatus('pendentes')}
-                  className={`py-2 rounded-lg transition-colors ${mobileFilterStatus === 'pendentes' ? 'bg-[var(--charcoal)] text-[var(--yellow)] border border-[var(--line)]' : 'text-[var(--gray)]'}`}
-                >
-                  Pendentes ({repContactsNeedingAttention.length})
-                </button>
-                <button 
-                  onClick={() => setMobileFilterStatus('concluidos')}
-                  className={`py-2 rounded-lg transition-colors ${mobileFilterStatus === 'concluidos' ? 'bg-[var(--charcoal)] text-[var(--green)] border border-[var(--line)]' : 'text-[var(--gray)]'}`}
-                >
-                  Visitados ({repAllContacts.length - repContactsNeedingAttention.length})
-                </button>
-              </div>
-
-              {/* List Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {filteredMobileContacts.map(contact => {
-                  return (
-                    <div key={contact.id} className="card p-4 border border-[var(--line)] bg-[var(--card)] flex flex-col justify-between gap-3 hover:border-[var(--lime)]/30 transition-all">
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="min-w-0">
-                          <h4 className="text-sm font-bold text-[var(--white)] truncate">{contact.company || contact.name}</h4>
-                          {contact.company && contact.name && (
-                            <span className="text-[10px] font-mono text-[var(--gray)] block mt-0.5 truncate">Contato: {contact.name}</span>
-                          )}
-                          <span className="text-[10px] text-[var(--gray)] font-mono block">{contact.city}{contact.state ? ` · ${contact.state}` : ''}</span>
-                        </div>
-                        {(() => {
-                          const s = contact.status || 'ativo'
-                          if (s === 'prospeccao') return (
-                            <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-400/15 text-amber-300 border border-amber-400/30 shrink-0">
-                              Prospecção
-                            </span>
-                          )
-                          if (s === 'inativo') return (
-                            <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-500/15 text-red-400 border border-red-500/30 shrink-0">
-                              Inativo
-                            </span>
-                          )
-                          return (
-                            <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-[var(--lime)]/15 text-[var(--lime)] border border-[var(--lime)]/30 shrink-0">
-                              Ativo
-                            </span>
-                          )
-                        })()}
-                      </div>
-
-                      <div className="flex items-center justify-between text-[9px] font-mono text-[var(--gray2)] mt-1">
-                        <span>Última compra:</span>
-                        <span className="font-bold text-[var(--white)]">{contact.lastPurchaseDays ? `${contact.lastPurchaseDays}d sem comprar` : 'Sem compras'}</span>
-                      </div>
-
-                      <div className="border-t border-[var(--line)] pt-3 flex items-center justify-around gap-2">
-                        {/* Google Maps Navigation */}
-                        <a 
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${contact.company || contact.name} ${contact.city || ''}`)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          title="Navegar / Como chegar"
-                          className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[var(--lime)] text-[var(--lime)] transition-transform hover:scale-105"
-                        >
-                          <Navigation size={15} />
-                        </a>
-                        
-                        {/* Phone Call */}
-                        {contact.phone && (
-                          <a 
-                            href={`tel:${contact.phone.replace(/\D/g, '')}`}
-                            title="Ligar para o Cliente"
-                            className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-sky-500 text-sky-400 transition-transform hover:scale-105"
-                          >
-                            <Phone size={15} />
-                          </a>
-                        )}
-
-                        {/* WhatsApp (Original Green #25D366) */}
-                        {contact.phone && (
-                          <a 
-                            href={whatsappLink(contact.phone, `Olá ${contact.name}, tudo bem?`)}
-                            target="_blank"
-                            rel="noreferrer"
-                            title="Chamar no WhatsApp"
-                            className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[#25D366]/50 text-[#25D366] transition-transform hover:scale-105"
-                          >
-                            <WhatsappIcon size={16} className="text-[#25D366]" />
-                          </a>
-                        )}
-
-                        {/* Check-in / Registrar Atividade */}
-                        <button 
-                          onClick={() => {
-                            setSelectedContactId(contact.id)
-                            setAudioTranscription('')
-                            setPhotoUrl('')
-                            setShowCheckinModal(true)
-                          }}
-                          title="Registrar Atividade"
-                          className="btn btn-secondary p-2 flex-1 flex items-center justify-center rounded-lg border-[var(--line)] hover:border-[var(--lime)] text-[var(--lime)] transition-transform hover:scale-105"
-                        >
-                          <CheckCircle size={15} />
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
-
-                {filteredMobileContacts.length === 0 && (
-                  <div className="col-span-full card p-8 text-center text-xs text-[var(--gray2)] font-mono border-dashed">
-                    Nenhum cliente encontrado com os filtros selecionados.
-                  </div>
+                {drillSearchTerm && (
+                  <button onClick={() => setDrillSearchTerm('')} className="text-[var(--gray2)] hover:text-white">
+                    <X size={13} />
+                  </button>
                 )}
               </div>
+              <span className="text-xs font-mono text-[var(--gray2)] whitespace-nowrap">
+                Exibindo <strong className="text-white">{filteredDrillItems.length}</strong> registros
+              </span>
             </div>
-          )}
 
-          {/* TAB 3: MAPA INTERATIVO */}
-          {activeTab === 'mapa' && (
-            <div className={`flex-1 flex flex-col gap-3 h-full min-h-[450px] animate-fade-in ${isMobileMapFullscreen ? 'fixed inset-0 z-[99999] bg-[var(--charcoal)] p-4 max-w-none' : ''}`}>
-              <div className="text-[10px] font-mono text-[var(--gray)] flex items-center justify-between px-1 shrink-0">
-                <div className="flex items-center gap-1.5">
-                  <MapPin size={12} className="text-[var(--lime)]" />
-                  <span>Clientes na sua carteira</span>
+            {/* Drill Down Table Content */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
+              {filteredDrillItems.length === 0 ? (
+                <div className="py-12 text-center text-xs font-mono text-[var(--gray2)]">
+                  Nenhum registro encontrado.
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsMobileMapFullscreen(!isMobileMapFullscreen)}
-                  className="p-1 px-2.5 rounded-lg border border-[var(--line)] bg-[var(--card)] text-[var(--white)] text-[9px] font-mono font-bold flex items-center gap-1 hover:border-[var(--lime)]/50 transition-all cursor-pointer"
-                >
-                  {isMobileMapFullscreen ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
-                  <span>{isMobileMapFullscreen ? 'Minimizar' : 'Ampliar'}</span>
-                </button>
-              </div>
-              <div className="flex-1 w-full rounded-2xl overflow-hidden border border-[var(--line)] relative min-h-[400px] bg-[var(--charcoal)]">
-                <div ref={mobileMapContainerRef} className="w-full h-full min-h-[400px] z-10" />
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: DASHBOARD COMERCIAL EXCLUSIVO DO REPRESENTANTE */}
-          {activeTab === 'dashboard' && (
-            <div className="flex flex-col gap-3 animate-fade-in w-full">
-              {/* ── ROW 1: SUMMARY KPIS ── */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
-                <div className="card px-3.5 py-2.5 flex items-center justify-between border-[rgba(180,217,50,0.15)] bg-[var(--card)]">
-                  <div>
-                    <div className="text-[9px] font-mono text-[var(--gray2)] uppercase font-bold">Negócios Ativos</div>
-                    <div className="text-xl font-display font-black text-[var(--lime)] mt-0.5">{activeDealsCount}</div>
-                  </div>
-                  <div className="w-8 h-8 rounded-lg bg-[rgba(180,217,50,0.1)] border border-[rgba(180,217,50,0.2)] flex items-center justify-center shrink-0">
-                    <Package size={16} className="text-[var(--lime)]" />
-                  </div>
-                </div>
-
-                <div className="card px-3.5 py-2.5 flex items-center justify-between border-[rgba(72,199,103,0.15)] bg-[var(--card)]">
-                  <div>
-                    <div className="text-[9px] font-mono text-[var(--gray2)] uppercase font-bold">Fechamentos (Mês)</div>
-                    <div className="text-xl font-display font-black text-[var(--green)] mt-0.5">{formatCurrency(fechamentoValue)}</div>
-                  </div>
-                  <div className="w-8 h-8 rounded-lg bg-[rgba(72,199,103,0.1)] border border-[rgba(72,199,103,0.2)] flex items-center justify-center shrink-0">
-                    <CheckCircle size={16} className="text-[var(--green)]" />
-                  </div>
-                </div>
-
-                <div className="card px-3.5 py-2.5 flex items-center justify-between border-[rgba(240,196,25,0.15)] bg-[var(--card)]">
-                  <div>
-                    <div className="text-[9px] font-mono text-[var(--gray2)] uppercase font-bold">Em Negociação</div>
-                    <div className="text-xl font-display font-black text-[var(--yellow)] mt-0.5">{inNegotiationCount}</div>
-                  </div>
-                  <div className="w-8 h-8 rounded-lg bg-[rgba(240,196,25,0.1)] border border-[rgba(240,196,25,0.2)] flex items-center justify-center shrink-0">
-                    <TrendingUp size={16} className="text-[var(--yellow)]" />
-                  </div>
-                </div>
-
-                <div className="card px-3.5 py-2.5 flex items-center justify-between border-[rgba(226,72,61,0.15)] bg-[var(--card)]">
-                  <div>
-                    <div className="text-[9px] font-mono text-[var(--gray2)] uppercase font-bold">Perdidos (Mês)</div>
-                    <div className="text-xl font-display font-black text-[var(--red)] mt-0.5">{formatCurrency(perdidoValue)}</div>
-                  </div>
-                  <div className="w-8 h-8 rounded-lg bg-[rgba(226,72,61,0.1)] border border-[rgba(226,72,61,0.2)] flex items-center justify-center shrink-0">
-                    <XCircle size={16} className="text-[var(--red)]" />
-                  </div>
-                </div>
-              </div>
-
-              {/* ── ROW 2: FUNNEL ── */}
-              <div className="card px-3 pt-2.5 pb-3 flex flex-col gap-2 shrink-0 bg-[var(--card)]">
-                <div className="flex items-center justify-between border-b border-[var(--line)] pb-2 mb-1">
-                  <div className="flex items-center gap-2">
-                    <Target size={13} className="text-[var(--lime)]" />
-                    <span className="text-[11px] font-bold font-display text-[var(--white)]">Funil de Vendas · Seus Negócios</span>
-                  </div>
-                  <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider">8 Etapas</span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
-                  {funnelSummary.map(item => (
-                    <div
-                      key={item.key}
-                      className="rounded-xl px-2.5 py-2 flex flex-col gap-0.5 border border-[var(--line)] bg-[var(--charcoal)] hover:border-[var(--lime)]/50 transition-all cursor-default relative overflow-hidden group shadow-sm"
-                      style={{ borderLeft: `3.5px solid ${item.color}` }}
-                    >
-                      {/* Stage name */}
-                      <div className="text-[8px] font-mono font-bold uppercase tracking-wide truncate text-[var(--gray2)]">
-                        {item.stage}
-                      </div>
-
-                      {/* Main Value */}
-                      <div className="text-[11px] font-mono font-extrabold text-[var(--white)] truncate leading-tight my-0.5">
-                        {item.value ? formatCurrency(item.value) : <span className="text-[var(--gray2)]">R$ 0,00</span>}
-                      </div>
-
-                      {/* Negócios Count */}
-                      <div className="text-[9px] font-mono font-bold text-[var(--gray2)]">
-                        {item.count} {item.count === 1 ? 'negócio' : 'negócios'}
-                      </div>
-
-                      {/* Watermark Icon */}
-                      <div 
-                        className="absolute -right-1 -bottom-1 opacity-[0.10] pointer-events-none group-hover:opacity-25 transition-opacity"
-                        style={{ color: item.color }}
-                      >
-                        {getStageIcon(item.key, item.color, 40)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* ── ROW 3: TOP CLIENTES & EMBALAGENS (LARGURA TOTAL) ── */}
-              <div className="card p-3 flex flex-col justify-between bg-[var(--card)]">
-                <div className="flex items-center justify-between border-b border-[var(--line)] pb-2 mb-2">
-                  <div className="flex items-center gap-2">
-                    <Building size={13} className="text-[var(--lime)]" />
-                    <span className="text-xs font-bold font-display text-[var(--white)]">Top Clientes</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Principais Clientes */}
-                  <div className="space-y-1.5">
-                    <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold tracking-wider flex items-center gap-1">
-                      <Building size={10} className="text-[var(--lime)]" /> Principais Clientes
-                    </div>
-                    <div className="space-y-1">
-                      {(() => {
-                        const closedRepDeals = filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda')
-                        if (closedRepDeals.length > 0) {
-                          return closedRepDeals
-                            .slice()
-                            .sort((a, b) => b.value - a.value)
-                            .slice(0, 5)
-                            .map((cli, idx) => ({
-                              rank: idx + 1,
-                              name: cli.title,
-                              type: cli.curve ? `Curva ${cli.curve}` : 'Ativo',
-                              value: cli.value
-                            }))
-                        }
-                        return TOP_CLIENTS
-                      })().map(cli => (
-                        <div key={cli.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{cli.rank}</span>
-                            <div className="text-xs font-bold text-[var(--white)] truncate">{cli.name}</div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[8px] font-mono bg-lime-500/10 text-[var(--lime)] px-1.5 py-0.5 rounded font-black border border-[var(--lime)]/10">{cli.type}</span>
-                            <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(cli.value)}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Embalagens Mais Demandadas */}
-                  <div className="space-y-1.5">
-                    <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold tracking-wider flex items-center gap-1">
-                      <Layers size={10} className="text-[var(--lime)]" /> Embalagens mais Demandadas
-                    </div>
-                    <div className="space-y-1">
-                      {TOP_PRODUCTS.map(prod => (
-                        <div key={prod.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{prod.rank}</span>
-                            <div className="text-xs font-bold text-[var(--white)] truncate">{prod.name}</div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0 text-right">
-                            <span className="text-[8px] font-mono bg-sky-500/10 text-sky-400 px-1.5 py-0.5 rounded font-black border border-sky-500/10">{prod.quantity}</span>
-                            <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(prod.value)}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-        </div>
-
-        {/* FIXED ELEGANT BOTTOM NAVIGATION BAR (SMALL SCREENS MOBILE ONLY) */}
-        <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-[#121314]/95 backdrop-blur-xl border-t border-[var(--line)] flex justify-around items-center px-2 py-2 z-[9999] shadow-[0_-8px_30px_rgba(0,0,0,0.8)]">
-          {/* 1. Painel */}
-          <button 
-            onClick={() => setActiveTab('painel')}
-            className={`flex flex-col items-center gap-1 py-1 px-2 rounded-2xl transition-all duration-200 cursor-pointer ${
-              activeTab === 'painel' 
-                ? 'text-[var(--lime)] bg-lime-500/10 border border-lime-500/25 shadow-[0_0_15px_rgba(180,217,50,0.15)] scale-105' 
-                : 'text-[var(--gray2)] hover:text-white'
-            }`}
-          >
-            <Target size={20} strokeWidth={activeTab === 'painel' ? 2.5 : 2} />
-            <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Painel</span>
-          </button>
-
-          {/* 2. Clientes */}
-          <button 
-            onClick={() => setActiveTab('clientes')}
-            className={`flex flex-col items-center gap-1 py-1 px-2 rounded-2xl transition-all duration-200 cursor-pointer ${
-              activeTab === 'clientes' 
-                ? 'text-[var(--lime)] bg-lime-500/10 border border-lime-500/25 shadow-[0_0_15px_rgba(180,217,50,0.15)] scale-105' 
-                : 'text-[var(--gray2)] hover:text-white'
-            }`}
-          >
-            <Users size={20} strokeWidth={activeTab === 'clientes' ? 2.5 : 2} />
-            <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Clientes</span>
-          </button>
-
-          {/* 3. CENTER FLOATING BUTTON: Registrar Atividade Comercial */}
-          <button 
-            onClick={() => {
-              setSelectedContactId('')
-              setAudioTranscription('')
-              setPhotoUrl('')
-              setShowCheckinModal(true)
-            }}
-            title="Registrar Atividade Comercial"
-            className="w-13 h-13 -mt-6 rounded-full bg-[var(--lime)] text-black flex items-center justify-center shadow-[0_0_25px_rgba(180,217,50,0.5)] border-4 border-[#121314] active:scale-95 transition-transform cursor-pointer shrink-0"
-          >
-            <CheckCircle size={26} strokeWidth={2.5} />
-          </button>
-
-          {/* 4. Mapa */}
-          <button 
-            onClick={() => setActiveTab('mapa')}
-            className={`flex flex-col items-center gap-1 py-1 px-2 rounded-2xl transition-all duration-200 cursor-pointer ${
-              activeTab === 'mapa' 
-                ? 'text-[var(--lime)] bg-lime-500/10 border border-lime-500/25 shadow-[0_0_15px_rgba(180,217,50,0.15)] scale-105' 
-                : 'text-[var(--gray2)] hover:text-white'
-            }`}
-          >
-            <MapPin size={20} strokeWidth={activeTab === 'mapa' ? 2.5 : 2} />
-            <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Mapa</span>
-          </button>
-
-          {/* 5. Dashboard */}
-          <button 
-            onClick={() => setActiveTab('dashboard')}
-            className={`flex flex-col items-center gap-1 py-1 px-2 rounded-2xl transition-all duration-200 cursor-pointer ${
-              activeTab === 'dashboard' 
-                ? 'text-[var(--lime)] bg-lime-500/10 border border-lime-500/25 shadow-[0_0_15px_rgba(180,217,50,0.15)] scale-105' 
-                : 'text-[var(--gray2)] hover:text-white'
-            }`}
-          >
-            <BarChart3 size={20} strokeWidth={activeTab === 'dashboard' ? 2.5 : 2} />
-            <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Dashboard</span>
-          </button>
-        </div>
-
-        {/* Register Activity Modal */}
-        <RegisterActivityModal
-          isOpen={showCheckinModal}
-          onClose={() => setShowCheckinModal(false)}
-          onSuccess={() => setCompletedVisits(v => v + 1)}
-          contactsList={contacts}
-          preselectedContactId={selectedContactId}
-        />
-      </div>
-    )
-  }
-
-  // ==================== ROLE: ADMIN / OUTROS (DESKTOP MAIN DASHBOARD - NO SCROLL) ====================
-  if (!isSessionLoaded || !currentUser) {
-    return (
-      <div className="w-full h-[80vh] flex flex-col items-center justify-center gap-4 bg-[var(--black)]">
-        <CartonPackLogo height={48} />
-        <div className="flex items-center gap-2 text-[var(--lime)] font-mono text-xs">
-          <div className="w-4 h-4 border-2 border-[var(--lime)] border-t-transparent rounded-full animate-spin" />
-          <span>Carregando Painel Comercial...</span>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="page-content animate-fade-in w-full h-[calc(100vh-64px)] flex flex-col gap-3 p-3 overflow-y-auto lg:overflow-hidden select-none">
-      
-      {/* ── TOP HEADER & CONTROLS ROW ── */}
-      <div className="flex items-center justify-between gap-3 shrink-0">
-        <div>
-          <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
-            Dashboard Comercial
-          </h1>
-        </div>
-
-        {/* Filters Bar */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Year Filter */}
-          <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--line)] px-2.5 py-1 rounded-xl">
-            <span className="text-[9px] font-mono font-bold text-[var(--gray2)] uppercase">Ano:</span>
-            <select
-              className="bg-transparent text-xs font-mono font-bold text-[var(--white)] outline-none cursor-pointer"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-            >
-              <option value="2026" className="bg-[var(--charcoal)]">2026</option>
-              <option value="2025" className="bg-[var(--charcoal)]">2025</option>
-            </select>
-          </div>
-
-          {/* Month Filter */}
-          <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--line)] px-2.5 py-1 rounded-xl">
-            <span className="text-[9px] font-mono font-bold text-[var(--gray2)] uppercase">Mês:</span>
-            <select
-              className="bg-transparent text-xs font-mono font-bold text-[var(--white)] outline-none cursor-pointer"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-            >
-              <option value="all" className="bg-[var(--charcoal)]">Ano Todo</option>
-              <option value="01" className="bg-[var(--charcoal)]">Janeiro</option>
-              <option value="02" className="bg-[var(--charcoal)]">Fevereiro</option>
-              <option value="03" className="bg-[var(--charcoal)]">Março</option>
-              <option value="04" className="bg-[var(--charcoal)]">Abril</option>
-              <option value="05" className="bg-[var(--charcoal)]">Maio</option>
-              <option value="06" className="bg-[var(--charcoal)]">Junho</option>
-              <option value="07" className="bg-[var(--charcoal)]">Julho</option>
-              <option value="08" className="bg-[var(--charcoal)]">Agosto</option>
-              <option value="09" className="bg-[var(--charcoal)]">Setembro</option>
-              <option value="10" className="bg-[var(--charcoal)]">Outubro</option>
-              <option value="11" className="bg-[var(--charcoal)]">Novembro</option>
-              <option value="12" className="bg-[var(--charcoal)]">Dezembro</option>
-            </select>
-          </div>
-
-          {/* Representative Filter */}
-          <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--line)] px-2.5 py-1 rounded-xl">
-            <span className="text-[9px] font-mono font-bold text-[var(--gray2)] uppercase">Rep:</span>
-            {currentUser?.role === 'representante' || currentUser?.role === 'vendedor' ? (
-              <div className="text-xs font-mono text-[var(--lime)] font-bold px-1 select-none flex items-center gap-1">
-                <User size={11} />
-                <span>{currentUser.name}</span>
-              </div>
-            ) : (
-              <select
-                className="bg-transparent text-xs font-mono text-[var(--white)] outline-none cursor-pointer max-w-[130px]"
-                value={selectedRep}
-                onChange={(e) => setSelectedRep(e.target.value)}
-              >
-                <option value="all" className="bg-[var(--charcoal)]">Todos</option>
-                {representatives.map(rep => (
-                  <option key={rep} value={rep} className="bg-[var(--charcoal)]">{rep}</option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          {/* Curve ABC Filter */}
-          <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--line)] px-2.5 py-1 rounded-xl">
-            <span className="text-[9px] font-mono font-bold text-[var(--gray2)] uppercase">Curva:</span>
-            <select
-              className="bg-transparent text-xs font-mono text-[var(--white)] outline-none cursor-pointer"
-              value={selectedCurve}
-              onChange={(e) => setSelectedCurve(e.target.value)}
-            >
-              <option value="all" className="bg-[var(--charcoal)]">Todas</option>
-              <option value="A" className="bg-[var(--charcoal)]">Curva A</option>
-              <option value="B" className="bg-[var(--charcoal)]">Curva B</option>
-              <option value="C" className="bg-[var(--charcoal)]">Curva C</option>
-              <option value="D" className="bg-[var(--charcoal)]">Curva D</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* ── ROW 1: TOP SUMMARY KPIS (6 CARDS METRICS SUITE) ── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 shrink-0">
-        <div className="card px-3 py-2 flex items-center justify-between border border-[var(--line)] border-l-4 border-l-[var(--lime)] bg-[var(--card)] hover:border-[var(--lime)]/50 transition-all shadow-sm">
-          <div>
-            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Negócios Ativos</div>
-            <div className="text-base font-display font-black text-[var(--white)] mt-0.5">{activeDealsCount}</div>
-          </div>
-          <div className="w-7 h-7 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center shrink-0 text-[var(--gray2)]">
-            <Package size={14} className="text-[var(--gray2)]" />
-          </div>
-        </div>
-
-        <div className="card px-3 py-2 flex items-center justify-between border border-[var(--line)] border-l-4 border-l-[var(--lime)] bg-[var(--card)] hover:border-[var(--lime)]/50 transition-all shadow-sm">
-          <div>
-            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Fechamentos (Mês)</div>
-            <div className="text-base font-display font-black text-[var(--green)] mt-0.5">{formatCurrency(fechamentoValue)}</div>
-          </div>
-          <div className="w-7 h-7 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center shrink-0 text-[var(--green)]">
-            <CheckCircle size={14} className="text-[var(--green)]" />
-          </div>
-        </div>
-
-        <div className="card px-3 py-2 flex items-center justify-between border border-[var(--line)] border-l-4 border-l-[var(--lime)] bg-[var(--card)] hover:border-[var(--lime)]/50 transition-all shadow-sm">
-          <div>
-            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Ticket Médio</div>
-            <div className="text-base font-display font-black text-[var(--white)] mt-0.5">{formatCurrency(advancedMetrics.ticketMedio)}</div>
-          </div>
-          <div className="w-7 h-7 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center shrink-0 text-[var(--gray2)]">
-            <DollarSign size={14} className="text-[var(--gray2)]" />
-          </div>
-        </div>
-
-        <div className="card px-3 py-2 flex items-center justify-between border border-[var(--line)] border-l-4 border-l-[var(--lime)] bg-[var(--card)] hover:border-[var(--lime)]/50 transition-all shadow-sm">
-          <div>
-            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Taxa Conversão</div>
-            <div className="text-base font-display font-black text-[var(--white)] mt-0.5">{advancedMetrics.conversionRate.toFixed(1)}%</div>
-          </div>
-          <div className="w-7 h-7 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center shrink-0 text-[var(--gray2)]">
-            <TrendingUp size={14} className="text-[var(--gray2)]" />
-          </div>
-        </div>
-
-        <div className="card px-3 py-2 flex items-center justify-between border border-[var(--line)] border-l-4 border-l-[var(--lime)] bg-[var(--card)] hover:border-[var(--lime)]/50 transition-all shadow-sm">
-          <div>
-            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Ciclo Médio</div>
-            <div className="text-base font-display font-black text-[var(--white)] mt-0.5">{advancedMetrics.averageCycleDays} dias</div>
-          </div>
-          <div className="w-7 h-7 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center shrink-0 text-[var(--gray2)]">
-            <Clock size={14} className="text-[var(--gray2)]" />
-          </div>
-        </div>
-
-        <div className="card px-3 py-2 flex items-center justify-between border border-[var(--line)] border-l-4 border-l-[var(--lime)] bg-[var(--card)] hover:border-[var(--lime)]/50 transition-all shadow-sm">
-          <div>
-            <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold">Perdidos (Mês)</div>
-            <div className="text-base font-display font-black text-[var(--red)] mt-0.5">{formatCurrency(perdidoValue)}</div>
-          </div>
-          <div className="w-7 h-7 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center shrink-0 text-[var(--red)]">
-            <XCircle size={14} className="text-[var(--red)]" />
-          </div>
-        </div>
-      </div>
-
-      {/* ── ROW 2: FUNNEL ── */}
-      <div className="card px-3 pt-2.5 pb-3 flex flex-col gap-2 shrink-0 bg-[var(--card)] border border-[var(--line)]">
-        <div className="flex items-center justify-between border-b border-[var(--line)] pb-2 mb-1">
-          <div className="flex items-center gap-2">
-            <Target size={13} className="text-[var(--gray2)]" />
-            <span className="text-[11px] font-bold font-display text-[var(--white)]">Funil de Vendas · Passos do Pipeline</span>
-          </div>
-          <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider">8 Etapas Comerciais</span>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          {funnelSummary.map((item, idx) => (
-            <div key={item.key} className="flex items-center gap-1.5 flex-1 min-w-0">
-              {/* Stage card with left accent border and watermark icon */}
-              <div
-                className="flex-1 min-w-0 rounded-xl px-2.5 py-2 flex flex-col gap-0.5 border border-[var(--line)] bg-[var(--charcoal)] hover:border-[var(--lime)]/50 transition-all cursor-default relative overflow-hidden group shadow-sm"
-                style={{ borderLeft: `3.5px solid ${item.color}` }}
-              >
-                {/* Stage name */}
-                <div className="text-[8px] font-mono font-bold uppercase tracking-wide truncate text-[var(--gray2)]">
-                  {item.stage}
-                </div>
-
-                {/* Main Value */}
-                <div className="text-[11px] font-mono font-extrabold text-[var(--white)] truncate leading-tight my-0.5">
-                  {item.value ? formatCurrency(item.value) : <span className="text-[var(--gray2)]">R$ 0,00</span>}
-                </div>
-
-                {/* Negócios Count */}
-                <div className="text-[9px] font-mono font-bold text-[var(--gray2)]">
-                  {item.count} {item.count === 1 ? 'negócio' : 'negócios'}
-                </div>
-
-                {/* Watermark Icon */}
-                <div 
-                  className="absolute -right-1 -bottom-1 opacity-[0.10] pointer-events-none group-hover:opacity-25 transition-opacity"
-                  style={{ color: item.color }}
-                >
-                  {getStageIcon(item.key, item.color, 40)}
-                </div>
-              </div>
-
-              {/* Connector */}
-              {idx < funnelSummary.length - 1 && (
-                <div className="shrink-0 text-[var(--gray2)] opacity-50">
-                  <ArrowRight size={10} strokeWidth={2.5} />
-                </div>
+              ) : (
+                <table className="w-full text-left border-collapse text-xs font-mono">
+                  <thead className="sticky top-0 bg-[var(--charcoal)] shadow-sm">
+                    <tr className="border-b border-[var(--line)] text-[10px] text-[var(--gray2)] uppercase">
+                      <th className="py-2.5 px-3">Cliente / CNPJ</th>
+                      <th className="py-2.5 px-3">Negócio / Título</th>
+                      <th className="py-2.5 px-3 text-center">Curva</th>
+                      <th className="py-2.5 px-3">Representante</th>
+                      <th className="py-2.5 px-3 text-right">Valor (R$)</th>
+                      <th className="py-2.5 px-3 text-center">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--line)]">
+                    {filteredDrillItems.map((item, idx) => (
+                      <tr key={item.id || idx} className="hover:bg-[var(--charcoal)] transition-colors">
+                        <td className="py-3 px-3">
+                          <div className="font-bold text-white">{item.company}</div>
+                          <div className="text-[10px] text-[var(--gray2)]">{item.cnpj || 'CNPJ não informado'}</div>
+                        </td>
+                        <td className="py-3 px-3 text-slate-300">
+                          <div>{item.title}</div>
+                          {item.lostReason && (
+                            <span className="text-[10px] text-red-400 font-bold block mt-0.5">Motivo: {item.lostReason}</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
+                            Curva {item.curve || 'C'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-slate-300 font-bold">
+                          {item.representative}
+                        </td>
+                        <td className="py-3 px-3 text-right font-black text-[#10b981]">
+                          {formatCurrency(item.value)}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <button
+                            onClick={() => setDetailItem(item)}
+                            className="btn btn-secondary text-[10px] py-1 px-2.5 rounded-md font-bold flex items-center gap-1 mx-auto hover:border-[#10b981]"
+                          >
+                            <Eye size={12} />
+                            <span>Ficha</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* ── ROW 3 & 4: MAIN DYNAMIC WORKSPACE (2/3 LEFT GRAPHS/PERF | 1/3 RIGHT FULL-HEIGHT MAP) ── */}
-      <div className="grid grid-cols-12 gap-3 flex-1 min-h-0">
-        
-        {/* LEFT DYNAMIC CONTENT AREA (col-span-8) */}
-        <div className="col-span-8 flex flex-col gap-3 h-full min-h-0">
-          
-          {/* Sales Chart with Drilldown & Labels */}
-          <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] h-[225px] shrink-0">
-            <div className="flex items-center justify-between border-b border-[var(--line)] pb-1.5 shrink-0">
+            <div className="p-3 border-t border-[var(--line)] bg-[var(--charcoal)] flex justify-end">
+              <button
+                onClick={() => setDrillDownModal(prev => ({ ...prev, isOpen: false }))}
+                className="btn btn-primary text-xs py-2 px-6 font-bold uppercase tracking-wider text-[#060606]"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          8. MODAL DE DETALHES DE REGISTRO (FICHA DO ITEM)
+         ======================================================== */}
+      {detailItem && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fadeIn select-none">
+          <div className="card w-full max-w-md bg-[var(--card)] border border-[var(--line)] rounded-2xl p-5 shadow-2xl flex flex-col gap-4 relative">
+            <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
               <div className="flex items-center gap-2">
-                <BarChart3 size={13} className="text-[var(--lime)]" />
-                <span className="text-xs font-bold font-display text-[var(--white)]">
-                  {selectedDrilldownMonth ? `Vendas · ${selectedDrilldownMonth.month} / ${selectedYear} (Visão Diária)` : `Vendas do Ano · ${selectedYear}`}
-                </span>
+                <Building2 size={18} className="text-[#10b981]" />
+                <div>
+                  <h3 className="font-bold text-sm text-white">{detailItem.company}</h3>
+                  <span className="text-[10px] font-mono text-[var(--gray2)]">CNPJ: {detailItem.cnpj || 'Não informado'}</span>
+                </div>
               </div>
-              {selectedDrilldownMonth ? (
-                <button 
-                  onClick={() => setSelectedDrilldownMonth(null)}
-                  className="text-[9px] font-mono font-bold text-[var(--lime)] hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <ChevronLeft size={10} /> Voltar Mês
-                </button>
-              ) : (
-                <span className="text-[9px] font-mono text-[var(--gray2)] uppercase">Clique no mês para ver o detalhamento dia a dia</span>
+              <button onClick={() => setDetailItem(null)} className="text-[var(--gray2)] hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="bg-[var(--charcoal)] p-3.5 rounded-xl border border-[var(--line)] space-y-2 text-xs font-mono">
+              <div className="flex justify-between">
+                <span className="text-[var(--gray2)]">Título/Negócio:</span>
+                <span className="font-bold text-white">{detailItem.title}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--gray2)]">Representante:</span>
+                <span className="font-bold text-white">{detailItem.representative}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--gray2)]">Curva ABC:</span>
+                <span className="font-bold text-[#10b981]">Curva {detailItem.curve || 'C'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--gray2)]">Valor Registrado:</span>
+                <span className="font-black text-[#10b981]">{formatCurrency(detailItem.value)}</span>
+              </div>
+              {detailItem.lostReason && (
+                <div className="flex justify-between text-red-400">
+                  <span>Motivo Perda:</span>
+                  <span className="font-bold">{detailItem.lostReason}</span>
+                </div>
               )}
             </div>
 
-            <div className="flex-1 flex items-center pt-2 pb-1 overflow-x-auto min-h-0 px-1">
-              {!selectedDrilldownMonth ? (
-                /* MONTHLY VIEW - Modern SVG Spline Area Line Chart */
-                (() => {
-                  const svgW = 600
-                  const svgH = 140
-                  const padX = 24
-                  const padTop = 26
-                  const padBottom = 22
-
-                  const maxVal = Math.max(10000, ...MONTHLY_SALES_DATA.map(m => m.value))
-                  const chartW = svgW - padX * 2
-                  const chartH = svgH - padTop - padBottom
-                  const baselineY = svgH - padBottom
-
-                  const points = MONTHLY_SALES_DATA.map((m, i) => {
-                    const x = padX + (i * chartW) / (MONTHLY_SALES_DATA.length - 1)
-                    const y = baselineY - (m.value / maxVal) * chartH
-                    return { ...m, x, y, index: i }
-                  })
-
-                  // Compute smooth bezier curve commands
-                  let lineD = ''
-                  if (points.length > 0) {
-                    lineD = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`
-                    for (let i = 0; i < points.length - 1; i++) {
-                      const p0 = points[i === 0 ? i : i - 1]
-                      const p1 = points[i]
-                      const p2 = points[i + 1]
-                      const p3 = points[i + 2 < points.length ? i + 2 : i + 1]
-
-                      const cp1x = p1.x + (p2.x - p0.x) / 6
-                      const cp1y = p1.y + (p2.y - p0.y) / 6
-
-                      const cp2x = p2.x - (p3.x - p1.x) / 6
-                      const cp2y = p2.y - (p3.y - p1.y) / 6
-
-                      lineD += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`
-                    }
-                  }
-
-                  const areaD = `${lineD} L ${points[points.length - 1].x.toFixed(1)} ${baselineY} L ${points[0].x.toFixed(1)} ${baselineY} Z`
-
-                  return (
-                    <div className="w-full h-full flex flex-col justify-between relative select-none">
-                      <svg
-                        viewBox={`0 0 ${svgW} ${svgH}`}
-                        className="w-full h-full overflow-visible"
-                        preserveAspectRatio="none"
-                      >
-                        <defs>
-                          <linearGradient id="salesLineGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="var(--lime)" stopOpacity="0.35" />
-                            <stop offset="100%" stopColor="var(--lime)" stopOpacity="0.0" />
-                          </linearGradient>
-                        </defs>
-
-                        {/* Baseline */}
-                        <line
-                          x1={padX}
-                          y1={baselineY}
-                          x2={svgW - padX}
-                          y2={baselineY}
-                          stroke="var(--line)"
-                          strokeWidth="1"
-                        />
-
-                        {/* Area gradient under line */}
-                        <path d={areaD} fill="url(#salesLineGradient)" />
-
-                        {/* Spline Line */}
-                        <path
-                          d={lineD}
-                          fill="none"
-                          stroke="var(--lime)"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-
-                        {/* Interactive Data Points */}
-                        {points.map((pt) => {
-                          const isSelected = selectedMonth !== 'all' && parseInt(selectedMonth) === pt.monthIndex
-                          const hasSales = pt.value > 0
-
-                          return (
-                            <g
-                              key={pt.month}
-                              className="cursor-pointer group"
-                              onClick={() => setSelectedDrilldownMonth(pt)}
-                            >
-                              {/* Hover / Selected Guide Line */}
-                              {isSelected && (
-                                <line
-                                  x1={pt.x}
-                                  y1={padTop}
-                                  x2={pt.x}
-                                  y2={baselineY}
-                                  stroke="var(--lime)"
-                                  strokeWidth="1"
-                                  strokeDasharray="2 2"
-                                  opacity="0.5"
-                                />
-                              )}
-
-                              {/* Point Marker */}
-                              {hasSales ? (
-                                <circle
-                                  cx={pt.x}
-                                  cy={pt.y}
-                                  r={isSelected ? 5.5 : 4}
-                                  fill="var(--card)"
-                                  stroke="var(--lime)"
-                                  strokeWidth="2.5"
-                                  className="transition-all duration-150 group-hover:r-6"
-                                />
-                              ) : (
-                                <circle
-                                  cx={pt.x}
-                                  cy={pt.y}
-                                  r="2"
-                                  fill="var(--line)"
-                                  className="transition-all duration-150 group-hover:r-3"
-                                />
-                              )}
-
-                              {/* Month Name Below Baseline */}
-                              <text
-                                x={pt.x}
-                                y={svgH - 4}
-                                textAnchor="middle"
-                                fontSize="9"
-                                fontWeight={isSelected ? 'bold' : 'normal'}
-                                fill={isSelected ? 'var(--lime)' : 'var(--gray2)'}
-                                className="font-mono transition-colors"
-                              >
-                                {pt.month}
-                              </text>
-
-                              {/* Value Label above active points ONLY - Formatted without R$ and without decimals e.g. 146.600 */}
-                              {hasSales && (
-                                <g className="transition-all">
-                                  <rect
-                                    x={pt.x - 30}
-                                    y={pt.y - 20}
-                                    width="60"
-                                    height="15"
-                                    rx="4"
-                                    fill="var(--card)"
-                                    stroke="var(--line)"
-                                    strokeWidth="0.8"
-                                  />
-                                  <text
-                                    x={pt.x}
-                                    y={pt.y - 9}
-                                    textAnchor="middle"
-                                    fontSize="8.5"
-                                    fontWeight="bold"
-                                    fill="var(--lime)"
-                                    className="font-mono"
-                                  >
-                                    {formatAbbreviatedNumber(pt.value)}
-                                  </text>
-                                </g>
-                              )}
-                            </g>
-                          )
-                        })}
-                      </svg>
-                    </div>
-                  )
-                })()
-              ) : (
-                /* DAILY DRILLDOWN VIEW - Modern SVG Spline Area Line Chart with 146k labels */
-                (() => {
-                  const dailyArr: any[] = selectedDrilldownMonth.daily || []
-                  const svgW = 600
-                  const svgH = 140
-                  const padX = 18
-                  const padTop = 26
-                  const padBottom = 22
-
-                  const maxVal = Math.max(1000, ...dailyArr.map((d: any) => d.value))
-                  const chartW = svgW - padX * 2
-                  const chartH = svgH - padTop - padBottom
-                  const baselineY = svgH - padBottom
-
-                  const points = dailyArr.map((d: any, i: number) => {
-                    const x = padX + (i * chartW) / Math.max(1, dailyArr.length - 1)
-                    const y = baselineY - (d.value / maxVal) * chartH
-                    return { ...d, x, y, index: i }
-                  })
-
-                  let lineD = ''
-                  if (points.length > 0) {
-                    lineD = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`
-                    for (let i = 0; i < points.length - 1; i++) {
-                      const p0 = points[i === 0 ? i : i - 1]
-                      const p1 = points[i]
-                      const p2 = points[i + 1]
-                      const p3 = points[i + 2 < points.length ? i + 2 : i + 1]
-
-                      const cp1x = p1.x + (p2.x - p0.x) / 6
-                      const cp1y = p1.y + (p2.y - p0.y) / 6
-
-                      const cp2x = p2.x - (p3.x - p1.x) / 6
-                      const cp2y = p2.y - (p3.y - p1.y) / 6
-
-                      lineD += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`
-                    }
-                  }
-
-                  const areaD = `${lineD} L ${points[points.length - 1].x.toFixed(1)} ${baselineY} L ${points[0].x.toFixed(1)} ${baselineY} Z`
-
-                  return (
-                    <div className="w-full h-full flex flex-col justify-between relative select-none">
-                      <svg
-                        viewBox={`0 0 ${svgW} ${svgH}`}
-                        className="w-full h-full overflow-visible"
-                        preserveAspectRatio="none"
-                      >
-                        <defs>
-                          <linearGradient id="dailySalesGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="var(--lime)" stopOpacity="0.35" />
-                            <stop offset="100%" stopColor="var(--lime)" stopOpacity="0.0" />
-                          </linearGradient>
-                        </defs>
-
-                        {/* Baseline */}
-                        <line x1={padX} y1={baselineY} x2={svgW - padX} y2={baselineY} stroke="var(--line)" strokeWidth="1" />
-
-                        {/* Area Gradient */}
-                        <path d={areaD} fill="url(#dailySalesGrad)" />
-
-                        {/* Spline Line */}
-                        <path d={lineD} fill="none" stroke="var(--lime)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-
-                        {/* Points & Labels */}
-                        {points.map((pt: any) => {
-                          const hasSales = pt.value > 0
-                          const kLabel = pt.value >= 1000 ? `${(pt.value / 1000).toFixed(0)}k` : `${pt.value}`
-
-                          return (
-                            <g key={pt.day} className="group cursor-pointer">
-                              {hasSales ? (
-                                <circle cx={pt.x} cy={pt.y} r="3.5" fill="var(--card)" stroke="var(--lime)" strokeWidth="2" />
-                              ) : (
-                                <circle cx={pt.x} cy={pt.y} r="1.5" fill="var(--line)" />
-                              )}
-
-                              {/* Day Label */}
-                              <text x={pt.x} y={svgH - 4} textAnchor="middle" fontSize="7.5" fill="var(--gray2)" className="font-mono">
-                                {pt.day}
-                              </text>
-
-                              {/* Abbreviated label '146k' above active sales points */}
-                              {hasSales && (
-                                <g>
-                                  <rect x={pt.x - 16} y={pt.y - 17} width="32" height="13" rx="3" fill="var(--card)" stroke="var(--line)" strokeWidth="0.8" />
-                                  <text x={pt.x} y={pt.y - 7} textAnchor="middle" fontSize="8" fontWeight="bold" fill="var(--lime)" className="font-mono">
-                                    {kLabel}
-                                  </text>
-                                </g>
-                              )}
-                            </g>
-                          )
-                        })}
-                      </svg>
-                    </div>
-                  )
-                })()
-              )}
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                onClick={() => setDetailItem(null)}
+                className="btn btn-primary text-xs py-2 px-6 font-bold uppercase tracking-wider text-[#060606] w-full rounded-xl"
+              >
+                Entendido
+              </button>
             </div>
-          </div>
-
-          {/* Under-Chart indicators: Performance da Equipe & Combined Top Clientes + Embalagens */}
-          {currentUser?.role === 'representante' || currentUser?.role === 'vendedor' ? (
-            /* Visão Exclusiva de Vendedor/Representante: Separa Top Clientes de Top Embalagens lado a lado */
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 min-h-0">
-              {/* CARD 1: Top Clientes */}
-              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] border border-[var(--line)] h-full">
-                <div className="flex items-center justify-between border-b border-[var(--line)] pb-1.5 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <Building size={13} className="text-[var(--lime)]" />
-                    <span className="text-xs font-bold font-display text-[var(--white)]">Top Clientes</span>
-                  </div>
-                  <span className="text-[9px] font-mono text-[var(--lime)] font-bold">Fechamentos</span>
-                </div>
-
-                <div className="flex-1 overflow-y-auto space-y-1.5 mt-2 pr-1 min-h-0">
-                  {TOP_CLIENTS.length === 0 ? (
-                    <div className="text-[10px] font-mono text-[var(--gray2)] py-4 italic text-center">Nenhum cliente com venda fechada no período.</div>
-                  ) : (
-                    TOP_CLIENTS.map(cli => (
-                      <div key={cli.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-[9px] font-mono text-[var(--lime)] font-black">#{cli.rank}</span>
-                          <div className="text-xs font-bold text-[var(--white)] truncate">{cli.name}</div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-[8px] font-mono bg-lime-500/10 text-[var(--lime)] px-1.5 py-0.5 rounded font-black border border-[var(--lime)]/10">{cli.type}</span>
-                          <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(cli.value)}</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* CARD 2: Top Embalagens */}
-              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] border border-[var(--line)] h-full">
-                <div className="flex items-center justify-between border-b border-[var(--line)] pb-1.5 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <Layers size={13} className="text-[var(--lime)]" />
-                    <span className="text-xs font-bold font-display text-[var(--white)]">Top Embalagens</span>
-                  </div>
-                  <span className="text-[9px] font-mono text-sky-400 font-bold">Mais Demandadas</span>
-                </div>
-
-                <div className="flex-1 overflow-y-auto space-y-1.5 mt-2 pr-1 min-h-0">
-                  {TOP_PRODUCTS.length === 0 ? (
-                    <div className="text-[10px] font-mono text-[var(--gray2)] py-4 italic text-center">Nenhuma embalagem demandada no período.</div>
-                  ) : (
-                    TOP_PRODUCTS.map(prod => (
-                      <div key={prod.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-[9px] font-mono text-sky-400 font-black">#{prod.rank}</span>
-                          <div className="text-xs font-bold text-[var(--white)] truncate">{prod.name}</div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0 text-right">
-                          <span className="text-[8px] font-mono bg-sky-500/10 text-sky-400 px-1.5 py-0.5 rounded font-black border border-sky-500/10">{prod.quantity}</span>
-                          <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(prod.value)}</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* Visão Gestor/Admin: Exibe "Performance da Equipe" + "Top Clientes & Embalagens" lado a lado */
-            <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
-              {/* COL 1: Performance da Equipe */}
-              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] border border-[var(--line)] h-full">
-                <div className="flex items-center justify-between border-b border-[var(--line)] pb-1 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <Users size={13} className="text-[var(--gray2)]" />
-                    <span className="text-xs font-bold font-display text-[var(--white)]">Performance da Equipe</span>
-                  </div>
-                  <span className="text-[9px] font-mono text-[var(--gray2)] uppercase">Mês Atual</span>
-                </div>
-
-                <div className="flex-1 overflow-y-auto space-y-1.5 mt-2 pr-1 min-h-0">
-                  {TEAM_PERFORMANCE.map(rep => (
-                    <div key={rep.id} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/50 transition-all">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div 
-                          className="w-7 h-7 rounded-lg flex items-center justify-center bg-[var(--card)] border border-[var(--line)] text-[var(--white)] font-bold text-[10px] shrink-0"
-                        >
-                          {rep.name.split(' ').map((p: any) => p[0]).join('')}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-[var(--white)] truncate leading-tight">{rep.name}</div>
-                          <div className="text-[8px] font-mono text-[var(--gray2)] truncate">{rep.role}</div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0 text-right">
-                        <div>
-                          <div className="text-[7px] font-mono text-[var(--gray2)] uppercase">Fechamentos</div>
-                          <div className="text-[10px] font-mono font-bold text-[var(--white)]">{rep.closedCount}</div>
-                        </div>
-                        <div>
-                          <div className="text-[7px] font-mono text-[var(--gray2)] uppercase">Faturado</div>
-                          <div className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(rep.sales)}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* COL 2: Top Clientes e Embalagens Combinados */}
-              <div className="card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] border border-[var(--line)] h-full">
-                <div className="flex items-center justify-between border-b border-[var(--line)] pb-1 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <Building size={13} className="text-[var(--gray2)]" />
-                    <span className="text-xs font-bold font-display text-[var(--white)]">Top Clientes & Embalagens</span>
-                  </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto space-y-3 mt-2 pr-1 min-h-0">
-                  {/* Principais Clientes */}
-                  <div className="space-y-1">
-                    <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold tracking-wider flex items-center gap-1">
-                      <Building size={10} className="text-[var(--gray2)]" /> Principais Clientes
-                    </div>
-                    <div className="space-y-1">
-                      {TOP_CLIENTS.length === 0 ? (
-                        <div className="text-[10px] font-mono text-[var(--gray2)] py-2 italic text-center">Nenhum cliente com venda fechada no período.</div>
-                      ) : (
-                        TOP_CLIENTS.map(cli => (
-                          <div key={cli.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/50 transition-all">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-[8px] font-mono text-[var(--lime)] font-bold">#{cli.rank}</span>
-                              <div className="text-xs font-bold text-[var(--white)] truncate">{cli.name}</div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[8px] font-mono bg-[var(--card)] text-[var(--gray2)] px-1.5 py-0.5 rounded font-bold border border-[var(--line)]">{cli.type}</span>
-                              <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(cli.value)}</span>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Embalagens Mais Demandadas */}
-                  <div className="space-y-1 border-t border-[var(--line)] pt-2.5">
-                    <div className="text-[8px] font-mono text-[var(--gray2)] uppercase font-bold tracking-wider flex items-center gap-1">
-                      <Layers size={10} className="text-[var(--lime)]" /> Embalagens mais Demandadas
-                    </div>
-                    <div className="space-y-1">
-                      {TOP_PRODUCTS.length === 0 ? (
-                        <div className="text-[10px] font-mono text-[var(--gray2)] py-2 italic text-center">Nenhuma embalagem com venda fechada no período.</div>
-                      ) : (
-                        TOP_PRODUCTS.map(prod => (
-                          <div key={prod.rank} className="p-2 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] flex items-center justify-between gap-2 hover:border-[var(--lime)]/30 transition-all">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-[8px] font-mono text-[var(--gray2)] font-bold">#{prod.rank}</span>
-                              <div className="text-xs font-bold text-[var(--white)] truncate">{prod.name}</div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0 text-right">
-                              <span className="text-[8px] font-mono bg-sky-500/10 text-sky-400 px-1.5 py-0.5 rounded font-black border border-sky-500/10">{prod.quantity}</span>
-                              <span className="text-[10px] font-mono font-bold text-[var(--lime)]">{formatCurrency(prod.value)}</span>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT SIDE TALL CONTAINER (col-span-4) - Full-height Map */}
-        <div className="col-span-4 card p-3 flex flex-col justify-between overflow-hidden bg-[var(--card)] h-full relative">
-          <div className="flex items-center justify-between border-b border-[var(--line)] pb-1.5 shrink-0 z-10 bg-[var(--card)]">
-            <div className="flex items-center gap-2">
-              <MapPin size={13} className="text-[var(--lime)]" />
-              <span className="text-xs font-bold font-display text-[var(--white)]">Geolocalização dos Negócios</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsMapFullscreen(true)}
-              className="px-2 py-1 rounded-lg border border-[var(--line)] bg-[var(--charcoal)] text-[var(--white)] hover:border-[var(--lime)]/50 hover:text-[var(--lime)] transition-all flex items-center gap-1 text-[10px] font-mono font-bold cursor-pointer"
-              title="Ampliar Mapa em Tela Cheia"
-            >
-              <Maximize2 size={12} />
-              <span>Ampliar</span>
-            </button>
-          </div>
-          <div className="flex-1 w-full rounded-xl overflow-hidden border border-[var(--line)] mt-1.5 min-h-0 relative">
-            <div ref={mapContainerRef} className="w-full h-full min-h-[350px] bg-[var(--charcoal)]" />
-          </div>
-        </div>
-
-      </div>
-
-      {/* DEDICATED FULLSCREEN MAP MODAL (100% SCREEN) */}
-      {isMapFullscreen && (
-        <div className="fixed inset-0 bg-black/95 z-[99999] flex flex-col p-4 sm:p-6 animate-fade-in backdrop-blur-md">
-          {/* Modal Header */}
-          <div className="flex items-center justify-between border-b border-[var(--line)] pb-4 mb-4 shrink-0 gap-4">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="w-10 h-10 rounded-xl bg-[var(--lime)]/10 border border-[var(--lime)]/20 flex items-center justify-center shrink-0">
-                <MapPin size={20} className="text-[var(--lime)]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="font-display text-base sm:text-lg text-[var(--white)] font-bold tracking-tight">
-                  Geolocalização dos Negócios
-                </h2>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setIsMapFullscreen(false)}
-              className="btn btn-secondary px-4 py-2 text-xs font-bold font-mono flex items-center gap-2 rounded-xl border-[var(--line)] hover:border-[var(--lime)] hover:text-[var(--lime)] cursor-pointer shrink-0"
-            >
-              <Minimize2 size={16} />
-              <span>Minimizar</span>
-            </button>
-          </div>
-
-          {/* Map Container */}
-          <div className="flex-1 w-full h-full rounded-2xl overflow-hidden border border-[var(--line)] relative bg-[var(--charcoal)]">
-            <div ref={fullscreenMapContainerRef} className="w-full h-full min-h-[400px] z-10" />
           </div>
         </div>
       )}
