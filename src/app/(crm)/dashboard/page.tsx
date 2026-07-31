@@ -825,9 +825,66 @@ export default function DashboardPage() {
     }))
   }, [filteredData])
 
-  // Map Initialization & Plotting Effect
+  // MapItems filtrados exatamente pelos pedidos e negocios do periodo selecionado (ex: 56 pedidos em Julho)
+  const mapItems = useMemo(() => {
+    const items: Array<{
+      id: string;
+      company: string;
+      cnpj?: string;
+      city: string;
+      state: string;
+      representative: string;
+      value: number;
+      color: string;
+      typeLabel: string;
+      stageOrStatus: string;
+      date?: string;
+    }> = []
+
+    // 1. Pedidos Fechados / Emitidos no período (Verde #10b981)
+    filteredData.orders.forEach(o => {
+      items.push({
+        id: `ord-${o.id}`,
+        company: o.company,
+        cnpj: o.cnpj || o.contact?.cnpj,
+        city: o.contact?.city || 'Novo Hamburgo',
+        state: o.contact?.state || 'RS',
+        representative: o.representative || 'Representante',
+        value: o.value,
+        color: '#10b981',
+        typeLabel: 'PEDIDO FECHADO',
+        stageOrStatus: `Pedido Fechado #${o.order_number}`,
+        date: o.date
+      })
+    })
+
+    // 2. Negócios em andamento / aprovação no Funil no período
+    filteredData.deals.forEach(d => {
+      const isApproval = d.stage === 'potencial' || d.stage === 'visita'
+      const color = isApproval ? '#06b6d4' : '#f59e0b'
+      const typeLabel = isApproval ? 'APROVAÇÃO / BRIEFING' : 'EM NEGOCIAÇÃO'
+      
+      items.push({
+        id: `deal-${d.id}`,
+        company: d.contact?.company || d.contact?.name || 'Cliente',
+        cnpj: d.contact?.cnpj,
+        city: d.contact?.city || 'Porto Alegre',
+        state: d.contact?.state || 'RS',
+        representative: d.assigned_to || 'Representante',
+        value: d.estimated_value || 0,
+        color,
+        typeLabel,
+        stageOrStatus: `Etapa: ${d.stage.toUpperCase()}`,
+        date: d.created_at
+      })
+    })
+
+    return items
+  }, [filteredData.orders, filteredData.deals])
+
+  // Standard Embedded Map Initialization Effect
   useEffect(() => {
-    if (!leafletReady || !contactsMapRef.current) return
+    if (!leafletReady || !contactsMapRef.current || isMapExpanded) return
     const L_Global = (window as any).L
     if (!L_Global) return
 
@@ -865,25 +922,22 @@ export default function DashboardPage() {
       return h
     }
 
-    filteredData.contacts.forEach((contact) => {
-      const computedStatus = contact.status || 'ativo'
-      let pinColor = '#10b981'
-      if (computedStatus === 'reativacao') pinColor = '#f97316'
-      else if (computedStatus === 'prospeccao') pinColor = '#06b6d4'
+    mapItems.forEach((item) => {
+      const pinColor = item.color
 
-      const key = contact.id || contact.cnpj || contact.company || contact.name || 'c'
+      const key = item.id || item.company || 'm'
       const h1 = Math.sin(hashStr(key) * 888.8)
       const h2 = Math.cos(hashStr(key + '_lng') * 777.7)
 
-      const normCity = (contact.city || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim()
-      const cityBase = CITY_COORDINATES[normCity] || CITY_COORDINATES[contact.city?.toUpperCase() || '']
+      const normCity = (item.city || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim()
+      const cityBase = CITY_COORDINATES[normCity] || CITY_COORDINATES[item.city?.toUpperCase() || '']
 
-      let finalLat = -29.6842 + (h1 * 0.4)
-      let finalLng = -51.1303 + (h2 * 0.4)
+      let finalLat = -29.6842 + (h1 * 0.3)
+      let finalLng = -51.1303 + (h2 * 0.3)
 
       if (cityBase) {
-        finalLat = cityBase[0] + (h1 * 0.012)
-        finalLng = cityBase[1] + (h2 * 0.012)
+        finalLat = cityBase[0] + (h1 * 0.015)
+        finalLng = cityBase[1] + (h2 * 0.015)
       }
 
       const finalLatLng: [number, number] = [finalLat, finalLng]
@@ -892,25 +946,41 @@ export default function DashboardPage() {
       const customIcon = L_Global.divIcon({
         className: 'clear-custom-pin',
         html: `
-          <div style="display: flex; align-items: center; justify-content: center; width: 22px; height: 26px; background: transparent !important; border: none !important;">
-            <svg viewBox="0 0 20 24" width="22" height="26" style="filter: drop-shadow(0 3px 5px rgba(0,0,0,0.4)); pointer-events: none;">
-              <path d="M10 0C4.477 0 0 4.477 0 10c0 7.5 10 14 10 14s10-6.5 10-14c0-5.523-4.477-10-10-10z" fill="${pinColor}" stroke="#ffffff" stroke-width="1.5" />
+          <div style="display: flex; align-items: center; justify-content: center; width: 24px; height: 28px; background: transparent !important; border: none !important;">
+            <svg viewBox="0 0 20 24" width="24" height="28" style="filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)); pointer-events: none;">
+              <path d="M10 0C4.477 0 0 4.477 0 10c0 7.5 10 14 10 14s10-6.5 10-14c0-5.523-4.477-10-10-10z" fill="${pinColor}" stroke="#ffffff" stroke-width="1.8" />
               <circle cx="10" cy="10" r="3.5" fill="#ffffff" />
             </svg>
           </div>
         `,
-        iconSize: [22, 26],
-        iconAnchor: [11, 26]
+        iconSize: [24, 28],
+        iconAnchor: [12, 28]
       })
 
       const marker = L_Global.marker(finalLatLng, { icon: customIcon })
-      marker.bindTooltip(`
-        <div style="font-family: monospace; font-size: 11px; padding: 4px; background: #0f172a; color: #fff; border-radius: 6px;">
-          <strong>${contact.company || contact.name}</strong>
-          <div style="color: #94a3b8; font-size: 10px; margin-top: 1px;">${contact.city || 'RS'}</div>
-          <div style="color: ${pinColor}; font-size: 10px; font-weight: bold; margin-top: 2px;">STATUS: ${computedStatus.toUpperCase()}</div>
+      
+      const tooltipHtml = `
+        <div style="font-family: sans-serif; min-width: 210px; padding: 10px 12px; background: #090d16; border: 1px solid #334155; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); color: #fff;">
+          <div style="font-size: 10px; font-weight: 800; color: ${pinColor}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;">
+            ● ${item.typeLabel}
+          </div>
+          <strong style="font-size: 13px; color: #ffffff; display: block; line-height: 1.2; font-weight: 700;">
+            ${item.company}
+          </strong>
+          <div style="font-size: 13px; font-family: monospace; font-weight: 900; color: #38bdf8; margin-top: 4px; margin-bottom: 6px;">
+            R$ ${item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </div>
+          <div style="font-size: 11px; color: #94a3b8; border-top: 1px solid #1e293b; padding-top: 6px; margin-top: 6px; display: flex; flex-direction: column; gap: 3px;">
+            <div>📍 <b>Cidade:</b> ${item.city} / ${item.state}</div>
+            ${item.cnpj ? `<div>🏢 <b>CNPJ:</b> ${item.cnpj}</div>` : ''}
+            <div>👤 <b>Rep:</b> ${item.representative}</div>
+            <div>📌 <b>Status:</b> ${item.stageOrStatus}</div>
+          </div>
         </div>
-      `, { direction: 'top' })
+      `
+
+      marker.bindTooltip(tooltipHtml, { direction: 'top', opacity: 1 })
+      marker.bindPopup(tooltipHtml)
 
       markersGroup.addLayer(marker)
     })
@@ -926,7 +996,7 @@ export default function DashboardPage() {
     setTimeout(() => {
       map.invalidateSize()
     }, 200)
-  }, [leafletReady, filteredData.contacts])
+  }, [leafletReady, mapItems, isMapExpanded])
 
   // Fullscreen Expanded Map Initialization Effect
   useEffect(() => {
@@ -968,25 +1038,22 @@ export default function DashboardPage() {
       return h
     }
 
-    filteredData.contacts.forEach((contact) => {
-      const computedStatus = contact.status || 'ativo'
-      let pinColor = '#10b981'
-      if (computedStatus === 'reativacao') pinColor = '#f97316'
-      else if (computedStatus === 'prospeccao') pinColor = '#06b6d4'
+    mapItems.forEach((item) => {
+      const pinColor = item.color
 
-      const key = contact.id || contact.cnpj || contact.company || contact.name || 'c'
+      const key = item.id || item.company || 'm'
       const h1 = Math.sin(hashStr(key) * 888.8)
       const h2 = Math.cos(hashStr(key + '_lng') * 777.7)
 
-      const normCity = (contact.city || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim()
-      const cityBase = CITY_COORDINATES[normCity] || CITY_COORDINATES[contact.city?.toUpperCase() || '']
+      const normCity = (item.city || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim()
+      const cityBase = CITY_COORDINATES[normCity] || CITY_COORDINATES[item.city?.toUpperCase() || '']
 
-      let finalLat = -29.6842 + (h1 * 0.4)
-      let finalLng = -51.1303 + (h2 * 0.4)
+      let finalLat = -29.6842 + (h1 * 0.3)
+      let finalLng = -51.1303 + (h2 * 0.3)
 
       if (cityBase) {
-        finalLat = cityBase[0] + (h1 * 0.012)
-        finalLng = cityBase[1] + (h2 * 0.012)
+        finalLat = cityBase[0] + (h1 * 0.015)
+        finalLng = cityBase[1] + (h2 * 0.015)
       }
 
       const finalLatLng: [number, number] = [finalLat, finalLng]
@@ -996,8 +1063,8 @@ export default function DashboardPage() {
         className: 'clear-custom-pin',
         html: `
           <div style="display: flex; align-items: center; justify-content: center; width: 24px; height: 28px; background: transparent !important; border: none !important;">
-            <svg viewBox="0 0 20 24" width="24" height="28" style="filter: drop-shadow(0 3px 5px rgba(0,0,0,0.4)); pointer-events: none;">
-              <path d="M10 0C4.477 0 0 4.477 0 10c0 7.5 10 14 10 14s10-6.5 10-14c0-5.523-4.477-10-10-10z" fill="${pinColor}" stroke="#ffffff" stroke-width="1.5" />
+            <svg viewBox="0 0 20 24" width="24" height="28" style="filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)); pointer-events: none;">
+              <path d="M10 0C4.477 0 0 4.477 0 10c0 7.5 10 14 10 14s10-6.5 10-14c0-5.523-4.477-10-10-10z" fill="${pinColor}" stroke="#ffffff" stroke-width="1.8" />
               <circle cx="10" cy="10" r="3.5" fill="#ffffff" />
             </svg>
           </div>
@@ -1007,12 +1074,29 @@ export default function DashboardPage() {
       })
 
       const marker = L_Global.marker(finalLatLng, { icon: customIcon })
-      marker.bindTooltip(`
-        <div style="font-family: monospace; font-size: 11px; padding: 4px; background: #0f172a; color: #fff; border-radius: 6px;">
-          <strong>${contact.company || contact.name}</strong>
-          <div style="color: ${pinColor}; font-size: 10px; font-weight: bold; margin-top: 2px;">STATUS: ${computedStatus.toUpperCase()}</div>
+
+      const tooltipHtml = `
+        <div style="font-family: sans-serif; min-width: 210px; padding: 10px 12px; background: #090d16; border: 1px solid #334155; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); color: #fff;">
+          <div style="font-size: 10px; font-weight: 800; color: ${pinColor}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;">
+            ● ${item.typeLabel}
+          </div>
+          <strong style="font-size: 13px; color: #ffffff; display: block; line-height: 1.2; font-weight: 700;">
+            ${item.company}
+          </strong>
+          <div style="font-size: 13px; font-family: monospace; font-weight: 900; color: #38bdf8; margin-top: 4px; margin-bottom: 6px;">
+            R$ ${item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </div>
+          <div style="font-size: 11px; color: #94a3b8; border-top: 1px solid #1e293b; padding-top: 6px; margin-top: 6px; display: flex; flex-direction: column; gap: 3px;">
+            <div>📍 <b>Cidade:</b> ${item.city} / ${item.state}</div>
+            ${item.cnpj ? `<div>🏢 <b>CNPJ:</b> ${item.cnpj}</div>` : ''}
+            <div>👤 <b>Rep:</b> ${item.representative}</div>
+            <div>📌 <b>Status:</b> ${item.stageOrStatus}</div>
+          </div>
         </div>
-      `, { direction: 'top' })
+      `
+
+      marker.bindTooltip(tooltipHtml, { direction: 'top', opacity: 1 })
+      marker.bindPopup(tooltipHtml)
 
       markersGroup.addLayer(marker)
     })
@@ -1029,7 +1113,7 @@ export default function DashboardPage() {
       map.invalidateSize()
     }, 150)
 
-  }, [isMapExpanded, leafletReady, filteredData.contacts])
+  }, [isMapExpanded, leafletReady, mapItems])
 
   // Drill Down Helper Openers
   const openDrillDown = (title: string, subtitle: string, items: DrillDownItem[], color = '#10b981') => {
@@ -1735,11 +1819,12 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Graphical Single-Bars Container */}
-          <div className="h-64 flex items-end justify-between gap-1 pt-6 pb-2 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
+          {/* Graphical Single-Bars Container (Colunas Grudadas no Eixo X) */}
+          <div className="h-64 flex items-end justify-between gap-1 pt-8 pb-0 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
             
-            {/* Gridlines Horizontais de Fundo com Espaçamento Padronizado */}
-            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10 pb-7 pt-3 h-full">
+            {/* Gridlines Horizontais de Fundo com Espaçamento Rigorosamente Igual */}
+            <div className="absolute inset-x-0 top-3 bottom-0 flex flex-col justify-between pointer-events-none opacity-10">
+              <div className="border-b border-white w-full" />
               <div className="border-b border-white w-full" />
               <div className="border-b border-white w-full" />
               <div className="border-b border-white w-full" />
