@@ -520,10 +520,37 @@ export default function DashboardPage() {
   })
 
   // ── EVOLUÇÃO DE VENDAS DADOS (MENSAL, SEMANAL, DIÁRIO) ──
+  // Nota: O gráfico NÃO é afetado pelo mês selecionado no filtro superior (mostra sempre a evolução completa)
   const salesEvolutionData = useMemo(() => {
     const selectedYear = yearFilter === 'all' ? '2026' : yearFilter
     const prevYearStr = String(Number(selectedYear) - 1)
-    const selectedMonth = monthFilter === 'all' ? '07' : monthFilter
+
+    // Obter todos os pedidos do ano todo (independente do filtro de mês)
+    const allYearOrders = contacts.flatMap(c => {
+      if (curveFilter !== 'all' && c.curve !== curveFilter) return []
+      if (effectiveRepFilter !== 'all') {
+        const normRep = formatCanonicalRepName(c.representative)
+        if (normRep !== effectiveRepFilter) return []
+      }
+      const ords = c.orders && Array.isArray(c.orders) ? c.orders : []
+      return ords.map(ord => ({
+        ...ord,
+        value: Number(ord.value) || 0,
+        company: c.company || c.name,
+        representative: ord.vendor || c.representative,
+        curve: c.curve || 'C'
+      }))
+    })
+
+    // Obter todos os deals do ano todo (independente do filtro de mês)
+    const allYearDeals = deals.filter(d => {
+      if (effectiveRepFilter !== 'all') {
+        const normRep = formatCanonicalRepName(d.assigned_to)
+        if (normRep !== effectiveRepFilter) return false
+      }
+      if (curveFilter !== 'all' && d.contact?.curve !== curveFilter) return false
+      return true
+    })
 
     const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
     const fullMonthNames: Record<string, string> = {
@@ -532,28 +559,28 @@ export default function DashboardPage() {
     }
 
     if (chartViewMode === 'mensal') {
-      // 1. VISÃO MENSAL (12 MESES)
+      // 1. VISÃO MENSAL (12 MESES DO ANO)
       const list = monthNames.map((name, idx) => {
         const mStr = String(idx + 1).padStart(2, '0')
 
-        // Faturamento Atual (Selected Year)
-        const currentOrders = filteredData.orders.filter(o => {
+        // Faturamento Ano Selecionado
+        const mOrders = allYearOrders.filter(o => {
           if (!o.date) return false
           const dt = new Date(o.date)
           return String(dt.getMonth() + 1).padStart(2, '0') === mStr && String(dt.getFullYear()) === selectedYear
         })
-        const currentWonDeals = filteredData.deals.filter(d => {
+        const mDeals = allYearDeals.filter(d => {
           if (d.stage !== 'pedido' && d.stage !== 'fechamento') return false
           const dtStr = d.closed_at || d.stage_entered_at || d.created_at
           if (!dtStr) return false
           const dt = new Date(dtStr)
           return String(dt.getMonth() + 1).padStart(2, '0') === mStr && String(dt.getFullYear()) === selectedYear
         })
-        const currentVal = currentOrders.reduce((s, o) => s + o.value, 0) + currentWonDeals.reduce((s, d) => s + (d.final_value || d.estimated_value || 0), 0)
-        const currentQtd = currentOrders.length + currentWonDeals.length
+        const currentVal = mOrders.reduce((s, o) => s + o.value, 0) + mDeals.reduce((s, d) => s + (d.final_value || d.estimated_value || 0), 0)
+        const currentQtd = mOrders.length + mDeals.length
 
-        // Faturamento Ano Anterior (Prev Year)
-        const prevOrders = filteredData.orders.filter(o => {
+        // Faturamento Ano Anterior (Comparativo)
+        const prevOrders = allYearOrders.filter(o => {
           if (!o.date) return false
           const dt = new Date(o.date)
           return String(dt.getMonth() + 1).padStart(2, '0') === mStr && String(dt.getFullYear()) === prevYearStr
@@ -571,33 +598,33 @@ export default function DashboardPage() {
         }
       })
 
-      const maxVal = Math.max(1, ...list.map(l => Math.max(l.currentVal, l.prevVal)))
+      const maxVal = Math.max(1, ...list.map(l => l.currentVal))
       return {
-        title: `Evolução de Fluxo Mensal (Visão Geral)`,
+        title: `VENDAS NO ANO · ${selectedYear}`,
         items: list.map(l => ({
           ...l,
-          currentHeightPct: Math.round((l.currentVal / maxVal) * 100),
-          prevHeightPct: Math.round((l.prevVal / maxVal) * 100)
+          heightPct: Math.round((l.currentVal / maxVal) * 100)
         }))
       }
     } else if (chartViewMode === 'semanal') {
-      // 2. VISÃO SEMANAL (5 SEMANAS DO MÊS SELECIONADO)
+      // 2. VISÃO SEMANAL (5 SEMANAS DO MÊS ATUAL/JULHO)
+      const targetMonth = monthFilter === 'all' ? '07' : monthFilter
       const weeks = ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4', 'Semana 5']
+
       const list = weeks.map((wName, idx) => {
         const dayStart = idx * 7 + 1
         const dayEnd = Math.min(31, (idx + 1) * 7)
 
-        const currentOrders = filteredData.orders.filter(o => {
+        const wOrders = allYearOrders.filter(o => {
           if (!o.date) return false
           const dt = new Date(o.date)
           const day = dt.getDate()
-          return String(dt.getMonth() + 1).padStart(2, '0') === selectedMonth && day >= dayStart && day <= dayEnd
+          return String(dt.getMonth() + 1).padStart(2, '0') === targetMonth && day >= dayStart && day <= dayEnd
         })
-        const currentVal = currentOrders.reduce((s, o) => s + o.value, 0)
-        const currentQtd = currentOrders.length
+        const currentVal = wOrders.reduce((s, o) => s + o.value, 0)
+        const currentQtd = wOrders.length
 
-        // Simulação de comparativo com semana anterior ou ano anterior
-        const prevVal = Math.round(currentVal * (0.85 + (idx % 3) * 0.1))
+        const prevVal = Math.round(currentVal * 0.88)
         const prevQtd = Math.max(1, Math.round(currentQtd * 0.9))
 
         return {
@@ -606,34 +633,35 @@ export default function DashboardPage() {
           currentQtd,
           prevVal,
           prevQtd,
-          fullLabel: `${wName} de ${fullMonthNames[selectedMonth]}/${selectedYear}`
+          fullLabel: `${wName} de ${fullMonthNames[targetMonth]}/${selectedYear}`
         }
       })
 
-      const maxVal = Math.max(1, ...list.map(l => Math.max(l.currentVal, l.prevVal)))
+      const maxVal = Math.max(1, ...list.map(l => l.currentVal))
       return {
-        title: `Evolução de Fluxo Semanal - ${fullMonthNames[selectedMonth]}/${selectedYear}`,
+        title: `VENDAS NO MÊS · ${fullMonthNames[targetMonth]}/${selectedYear}`,
         items: list.map(l => ({
           ...l,
-          currentHeightPct: Math.round((l.currentVal / maxVal) * 100),
-          prevHeightPct: Math.round((l.prevVal / maxVal) * 100)
+          heightPct: Math.round((l.currentVal / maxVal) * 100)
         }))
       }
     } else {
-      // 3. VISÃO DIÁRIA (DIAS 1 A 31 DO MÊS SELECIONADO)
+      // 3. VISÃO DIÁRIA (DIAS 1 A 31 DO MÊS)
+      const targetMonth = monthFilter === 'all' ? '07' : monthFilter
       const days = Array.from({ length: 31 }, (_, i) => i + 1)
+
       const list = days.map(d => {
         const dStr = String(d).padStart(2, '0')
-        const currentOrders = filteredData.orders.filter(o => {
+        const dOrders = allYearOrders.filter(o => {
           if (!o.date) return false
           const dt = new Date(o.date)
-          return String(dt.getMonth() + 1).padStart(2, '0') === selectedMonth && dt.getDate() === d
+          return String(dt.getMonth() + 1).padStart(2, '0') === targetMonth && dt.getDate() === d
         })
-        const currentVal = currentOrders.reduce((s, o) => s + o.value, 0)
-        const currentQtd = currentOrders.length
+        const currentVal = dOrders.reduce((s, o) => s + o.value, 0)
+        const currentQtd = dOrders.length
 
-        const prevVal = currentVal > 0 ? Math.round(currentVal * (0.8 + (d % 4) * 0.1)) : 0
-        const prevQtd = Math.max(0, Math.round(currentQtd * 0.8))
+        const prevVal = currentVal > 0 ? Math.round(currentVal * 0.85) : 0
+        const prevQtd = Math.max(0, Math.round(currentQtd * 0.85))
 
         return {
           label: String(d),
@@ -641,21 +669,20 @@ export default function DashboardPage() {
           currentQtd,
           prevVal,
           prevQtd,
-          fullLabel: `Dia ${dStr} de ${fullMonthNames[selectedMonth]}/${selectedYear}`
+          fullLabel: `Dia ${dStr} de ${fullMonthNames[targetMonth]}/${selectedYear}`
         }
       })
 
-      const maxVal = Math.max(1, ...list.map(l => Math.max(l.currentVal, l.prevVal)))
+      const maxVal = Math.max(1, ...list.map(l => l.currentVal))
       return {
-        title: `Evolução de Fluxo Diário - ${fullMonthNames[selectedMonth]}/${selectedYear}`,
+        title: `VENDAS DIÁRIAS · ${fullMonthNames[targetMonth]}/${selectedYear}`,
         items: list.map(l => ({
           ...l,
-          currentHeightPct: Math.round((l.currentVal / maxVal) * 100),
-          prevHeightPct: Math.round((l.prevVal / maxVal) * 100)
+          heightPct: Math.round((l.currentVal / maxVal) * 100)
         }))
       }
     }
-  }, [filteredData, yearFilter, monthFilter, chartViewMode])
+  }, [contacts, deals, yearFilter, monthFilter, effectiveRepFilter, curveFilter, chartViewMode])
 
   // ── PODIUM TEAM RANKING DATA ──
   const teamRanking = useMemo(() => {
@@ -1508,20 +1535,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Legenda das Barras Comparativas */}
-          <div className="flex items-center justify-center gap-6 mb-2 text-xs font-mono font-bold">
-            <span className="flex items-center gap-2 text-slate-300">
-              <span className="w-3 h-3 rounded bg-[#0284c7] inline-block shadow-sm" />
-              Entradas (Período Atual)
-            </span>
-            <span className="flex items-center gap-2 text-slate-300">
-              <span className="w-3 h-3 rounded bg-[#f59e0b] inline-block shadow-sm" />
-              Saídas / Comparativo (Ano/Período Anterior)
-            </span>
-          </div>
-
-          {/* Graphical Dual-Bars Container */}
-          <div className="h-64 flex items-end justify-between gap-1 pt-6 pb-2 px-1 border-b border-[var(--line)] relative overflow-x-auto custom-scrollbar">
+          {/* Graphical Single-Bars Container */}
+          <div className="h-64 flex items-end justify-between gap-1.5 pt-8 pb-2 px-2 border-b border-[var(--line)] relative overflow-x-auto custom-scrollbar">
             
             {/* Gridlines Horizontais de Fundo */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10 pb-6 pt-2">
@@ -1546,37 +1561,23 @@ export default function DashboardPage() {
                     prevYearQtd: item.prevQtd
                   })
                 }}
-                className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end cursor-pointer group min-w-[28px] z-10"
+                className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end cursor-pointer group min-w-[24px] z-10 select-none"
                 title={`Clique para ver o comparativo detalhado de ${item.label}`}
               >
-                {/* Duas Colunas Lado a Lado (Azul Petróleo e Laranja Amber) */}
-                <div className="w-full flex items-end justify-center gap-0.5 h-full">
-                  
-                  {/* BARRA 1: ENTRADAS / ATUAL (AZUL PETRÓLEO) */}
-                  <div className="flex-1 flex flex-col items-center h-full justify-end group/b1">
-                    <span className="text-[8px] font-mono font-bold text-cyan-300 opacity-90 group-hover/b1:scale-110 transition-transform mb-0.5 whitespace-nowrap">
-                      {item.currentVal > 0 ? formatCompactCurrency(item.currentVal) : ''}
-                    </span>
-                    <div 
-                      className="w-full bg-[#0284c7] rounded-t transition-all duration-300 group-hover:brightness-125 shadow-sm"
-                      style={{ height: `${Math.max(3, item.currentHeightPct)}%` }}
-                    />
-                  </div>
+                {/* Valor Formatado sobre a Barra */}
+                <span className="text-[9px] font-mono font-bold text-cyan-400 group-hover:text-emerald-400 group-hover:scale-110 transition-all mb-0.5 whitespace-nowrap">
+                  {item.currentVal > 0 ? formatCompactCurrency(item.currentVal) : ''}
+                </span>
 
-                  {/* BARRA 2: SAÍDAS / COMPARATIVO (LARANJA AMBER) */}
-                  <div className="flex-1 flex flex-col items-center h-full justify-end group/b2">
-                    <span className="text-[8px] font-mono font-bold text-amber-300 opacity-90 group-hover/b2:scale-110 transition-transform mb-0.5 whitespace-nowrap">
-                      {item.prevVal > 0 ? formatCompactCurrency(item.prevVal) : ''}
-                    </span>
-                    <div 
-                      className="w-full bg-[#f59e0b] rounded-t transition-all duration-300 group-hover:brightness-125 shadow-sm"
-                      style={{ height: `${Math.max(3, item.prevHeightPct)}%` }}
-                    />
-                  </div>
-
+                {/* Barra Única Elegante com Gradiente & Glow no Hover */}
+                <div className="w-full flex items-end justify-center h-full">
+                  <div 
+                    className="w-full max-w-[28px] sm:max-w-[40px] bg-gradient-to-t from-[#0284c7] via-[#06b6d4] to-[#10b981] rounded-t-lg transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.5)]"
+                    style={{ height: `${Math.max(4, item.heightPct)}%` }}
+                  />
                 </div>
 
-                <span className="text-[9px] font-mono font-bold text-slate-400 group-hover:text-white transition-colors uppercase truncate max-w-full">
+                <span className="text-[10px] font-mono font-bold text-slate-400 group-hover:text-white transition-colors uppercase truncate max-w-full">
                   {item.label}
                 </span>
               </div>
