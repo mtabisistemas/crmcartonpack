@@ -52,6 +52,53 @@ function formatCompactCurrency(val: number): string {
   return formatCurrency(val)
 }
 
+// Helper format value numbers WITHOUT R$ prefix (ex: 4,1M or 850K)
+function formatValueWithoutCurrency(val: number): string {
+  if (val >= 1000000) {
+    return `${(val / 1000000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}M`
+  }
+  if (val >= 1000) {
+    return `${(val / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}K`
+  }
+  return val.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+}
+
+// Coordenadas Reais de Cidades para Plotagem Precisa no Mapa
+const CITY_COORDINATES: Record<string, [number, number]> = {
+  'PORTO ALEGRE': [-30.0346, -51.2177],
+  'CAXIAS DO SUL': [-29.1688, -51.1796],
+  'NOVO HAMBURGO': [-29.6842, -51.1313],
+  'CANOAS': [-29.9178, -51.1836],
+  'SAO LEOPOLDO': [-29.7592, -51.1472],
+  'SÃO LEOPOLDO': [-29.7592, -51.1472],
+  'BENTO GONCALVES': [-29.1706, -51.5204],
+  'BENTO GONÇALVES': [-29.1706, -51.5204],
+  'PELOTAS': [-31.7654, -52.3376],
+  'SANTA MARIA': [-29.6842, -53.8069],
+  'PASSO FUNDO': [-28.2612, -52.4083],
+  'GRAVATAI': [-29.9430, -50.9934],
+  'GRAVATAÍ': [-29.9430, -50.9934],
+  'VIAMAO': [-30.0811, -51.0233],
+  'VIAMÃO': [-30.0811, -51.0233],
+  'ERECHIM': [-27.6342, -52.2739],
+  'LAJEADO': [-29.4667, -51.9614],
+  'FARROUPILHA': [-29.2246, -51.3482],
+  'ESTANCIA VELHA': [-29.6483, -51.1742],
+  'ESTÂNCIA VELHA': [-29.6483, -51.1742],
+  'GUAIBA': [-30.1136, -51.3253],
+  'GUAÍBA': [-30.1136, -51.3253],
+  'GARIBALDI': [-29.2559, -51.5342],
+  'IGREJINHA': [-29.5742, -50.7967],
+  'VACARIA': [-28.5117, -50.9333],
+  'SANTA CRUZ DO SUL': [-29.7175, -52.4264],
+  'SAPUCAIA DO SUL': [-29.8272, -51.1458],
+  'ALVORADA': [-29.9986, -51.0847],
+  'CAMPO BOM': [-29.6781, -51.0558],
+  'MONTENEGRO': [-29.6889, -51.4608],
+  'GRAMADO': [-29.3789, -50.8739],
+  'CANELA': [-29.3658, -50.8106]
+}
+
 const WhatsappIcon = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
   <svg 
     width={size} 
@@ -820,17 +867,24 @@ export default function DashboardPage() {
 
     filteredData.contacts.forEach((contact) => {
       const computedStatus = contact.status || 'ativo'
-      let pinColor = '#f59e0b'
-      if (computedStatus === 'ativo') pinColor = '#10b981'
-      else if (computedStatus === 'reativacao') pinColor = '#f97316'
+      let pinColor = '#10b981'
+      if (computedStatus === 'reativacao') pinColor = '#f97316'
+      else if (computedStatus === 'prospeccao') pinColor = '#06b6d4'
 
-      const baseCoords: [number, number] = [-29.6842, -51.1303]
       const key = contact.id || contact.cnpj || contact.company || contact.name || 'c'
       const h1 = Math.sin(hashStr(key) * 888.8)
       const h2 = Math.cos(hashStr(key + '_lng') * 777.7)
 
-      const finalLat = baseCoords[0] + (h1 * 0.01)
-      const finalLng = baseCoords[1] + (h2 * 0.01)
+      const normCity = (contact.city || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim()
+      const cityBase = CITY_COORDINATES[normCity] || CITY_COORDINATES[contact.city?.toUpperCase() || '']
+
+      let finalLat = -29.6842 + (h1 * 0.4)
+      let finalLng = -51.1303 + (h2 * 0.4)
+
+      if (cityBase) {
+        finalLat = cityBase[0] + (h1 * 0.012)
+        finalLng = cityBase[1] + (h2 * 0.012)
+      }
 
       const finalLatLng: [number, number] = [finalLat, finalLng]
       bounds.push(finalLatLng)
@@ -853,6 +907,7 @@ export default function DashboardPage() {
       marker.bindTooltip(`
         <div style="font-family: monospace; font-size: 11px; padding: 4px; background: #0f172a; color: #fff; border-radius: 6px;">
           <strong>${contact.company || contact.name}</strong>
+          <div style="color: #94a3b8; font-size: 10px; margin-top: 1px;">${contact.city || 'RS'}</div>
           <div style="color: ${pinColor}; font-size: 10px; font-weight: bold; margin-top: 2px;">STATUS: ${computedStatus.toUpperCase()}</div>
         </div>
       `, { direction: 'top' })
@@ -919,13 +974,20 @@ export default function DashboardPage() {
       if (computedStatus === 'reativacao') pinColor = '#f97316'
       else if (computedStatus === 'prospeccao') pinColor = '#06b6d4'
 
-      const baseCoords: [number, number] = [-29.6842, -51.1303]
       const key = contact.id || contact.cnpj || contact.company || contact.name || 'c'
       const h1 = Math.sin(hashStr(key) * 888.8)
       const h2 = Math.cos(hashStr(key + '_lng') * 777.7)
 
-      const finalLat = baseCoords[0] + (h1 * 0.01)
-      const finalLng = baseCoords[1] + (h2 * 0.01)
+      const normCity = (contact.city || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim()
+      const cityBase = CITY_COORDINATES[normCity] || CITY_COORDINATES[contact.city?.toUpperCase() || '']
+
+      let finalLat = -29.6842 + (h1 * 0.4)
+      let finalLng = -51.1303 + (h2 * 0.4)
+
+      if (cityBase) {
+        finalLat = cityBase[0] + (h1 * 0.012)
+        finalLng = cityBase[1] + (h2 * 0.012)
+      }
 
       const finalLatLng: [number, number] = [finalLat, finalLng]
       bounds.push(finalLatLng)
@@ -1640,69 +1702,75 @@ export default function DashboardPage() {
           {/* Graphical Single-Bars Container */}
           <div className="h-64 flex items-end justify-between gap-1 pt-6 pb-2 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
             
-            {/* Gridlines Horizontais de Fundo */}
-            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10 pb-6 pt-2">
+            {/* Gridlines Horizontais de Fundo com Espaçamento Padronizado */}
+            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10 pb-7 pt-3 h-full">
               <div className="border-b border-white w-full" />
               <div className="border-b border-white w-full" />
               <div className="border-b border-white w-full" />
               <div className="border-b border-white w-full" />
             </div>
 
-            {salesEvolutionData.items.map((item, idx) => (
-              <div 
-                key={idx}
-                onClick={() => {
-                  setComparisonModal({
-                    isOpen: true,
-                    periodLabel: item.fullLabel || item.label,
-                    currentVal: item.currentVal,
-                    prevMonthVal: item.prevMonthVal,
-                    prevYearVal: item.prevYearVal,
-                    currentQtd: item.currentQtd,
-                    prevMonthQtd: item.prevMonthQtd,
-                    prevYearQtd: item.prevYearQtd
-                  })
-                }}
-                className={`flex-1 flex flex-col items-center h-full justify-end cursor-pointer group z-10 ${
-                  chartViewMode === 'diario' ? 'gap-1 min-w-0' : 'gap-1.5 min-w-[24px]'
-                }`}
-                title={`Clique para ver o comparativo detalhado de ${item.label}`}
-              >
-                {/* CONTAINER COM ALTURA DA BARRA PARA POSICIONAR O RÓTULO LOGO ACIMA */}
+            {salesEvolutionData.items.map((item, idx) => {
+              const hasValue = item.currentVal > 0
+
+              return (
                 <div 
-                  className="w-full flex flex-col items-center justify-end transition-all duration-300"
-                  style={{ height: `${Math.max(6, item.heightPct)}%` }}
+                  key={idx}
+                  onClick={() => {
+                    setComparisonModal({
+                      isOpen: true,
+                      periodLabel: item.fullLabel || item.label,
+                      currentVal: item.currentVal,
+                      prevMonthVal: item.prevMonthVal,
+                      prevYearVal: item.prevYearVal,
+                      currentQtd: item.currentQtd,
+                      prevMonthQtd: item.prevMonthQtd,
+                      prevYearQtd: item.prevYearQtd
+                    })
+                  }}
+                  className={`flex-1 flex flex-col items-center h-full justify-end cursor-pointer group z-10 ${
+                    chartViewMode === 'diario' ? 'gap-1 min-w-0' : 'gap-1.5 min-w-[24px]'
+                  }`}
+                  title={`Clique para ver o comparativo detalhado de ${item.label}`}
                 >
-                  {/* Rótulo de Valor posicionado IMEDIATAMENTE ACIMA de cada barra */}
-                  {item.currentVal > 0 && (
-                    <span className={`font-mono font-bold text-cyan-400 group-hover:text-emerald-400 transition-all ${
-                      chartViewMode === 'diario' 
-                        ? '[writing-mode:vertical-lr] rotate-180 text-[8px] mb-1 font-semibold tracking-tighter' 
-                        : 'text-[9px] mb-1 whitespace-nowrap'
-                    }`}>
-                      {formatCompactCurrency(item.currentVal)}
-                    </span>
-                  )}
-
-                  {/* Barra Única Elegante com Gradiente */}
+                  {/* CONTAINER COM ALTURA DA BARRA PARA POSICIONAR O RÓTULO LOGO ACIMA */}
                   <div 
-                    className={`bg-gradient-to-t from-[#0284c7] via-[#06b6d4] to-[#10b981] rounded-t-lg transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.5)] w-full h-full ${
-                      chartViewMode === 'semanal' 
-                        ? 'max-w-[70px] sm:max-w-[110px]' 
-                        : chartViewMode === 'diario' 
-                        ? 'max-w-[12px] sm:max-w-[16px]' 
-                        : 'max-w-[28px] sm:max-w-[36px]'
-                    }`}
-                  />
-                </div>
+                    className="w-full flex flex-col items-center justify-end transition-all duration-300"
+                    style={{ height: hasValue ? `${Math.max(6, item.heightPct)}%` : '0%' }}
+                  >
+                    {/* Rótulo de Valor (Sem "R$") posicionado IMEDIATAMENTE ACIMA de cada barra */}
+                    {hasValue && (
+                      <span className={`font-mono font-bold text-cyan-400 group-hover:text-emerald-400 transition-all ${
+                        chartViewMode === 'diario' 
+                          ? '[writing-mode:vertical-lr] rotate-180 text-[8px] mb-1 font-semibold tracking-tighter' 
+                          : 'text-[9px] mb-1 whitespace-nowrap'
+                      }`}>
+                        {formatValueWithoutCurrency(item.currentVal)}
+                      </span>
+                    )}
 
-                <span className={`font-mono font-bold text-slate-400 group-hover:text-white transition-colors uppercase truncate max-w-full mt-1.5 ${
-                  chartViewMode === 'diario' ? 'text-[8px]' : 'text-[10px]'
-                }`}>
-                  {item.label}
-                </span>
-              </div>
-            ))}
+                    {/* Barra Única Elegante com Gradiente (Oculta se não houver faturamento) */}
+                    {hasValue && (
+                      <div 
+                        className={`bg-gradient-to-t from-[#0284c7] via-[#06b6d4] to-[#10b981] rounded-t-lg transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.5)] w-full h-full ${
+                          chartViewMode === 'semanal' 
+                            ? 'max-w-[70px] sm:max-w-[110px]' 
+                            : chartViewMode === 'diario' 
+                            ? 'max-w-[12px] sm:max-w-[16px]' 
+                            : 'max-w-[28px] sm:max-w-[36px]'
+                        }`}
+                      />
+                    )}
+                  </div>
+
+                  <span className={`font-mono font-bold text-slate-400 group-hover:text-white transition-colors uppercase truncate max-w-full mt-1.5 ${
+                    chartViewMode === 'diario' ? 'text-[8px]' : 'text-[10px]'
+                  }`}>
+                    {item.label}
+                  </span>
+                </div>
+              )
+            })}
           </div>
 
           <div className="flex items-center justify-center pt-2.5 text-[10px] font-mono text-slate-400/60">
@@ -1733,11 +1801,11 @@ export default function DashboardPage() {
             className="w-full bg-[#141414] rounded-xl border border-[var(--line)] overflow-hidden h-64 relative z-0"
           />
 
-          <div className="flex items-center justify-between pt-2.5 text-[10px] font-mono text-[var(--gray2)]">
-            <div className="flex items-center justify-between w-full text-[9px] sm:text-[10px]">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#10b981] shadow-sm" /> Fechado</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500 shadow-sm" /> Negociação</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-cyan-400 shadow-sm" /> Aprovação</span>
+          <div className="flex items-center justify-center pt-2.5 text-[10px] font-mono text-[var(--gray2)]">
+            <div className="flex items-center justify-center gap-4 w-full text-[9px] sm:text-[10px]">
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#10b981] shadow-sm" /> Fechado</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm" /> Negociação</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-sm" /> Aprovação</span>
             </div>
           </div>
         </div>
