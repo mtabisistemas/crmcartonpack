@@ -412,7 +412,7 @@ export default function MetasPage() {
   }, [visibleUsersForMetas, goalsMap, selectedYear, selectedMonth])
 
   return (
-    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-5 max-w-[1400px] mx-auto px-4 sm:px-6 py-6 pb-24 select-none">
+    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-2.5">
       
       {/* Toast Notification */}
       {toastMessage && (
@@ -422,44 +422,34 @@ export default function MetasPage() {
         </div>
       )}
 
-      {/* Header com Abas */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--line)] pb-4 shrink-0">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[rgba(180,217,50,0.15)] border border-[var(--lime)]/30 flex items-center justify-center text-[var(--lime)]">
-              <Target size={18} />
-            </div>
-            <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
-              Metas & Parâmetros Comerciais
-            </h1>
-          </div>
-          <p className="text-xs font-mono text-[var(--gray2)] mt-1">
-            Planejamento estratégico de metas de vendas, visitas e gestão dos motivos de perdas de negócios.
-          </p>
-        </div>
+      {/* Header — Clean without subtitle matching Contacts Page */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
+          Metas & Parâmetros Comerciais
+        </h1>
 
         {/* Abas */}
-        <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--line)] p-1 rounded-xl shrink-0">
+        <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--line)] p-1 rounded-xl shrink-0 self-start sm:self-auto">
           <button
             onClick={() => setActiveTab('metas')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'metas' 
                 ? 'bg-[var(--lime)] text-black shadow-md' 
                 : 'text-[var(--gray2)] hover:text-[var(--white)]'
             }`}
           >
-            <Target size={14} />
+            <Target size={13} />
             <span>Metas Comerciais</span>
           </button>
           <button
             onClick={() => setActiveTab('motivos')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'motivos' 
                 ? 'bg-[var(--lime)] text-black shadow-md' 
                 : 'text-[var(--gray2)] hover:text-[var(--white)]'
             }`}
           >
-            <XCircle size={14} />
+            <XCircle size={13} />
             <span>Motivos de Perda</span>
           </button>
         </div>
@@ -467,12 +457,12 @@ export default function MetasPage() {
 
       {/* ABA 1: METAS COMERCIAIS */}
       {activeTab === 'metas' && (
-        <div className="flex flex-col gap-5 animate-fade-in">
+        <div className="flex flex-col gap-2.5 animate-fade-in">
           
           {/* Barra de Filtros e Controles de Período */}
-          <div className="card p-4 bg-[var(--card)] border border-[var(--line)] flex flex-wrap items-center justify-between gap-4">
+          <div className="card p-3 bg-[var(--card)] border border-[var(--line)] flex flex-wrap items-center justify-between gap-3">
             
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5 flex-wrap">
               {/* Ano */}
               <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-3 py-1.5 rounded-xl">
                 <Calendar size={13} className="text-[var(--lime)]" />
@@ -554,55 +544,55 @@ export default function MetasPage() {
 
               <button
                 onClick={handleSaveGoals}
-                className="btn btn-primary text-xs py-2 px-4 flex items-center gap-2 cursor-pointer font-bold shadow-lg"
+                className="btn btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer font-bold shadow-md"
               >
-                <Save size={14} />
+                <Save size={13} />
                 <span>Salvar Metas</span>
               </button>
             </div>
           </div>
 
-          {/* Cards Resumo Geral da Equipe */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+          {/* Cards Resumo Geral da Equipe (Padrão Exato de Contatos) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
             {/* Card 1: Meta Faturamento */}
-            <div className="card p-4 bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-[var(--lime)] flex items-center justify-between shadow-sm">
+            <div className="card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between shadow-sm">
               <div>
-                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Meta Faturamento (Equipe)</span>
-                <div className="text-xl font-display font-black text-[var(--white)] mt-1">
+                <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Meta Faturamento (Equipe)</span>
+                <div className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">
                   R$ {(viewMode === 'mensal' ? teamTotals.sales : viewMode === 'semanal' ? teamTotals.sales / 4.4 : teamTotals.sales / businessDays).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                   <span className="text-[10px] font-mono text-[var(--gray2)] font-normal ml-1">/{viewMode === 'mensal' ? 'mês' : viewMode === 'semanal' ? 'sem' : 'dia'}</span>
                 </div>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center text-[var(--lime)]">
-                <DollarSign size={20} />
+              <div className="w-8 h-8 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--lime)] flex items-center justify-center shrink-0">
+                <DollarSign size={15} />
               </div>
             </div>
 
             {/* Card 2: Meta Visitas */}
-            <div className="card p-4 bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-[var(--lime)] flex items-center justify-between shadow-sm">
+            <div className="card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between shadow-sm">
               <div>
-                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Meta Visitas/Contatos</span>
-                <div className="text-xl font-display font-black text-[var(--white)] mt-1">
+                <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Meta Visitas/Contatos</span>
+                <div className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">
                   {Math.round(viewMode === 'mensal' ? teamTotals.visits : viewMode === 'semanal' ? teamTotals.visits / 4.4 : teamTotals.visits / businessDays).toLocaleString('pt-BR')} visitas
                   <span className="text-[10px] font-mono text-[var(--gray2)] font-normal ml-1">/{viewMode === 'mensal' ? 'mês' : viewMode === 'semanal' ? 'sem' : 'dia'}</span>
                 </div>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center text-[var(--white)]">
-                <Users size={20} />
+              <div className="w-8 h-8 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--lime)] flex items-center justify-center shrink-0">
+                <Users size={15} />
               </div>
             </div>
 
             {/* Card 3: Meta Novos Clientes */}
-            <div className="card p-4 bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-[var(--lime)] flex items-center justify-between shadow-sm">
+            <div className="card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between shadow-sm">
               <div>
-                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase font-bold">Meta Novos Clientes (Pedido Fechado)</span>
-                <div className="text-xl font-display font-black text-[var(--white)] mt-1">
+                <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Meta Novos Clientes (Pedido Fechado)</span>
+                <div className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">
                   {Math.round(viewMode === 'mensal' ? teamTotals.newClients : viewMode === 'semanal' ? teamTotals.newClients / 4.4 : teamTotals.newClients / businessDays).toLocaleString('pt-BR')} clientes
                   <span className="text-[10px] font-mono text-[var(--gray2)] font-normal ml-1">/{viewMode === 'mensal' ? 'mês' : viewMode === 'semanal' ? 'sem' : 'dia'}</span>
                 </div>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-[var(--charcoal)] border border-[var(--line)] flex items-center justify-center text-[var(--lime)]">
-                <Award size={20} />
+              <div className="w-8 h-8 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--lime)] flex items-center justify-center shrink-0">
+                <Award size={15} />
               </div>
             </div>
           </div>
