@@ -137,6 +137,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
   const [aptNotes, setAptNotes] = useState('')
 
   const [currentUser, setCurrentUser] = useState<any | null>(null)
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -660,12 +661,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
             {(currentUser?.papel === 'admin' || currentUser?.role === 'admin' || currentUser?.email === 'juliano@cartonpack.com.br' || true) && (
               <button
                 type="button"
-                onClick={() => {
-                  if (deal && window.confirm(`Tem certeza que deseja excluir o negócio "${title}" do funil? Esta ação é irreversível.`)) {
-                    onDeleteDeal?.(deal.id)
-                    onClose()
-                  }
-                }}
+                onClick={() => setShowDeleteConfirmModal(true)}
                 className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 font-bold border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors shadow-sm cursor-pointer"
                 title="Excluir negócio do funil (Apenas Admin)"
               >
@@ -1560,6 +1556,51 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
           />
         )
       })()}
+
+      {/* ── System Standard Confirmation Modal (Padrão visual escuro do CRM) ── */}
+      {showDeleteConfirmModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 animate-fade-in select-none">
+          <div className="bg-[var(--charcoal)] border border-[var(--line)] rounded-2xl w-full max-w-md p-5 flex flex-col gap-4 shadow-2xl animate-fade-up">
+            <div className="flex items-center gap-3 border-b border-[var(--line)] pb-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0">
+                <Trash2 size={20} />
+              </div>
+              <div>
+                <h3 className="font-display text-base text-[var(--white)] font-bold">Excluir Negócio do Funil</h3>
+                <p className="text-[11px] text-[var(--gray2)] font-mono">Confirmação de Exclusão</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-[var(--gray)] leading-relaxed">
+              Tem certeza que deseja excluir o negócio <strong className="text-white">"{title}"</strong> do funil? Esta ação é irreversível.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[var(--line)]">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirmModal(false)}
+                className="btn btn-secondary py-1.5 px-4 text-xs font-bold uppercase tracking-wider cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteConfirmModal(false)
+                  if (deal) {
+                    onDeleteDeal?.(deal.id)
+                    onClose()
+                  }
+                }}
+                className="btn py-1.5 px-4 text-xs font-bold uppercase tracking-wider bg-red-600 hover:bg-red-500 text-white shadow-lg flex items-center gap-1.5 cursor-pointer rounded-xl transition-all"
+              >
+                <Trash2 size={13} />
+                <span>Confirmar Exclusão</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

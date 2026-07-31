@@ -88,6 +88,7 @@ export default function MetasPage() {
 
   // Toast e Mensagem de Sucesso
   const [toastMessage, setToastMessage] = useState('')
+  const [showDeleteReasonConfirm, setShowDeleteReasonConfirm] = useState(false)
 
   // Mapa de Dias Úteis Customizados por Ano_Mês
   const [customBusinessDaysMap, setCustomBusinessDaysMap] = useState<Record<string, number>>({})
@@ -987,12 +988,7 @@ export default function MetasPage() {
                 {editingReason ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (confirm(`Tem certeza que deseja excluir o motivo "${editingReason.label}"?`)) {
-                        handleDeleteReason(editingReason.id)
-                        setShowReasonModal(false)
-                      }
-                    }}
+                    onClick={() => setShowDeleteReasonConfirm(true)}
                     className="p-2 px-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 flex items-center gap-1.5 font-bold transition-colors cursor-pointer text-[11px]"
                   >
                     <Trash2 size={13} />
@@ -1017,6 +1013,51 @@ export default function MetasPage() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal de Confirmação no Padrão do Sistema ── */}
+      {showDeleteReasonConfirm && editingReason && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 animate-fade-in select-none">
+          <div className="bg-[var(--charcoal)] border border-[var(--line)] rounded-2xl w-full max-w-md p-5 flex flex-col gap-4 shadow-2xl animate-fade-up">
+            <div className="flex items-center gap-3 border-b border-[var(--line)] pb-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0">
+                <Trash2 size={20} />
+              </div>
+              <div>
+                <h3 className="font-display text-base text-[var(--white)] font-bold">Excluir Motivo de Perda</h3>
+                <p className="text-[11px] text-[var(--gray2)] font-mono">Confirmação de Exclusão</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-[var(--gray)] leading-relaxed">
+              Tem certeza que deseja excluir o motivo <strong className="text-white">"{editingReason.label}"</strong>?
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[var(--line)]">
+              <button
+                type="button"
+                onClick={() => setShowDeleteReasonConfirm(false)}
+                className="btn btn-secondary py-1.5 px-4 text-xs font-bold uppercase tracking-wider cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteReasonConfirm(false)
+                  if (editingReason) {
+                    handleDeleteReason(editingReason.id)
+                    setShowReasonModal(false)
+                  }
+                }}
+                className="btn py-1.5 px-4 text-xs font-bold uppercase tracking-wider bg-red-600 hover:bg-red-500 text-white shadow-lg flex items-center gap-1.5 cursor-pointer rounded-xl transition-all"
+              >
+                <Trash2 size={13} />
+                <span>Confirmar Exclusão</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
