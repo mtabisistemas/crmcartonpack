@@ -99,12 +99,12 @@ function DealCard({ deal, overlay = false, onCardClick }: { deal: Deal; overlay?
         </div>
       </div>
 
-      {/* Middle Row: Somente Compromisso da Agenda (com ícone de agenda) */}
+      {/* Middle Row: Somente Compromisso da Agenda (com ícone de agenda + tipo, data e horário, sem título) */}
       {agendaApt && (
         <div className="text-[11px] text-[var(--gray)] font-mono truncate flex items-center gap-1.5 mt-0.5">
           <Calendar size={12} className="text-[var(--lime)] shrink-0" />
-          <span className="truncate text-white/90 font-medium">
-            {agendaApt.title} ({agendaApt.date.split('-').reverse().join('/')} {agendaApt.time})
+          <span className="truncate text-white/90 font-medium uppercase">
+            {(agendaApt.type || 'VISITA').toUpperCase()} - {agendaApt.date.split('-').reverse().join('/')} às {agendaApt.time}
           </span>
         </div>
       )}
@@ -600,15 +600,8 @@ function NewDealModal({
   const isGestaoOuAdmin = !currentUser || currentUser.role === 'admin' || currentUser.role === 'gestor'
   const loggedUserRep = (currentUser?.name || '').trim().toLowerCase()
 
-  // Filter contacts by logged-in user if non-gestor/non-admin
-  const userContacts = contactsList.filter(c => {
-    if (isGestaoOuAdmin) return true
-    if (!loggedUserRep) return true
-    const rep = c.representative || (c as any).assignedTo || (c as any).assigned_to || ''
-    return isSameRepresentative(rep, loggedUserRep)
-  })
-
-  const filteredContacts = userContacts.filter(c => {
+  // Buscar em tempo real na carteira completa de contatos (1.080 clientes)
+  const filteredContacts = contactsList.filter(c => {
     const q = clientName.toLowerCase().trim()
     if (!q) return true
     const comp = (c.company || c.name || '').toLowerCase()
@@ -697,7 +690,7 @@ function NewDealModal({
                 const val = e.target.value.toUpperCase()
                 setClientName(val)
                 setShowDropdown(true)
-                const matched = userContacts.find(c => (c.company || c.name || '').trim().toUpperCase() === val.trim())
+                const matched = contactsList.find(c => (c.company || c.name || '').trim().toUpperCase() === val.trim())
                 if (matched) {
                   const personName = (matched.name || (matched as any).contact_name || (matched as any).responsible || '').trim().toUpperCase()
                   if (personName) setContactName(personName)
@@ -826,6 +819,7 @@ export function PipelineBoard() {
               position: item.position || 0,
               estimated_value: item.estimated_value || 0,
               final_value: item.final_value || 0,
+              probability: typeof item.probability === 'number' ? item.probability : (item.probability ? parseInt(item.probability) : 50),
               assigned_to: item.assigned_to || matched?.representative || '',
               stage_entered_at: item.stage_entered_at || item.created_at || new Date().toISOString(),
               created_at: item.created_at || new Date().toISOString(),
