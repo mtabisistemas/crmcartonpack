@@ -2623,7 +2623,7 @@ export default function ContactsPage() {
   useEffect(() => {
     const loadContacts = async () => {
       if (typeof window !== 'undefined') {
-        const CURRENT_CACHE_VERSION = 'v15_cnpj_separated_2026_07_30'
+        const CURRENT_CACHE_VERSION = 'v17_prospeccao_939_fix_2026_07_30'
         const savedVersion = localStorage.getItem('crm_contacts_cache_version')
         if (savedVersion !== CURRENT_CACHE_VERSION) {
           localStorage.removeItem('crm_contacts')
@@ -2683,13 +2683,13 @@ export default function ContactsPage() {
               // Match by CNPJ FIRST so branches with the same company name get distinct sales histories
               const baseRef = (itemCnpjClean ? importedMap.get(itemCnpjClean) : null) || importedMap.get(item.id) || (itemCompNorm ? importedMap.get(itemCompNorm) : null)
 
-              const resolvedOrders = (notesObj.orders && notesObj.orders.length > 0)
+              const resolvedOrders = (notesObj.orders && Array.isArray(notesObj.orders) && notesObj.orders.length > 0)
                 ? notesObj.orders
-                : (item.orders && item.orders.length > 0)
+                : (item.orders && Array.isArray(item.orders) && item.orders.length > 0)
                   ? item.orders
-                  : (baseRef?.orders || [])
+                  : []
 
-              const resolvedLastDate = notesObj.lastPurchaseDate || item.last_purchase_date || baseRef?.lastPurchaseDate || (resolvedOrders[0]?.date || '')
+              const resolvedLastDate = notesObj.lastPurchaseDate || item.last_purchase_date || (resolvedOrders[0]?.date || '')
 
               const cleanName = (item.name && item.name.toLowerCase().trim() !== item.company?.toLowerCase().trim()) ? item.name : ''
 
