@@ -38,7 +38,7 @@ import {
   Moon,
   DollarSign
 } from 'lucide-react'
-import { formatCurrency, whatsappLink } from '@/lib/utils'
+import { formatCurrency, whatsappLink, isSameRepresentative, getUniqueCanonicalRepresentatives } from '@/lib/utils'
 import { getPipelineDeals } from '@/services/pipeline-service'
 import Link from 'next/link'
 
@@ -408,9 +408,7 @@ export default function DashboardPage() {
     const activeDealsForMap = mappedDeals.filter(d => {
       if (d.stage === 'perdido') return false
       if (!selectedRep || selectedRep === 'all') return true
-      const repNorm = selectedRep.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
-      const dRepNorm = (d.representative || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
-      return dRepNorm === repNorm || dRepNorm.includes(repNorm) || repNorm.includes(dRepNorm)
+      return isSameRepresentative(d.representative, selectedRep)
     })
     const coordsCount: Record<string, number> = {}
     const bounds: [number, number][] = []

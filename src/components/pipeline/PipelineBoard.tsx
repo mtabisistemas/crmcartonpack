@@ -19,7 +19,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { useDroppable } from '@dnd-kit/core'
 import { Deal, DealStage, STAGE_CONFIG, FOLLOW_UP_LOST_REASONS } from '@/types'
-import { formatCurrency, daysSince } from '@/lib/utils'
+import { formatCurrency, daysSince, isSameRepresentative, getUniqueCanonicalRepresentatives } from '@/lib/utils'
 import { Plus, Clock, Trophy, XCircle, Search, Filter, Building2, Calendar } from 'lucide-react'
 import { DealDrawer } from './DealDrawer'
 import { PipelineCalendarModal } from './PipelineCalendarModal'
@@ -579,8 +579,8 @@ function NewDealModal({
   const userContacts = contactsList.filter(c => {
     if (isGestaoOuAdmin) return true
     if (!loggedUserRep) return true
-    const rep = (c.representative || (c as any).assignedTo || (c as any).assigned_to || '').trim().toLowerCase()
-    return rep === loggedUserRep
+    const rep = c.representative || (c as any).assignedTo || (c as any).assigned_to || ''
+    return isSameRepresentative(rep, loggedUserRep)
   })
 
   const filteredContacts = userContacts.filter(c => {
@@ -942,7 +942,7 @@ export function PipelineBoard() {
         }
       }
 
-      setRepresentativesList(Array.from(new Set(repsFromUsers)).sort())
+      setRepresentativesList(getUniqueCanonicalRepresentatives(repsFromUsers))
     }
 
     fetchUsers()
@@ -951,7 +951,7 @@ export function PipelineBoard() {
   // Filter deals based on search query, year, month, representative, and curve
   const filteredDeals = deals.filter(d => {
     // 1. Search Query
-    const search = searchQuery.toLowerCase()
+    const search = searchQuery.toLowerCase().trim()
     const matchesSearch = 
       !searchQuery ||
       d.title.toLowerCase().includes(search) ||
@@ -961,9 +961,8 @@ export function PipelineBoard() {
     if (!matchesSearch) return false
 
     // 2. Representative
-    const dealRep = (d.assigned_to || d.contact?.representative || '').trim().toLowerCase()
-    const targetRep = (isRep && currentUser?.name ? currentUser.name : selectedRep).trim().toLowerCase()
-    const matchesRep = targetRep === 'all' || dealRep === targetRep || (dealRep && targetRep && dealRep.includes(targetRep))
+    const targetRep = isRep && currentUser?.name ? currentUser.name : selectedRep
+    const matchesRep = targetRep === 'all' || isSameRepresentative(d.assigned_to || d.contact?.representative, targetRep)
     if (!matchesRep) return false
 
     // 3. Curve ABC
