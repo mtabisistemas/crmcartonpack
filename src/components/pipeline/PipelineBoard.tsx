@@ -37,10 +37,12 @@ function DealCard({ deal, overlay = false, onCardClick }: { deal: Deal; overlay?
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: deal.id })
   const cfg = STAGE_CONFIG[deal.stage]
   const days = daysSince(deal.stage_entered_at)
-  const isStale = days >= 5
   const value = (deal.final_value && deal.final_value > 0) 
     ? deal.final_value 
     : (deal.estimated_value && deal.estimated_value > 0 ? deal.estimated_value : 0)
+
+  const prob = deal.probability ?? 50
+  const nextActionText = deal.next_action || (deal.activities && deal.activities.length > 0 ? deal.activities[0].content : null)
 
   const style = {
     ...(overlay ? {} : {
@@ -58,44 +60,39 @@ function DealCard({ deal, overlay = false, onCardClick }: { deal: Deal; overlay?
       {...attributes}
       {...listeners}
       onClick={() => onCardClick?.(deal)}
-      className="deal-card animate-fade-in cursor-pointer"
+      className="card p-3 rounded-xl border border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50 transition-all cursor-pointer shadow-sm animate-fade-in select-none group flex flex-col gap-1.5"
     >
-      {/* Title */}
-      <div className="deal-title">
-        {deal.title}
+      {/* Top Row: Client Name + Probability Badge */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="text-xs font-bold text-[var(--white)] font-display uppercase tracking-tight leading-snug line-clamp-2 flex-1 group-hover:text-[var(--lime)] transition-colors">
+          {deal.title}
+        </div>
+
+        <div className="px-2 py-0.5 rounded-md bg-[var(--charcoal)] border border-amber-500/30 text-amber-400 font-mono text-[10px] font-bold shrink-0">
+          {prob}%
+        </div>
       </div>
 
-      {/* Contact */}
-      {deal.contact && (
-        <div className="deal-contact">
-          {deal.contact.name && 
-           deal.contact.name.trim().toLowerCase() !== deal.title.trim().toLowerCase() && (
-            <div className="deal-contact-name">
-              {deal.contact.name}
-            </div>
-          )}
-          {deal.contact.company && 
-           deal.contact.company.trim().toLowerCase() !== deal.title.trim().toLowerCase() && 
-           deal.contact.company.trim().toLowerCase() !== (deal.contact.name || '').trim().toLowerCase() && (
-            <div className="deal-contact-company">
-              {deal.contact.company}
-            </div>
-          )}
+      {/* Middle Row: Agenda / Ação se houver */}
+      {nextActionText && (
+        <div className="text-[11px] text-[var(--gray)] font-mono truncate flex items-center gap-1 mt-0.5">
+          <span className="text-[var(--gray2)] shrink-0 font-normal">Ação:</span>
+          <span className="truncate text-white/90">{nextActionText}</span>
         </div>
       )}
 
-      {/* Footer */}
-      <div className="deal-footer">
-        <div className="deal-value">
+      {/* Thin Horizontal Line Divider */}
+      <div className="border-t border-[var(--line)]/60 my-1.5" />
+
+      {/* Bottom Row: Value (Left) + Days Since Last Activity/Stage Change (Right) */}
+      <div className="flex items-center justify-between font-mono text-xs">
+        <div className="font-black text-[var(--white)]">
           {formatCurrency(value || 0)}
         </div>
 
-        {days > 0 && (
-          <div className={`deal-time ${isStale ? 'danger' : 'ok'}`}>
-            <Clock size={10} />
-            <span>{days}d</span>
-          </div>
-        )}
+        <div className="text-[10px] text-[var(--gray2)] font-mono">
+          {days > 0 ? `Há ${days} dia${days > 1 ? 's' : ''}` : 'Hoje'}
+        </div>
       </div>
     </div>
   )
@@ -1287,6 +1284,19 @@ export function PipelineBoard() {
     if (data.stage === 'pedido') {
       setCelebrationDeal(newDeal)
     }
+  }
+
+  const handleDeleteDeal = (dealId: string) => {
+    const updated = deals.filter(d => d.id !== dealId)
+    setDeals(updated)
+    savePipelineDeals(updated)
+    if (selectedDeal?.id === dealId) {
+      setSelectedDeal(null)
+    }
+
+    try {
+      fetch(`/api/deals?id=${dealId}`, { method: 'DELETE' })
+    } catch (e) {}
   }
 
   return (

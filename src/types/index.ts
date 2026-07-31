@@ -114,6 +114,8 @@ export interface Deal {
   assigned_profile?: Profile
   estimated_value?: number
   final_value?: number
+  probability?: number
+  next_action?: string
   order_number?: string
   lost_reason?: string
   lost_notes?: string

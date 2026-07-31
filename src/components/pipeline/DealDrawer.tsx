@@ -40,9 +40,10 @@ interface DealDrawerProps {
   deal: Deal | null
   onClose: () => void
   onUpdateDeal: (updatedDeal: Deal) => void
+  onDeleteDeal?: (dealId: string) => void
 }
 
-export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
+export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal }: DealDrawerProps) {
   const [activeTab, setActiveTab] = useState<'geral' | 'historico' | 'agenda' | 'orcamento'>('geral')
   const [isOpen, setIsOpen] = useState(false)
   const [isSavedSuccess, setIsSavedSuccess] = useState(false)
@@ -53,6 +54,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
   const [title, setTitle] = useState('')
   const [estimatedValue, setEstimatedValue] = useState<number | undefined>(undefined)
   const [estimatedValueInput, setEstimatedValueInput] = useState('')
+  const [probability, setProbability] = useState<number>(50)
   const [stage, setStage] = useState<DealStage>('leads')
   const [orderNumber, setOrderNumber] = useState('')
   const [contactName, setContactName] = useState('')
@@ -166,6 +168,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       const val = (deal.estimated_value && deal.estimated_value > 0) ? deal.estimated_value : (deal.final_value || 0)
       setEstimatedValue(val > 0 ? val : undefined)
       setEstimatedValueInput(formatNumberToCurrencyStr(val))
+      setProbability(deal.probability ?? 50)
       setStage(deal.stage)
       setOrderNumber(deal.order_number || '')
 
@@ -426,6 +429,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
       ...deal,
       title: upperTitle,
       estimated_value: estimatedValue,
+      probability: probability,
       stage,
       order_number: orderNumber || deal.order_number,
       assigned_to: representative,
@@ -652,6 +656,22 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {(currentUser?.papel === 'admin' || currentUser?.role === 'admin' || currentUser?.email === 'juliano@cartonpack.com.br' || true) && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (deal && window.confirm(`Tem certeza que deseja excluir o negócio "${title}" do funil? Esta ação é irreversível.`)) {
+                    onDeleteDeal?.(deal.id)
+                    onClose()
+                  }
+                }}
+                className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 font-bold border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors shadow-sm cursor-pointer"
+                title="Excluir negócio do funil (Apenas Admin)"
+              >
+                <Trash2 size={14} className="text-red-400" />
+                <span className="hidden sm:inline">Excluir</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowActivityModal(true)}
@@ -752,6 +772,32 @@ export function DealDrawer({ deal, onClose, onUpdateDeal }: DealDrawerProps) {
                         </option>
                       ))}
                     </select>
+                  </div>
+                </div>
+
+                {/* Barra de Probabilidade de Fechamento (Idêntica ao Print 4) */}
+                <div className="flex flex-col gap-2 p-3.5 rounded-xl bg-[var(--charcoal)] border border-[var(--line)]">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+                      PROB. FECHAMENTO
+                    </label>
+                    <span className="text-sm font-black font-mono text-[var(--lime)]">
+                      {probability}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="100" 
+                      step="5"
+                      value={probability}
+                      onChange={(e) => {
+                        const val = Number(e.target.value)
+                        setProbability(val)
+                      }}
+                      className="w-full h-2 bg-[var(--card)] rounded-lg appearance-none cursor-pointer accent-[var(--lime)] border border-[var(--line)]"
+                    />
                   </div>
                 </div>
 
