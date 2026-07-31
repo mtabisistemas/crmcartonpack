@@ -3,6 +3,7 @@
 import { dbService } from '@/services/supabase-client'
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { isMasterUser } from '@/lib/utils'
 import {
   Plus,
   Search,
@@ -445,13 +446,19 @@ export default function UsersPage() {
   // Filter users list by role & search (Gestor sees Vendedor, Representante and Gestor)
   const roleFilteredUsers = useMemo(() => {
     return users.filter(u => {
+      // Ocultar Usuário Master (Maurício Maciel) de todos os usuários
+      if (isMasterUser(u.name) || isMasterUser(u.email) || isMasterUser(u.username)) {
+        if (!isMasterUser(currentUser?.name) && !isMasterUser(currentUser?.email)) {
+          return false
+        }
+      }
       if (isGestor) {
         const r = (u.role || '').toLowerCase()
         return r.includes('vend') || r.includes('rep') || r.includes('gestor')
       }
       return true
     })
-  }, [users, isGestor])
+  }, [users, isGestor, currentUser])
 
   const filteredUsers = useMemo(() => {
     return roleFilteredUsers.filter(u => {
@@ -1186,8 +1193,8 @@ Obs: No primeiro acesso você deverá alterar a senha temporária para ativar su
                   )}
                 </div>
 
-                {/* Password Management */}
-                {(isAdmin || isGestor) && (
+                {/* Password Management — Strictly Admin only */}
+                {isAdmin && (
                   <div className="card p-5 border-[var(--line)] bg-[var(--card)] space-y-4">
                     <h4 className="text-[10px] font-mono uppercase font-bold text-[var(--lime)] tracking-widest border-b border-[var(--line)] pb-2">
                       Gestão de Segurança e Senha
@@ -1205,19 +1212,21 @@ Obs: No primeiro acesso você deverá alterar a senha temporária para ativar su
                 )}
               </div>
 
-              {/* Drawer Footer Actions (Admin only or Gestor for non-admin users) */}
-              {(isAdmin || (isGestor && selectedUserForFicha.role !== 'admin')) && (
+              {/* Drawer Footer Actions — Excluir Usuário (Admin only), Editar Dados (Admin & Gestor) */}
+              {(isAdmin || isGestor) && (
                 <div className="p-5 border-t border-[var(--line)] bg-[var(--black)] flex justify-between gap-3">
-                  <button 
-                    onClick={() => handleDelete(selectedUserForFicha.id)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--red)]/25 bg-[var(--red)]/8 text-[var(--red)] text-xs font-bold hover:bg-[var(--red)]/15 transition-all cursor-pointer"
-                  >
-                    <Trash2 size={13} /> Excluir Usuário
-                  </button>
+                  {isAdmin && (
+                    <button 
+                      onClick={() => handleDelete(selectedUserForFicha.id)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--red)]/25 bg-[var(--red)]/8 text-[var(--red)] text-xs font-bold hover:bg-[var(--red)]/15 transition-all cursor-pointer"
+                    >
+                      <Trash2 size={13} /> Excluir Usuário
+                    </button>
+                  )}
                   
                   <button 
                     onClick={() => handleOpenEdit(selectedUserForFicha)}
-                    className="btn btn-primary flex items-center gap-2 text-xs py-2.5 px-6 rounded-xl cursor-pointer text-black font-bold"
+                    className="btn btn-primary flex items-center gap-2 text-xs py-2.5 px-6 rounded-xl cursor-pointer text-black font-bold ml-auto"
                   >
                     <Edit2 size={13} /> Editar Dados
                   </button>

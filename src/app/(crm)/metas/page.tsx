@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { UserGoal, LossReason, DEFAULT_LOSS_REASONS } from '@/types'
 import { supabase } from '@/services/supabase-client'
+import { isMasterUser } from '@/lib/utils'
 
 // Função auxiliar para calcular dias úteis em determinado ano/mês (Segunda a Sexta)
 function getBusinessDaysInMonth(year: number, monthZeroIndexed: number): number {
@@ -195,7 +196,7 @@ export default function MetasPage() {
           try { users = JSON.parse(raw) } catch (e) {}
         }
       }
-      setRegisteredUsers(users.filter(u => u.status !== 'inativo'))
+      setRegisteredUsers(users.filter(u => u.status !== 'inativo' && !isMasterUser(u.name) && !isMasterUser(u.email)))
 
       // 2. Carrega Metas & Motivos de Perda da API /api/metas
       try {

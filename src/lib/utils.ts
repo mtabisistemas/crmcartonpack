@@ -130,6 +130,16 @@ export function formatCanonicalRepName(repStr?: string | null): string {
 }
 
 /**
+ * Verifica se o nome ou e-mail corresponde ao Usuário Master (Maurício Maciel).
+ */
+export function isMasterUser(nameOrEmail?: string | null): boolean {
+  if (!nameOrEmail) return false
+  const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+  const clean = norm(nameOrEmail)
+  return clean.includes('mauricio maciel') || clean.includes('mauricio.maciel') || clean.includes('mauricio.admin')
+}
+
+/**
  * Agrupa, desduplica e ordena os nomes de representantes comerciais a partir de uma lista bruta.
  * Funde nomes em maiúsculas/minúsculas/acentuados em um único nome canônico limpo.
  */
@@ -138,6 +148,7 @@ export function getUniqueCanonicalRepresentatives(rawReps: (string | undefined |
   
   for (const raw of rawReps) {
     if (!raw) continue
+    if (isMasterUser(raw)) continue // Oculta o usuario Master Maurício Maciel dos filtros
     const key = normalizeRepKey(raw)
     if (!key) continue
     
