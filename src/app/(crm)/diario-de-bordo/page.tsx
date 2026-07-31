@@ -20,7 +20,10 @@ import {
   ExternalLink,
   Users,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Sparkles,
+  Trophy,
+  AlertCircle
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -527,14 +530,14 @@ export default function DiarioDeBordoPage() {
       </div>
 
       {/* ========================================================
-          2. HERO RESULTADO X META DO MÊS (ESTICADA 100% LARGURA)
+          2. HERO RESULTADO X META DO MÊS (COMPLETAMENTE REVISADO COM DESIGN 3D DO DASHBOARD)
          ======================================================== */}
       {loading ? (
-        <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl flex flex-col justify-between gap-4 shadow-lg animate-pulse">
+        <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl flex flex-col justify-between gap-4 shadow-lg animate-pulse shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-lime-500/10 border border-lime-500/20 flex items-center justify-center text-[var(--lime)] shrink-0">
-                <Loader2 size={20} className="animate-spin text-[var(--lime)]" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[#10b981] shrink-0">
+                <Loader2 size={20} className="animate-spin text-[#10b981]" />
               </div>
               <div className="space-y-1.5">
                 <div className="h-4 w-48 bg-white/10 rounded-md" />
@@ -543,7 +546,7 @@ export default function DiarioDeBordoPage() {
             </div>
             <div className="space-y-1 text-right">
               <div className="h-3 w-16 bg-white/10 rounded-md ml-auto" />
-              <div className="h-7 w-20 bg-lime-500/20 rounded-md ml-auto" />
+              <div className="h-7 w-20 bg-emerald-500/20 rounded-md ml-auto" />
             </div>
           </div>
           <div className="space-y-2.5 my-1">
@@ -553,9 +556,9 @@ export default function DiarioDeBordoPage() {
             </div>
             <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden" />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-3 border-t border-[var(--line)]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-3 border-t border-[var(--line)]">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)] space-y-2">
+              <div key={i} className="bg-[var(--charcoal)] p-4 rounded-xl border border-[var(--line)] space-y-2">
                 <div className="h-2.5 w-24 bg-white/10 rounded" />
                 <div className="h-4 w-28 bg-white/20 rounded font-bold" />
               </div>
@@ -563,75 +566,166 @@ export default function DiarioDeBordoPage() {
           </div>
         </div>
       ) : (
-        <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl flex flex-col justify-between gap-4 shadow-lg hover:border-[var(--lime)]/30 transition-all">
+        <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl flex flex-col gap-5 shadow-xl relative shrink-0">
           
-          <div className="flex items-center justify-between">
+          {/* Header com Título & Indicador de Status Neon (Estilo Dashboard) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--line)] pb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-lime-500/10 border border-lime-500/20 flex items-center justify-center text-[var(--lime)] shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/25 to-emerald-900/10 border border-emerald-500/40 text-[#10b981] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
                 <Target size={20} />
               </div>
               <div>
-                <h2 className="text-sm sm:text-base font-display font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2.5">
+                <h2 className="font-display text-sm sm:text-base font-bold text-slate-900 dark:text-[var(--white)] uppercase tracking-wider flex items-center gap-2.5">
                   <span>Resultado x Meta do Mês</span>
-                  <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                  <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
                     pacingMetrics.isPacingAhead 
-                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' 
-                      : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)]' 
+                      : 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
                   }`}>
-                    {pacingMetrics.isPacingAhead ? '▲ No Pacing' : '▼ Ritmo Abaixo do Pacing'}
+                    <Sparkles size={12} />
+                    <span>{pacingMetrics.isPacingAhead ? '▲ NO PACING' : '▼ RITMO ABAIXO DO PACING'}</span>
                   </span>
                 </h2>
-                <span className="text-[11px] font-mono text-[var(--gray2)]">
+                <p className="text-xs font-mono text-slate-600 dark:text-[var(--gray2)] font-semibold mt-0.5">
                   Dia {bizStats.todayDate} de {bizStats.totalDays} · {bizStats.elapsedBusinessDays} de {bizStats.totalBusinessDays} dias úteis transcorridos
-                </span>
+                </p>
               </div>
             </div>
 
-            <div className="text-right">
-              <span className="text-[10px] font-mono uppercase text-[var(--gray2)] font-bold block">Progresso</span>
-              <span className="text-2xl sm:text-3xl font-mono font-black text-[var(--lime)]">{pacingMetrics.salesProgressPct}%</span>
+            {/* Total Realizado vs Meta Banner (Direita) */}
+            <div className="text-left sm:text-right flex flex-col items-start sm:items-end shrink-0">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-700 dark:text-[var(--gray2)]">
+                Realizado: <strong className="text-lg sm:text-xl font-mono font-black text-slate-900 dark:text-white ml-1">{formatCurrency(pacingMetrics.totalSalesAchieved)}</strong>
+              </span>
+              <span className="text-[11px] font-mono text-slate-600 dark:text-[var(--gray2)] font-semibold">
+                Meta do Mês: <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{formatCurrency(pacingMetrics.salesTarget)}</strong>
+              </span>
             </div>
           </div>
 
-          {/* Main Progress Value */}
-          <div className="flex flex-col gap-2 my-1">
-            <div className="flex items-baseline justify-between">
-              <span className="text-sm sm:text-base font-mono text-[var(--gray2)]">
-                Realizado: <strong className="text-2xl sm:text-3xl font-black text-[var(--white)] ml-1">{formatCurrency(pacingMetrics.totalSalesAchieved)}</strong>
+          {/* 4 KPIs NUMÉRICOS COM DESIGN IDÊNTICO AOS CARDS DO DASHBOARD (FAIXAS NEON + MARCA D'ÁGUA 3D) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            {/* KPI 1: ESPERADO HOJE (PACING) */}
+            <div className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
+              {/* FAIXA LATERAL ESQUERDA NEON */}
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#0284c7] rounded-l-2xl z-20 shadow-[0_0_10px_#0284c7]" />
+
+              {/* MARCA D'ÁGUA 3D INTEIRA */}
+              <Target size={40} className="absolute right-3 top-3 text-[#0284c7] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+
+              <div className="flex items-start justify-between gap-2 z-10">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-sky-700 dark:text-sky-400 leading-tight">
+                  ESPERADO HOJE (PACING)
+                </span>
+              </div>
+
+              <div className="my-2 z-10">
+                <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight">
+                  {formatCurrency(pacingMetrics.expectedSalesPacing)}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-slate-600 dark:text-[var(--gray2)] font-semibold z-10">
+                Ritmo planejado até hoje
+              </div>
+            </div>
+
+            {/* KPI 2: FALTA PARA 100% */}
+            <div className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
+              {/* FAIXA LATERAL ESQUERDA NEON */}
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#f59e0b] rounded-l-2xl z-20 shadow-[0_0_10px_#f59e0b]" />
+
+              {/* MARCA D'ÁGUA 3D INTEIRA */}
+              <AlertCircle size={40} className="absolute right-3 top-3 text-[#f59e0b] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+
+              <div className="flex items-start justify-between gap-2 z-10">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 leading-tight">
+                  FALTA PARA 100%
+                </span>
+              </div>
+
+              <div className="my-2 z-10">
+                <div className="text-xl sm:text-2xl font-mono font-black text-amber-700 dark:text-amber-400 tracking-tight">
+                  {formatCurrency(pacingMetrics.remainingSalesR$)}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-amber-800 dark:text-amber-500/80 font-bold z-10">
+                {pacingMetrics.remainingSalesR$ > 0 ? 'Diferença para atingir a meta' : 'Meta 100% atingida!'}
+              </div>
+            </div>
+
+            {/* KPI 3: META DIÁRIA NECESSÁRIA */}
+            <div className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
+              {/* FAIXA LATERAL ESQUERDA NEON */}
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#06b6d4] rounded-l-2xl z-20 shadow-[0_0_10px_#06b6d4]" />
+
+              {/* MARCA D'ÁGUA 3D INTEIRA */}
+              <TrendingUp size={40} className="absolute right-3 top-3 text-[#06b6d4] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+
+              <div className="flex items-start justify-between gap-2 z-10">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-400 leading-tight">
+                  META DIÁRIA NECESSÁRIA
+                </span>
+              </div>
+
+              <div className="my-2 z-10">
+                <div className="text-xl sm:text-2xl font-mono font-black text-cyan-700 dark:text-cyan-400 tracking-tight">
+                  {formatCurrency(pacingMetrics.dailyPaceRequired)} <span className="text-xs font-normal text-slate-600 dark:text-[var(--gray2)]">/ dia</span>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-slate-600 dark:text-[var(--gray2)] font-semibold z-10">
+                Faltam <strong className="text-slate-900 dark:text-white">{bizStats.remainingBusinessDays}</strong> dias úteis
+              </div>
+            </div>
+
+            {/* KPI 4: VISITAS NO MÊS */}
+            <div className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
+              {/* FAIXA LATERAL ESQUERDA NEON */}
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#8b5cf6] rounded-l-2xl z-20 shadow-[0_0_10px_#8b5cf6]" />
+
+              {/* MARCA D'ÁGUA 3D INTEIRA */}
+              <Users size={40} className="absolute right-3 top-3 text-[#8b5cf6] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+
+              <div className="flex items-start justify-between gap-2 z-10">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400 leading-tight">
+                  VISITAS NO MÊS
+                </span>
+              </div>
+
+              <div className="my-2 z-10">
+                <div className="text-xl sm:text-2xl font-mono font-black text-[#8b5cf6] tracking-tight">
+                  {pacingMetrics.currentMonthVisits} <span className="text-xs font-normal text-slate-600 dark:text-[var(--gray2)]">/ {pacingMetrics.visitsTarget}</span>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-slate-600 dark:text-[var(--gray2)] font-semibold z-10">
+                Atendimentos realizados
+              </div>
+            </div>
+
+          </div>
+
+          {/* BARRA DE PROGRESSO NEON 3D COMPLETA COM BANDEIRA % (IDÊNTICA AO DASHBOARD) */}
+          <div className="flex flex-col gap-2 pt-1">
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <span>Progresso Geral de Atingimento:</span>
+                <strong className="text-emerald-700 dark:text-emerald-400 font-mono text-sm">{pacingMetrics.salesProgressPct}%</strong>
               </span>
-              <span className="text-xs sm:text-sm font-mono text-[var(--gray2)]">
-                Meta: <strong className="text-[var(--white)] font-bold">{formatCurrency(pacingMetrics.salesTarget)}</strong>
+              <span className="text-slate-700 dark:text-[var(--gray2)] font-bold">
+                {pacingMetrics.salesProgressPct >= 100 ? '100% Concluído' : `${(100 - pacingMetrics.salesProgressPct).toFixed(0)}% Restantes`}
               </span>
             </div>
 
-            <div className="w-full h-3 bg-[var(--charcoal)] border border-[var(--line)] rounded-full overflow-hidden p-0.5">
+            {/* Barra Tridimensional Glowing */}
+            <div className="w-full h-4 rounded-full bg-slate-200 dark:bg-[#090d16] p-0.5 border border-slate-300 dark:border-slate-700/60 overflow-hidden relative shadow-inner">
               <div 
-                className="h-full bg-[var(--lime)] rounded-full transition-all duration-500"
-                style={{ width: `${pacingMetrics.salesProgressPct}%` }}
+                className="bg-gradient-to-r from-[#0284c7] via-[#06b6d4] to-[#10b981] h-full rounded-full transition-all duration-700 shadow-[0_0_15px_rgba(16,185,129,0.6)]"
+                style={{ width: `${Math.min(100, Math.max(2, pacingMetrics.salesProgressPct))}%` }}
               />
-            </div>
-          </div>
-
-          {/* Footer Metrics Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-3 border-t border-[var(--line)] text-xs font-mono">
-            <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
-              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Esperado Hoje (Pacing)</span>
-              <span className="font-bold text-sm text-[var(--white)]">{formatCurrency(pacingMetrics.expectedSalesPacing)}</span>
-            </div>
-
-            <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
-              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Falta para 100%</span>
-              <span className="font-bold text-sm text-[var(--white)]">{formatCurrency(pacingMetrics.remainingSalesR$)}</span>
-            </div>
-
-            <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
-              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Meta Diária Necessária</span>
-              <span className="font-bold text-sm text-[var(--white)]">{formatCurrency(pacingMetrics.dailyPaceRequired)} / dia</span>
-            </div>
-
-            <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
-              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Visitas no Mês</span>
-              <span className="font-bold text-sm text-[var(--white)]">{pacingMetrics.currentMonthVisits} / {pacingMetrics.visitsTarget} realizados</span>
             </div>
           </div>
 
