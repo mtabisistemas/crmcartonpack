@@ -454,11 +454,24 @@ export default function DiarioDeBordoPage() {
                 className="bg-transparent text-xs font-bold text-[var(--white)] cursor-pointer outline-none"
               >
                 <option value="all" className="bg-[var(--card)] text-[var(--white)]">Toda a Equipe</option>
-                {usersList.map((u: any) => (
-                  <option key={u.id || u.name} value={u.id || u.name} className="bg-[var(--card)] text-[var(--white)]">
-                    {u.name} ({u.role || 'Usuário'})
-                  </option>
-                ))}
+                {usersList
+                  .filter((u: any) => {
+                    const norm = (s: string) => (s || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+                    const n = norm(u.name || '')
+                    const e = norm(u.email || '')
+                    return !n.includes('mauricio') && !n.includes('maciel') && !e.includes('mauricio')
+                  })
+                  .map((u: any) => {
+                    const normName = (u.name || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+                    const isThaiane = normName.includes('thaiane')
+                    const displayRole = isThaiane ? 'gestor' : (u.role || 'Usuário')
+
+                    return (
+                      <option key={u.id || u.name} value={u.id || u.name} className="bg-[var(--card)] text-[var(--white)]">
+                        {u.name} ({displayRole})
+                      </option>
+                    )
+                  })}
               </select>
             </div>
           )}
