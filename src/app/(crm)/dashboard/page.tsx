@@ -35,7 +35,8 @@ import {
   Check,
   RefreshCw,
   Eye,
-  FileText
+  FileText,
+  AlertCircle
 } from 'lucide-react'
 import { formatCurrency, whatsappLink, isSameRepresentative, getUniqueCanonicalRepresentatives, formatCanonicalRepName } from '@/lib/utils'
 import { getPipelineDeals } from '@/services/pipeline-service'
@@ -1268,65 +1269,11 @@ export default function DashboardPage() {
       </div>
 
       {/* ========================================================
-          2. LINHA DE 6 KPI CARDS (MARCA D'ÁGUA 3D INTEIRA NO TOPO DIREITO)
+          2. LINHA DE 5 KPI CARDS (MARCA D'ÁGUA 3D INTEIRA NO TOPO DIREITO)
          ======================================================== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 shrink-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 shrink-0">
         
-        {/* CARD 1: TOTAL FATURADO / PEDIDOS FATURADOS */}
-        <div 
-          onClick={() => {
-            const items: DrillDownItem[] = [
-              ...kpis.historicalOrders.map(o => ({
-                id: o.id,
-                title: `Pedido Fechado #${o.order_number}`,
-                company: o.company,
-                cnpj: o.cnpj,
-                representative: o.representative,
-                value: o.value,
-                stageOrStatus: 'PEDIDO FATURADO',
-                curve: o.curve,
-                date: o.date
-              })),
-              ...kpis.approvedDealsList.map(d => ({
-                id: d.id,
-                title: d.title,
-                company: d.contact?.company || d.contact?.name || 'Cliente',
-                cnpj: d.contact?.cnpj,
-                representative: d.assigned_to || 'Representante',
-                value: d.estimated_value || 0,
-                stageOrStatus: d.stage.toUpperCase(),
-                curve: d.contact?.curve || 'C',
-                date: d.closed_at || d.stage_entered_at
-              }))
-            ]
-            openDrillDown('PEDIDOS EMITIDOS / FATURADO', 'Lista de todas as vendas e pedidos faturados no período', items, '#10b981')
-          }}
-          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(16,185,129,0.25)] hover:border-emerald-500/50 transition-all duration-200 group select-none min-h-[110px]"
-        >
-          {/* FAIXA LATERAL ESQUERDA NEON */}
-          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#10b981] rounded-l-2xl z-20 shadow-[0_0_10px_#10b981]" />
-
-          {/* MARCA D'ÁGUA 3D INTEIRA NO CANTO SUPERIOR DIREITO */}
-          <Trophy size={40} className="absolute right-3 top-3 text-[#10b981] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
-
-          <div className="flex items-start justify-between gap-2 z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[120px]">
-              PEDIDO EMITIDO / FATURADO
-            </span>
-          </div>
-
-          <div className="my-2.5 z-10">
-            <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-[#10b981] transition-colors">
-              {formatCompactCurrency(kpis.totalFaturadoR$)}
-            </div>
-          </div>
-
-          <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] z-10">
-            <strong className="text-[var(--white)] font-bold">{kpis.totalPedidosQtd}</strong> pedidos faturados
-          </div>
-        </div>
-
-        {/* CARD 2: EM NEGOCIAÇÃO (PIPELINE ABERTO) */}
+        {/* CARD 1: EM NEGOCIAÇÃO (PIPELINE ABERTO) */}
         <div 
           onClick={() => {
             const items: DrillDownItem[] = kpis.openDealsList.map(d => ({
@@ -1367,7 +1314,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* CARD 3: OPORTUNIDADES APROVADAS */}
+        {/* CARD 2: OPORTUNIDADES APROVADAS */}
         <div 
           onClick={() => {
             const items: DrillDownItem[] = kpis.approvedDealsList.map(d => ({
@@ -1408,7 +1355,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* CARD 4: NEGÓCIOS PERDIDOS & TAXA % */}
+        {/* CARD 3: NEGÓCIOS PERDIDOS & TAXA % */}
         <div 
           onClick={() => {
             const items: DrillDownItem[] = kpis.lostDealsList.map(d => ({
@@ -1451,7 +1398,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* CARD 5: TICKET MÉDIO ACUMULADO */}
+        {/* CARD 4: TICKET MÉDIO ACUMULADO */}
         <div 
           onClick={() => {
             const items: DrillDownItem[] = [
@@ -1494,7 +1441,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* CARD 6: CICLO MÉDIO DE VENDAS */}
+        {/* CARD 5: CICLO MÉDIO DE VENDAS */}
         <div 
           onClick={() => {
             const items: DrillDownItem[] = filteredData.deals.map(d => ({
@@ -1576,59 +1523,136 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 4 KPIs numéricos em linha */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 4 KPIs NUMÉRICOS COM DESIGN IDÊNTICO AOS CARDS DO TOPO (FAIXAS NEON + MARCA D'ÁGUA 3D) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
           {/* KPI 1: META DO MÊS */}
-          <div className="bg-[var(--charcoal)] border border-[var(--line)] p-4 rounded-xl flex flex-col justify-between relative overflow-hidden group">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)]">
-              OBJETIVO / META DO MÊS
-            </span>
-            <div className="text-xl sm:text-2xl font-mono font-black text-white mt-2">
-              {formatCurrency(metaCalculated.totalGoal)}
+          <div className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
+            {/* FAIXA LATERAL ESQUERDA NEON */}
+            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#94a3b8] rounded-l-2xl z-20 shadow-[0_0_10px_#94a3b8]" />
+
+            {/* MARCA D'ÁGUA 3D INTEIRA */}
+            <Target size={40} className="absolute right-3 top-3 text-[#94a3b8] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+
+            <div className="flex items-start justify-between gap-2 z-10">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
+                OBJETIVO / META DO MÊS
+              </span>
             </div>
-            <span className="text-[10px] font-mono text-slate-400 mt-1">
+
+            <div className="my-2 z-10">
+              <div className="text-xl sm:text-2xl font-mono font-black text-white tracking-tight">
+                {formatCurrency(metaCalculated.totalGoal)}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] z-10">
               Target planejado para a equipe
-            </span>
+            </div>
           </div>
 
           {/* KPI 2: REALIZADO / FATURADO */}
-          <div className="bg-[var(--charcoal)] border border-emerald-500/30 p-4 rounded-xl flex flex-col justify-between relative overflow-hidden group">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
-              FATURADO REALIZADO
-            </span>
-            <div className="text-xl sm:text-2xl font-mono font-black text-emerald-400 mt-2">
-              {formatCurrency(metaCalculated.faturado)}
+          <div 
+            onClick={() => {
+              const items: DrillDownItem[] = [
+                ...kpis.historicalOrders.map(o => ({
+                  id: o.id,
+                  title: `Pedido Fechado #${o.order_number}`,
+                  company: o.company,
+                  cnpj: o.cnpj,
+                  representative: o.representative,
+                  value: o.value,
+                  stageOrStatus: 'PEDIDO FATURADO',
+                  curve: o.curve,
+                  date: o.date
+                })),
+                ...kpis.approvedDealsList.map(d => ({
+                  id: d.id,
+                  title: d.title,
+                  company: d.contact?.company || d.contact?.name || 'Cliente',
+                  cnpj: d.contact?.cnpj,
+                  representative: d.assigned_to || 'Representante',
+                  value: d.estimated_value || 0,
+                  stageOrStatus: d.stage.toUpperCase(),
+                  curve: d.contact?.curve || 'C',
+                  date: d.closed_at || d.stage_entered_at
+                }))
+              ]
+              openDrillDown('FATURADO REALIZADO', 'Lista de todas as vendas e pedidos faturados no período', items, '#10b981')
+            }}
+            className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(16,185,129,0.25)] hover:border-emerald-500/50 transition-all duration-200 group select-none min-h-[110px]"
+          >
+            {/* FAIXA LATERAL ESQUERDA NEON */}
+            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#10b981] rounded-l-2xl z-20 shadow-[0_0_10px_#10b981]" />
+
+            {/* MARCA D'ÁGUA 3D INTEIRA */}
+            <Trophy size={40} className="absolute right-3 top-3 text-[#10b981] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+
+            <div className="flex items-start justify-between gap-2 z-10">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 leading-tight">
+                FATURADO REALIZADO
+              </span>
             </div>
-            <span className="text-[10px] font-mono text-emerald-500/80 font-bold mt-1">
-              {kpis.totalPedidosQtd} pedidos confirmados
-            </span>
+
+            <div className="my-2 z-10">
+              <div className="text-xl sm:text-2xl font-mono font-black text-emerald-400 tracking-tight group-hover:text-emerald-300 transition-colors">
+                {formatCurrency(metaCalculated.faturado)}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] z-10">
+              <strong className="text-[var(--white)] font-bold">{kpis.totalPedidosQtd}</strong> pedidos confirmados
+            </div>
           </div>
 
           {/* KPI 3: FALTA PARA A META */}
-          <div className="bg-[var(--charcoal)] border border-amber-500/30 p-4 rounded-xl flex flex-col justify-between relative overflow-hidden group">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400">
-              DIFERENÇA / RESTANTE
-            </span>
-            <div className="text-xl sm:text-2xl font-mono font-black text-amber-400 mt-2">
-              {metaCalculated.falta > 0 ? formatCurrency(metaCalculated.falta) : 'R$ 0,00'}
+          <div className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
+            {/* FAIXA LATERAL ESQUERDA NEON */}
+            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#f59e0b] rounded-l-2xl z-20 shadow-[0_0_10px_#f59e0b]" />
+
+            {/* MARCA D'ÁGUA 3D INTEIRA */}
+            <AlertCircle size={40} className="absolute right-3 top-3 text-[#f59e0b] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+
+            <div className="flex items-start justify-between gap-2 z-10">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 leading-tight">
+                DIFERENÇA / RESTANTE
+              </span>
             </div>
-            <span className="text-[10px] font-mono text-amber-500/80 font-bold mt-1">
+
+            <div className="my-2 z-10">
+              <div className="text-xl sm:text-2xl font-mono font-black text-amber-400 tracking-tight">
+                {metaCalculated.falta > 0 ? formatCurrency(metaCalculated.falta) : 'R$ 0,00'}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-amber-500/80 font-bold z-10">
               {metaCalculated.falta > 0 ? 'Falta para atingir 100%' : 'Meta 100% superada!'}
-            </span>
+            </div>
           </div>
 
           {/* KPI 4: PROJEÇÃO ESTIMADA */}
-          <div className="bg-[var(--charcoal)] border border-cyan-500/30 p-4 rounded-xl flex flex-col justify-between relative overflow-hidden group">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400">
-              PROJEÇÃO DE FECHAMENTO
-            </span>
-            <div className="text-xl sm:text-2xl font-mono font-black text-cyan-400 mt-2">
-              {formatCurrency(metaCalculated.projecao > 0 ? metaCalculated.projecao : metaCalculated.faturado)}
+          <div className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
+            {/* FAIXA LATERAL ESQUERDA NEON */}
+            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#06b6d4] rounded-l-2xl z-20 shadow-[0_0_10px_#06b6d4]" />
+
+            {/* MARCA D'ÁGUA 3D INTEIRA */}
+            <TrendingUp size={40} className="absolute right-3 top-3 text-[#06b6d4] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+
+            <div className="flex items-start justify-between gap-2 z-10">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 leading-tight">
+                PROJEÇÃO DE FECHAMENTO
+              </span>
             </div>
-            <span className="text-[10px] font-mono text-cyan-500/80 font-bold mt-1">
+
+            <div className="my-2 z-10">
+              <div className="text-xl sm:text-2xl font-mono font-black text-cyan-400 tracking-tight">
+                {formatCurrency(metaCalculated.projecao > 0 ? metaCalculated.projecao : metaCalculated.faturado)}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] z-10">
               Ritmo atual + pipeline em andamento
-            </span>
+            </div>
           </div>
 
         </div>
@@ -1651,55 +1675,6 @@ export default function DashboardPage() {
               className="bg-gradient-to-r from-[#0284c7] via-[#06b6d4] to-[#10b981] h-full rounded-full transition-all duration-700 shadow-[0_0_15px_rgba(16,185,129,0.6)]"
               style={{ width: `${Math.min(100, Math.max(2, metaCalculated.pct))}%` }}
             />
-          </div>
-        </div>
-
-        {/* MINI PAINEL DE DESEMPENHO INDIVIDUAL POR REPRESENTANTE */}
-        <div className="border-t border-[var(--line)] pt-4 mt-1">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--gray2)] flex items-center gap-1.5">
-              <Users size={14} className="text-[#10b981]" />
-              <span>Desempenho por Representante no Mês</span>
-            </span>
-            <span className="text-[10px] font-mono text-slate-400">
-              {availableReps.length} representantes ativos
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {availableReps.slice(0, 8).map(repName => {
-              const repOrders = filteredData.orders.filter(o => isSameRepresentative(o.representative, repName))
-              const repRealized = repOrders.reduce((sum, o) => sum + (Number(o.value) || 0), 0)
-              
-              const monthKey = `${yearFilter}_${monthFilter}`
-              const repGoal = (goalsMap[`${monthKey}_${repName}`]?.salesGoal) || ((goalsMap[`${monthKey}_${repName}`] as any)?.metaMonthly) || (metaCalculated.totalGoal / Math.max(1, availableReps.length))
-              const repPct = repGoal > 0 ? Math.min(200, (repRealized / repGoal) * 100) : 0
-
-              return (
-                <div key={repName} className="bg-[var(--charcoal)] border border-[var(--line)] p-3 rounded-xl flex flex-col justify-between gap-2 hover:border-slate-500 transition-all">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white truncate max-w-[140px]">{formatCanonicalRepName(repName)}</span>
-                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                      repPct >= 100 ? 'bg-emerald-500/20 text-emerald-400' : repPct >= 70 ? 'bg-cyan-500/20 text-cyan-400' : 'bg-amber-500/20 text-amber-400'
-                    }`}>
-                      {repPct.toFixed(0)}%
-                    </span>
-                  </div>
-
-                  <div className="flex items-baseline justify-between text-xs font-mono">
-                    <span className="text-emerald-400 font-bold">{formatCompactCurrency(repRealized)}</span>
-                    <span className="text-[10px] text-slate-500">Meta: {formatCompactCurrency(repGoal)}</span>
-                  </div>
-
-                  <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full ${repPct >= 100 ? 'bg-emerald-400' : repPct >= 70 ? 'bg-cyan-400' : 'bg-amber-400'}`}
-                      style={{ width: `${Math.min(100, Math.max(4, repPct))}%` }}
-                    />
-                  </div>
-                </div>
-              )
-            })}
           </div>
         </div>
 
