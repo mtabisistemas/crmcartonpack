@@ -23,6 +23,7 @@ import { formatCurrency, daysSince, isSameRepresentative, getUniqueCanonicalRepr
 import { Plus, Clock, Trophy, XCircle, Search, Filter, Building2, Calendar } from 'lucide-react'
 import { DealDrawer } from './DealDrawer'
 import { PipelineCalendarModal } from './PipelineCalendarModal'
+import { RegisterActivityModal } from '@/components/RegisterActivityModal'
 import { getPipelineDeals, savePipelineDeals, DEFAULT_PIPELINE_DEALS } from '@/services/pipeline-service'
 import { supabase } from '@/services/supabase-client'
 
@@ -879,6 +880,9 @@ export function PipelineBoard() {
   const [celebrationDeal, setCelebrationDeal] = useState<Deal | null>(null)
   const [showNewDealModal, setShowNewDealModal] = useState(false)
   const [showCalendarModal, setShowCalendarModal] = useState(false)
+  const [showActivityModal, setShowActivityModal] = useState(false)
+  const [activityPreselectedClient, setActivityPreselectedClient] = useState('')
+  const [contactsList, setContactsList] = useState<any[]>([])
   const [newDealStage, setNewDealStage] = useState<DealStage>('leads')
 
   // Filter states
@@ -1527,7 +1531,36 @@ export function PipelineBoard() {
       <PipelineCalendarModal 
         isOpen={showCalendarModal}
         onClose={() => setShowCalendarModal(false)}
+        onCompleteAndRegisterActivity={(clientName) => {
+          try {
+            const raw = typeof window !== 'undefined' ? localStorage.getItem('crm_contacts') : null
+            if (raw) {
+              const list = JSON.parse(raw)
+              if (Array.isArray(list)) setContactsList(list)
+            }
+          } catch (e) {}
+          setShowCalendarModal(false)
+          setActivityPreselectedClient(clientName)
+          setShowActivityModal(true)
+        }}
       />
+
+      {/* Modal de Registro de Atividade Comercial */}
+      {showActivityModal && (
+        <RegisterActivityModal
+          isOpen={showActivityModal}
+          onClose={() => {
+            setShowActivityModal(false)
+            setActivityPreselectedClient('')
+          }}
+          contactsList={contactsList}
+          preselectedContactId={activityPreselectedClient}
+          onSuccess={() => {
+            setShowActivityModal(false)
+            setActivityPreselectedClient('')
+          }}
+        />
+      )}
     </div>
   )
 }

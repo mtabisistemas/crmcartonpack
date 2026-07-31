@@ -11,9 +11,10 @@ import {
 interface PipelineCalendarModalProps {
   isOpen: boolean
   onClose: () => void
+  onCompleteAndRegisterActivity?: (clientName: string) => void
 }
 
-export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModalProps) {
+export function PipelineCalendarModal({ isOpen, onClose, onCompleteAndRegisterActivity }: PipelineCalendarModalProps) {
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month')
   const [currentDate, setCurrentDate] = useState<Date>(new Date())
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -304,6 +305,25 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
     loadApts()
     setActiveApt(null)
     setIsEditing(false)
+  }
+
+  // Complete appointment and open activity registration form
+  const handleCompleteAppointment = () => {
+    if (!activeApt) return
+    const updated = updateAppointment({
+      ...activeApt,
+      status: 'concluido'
+    })
+    loadApts()
+
+    const clientTarget = (activeApt.company_name || activeApt.contact_name || activeApt.deal_title || activeApt.title || '').trim()
+
+    setActiveApt(null)
+    setIsEditing(false)
+
+    if (onCompleteAndRegisterActivity) {
+      onCompleteAndRegisterActivity(clientTarget)
+    }
   }
 
   // Build grid calendar cells for Month View
@@ -1052,22 +1072,37 @@ export function PipelineCalendarModal({ isOpen, onClose }: PipelineCalendarModal
                   )}
 
                   {/* Actions */}
-                  <div className="flex items-center justify-between gap-3 pt-2 border-t border-[var(--line)]">
+                  <div className="flex items-center justify-between gap-2 pt-3 border-t border-[var(--line)]">
                     <button
+                      type="button"
                       onClick={handleDeleteAppointment}
-                      className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 text-red-500 border-red-500/30 hover:border-red-500 hover:bg-red-500/10 cursor-pointer font-bold"
+                      className="btn btn-secondary text-xs py-2 px-2.5 flex items-center gap-1.5 text-red-400 border-red-500/30 hover:border-red-500 hover:bg-red-500/10 cursor-pointer font-bold"
                     >
                       <Trash2 size={14} />
-                      <span>Cancelar Agenda</span>
+                      <span className="uppercase tracking-wide">Cancelar Agenda</span>
                     </button>
 
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="btn btn-primary text-xs py-2 px-4 flex items-center gap-1.5 uppercase font-bold text-black cursor-pointer"
-                    >
-                      <Edit2 size={14} />
-                      <span>Editar</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {activeApt.status !== 'concluido' && (
+                        <button
+                          type="button"
+                          onClick={handleCompleteAppointment}
+                          className="btn btn-primary text-xs py-2 px-3.5 flex items-center gap-1.5 font-bold uppercase text-black cursor-pointer shadow-lg hover:scale-105 transition-all"
+                        >
+                          <Check size={15} strokeWidth={3} />
+                          <span>Concluir</span>
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(true)}
+                        className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 uppercase font-bold text-white border-[var(--line)] hover:border-[var(--lime)] cursor-pointer"
+                      >
+                        <Edit2 size={14} />
+                        <span>Editar</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
