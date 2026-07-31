@@ -1843,9 +1843,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* MAPA DE GEOLOCALIZAÇÃO (COLUNA 4/12 - LARGURA COMPACTADA CONFORME SOLICITADO) */}
+        {/* MAPA DE GEOLOCALIZAÇÃO (COLUNA 4/12) */}
         <div className="lg:col-span-4 card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl flex flex-col justify-between shadow-lg relative">
-          <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 mb-3">
+          <div className="flex items-center justify-between border-b border-[var(--line)] pb-2 mb-1.5">
             <div className="flex items-center gap-2">
               <MapPin size={16} className="text-[#10b981]" />
               <h3 className="font-display text-xs font-bold text-[var(--white)] uppercase tracking-wider truncate">
@@ -1854,19 +1854,20 @@ export default function DashboardPage() {
             </div>
             <button 
               onClick={() => setIsMapExpanded(true)}
-              className="btn btn-secondary text-[10px] py-1 px-2.5 rounded-lg flex items-center gap-1 font-mono font-bold hover:border-[#10b981] transition-colors cursor-pointer shrink-0"
+              className="text-[9px] py-1 px-2 rounded-md bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white flex items-center gap-1 font-mono font-bold transition-all cursor-pointer shrink-0 shadow-xs"
+              title="Expandir mapa em tela cheia"
             >
-              <Maximize2 size={11} className="text-[#10b981]" />
-              <span>AMPLIAR MAPA</span>
+              <Maximize2 size={10} className="text-[#10b981]" />
+              <span>Ampliar</span>
             </button>
           </div>
 
           <div 
             ref={contactsMapRef}
-            className="w-full bg-[#141414] rounded-xl border border-[var(--line)] overflow-hidden h-64 relative z-0"
+            className="w-full bg-[#141414] rounded-xl border border-[var(--line)] overflow-hidden flex-1 min-h-[300px] h-[300px] relative z-0"
           />
 
-          <div className="flex items-center justify-center pt-2.5 text-[10px] font-mono text-[var(--gray2)]">
+          <div className="flex items-center justify-center pt-1.5 text-[10px] font-mono text-[var(--gray2)]">
             <div className="flex items-center justify-center gap-4 w-full text-[9px] sm:text-[10px]">
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#10b981] shadow-sm" /> Fechado</span>
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm" /> Negociação</span>
