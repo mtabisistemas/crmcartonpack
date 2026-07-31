@@ -3318,7 +3318,7 @@ export default function ContactsPage() {
         </div>
       </div>
 
-      {/* ── KPI METRICS SUMMARY CARDS (Separados em 2 grupos com bordas laterais elegantes, texto branco e letras para Curvas) ── */}
+      {/* ── KPI METRICS SUMMARY CARDS (Separados em 2 grupos com bordas laterais elegantes, ícones coloridos e letras para Curvas) ── */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
         {/* GRUPO 1: STATUS DA CARTEIRA (4 Cards) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -3328,10 +3328,10 @@ export default function ContactsPage() {
               setSelectedStatus('all')
               setSelectedCurve('all')
             }}
-            className={`card p-2.5 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            className={`card p-2.5 border-l-[3px] border-l-sky-500/70 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
               selectedStatus === 'all' && selectedCurve === 'all'
-                ? 'border-[var(--lime)]/60 bg-[var(--charcoal)] shadow-md' 
-                : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/30'
+                ? 'border-l-sky-400 bg-[var(--charcoal)] shadow-md' 
+                : 'border-[var(--line)] bg-[var(--card)] hover:border-l-sky-400'
             }`}
             title="Exibir todos os clientes"
           >
@@ -3342,16 +3342,18 @@ export default function ContactsPage() {
                 <span className="text-[10px] font-mono text-[var(--gray2)] font-normal">100%</span>
               </div>
             </div>
-            <Users size={14} className="text-[var(--gray2)] shrink-0 opacity-60" />
+            <div className="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400 flex items-center justify-center shrink-0 shadow-sm">
+              <Users size={14} />
+            </div>
           </div>
 
           {/* Card 2: Ativos */}
           <div 
             onClick={() => setSelectedStatus(prev => prev === 'ativo' ? 'all' : 'ativo')}
-            className={`card p-2.5 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            className={`card p-2.5 border-l-[3px] border-l-[var(--lime)]/70 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
               selectedStatus === 'ativo' 
-                ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
-                : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/30'
+                ? 'border-l-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
+                : 'border-[var(--line)] bg-[var(--card)] hover:border-l-[var(--lime)]'
             }`}
             title={selectedStatus === 'ativo' ? 'Clique para desfiltrar' : 'Filtrar por Clientes Ativos'}
           >
@@ -3362,16 +3364,18 @@ export default function ContactsPage() {
                 <span className="text-[10px] font-mono text-[var(--gray2)] font-normal">{metrics.pctAtivos}%</span>
               </div>
             </div>
-            <CheckCircle size={14} className="text-[var(--gray2)] shrink-0 opacity-60" />
+            <div className="w-7 h-7 rounded-lg bg-[var(--lime)]/10 border border-[var(--lime)]/30 text-[var(--lime)] flex items-center justify-center shrink-0 shadow-sm">
+              <CheckCircle size={14} />
+            </div>
           </div>
 
           {/* Card 3: Reativação */}
           <div 
             onClick={() => setSelectedStatus(prev => prev === 'reativacao' ? 'all' : 'reativacao')}
-            className={`card p-2.5 border-l-4 border-l-orange-500 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            className={`card p-2.5 border-l-[3px] border-l-orange-500/70 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
               selectedStatus === 'reativacao' 
-                ? 'border-orange-500 bg-[var(--charcoal)] shadow-md' 
-                : 'border-[var(--line)] bg-[var(--card)] hover:border-orange-500/30'
+                ? 'border-l-orange-400 bg-[var(--charcoal)] shadow-md' 
+                : 'border-[var(--line)] bg-[var(--card)] hover:border-l-orange-400'
             }`}
             title={selectedStatus === 'reativacao' ? 'Clique para desfiltrar' : 'Filtrar por Reativação'}
           >
@@ -3382,16 +3386,18 @@ export default function ContactsPage() {
                 <span className="text-[10px] font-mono text-[var(--gray2)] font-normal">{metrics.pctReativacao}%</span>
               </div>
             </div>
-            <AlertCircle size={14} className="text-[var(--gray2)] shrink-0 opacity-60" />
+            <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-400 flex items-center justify-center shrink-0 shadow-sm">
+              <AlertCircle size={14} />
+            </div>
           </div>
 
           {/* Card 4: Prospecção */}
           <div 
             onClick={() => setSelectedStatus(prev => prev === 'prospeccao' ? 'all' : 'prospeccao')}
-            className={`card p-2.5 border-l-4 border-l-amber-400 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            className={`card p-2.5 border-l-[3px] border-l-amber-400/70 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
               selectedStatus === 'prospeccao' 
-                ? 'border-amber-400 bg-[var(--charcoal)] shadow-md' 
-                : 'border-[var(--line)] bg-[var(--card)] hover:border-amber-400/30'
+                ? 'border-l-amber-400 bg-[var(--charcoal)] shadow-md' 
+                : 'border-[var(--line)] bg-[var(--card)] hover:border-l-amber-400'
             }`}
             title={selectedStatus === 'prospeccao' ? 'Clique para desfiltrar' : 'Filtrar por Prospecção'}
           >
@@ -3402,19 +3408,21 @@ export default function ContactsPage() {
                 <span className="text-[10px] font-mono text-[var(--gray2)] font-normal">{metrics.pctProspeccao}%</span>
               </div>
             </div>
-            <UserPlus size={14} className="text-[var(--gray2)] shrink-0 opacity-60" />
+            <div className="w-7 h-7 rounded-lg bg-amber-400/10 border border-amber-400/30 text-amber-400 flex items-center justify-center shrink-0 shadow-sm">
+              <UserPlus size={14} />
+            </div>
           </div>
         </div>
 
-        {/* GRUPO 2: CURVAS ABC (4 Cards com Letras A, B, C, D e borda de separação visual) */}
+        {/* GRUPO 2: CURVAS ABC (4 Cards com Letras A, B, C, D em selos vibrantes) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 xl:pt-0 border-t xl:border-t-0 xl:border-l border-[var(--line)] xl:pl-3">
           {/* Card 5: Curva A */}
           <div 
             onClick={() => setSelectedCurve(prev => prev === 'A' ? 'all' : 'A')}
-            className={`card p-2.5 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            className={`card p-2.5 border-l-[3px] border-l-[var(--lime)]/70 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
               selectedCurve === 'A' 
-                ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
-                : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/30'
+                ? 'border-l-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
+                : 'border-[var(--line)] bg-[var(--card)] hover:border-l-[var(--lime)]'
             }`}
             title={selectedCurve === 'A' ? 'Clique para desfiltrar' : 'Filtrar pela Curva A'}
           >
@@ -3425,16 +3433,16 @@ export default function ContactsPage() {
                 <span className="text-[10px] font-mono text-[var(--gray2)] font-normal">{metrics.pctCurveA}%</span>
               </div>
             </div>
-            <span className="w-5 h-5 rounded bg-[var(--charcoal)] border border-[var(--lime)]/40 text-[var(--lime)] font-mono font-bold text-xs flex items-center justify-center shrink-0 select-none">A</span>
+            <span className="w-7 h-7 rounded-lg bg-[var(--lime)]/15 border border-[var(--lime)]/40 text-[var(--lime)] font-mono font-black text-xs flex items-center justify-center shrink-0 select-none shadow-sm">A</span>
           </div>
 
           {/* Card 6: Curva B */}
           <div 
             onClick={() => setSelectedCurve(prev => prev === 'B' ? 'all' : 'B')}
-            className={`card p-2.5 border-l-4 border-l-amber-400 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            className={`card p-2.5 border-l-[3px] border-l-amber-400/70 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
               selectedCurve === 'B' 
-                ? 'border-amber-400 bg-[var(--charcoal)] shadow-md' 
-                : 'border-[var(--line)] bg-[var(--card)] hover:border-amber-400/30'
+                ? 'border-l-amber-400 bg-[var(--charcoal)] shadow-md' 
+                : 'border-[var(--line)] bg-[var(--card)] hover:border-l-amber-400'
             }`}
             title={selectedCurve === 'B' ? 'Clique para desfiltrar' : 'Filtrar pela Curva B'}
           >
@@ -3445,16 +3453,16 @@ export default function ContactsPage() {
                 <span className="text-[10px] font-mono text-[var(--gray2)] font-normal">{metrics.pctCurveB}%</span>
               </div>
             </div>
-            <span className="w-5 h-5 rounded bg-[var(--charcoal)] border border-amber-400/40 text-amber-400 font-mono font-bold text-xs flex items-center justify-center shrink-0 select-none">B</span>
+            <span className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-400 font-mono font-black text-xs flex items-center justify-center shrink-0 select-none shadow-sm">B</span>
           </div>
 
           {/* Card 7: Curva C */}
           <div 
             onClick={() => setSelectedCurve(prev => prev === 'C' ? 'all' : 'C')}
-            className={`card p-2.5 border-l-4 border-l-slate-400 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            className={`card p-2.5 border-l-[3px] border-l-sky-500/70 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
               selectedCurve === 'C' 
-                ? 'border-slate-400 bg-[var(--charcoal)] shadow-md' 
-                : 'border-[var(--line)] bg-[var(--card)] hover:border-slate-400/30'
+                ? 'border-l-sky-400 bg-[var(--charcoal)] shadow-md' 
+                : 'border-[var(--line)] bg-[var(--card)] hover:border-l-sky-400'
             }`}
             title={selectedCurve === 'C' ? 'Clique para desfiltrar' : 'Filtrar pela Curva C'}
           >
@@ -3465,16 +3473,16 @@ export default function ContactsPage() {
                 <span className="text-[10px] font-mono text-[var(--gray2)] font-normal">{metrics.pctCurveC}%</span>
               </div>
             </div>
-            <span className="w-5 h-5 rounded bg-[var(--charcoal)] border border-slate-400/40 text-slate-300 font-mono font-bold text-xs flex items-center justify-center shrink-0 select-none">C</span>
+            <span className="w-7 h-7 rounded-lg bg-sky-500/15 border border-sky-500/40 text-sky-400 font-mono font-black text-xs flex items-center justify-center shrink-0 select-none shadow-sm">C</span>
           </div>
 
           {/* Card 8: Curva D */}
           <div 
             onClick={() => setSelectedCurve(prev => prev === 'D' ? 'all' : 'D')}
-            className={`card p-2.5 border-l-4 border-l-zinc-600 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            className={`card p-2.5 border-l-[3px] border-l-purple-500/70 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
               selectedCurve === 'D' 
-                ? 'border-zinc-500 bg-[var(--charcoal)] shadow-md' 
-                : 'border-[var(--line)] bg-[var(--card)] hover:border-zinc-500/30'
+                ? 'border-l-purple-400 bg-[var(--charcoal)] shadow-md' 
+                : 'border-[var(--line)] bg-[var(--card)] hover:border-l-purple-400'
             }`}
             title={selectedCurve === 'D' ? 'Clique para desfiltrar' : 'Filtrar pela Curva D'}
           >
@@ -3485,7 +3493,7 @@ export default function ContactsPage() {
                 <span className="text-[10px] font-mono text-[var(--gray2)] font-normal">{metrics.pctCurveD}%</span>
               </div>
             </div>
-            <span className="w-5 h-5 rounded bg-[var(--charcoal)] border border-zinc-600/40 text-zinc-400 font-mono font-bold text-xs flex items-center justify-center shrink-0 select-none">D</span>
+            <span className="w-7 h-7 rounded-lg bg-purple-500/15 border border-purple-500/40 text-purple-300 font-mono font-black text-xs flex items-center justify-center shrink-0 select-none shadow-sm">D</span>
           </div>
         </div>
       </div>
