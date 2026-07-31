@@ -153,6 +153,71 @@ export function cleanRepresentativeName(repStr?: string): string {
   return trimmed
 }
 
+export function computeDynamicABCCurves(rawContacts: MockContact[]): MockContact[] {
+  let totalSystemRevenue = 0
+  const now = new Date()
+
+  const contactStats = rawContacts.map(c => {
+    let orderValSum = 0
+    let ordersCount = 0
+    let ordersLast12m = 0
+
+    if (c.orders && Array.isArray(c.orders)) {
+      ordersCount = c.orders.length
+      c.orders.forEach((o: any) => {
+        const val = typeof o.value === 'number' ? o.value : parseFloat(o.value || 0)
+        if (!isNaN(val)) orderValSum += val
+        if (o.date) {
+          const d = parseFlexibleDate(o.date)
+          if (d && !isNaN(d.getTime()) && (now.getTime() - d.getTime()) <= 365 * 24 * 60 * 60 * 1000) {
+            ordersLast12m++
+          }
+        }
+      })
+    }
+
+    totalSystemRevenue += orderValSum
+
+    return {
+      contact: c,
+      orderValSum,
+      ordersCount,
+      ordersLast12m
+    }
+  })
+
+  // Sort purchasing contacts by total order value descending
+  const purchasing = contactStats.filter(s => s.orderValSum > 0)
+  purchasing.sort((a, b) => b.orderValSum - a.orderValSum)
+
+  const curveMap = new Map<string, 'A' | 'B' | 'C' | 'D'>()
+
+  let runningSum = 0
+  purchasing.forEach(s => {
+    runningSum += s.orderValSum
+    const paretoPct = totalSystemRevenue > 0 ? runningSum / totalSystemRevenue : 1
+
+    let curve: 'A' | 'B' | 'C' | 'D' = 'C'
+    if (paretoPct <= 0.80 && (s.ordersLast12m >= 2 || s.ordersCount >= 4)) {
+      curve = 'A'
+    } else if (paretoPct <= 0.95 || paretoPct <= 0.80) {
+      curve = 'B'
+    } else {
+      curve = 'C'
+    }
+
+    curveMap.set(s.contact.id, curve)
+  })
+
+  return rawContacts.map(c => {
+    const computedCurve = curveMap.get(c.id) || 'D'
+    return {
+      ...c,
+      curve: computedCurve
+    }
+  })
+}
+
 function capitalizeString(str: string) {
   return str.toLowerCase().replace(/(^\w|\s\w)/g, m => m.toUpperCase())
 }
@@ -2667,9 +2732,10 @@ export default function ContactsPage() {
                 created_at: item.created_at || new Date().toISOString()
               } as MockContact
             })
-            setContacts(mapped)
+            const dynamicallyCurved = computeDynamicABCCurves(mapped)
+            setContacts(dynamicallyCurved)
             if (typeof window !== 'undefined') {
-              localStorage.setItem('crm_contacts', JSON.stringify(mapped))
+              localStorage.setItem('crm_contacts', JSON.stringify(dynamicallyCurved))
             }
             return
           }
@@ -2679,8 +2745,9 @@ export default function ContactsPage() {
       }
 
       if (typeof window !== 'undefined' && rawImportedContacts.length > 0) {
-        setContacts(rawImportedContacts)
-        localStorage.setItem('crm_contacts', JSON.stringify(rawImportedContacts))
+        const dynamicallyCurved = computeDynamicABCCurves(rawImportedContacts)
+        setContacts(dynamicallyCurved)
+        localStorage.setItem('crm_contacts', JSON.stringify(dynamicallyCurved))
       }
     }
 
