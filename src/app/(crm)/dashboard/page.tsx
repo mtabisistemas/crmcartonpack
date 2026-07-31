@@ -2216,10 +2216,8 @@ export default function DashboardPage() {
                     <tr className="border-b border-[var(--line)] text-[10px] text-[var(--gray2)] uppercase">
                       <th className="py-2.5 px-3">Cliente / CNPJ</th>
                       <th className="py-2.5 px-3">Negócio / Título</th>
-                      <th className="py-2.5 px-3 text-center">Curva</th>
                       <th className="py-2.5 px-3">Representante</th>
                       <th className="py-2.5 px-3 text-right">Valor (R$)</th>
-                      <th className="py-2.5 px-3 text-center">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--line)]">
@@ -2235,25 +2233,11 @@ export default function DashboardPage() {
                             <span className="text-[10px] text-red-400 font-bold block mt-0.5">Motivo: {item.lostReason}</span>
                           )}
                         </td>
-                        <td className="py-3 px-3 text-center">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
-                            Curva {item.curve || 'C'}
-                          </span>
-                        </td>
                         <td className="py-3 px-3 text-slate-300 font-bold">
                           {item.representative}
                         </td>
                         <td className="py-3 px-3 text-right font-black text-[#10b981]">
                           {formatCurrency(item.value)}
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          <button
-                            onClick={() => setDetailItem(item)}
-                            className="btn btn-secondary text-[10px] py-1 px-2.5 rounded-md font-bold flex items-center gap-1 mx-auto hover:border-[#10b981]"
-                          >
-                            <Eye size={12} />
-                            <span>Ficha</span>
-                          </button>
                         </td>
                       </tr>
                     ))}
