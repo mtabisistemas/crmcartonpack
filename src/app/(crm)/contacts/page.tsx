@@ -2879,13 +2879,24 @@ export default function ContactsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 25
 
-  // ── Scoped Contacts for Metrics Calculation ──
-  const scopedContacts = useMemo(() => {
+  // ── Scoped Contacts for Metrics Calculation (Affected by Search, Curve, Rep filters) ──
+  const scopedContactsForMetrics = useMemo(() => {
     return contacts.filter(contact => {
+      // Enforce rep scope
       if (isRep && !isSameRepresentative(contact.representative, currentUser?.name)) return false
-      return true
+
+      const matchesSearch = 
+        !searchTerm ||
+        contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contact.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contact.cnpj.includes(searchTerm)
+      
+      const matchesCurve = selectedCurve === 'all' || contact.curve === selectedCurve
+      const matchesRep = selectedRep === 'all' || isSameRepresentative(contact.representative, selectedRep)
+
+      return matchesSearch && matchesCurve && matchesRep
     })
-  }, [contacts, isRep, currentUser?.name])
+  }, [contacts, isRep, currentUser?.name, searchTerm, selectedCurve, selectedRep])
 
   // ── Metrics Calculation (Total, Ativos <= 180d, Reativação > 180d, Prospecção) ──
   const metrics = useMemo(() => {
@@ -2894,7 +2905,7 @@ export default function ContactsPage() {
     let reativacao = 0
     let prospeccao = 0
 
-    scopedContacts.forEach(c => {
+    scopedContactsForMetrics.forEach(c => {
       total++
       const repInfo = getContactActivityAndRepurchaseInfo(c)
 
@@ -2908,7 +2919,7 @@ export default function ContactsPage() {
     })
 
     return { total, ativos, reativacao, prospeccao }
-  }, [scopedContacts])
+  }, [scopedContactsForMetrics])
 
   function repScheduleDaysToRepurchase(c: MockContact, repInfo: any) {
     return repInfo.daysToRepurchase
@@ -3263,13 +3274,14 @@ export default function ContactsPage() {
         {/* Card 2: Clientes Ativos (<= 180d) */}
         <div 
           onClick={() => {
-            setSelectedStatus('ativo')
+            setSelectedStatus(prev => prev === 'ativo' ? 'all' : 'ativo')
           }}
           className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
             selectedStatus === 'ativo' 
               ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
               : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
           }`}
+          title={selectedStatus === 'ativo' ? 'Clique para desfiltrar' : 'Filtrar por Clientes Ativos'}
         >
           <div>
             <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Clientes Ativos</span>
@@ -3283,13 +3295,14 @@ export default function ContactsPage() {
         {/* Card 3: Reativação (> 180d) */}
         <div 
           onClick={() => {
-            setSelectedStatus('reativacao')
+            setSelectedStatus(prev => prev === 'reativacao' ? 'all' : 'reativacao')
           }}
           className={`card p-3 border-l-4 border-l-orange-500 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
             selectedStatus === 'reativacao' 
               ? 'border-orange-500 bg-[var(--charcoal)] shadow-md' 
               : 'border-[var(--line)] bg-[var(--card)] hover:border-orange-500/50'
           }`}
+          title={selectedStatus === 'reativacao' ? 'Clique para desfiltrar' : 'Filtrar por Reativação'}
         >
           <div>
             <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Reativação</span>
@@ -3303,13 +3316,14 @@ export default function ContactsPage() {
         {/* Card 4: Prospecção (sem compras) */}
         <div 
           onClick={() => {
-            setSelectedStatus('prospeccao')
+            setSelectedStatus(prev => prev === 'prospeccao' ? 'all' : 'prospeccao')
           }}
           className={`card p-3 border-l-4 border-l-amber-400 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
             selectedStatus === 'prospeccao' 
               ? 'border-amber-400 bg-[var(--charcoal)] shadow-md' 
               : 'border-[var(--line)] bg-[var(--card)] hover:border-amber-400/50'
           }`}
+          title={selectedStatus === 'prospeccao' ? 'Clique para desfiltrar' : 'Filtrar por Prospecção'}
         >
           <div>
             <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Prospecção</span>
@@ -3321,10 +3335,10 @@ export default function ContactsPage() {
         </div>
       </div>
 
-      {/* Filters Bar */}
-      <div className="card p-3 grid grid-cols-1 md:grid-cols-5 gap-3 items-center">
-        {/* Search — spans 2 cols */}
-        <div className={`${isRep ? 'md:col-span-3' : 'md:col-span-2'} flex items-center gap-2 input w-full py-1.5 px-3`}>
+      {/* Filters Bar — 12 Column Layout for Proportional Widths */}
+      <div className="card p-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+        {/* Search — Compact width */}
+        <div className={`${isRep ? 'md:col-span-4' : 'md:col-span-3'} flex items-center gap-2 input w-full py-1.5 px-3`}>
           <Search size={13} className="text-[var(--gray2)] shrink-0" />
           <input
             className="bg-transparent border-none outline-none w-full text-xs text-[var(--white)] placeholder-[var(--gray2)]"
@@ -3334,8 +3348,8 @@ export default function ContactsPage() {
           />
         </div>
 
-        {/* Curva Filter */}
-        <div className="flex items-center gap-1.5">
+        {/* Curva Filter — Expanded width */}
+        <div className={`${isRep ? 'md:col-span-5' : 'md:col-span-3'} flex items-center gap-1.5`}>
           <select 
             className="input w-full text-xs py-1.5 px-2.5"
             value={selectedCurve}
@@ -3357,9 +3371,9 @@ export default function ContactsPage() {
           </button>
         </div>
 
-        {/* Rep Filter — hidden for representatives */}
+        {/* Rep Filter — Expanded width */}
         {!isRep && (
-          <div>
+          <div className="md:col-span-4">
             <select 
               className="input w-full text-xs py-1.5 px-2.5"
               value={selectedRep}
@@ -3374,7 +3388,7 @@ export default function ContactsPage() {
         )}
 
         {/* Status Filter */}
-        <div>
+        <div className={`${isRep ? 'md:col-span-3' : 'md:col-span-2'}`}>
           <select 
             className="input w-full text-xs py-1.5 px-2.5"
             value={selectedStatus}
