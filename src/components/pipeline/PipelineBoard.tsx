@@ -611,9 +611,11 @@ function NewDealModal({
   })
 
   const [selectedContactObj, setSelectedContactObj] = useState<any>(null)
+  const [clientError, setClientError] = useState<string>('')
 
   const handleSelectContact = (c: any) => {
     setSelectedContactObj(c)
+    setClientError('')
     const companyTitle = (c.company || c.name || '').trim().toUpperCase()
     setClientName(companyTitle)
 
@@ -628,37 +630,41 @@ function NewDealModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!clientName.trim()) return
+    setClientError('')
 
-    let matchedRep = selectedContactObj?.representative || (selectedContactObj as any)?.assignedTo || (selectedContactObj as any)?.assigned_to
-    let contactId = selectedContactObj?.id
-
-    if (!matchedRep) {
-      const q = clientName.toLowerCase().trim()
-      const found = contactsList.find(c => (c.company || c.name || '').toLowerCase().trim() === q)
-      if (found) {
-        matchedRep = found.representative || (found as any)?.assignedTo || (found as any)?.assigned_to
-        contactId = found.id
-      }
+    const q = clientName.toLowerCase().trim()
+    if (!q) {
+      setClientError('Digite ou selecione o nome de um cliente cadastrado.')
+      return
     }
 
+    const foundContact = selectedContactObj || contactsList.find(c => {
+      const comp = (c.company || c.name || '').toLowerCase().trim()
+      const cnpj = (c.cnpj || '').replace(/\D/g, '')
+      return comp === q || (cnpj && cnpj === q.replace(/\D/g, ''))
+    })
+
+    if (!foundContact) {
+      setClientError('Cliente não cadastrado. Selecione obrigatoriamente um cliente já cadastrado da lista.')
+      setShowDropdown(true)
+      return
+    }
+
+    let matchedRep = foundContact.representative || (foundContact as any)?.assignedTo || (foundContact as any)?.assigned_to
     if (!matchedRep && currentUser?.name) {
       matchedRep = currentUser.name
     }
 
-    const upperClient = clientName.trim().toUpperCase()
-    const foundContact = selectedContactObj || contactsList.find(c => (c.company || c.name || '').toLowerCase().trim() === clientName.toLowerCase().trim())
-
-    const targetCompany = foundContact ? (foundContact.company || foundContact.name || upperClient) : upperClient
-    const targetContactName = contactName.trim() ? contactName.trim().toUpperCase() : (foundContact ? (foundContact.name || '') : '')
+    const upperClient = (foundContact.company || foundContact.name || clientName).trim().toUpperCase()
+    const targetContactName = contactName.trim() ? contactName.trim().toUpperCase() : (foundContact.name || upperClient)
 
     onConfirm({
       title: upperClient,
       contactName: targetContactName,
-      company: targetCompany,
+      company: upperClient,
       value,
       stage,
-      contactId: foundContact?.id || contactId,
+      contactId: foundContact.id,
       representative: matchedRep
     })
   }
@@ -671,7 +677,7 @@ function NewDealModal({
       <form onSubmit={handleSubmit} className="bg-[var(--charcoal)] border border-[var(--line)] rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 animate-fade-up">
         <div>
           <h3 className="font-display text-base text-[var(--white)] font-bold">Novo Negócio</h3>
-          <p className="text-xs text-[var(--gray)] mt-1">Selecione ou digite o nome do cliente para a oportunidade.</p>
+          <p className="text-xs text-[var(--gray)] mt-1">Selecione um cliente cadastrado para a oportunidade.</p>
         </div>
 
         {/* Cliente / Empresa — Busca Autocomplete dos Contatos */}
@@ -684,47 +690,66 @@ function NewDealModal({
               required
               style={{ paddingLeft: '2.5rem' }}
               className="input font-bold w-full uppercase" 
-              placeholder="Digite para buscar um cliente ou criar novo..."
+              placeholder="Digite para buscar um cliente cadastrado..."
               value={clientName} 
               onChange={(e) => {
                 const val = e.target.value.toUpperCase()
                 setClientName(val)
+                setClientError('')
                 setShowDropdown(true)
                 const matched = contactsList.find(c => (c.company || c.name || '').trim().toUpperCase() === val.trim())
                 if (matched) {
+                  setSelectedContactObj(matched)
                   const personName = (matched.name || (matched as any).contact_name || (matched as any).responsible || '').trim().toUpperCase()
                   if (personName) setContactName(personName)
+                } else {
+                  setSelectedContactObj(null)
                 }
               }}
               onFocus={() => setShowDropdown(true)}
             />
           </div>
 
+          {clientError && (
+            <span className="text-[11px] font-bold text-red-400 animate-fade-in font-mono mt-0.5">
+              ⚠ {clientError}
+            </span>
+          )}
+
           {/* Autocomplete Dropdown List */}
-          {showDropdown && filteredContacts.length > 0 && (
+          {showDropdown && (
             <div className="absolute top-full left-0 right-0 mt-1.5 z-50 max-h-52 overflow-y-auto bg-[#141416] border border-[var(--line)] rounded-xl shadow-2xl divide-y divide-[var(--line)] animate-fade-in">
-              <div className="px-3 py-1.5 text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider bg-[var(--charcoal)] sticky top-0">
-                Selecione um Cliente Salvo ({filteredContacts.length})
-              </div>
-              {filteredContacts.map((c, idx) => (
-                <div
-                  key={c.id || idx}
-                  onClick={() => handleSelectContact(c)}
-                  className="p-3 hover:bg-[var(--lime)]/10 cursor-pointer transition-colors flex items-center justify-between gap-2 group"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-bold text-white group-hover:text-[var(--lime)] transition-colors truncate uppercase">
-                      {c.company || c.name}
-                    </div>
-                    <div className="text-[10px] text-[var(--gray)] font-mono truncate mt-0.5 uppercase">
-                      {c.cnpj ? `${c.cnpj} ` : ''}{c.city ? `• ${c.city.toUpperCase()}/${c.state ? c.state.toUpperCase() : ''}` : ''}
-                    </div>
+              {filteredContacts.length > 0 ? (
+                <>
+                  <div className="px-3 py-1.5 text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider bg-[var(--charcoal)] sticky top-0">
+                    Selecione um Cliente Cadastrado ({filteredContacts.length})
                   </div>
-                  <span className="text-[10px] font-mono text-[var(--lime)] bg-[var(--lime)]/10 px-2 py-0.5 rounded border border-[var(--lime)]/20 shrink-0 opacity-80 group-hover:opacity-100">
-                    Selecionar
-                  </span>
+                  {filteredContacts.map((c, idx) => (
+                    <div
+                      key={c.id || idx}
+                      onClick={() => handleSelectContact(c)}
+                      className="p-3 hover:bg-[var(--lime)]/10 cursor-pointer transition-colors flex items-center justify-between gap-2 group"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-white group-hover:text-[var(--lime)] transition-colors truncate uppercase">
+                          {c.company || c.name}
+                        </div>
+                        <div className="text-[10px] text-[var(--gray)] font-mono truncate mt-0.5 uppercase">
+                          {c.cnpj ? `${c.cnpj} ` : ''}{c.city ? `• ${c.city.toUpperCase()}/${c.state ? c.state.toUpperCase() : ''}` : ''}
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-mono text-[var(--lime)] bg-[var(--lime)]/10 px-2 py-0.5 rounded border border-[var(--lime)]/20 shrink-0 opacity-80 group-hover:opacity-100">
+                        Selecionar
+                      </span>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div className="p-4 text-center text-xs font-mono text-amber-400 bg-[var(--charcoal)] flex flex-col gap-1">
+                  <span>Nenhum cliente cadastrado encontrado.</span>
+                  <span className="text-[10px] text-[var(--gray2)] font-sans">Cadastre o cliente na página de Contatos para vinculá-lo ao funil.</span>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
