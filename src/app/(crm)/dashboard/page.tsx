@@ -125,6 +125,8 @@ export default function DashboardPage() {
   // Map References
   const contactsMapRef = useRef<HTMLDivElement>(null)
   const contactsMapInstanceRef = useRef<any>(null)
+  const expandedMapRef = useRef<HTMLDivElement>(null)
+  const expandedMapInstanceRef = useRef<any>(null)
   const [leafletReady, setLeafletReady] = useState(false)
   const [isMapExpanded, setIsMapExpanded] = useState(false)
 
@@ -865,7 +867,107 @@ export default function DashboardPage() {
     } else {
       map.setView([-29.7, -51.15], 9)
     }
+
+    setTimeout(() => {
+      map.invalidateSize()
+    }, 200)
   }, [leafletReady, filteredData.contacts])
+
+  // Fullscreen Expanded Map Initialization Effect
+  useEffect(() => {
+    if (!isMapExpanded || !leafletReady || !expandedMapRef.current) return
+    const L_Global = (window as any).L
+    if (!L_Global) return
+
+    if (expandedMapInstanceRef.current) {
+      expandedMapInstanceRef.current.remove()
+      expandedMapInstanceRef.current = null
+    }
+
+    const map = L_Global.map(expandedMapRef.current, {
+      zoomControl: false,
+      attributionControl: false
+    })
+    expandedMapInstanceRef.current = map
+
+    L_Global.control.zoom({ position: 'bottomright' }).addTo(map)
+
+    L_Global.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      subdomains: 'abc',
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map)
+
+    const markersGroup = (L_Global.markerClusterGroup) ? L_Global.markerClusterGroup({
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      maxClusterRadius: 40
+    }) : L_Global.layerGroup()
+
+    const bounds: [number, number][] = []
+
+    const hashStr = (str: string) => {
+      let h = 0
+      for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0
+      return h
+    }
+
+    filteredData.contacts.forEach((contact) => {
+      const computedStatus = contact.status || 'ativo'
+      let pinColor = '#10b981'
+      if (computedStatus === 'reativacao') pinColor = '#f97316'
+      else if (computedStatus === 'prospeccao') pinColor = '#06b6d4'
+
+      const baseCoords: [number, number] = [-29.6842, -51.1303]
+      const key = contact.id || contact.cnpj || contact.company || contact.name || 'c'
+      const h1 = Math.sin(hashStr(key) * 888.8)
+      const h2 = Math.cos(hashStr(key + '_lng') * 777.7)
+
+      const finalLat = baseCoords[0] + (h1 * 0.01)
+      const finalLng = baseCoords[1] + (h2 * 0.01)
+
+      const finalLatLng: [number, number] = [finalLat, finalLng]
+      bounds.push(finalLatLng)
+
+      const customIcon = L_Global.divIcon({
+        className: 'clear-custom-pin',
+        html: `
+          <div style="display: flex; align-items: center; justify-content: center; width: 24px; height: 28px; background: transparent !important; border: none !important;">
+            <svg viewBox="0 0 20 24" width="24" height="28" style="filter: drop-shadow(0 3px 5px rgba(0,0,0,0.4)); pointer-events: none;">
+              <path d="M10 0C4.477 0 0 4.477 0 10c0 7.5 10 14 10 14s10-6.5 10-14c0-5.523-4.477-10-10-10z" fill="${pinColor}" stroke="#ffffff" stroke-width="1.5" />
+              <circle cx="10" cy="10" r="3.5" fill="#ffffff" />
+            </svg>
+          </div>
+        `,
+        iconSize: [24, 28],
+        iconAnchor: [12, 28]
+      })
+
+      const marker = L_Global.marker(finalLatLng, { icon: customIcon })
+      marker.bindTooltip(`
+        <div style="font-family: monospace; font-size: 11px; padding: 4px; background: #0f172a; color: #fff; border-radius: 6px;">
+          <strong>${contact.company || contact.name}</strong>
+          <div style="color: ${pinColor}; font-size: 10px; font-weight: bold; margin-top: 2px;">STATUS: ${computedStatus.toUpperCase()}</div>
+        </div>
+      `, { direction: 'top' })
+
+      markersGroup.addLayer(marker)
+    })
+
+    map.addLayer(markersGroup)
+
+    if (bounds.length > 0) {
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 })
+    } else {
+      map.setView([-29.7, -51.15], 10)
+    }
+
+    setTimeout(() => {
+      map.invalidateSize()
+    }, 150)
+
+  }, [isMapExpanded, leafletReady, filteredData.contacts])
 
   // Drill Down Helper Openers
   const openDrillDown = (title: string, subtitle: string, items: DrillDownItem[], color = '#10b981') => {
@@ -1512,12 +1614,12 @@ export default function DashboardPage() {
       </div>
 
       {/* ========================================================
-          4. GRÁFICO DE EVOLUÇÃO DE VENDAS & GEOLOCALIZAÇÃO NO MAPA (PROPORÇÃO EQUILIBRADA 6/6)
+          4. GRÁFICO DE EVOLUÇÃO DE VENDAS & GEOLOCALIZAÇÃO NO MAPA (PROPORÇÃO 8/4)
          ======================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        {/* GRÁFICO DE EVOLUÇÃO (COLUNA 6/12 - LARGURA REDUZIDA PARA EQUILÍBRIO) */}
-        <div className="lg:col-span-6 card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between shadow-lg">
+        {/* GRÁFICO DE EVOLUÇÃO (COLUNA 8/12 - LARGURA EXPANDIDA PARA MAIOR DESTAQUE) */}
+        <div className="lg:col-span-8 card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between shadow-lg">
           
           {/* Header com Título Dinâmico & 3 Botões de Granularidade */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--line)] pb-3 mb-4">
@@ -1564,7 +1666,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Graphical Single-Bars Container */}
-          <div className="h-64 flex items-end justify-between gap-1 pt-8 pb-2 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
+          <div className="h-64 flex items-end justify-between gap-1 pt-6 pb-2 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
             
             {/* Gridlines Horizontais de Fundo */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10 pb-6 pt-2">
@@ -1590,36 +1692,39 @@ export default function DashboardPage() {
                   })
                 }}
                 className={`flex-1 flex flex-col items-center h-full justify-end cursor-pointer group z-10 ${
-                  chartViewMode === 'diario' ? 'gap-1 min-w-0' : 'gap-1.5 min-w-[28px]'
+                  chartViewMode === 'diario' ? 'gap-1 min-w-0' : 'gap-1.5 min-w-[24px]'
                 }`}
                 title={`Clique para ver o comparativo detalhado de ${item.label}`}
               >
-                {/* Valor Formatado sobre a Barra (Na vertical na visão diária para não encavalar) */}
-                {item.currentVal > 0 && (
-                  <span className={`font-mono font-bold text-cyan-400 group-hover:text-emerald-400 transition-all ${
-                    chartViewMode === 'diario' 
-                      ? '[writing-mode:vertical-lr] rotate-180 text-[8px] mb-1 font-semibold tracking-tighter' 
-                      : 'text-[9px] mb-0.5 whitespace-nowrap'
-                  }`}>
-                    {formatCompactCurrency(item.currentVal)}
-                  </span>
-                )}
+                {/* CONTAINER COM ALTURA DA BARRA PARA POSICIONAR O RÓTULO LOGO ACIMA */}
+                <div 
+                  className="w-full flex flex-col items-center justify-end transition-all duration-300"
+                  style={{ height: `${Math.max(6, item.heightPct)}%` }}
+                >
+                  {/* Rótulo de Valor posicionado IMEDIATAMENTE ACIMA de cada barra */}
+                  {item.currentVal > 0 && (
+                    <span className={`font-mono font-bold text-cyan-400 group-hover:text-emerald-400 transition-all ${
+                      chartViewMode === 'diario' 
+                        ? '[writing-mode:vertical-lr] rotate-180 text-[8px] mb-1 font-semibold tracking-tighter' 
+                        : 'text-[9px] mb-1 whitespace-nowrap'
+                    }`}>
+                      {formatCompactCurrency(item.currentVal)}
+                    </span>
+                  )}
 
-                {/* Barra Única Elegante com Gradiente e Larguras Customizadas por Visão */}
-                <div className="w-full flex items-end justify-center h-full">
+                  {/* Barra Única Elegante com Gradiente */}
                   <div 
-                    className={`bg-gradient-to-t from-[#0284c7] via-[#06b6d4] to-[#10b981] rounded-t-lg transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.5)] ${
+                    className={`bg-gradient-to-t from-[#0284c7] via-[#06b6d4] to-[#10b981] rounded-t-lg transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.5)] w-full h-full ${
                       chartViewMode === 'semanal' 
-                        ? 'w-full max-w-[70px] sm:max-w-[110px]' 
+                        ? 'max-w-[70px] sm:max-w-[110px]' 
                         : chartViewMode === 'diario' 
-                        ? 'w-full max-w-[12px] sm:max-w-[16px]' 
-                        : 'w-full max-w-[28px] sm:max-w-[36px]'
+                        ? 'max-w-[12px] sm:max-w-[16px]' 
+                        : 'max-w-[28px] sm:max-w-[36px]'
                     }`}
-                    style={{ height: `${Math.max(4, item.heightPct)}%` }}
                   />
                 </div>
 
-                <span className={`font-mono font-bold text-slate-400 group-hover:text-white transition-colors uppercase truncate max-w-full ${
+                <span className={`font-mono font-bold text-slate-400 group-hover:text-white transition-colors uppercase truncate max-w-full mt-1.5 ${
                   chartViewMode === 'diario' ? 'text-[8px]' : 'text-[10px]'
                 }`}>
                   {item.label}
@@ -1628,24 +1733,23 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          <div className="flex items-center justify-between text-[11px] font-mono text-[var(--gray2)] pt-3">
-            <span>Total Acumulado: <strong className="text-white font-bold">{formatCurrency(kpis.totalFaturadoR$)}</strong></span>
-            <span className="text-cyan-400 font-bold">💡 Clique sobre qualquer barra para abrir o comparativo com períodos anteriores</span>
+          <div className="flex items-center justify-center pt-2.5 text-[10px] font-mono text-slate-400/60">
+            <span>Clique sobre qualquer barra para abrir o comparativo com períodos anteriores</span>
           </div>
         </div>
 
-        {/* MAPA DE GEOLOCALIZAÇÃO (COLUNA 6/12 - LARGURA AUMENTADA PARA DESTAQUE) */}
-        <div className="lg:col-span-6 card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl flex flex-col justify-between shadow-lg relative">
+        {/* MAPA DE GEOLOCALIZAÇÃO (COLUNA 4/12 - LARGURA COMPACTADA CONFORME SOLICITADO) */}
+        <div className="lg:col-span-4 card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl flex flex-col justify-between shadow-lg relative">
           <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 mb-3">
             <div className="flex items-center gap-2">
               <MapPin size={16} className="text-[#10b981]" />
-              <h3 className="font-display text-xs font-bold text-[var(--white)] uppercase tracking-wider">
+              <h3 className="font-display text-xs font-bold text-[var(--white)] uppercase tracking-wider truncate">
                 Geolocalização dos Negócios
               </h3>
             </div>
             <button 
               onClick={() => setIsMapExpanded(true)}
-              className="btn btn-secondary text-[10px] py-1 px-2.5 rounded-lg flex items-center gap-1 font-mono font-bold hover:border-[#10b981] transition-colors cursor-pointer"
+              className="btn btn-secondary text-[10px] py-1 px-2.5 rounded-lg flex items-center gap-1 font-mono font-bold hover:border-[#10b981] transition-colors cursor-pointer shrink-0"
             >
               <Maximize2 size={11} className="text-[#10b981]" />
               <span>AMPLIAR MAPA</span>
@@ -1658,10 +1762,10 @@ export default function DashboardPage() {
           />
 
           <div className="flex items-center justify-between pt-2.5 text-[10px] font-mono text-[var(--gray2)]">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#10b981] shadow-sm" /> Pedido Fechado</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm" /> Em Negociação</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-sm" /> Aprovação</span>
+            <div className="flex items-center justify-between w-full text-[9px] sm:text-[10px]">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#10b981] shadow-sm" /> Fechado</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500 shadow-sm" /> Negociação</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-cyan-400 shadow-sm" /> Aprovação</span>
             </div>
           </div>
         </div>
@@ -2224,17 +2328,10 @@ export default function DashboardPage() {
           </div>
 
           {/* Expanded Container ocupando 100% da tela abaixo do header */}
-          <div className="flex-1 w-full h-[calc(100vh-140px)] bg-[#141414] rounded-2xl border border-[var(--line)] overflow-hidden shadow-2xl relative">
+          <div className="flex-1 w-full h-[calc(100vh-140px)] min-h-[calc(100vh-140px)] bg-[#141414] rounded-2xl border border-[var(--line)] overflow-hidden shadow-2xl relative">
             <div 
-              ref={(node) => {
-                if (node && contactsMapRef.current) {
-                  node.appendChild(contactsMapRef.current)
-                  setTimeout(() => {
-                    if (contactsMapInstanceRef.current) contactsMapInstanceRef.current.invalidateSize()
-                  }, 150)
-                }
-              }}
-              className="w-full h-full"
+              ref={expandedMapRef}
+              className="w-full h-full min-h-full"
             />
           </div>
         </div>
