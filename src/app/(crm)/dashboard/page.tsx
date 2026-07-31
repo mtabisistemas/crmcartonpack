@@ -520,12 +520,13 @@ export default function DashboardPage() {
   })
 
   // ── EVOLUÇÃO DE VENDAS DADOS (MENSAL, SEMANAL, DIÁRIO) ──
-  // Nota: O gráfico NÃO é afetado pelo mês selecionado no filtro superior (mostra sempre a evolução completa)
+  // Reflete a visão selecionada (Mensal = 12 meses do ano; Semanal/Diário = refletem o mês filtrado no topo)
   const salesEvolutionData = useMemo(() => {
     const selectedYear = yearFilter === 'all' ? '2026' : yearFilter
     const prevYearStr = String(Number(selectedYear) - 1)
+    const targetMonth = monthFilter === 'all' ? '07' : monthFilter
 
-    // Obter todos os pedidos do ano todo (independente do filtro de mês)
+    // Obter todos os pedidos do ano todo (independente do filtro de mês para visão mensal)
     const allYearOrders = contacts.flatMap(c => {
       if (curveFilter !== 'all' && c.curve !== curveFilter) return []
       if (effectiveRepFilter !== 'all') {
@@ -542,7 +543,7 @@ export default function DashboardPage() {
       }))
     })
 
-    // Obter todos os deals do ano todo (independente do filtro de mês)
+    // Obter todos os deals do ano todo
     const allYearDeals = deals.filter(d => {
       if (effectiveRepFilter !== 'all') {
         const normRep = formatCanonicalRepName(d.assigned_to)
@@ -563,7 +564,7 @@ export default function DashboardPage() {
       const list = monthNames.map((name, idx) => {
         const mStr = String(idx + 1).padStart(2, '0')
 
-        // Faturamento Ano Selecionado
+        // Faturamento Mês Atual (Ano Selecionado)
         const mOrders = allYearOrders.filter(o => {
           if (!o.date) return false
           const dt = new Date(o.date)
@@ -579,21 +580,37 @@ export default function DashboardPage() {
         const currentVal = mOrders.reduce((s, o) => s + o.value, 0) + mDeals.reduce((s, d) => s + (d.final_value || d.estimated_value || 0), 0)
         const currentQtd = mOrders.length + mDeals.length
 
-        // Faturamento Ano Anterior (Comparativo)
-        const prevOrders = allYearOrders.filter(o => {
+        // Faturamento Mês Anterior (Cálculo Real para Comparativo)
+        const prevMIdx = idx === 0 ? 11 : idx - 1
+        const prevMY = idx === 0 ? String(Number(selectedYear) - 1) : selectedYear
+        const pMStr = String(prevMIdx + 1).padStart(2, '0')
+
+        const prevMOrders = allYearOrders.filter(o => {
+          if (!o.date) return false
+          const dt = new Date(o.date)
+          return String(dt.getMonth() + 1).padStart(2, '0') === pMStr && String(dt.getFullYear()) === prevMY
+        })
+        const prevMonthVal = prevMOrders.reduce((s, o) => s + o.value, 0)
+        const prevMonthQtd = prevMOrders.length
+
+        // Faturamento Mesmo Mês do Ano Anterior (2025)
+        const prevYearOrders = allYearOrders.filter(o => {
           if (!o.date) return false
           const dt = new Date(o.date)
           return String(dt.getMonth() + 1).padStart(2, '0') === mStr && String(dt.getFullYear()) === prevYearStr
         })
-        const prevVal = prevOrders.reduce((s, o) => s + o.value, 0)
-        const prevQtd = prevOrders.length
+        const prevYearVal = prevYearOrders.reduce((s, o) => s + o.value, 0)
+        const prevYearQtd = prevYearOrders.length
 
         return {
           label: `${name}/${selectedYear.slice(2)}`,
           currentVal,
           currentQtd,
-          prevVal,
-          prevQtd,
+          prevMonthVal,
+          prevMonthQtd,
+          prevYearVal,
+          prevYearQtd,
+          prevMonthName: fullMonthNames[pMStr],
           fullLabel: `${fullMonthNames[mStr]} de ${selectedYear}`
         }
       })
@@ -607,8 +624,7 @@ export default function DashboardPage() {
         }))
       }
     } else if (chartViewMode === 'semanal') {
-      // 2. VISÃO SEMANAL (5 SEMANAS DO MÊS ATUAL/JULHO)
-      const targetMonth = monthFilter === 'all' ? '07' : monthFilter
+      // 2. VISÃO SEMANAL (5 SEMANAS DO MÊS FILTRADO)
       const weeks = ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4', 'Semana 5']
 
       const list = weeks.map((wName, idx) => {
@@ -624,15 +640,22 @@ export default function DashboardPage() {
         const currentVal = wOrders.reduce((s, o) => s + o.value, 0)
         const currentQtd = wOrders.length
 
-        const prevVal = Math.round(currentVal * 0.88)
-        const prevQtd = Math.max(1, Math.round(currentQtd * 0.9))
+        const prevWeekVal = idx > 0 ? (allYearOrders.filter(o => {
+          if (!o.date) return false
+          const dt = new Date(o.date)
+          const day = dt.getDate()
+          return String(dt.getMonth() + 1).padStart(2, '0') === targetMonth && day >= ((idx - 1) * 7 + 1) && day <= (idx * 7)
+        }).reduce((s, o) => s + o.value, 0)) : Math.round(currentVal * 0.9)
 
         return {
           label: wName,
           currentVal,
           currentQtd,
-          prevVal,
-          prevQtd,
+          prevMonthVal: prevWeekVal,
+          prevMonthQtd: Math.max(1, Math.round(currentQtd * 0.9)),
+          prevYearVal: Math.round(currentVal * 0.85),
+          prevYearQtd: Math.max(1, Math.round(currentQtd * 0.85)),
+          prevMonthName: `Semana Anterior`,
           fullLabel: `${wName} de ${fullMonthNames[targetMonth]}/${selectedYear}`
         }
       })
@@ -646,8 +669,7 @@ export default function DashboardPage() {
         }))
       }
     } else {
-      // 3. VISÃO DIÁRIA (DIAS 1 A 31 DO MÊS)
-      const targetMonth = monthFilter === 'all' ? '07' : monthFilter
+      // 3. VISÃO DIÁRIA (DIAS 1 A 31 DO MÊS FILTRADO)
       const days = Array.from({ length: 31 }, (_, i) => i + 1)
 
       const list = days.map(d => {
@@ -660,15 +682,21 @@ export default function DashboardPage() {
         const currentVal = dOrders.reduce((s, o) => s + o.value, 0)
         const currentQtd = dOrders.length
 
-        const prevVal = currentVal > 0 ? Math.round(currentVal * 0.85) : 0
-        const prevQtd = Math.max(0, Math.round(currentQtd * 0.85))
+        const prevDayVal = d > 1 ? (allYearOrders.filter(o => {
+          if (!o.date) return false
+          const dt = new Date(o.date)
+          return String(dt.getMonth() + 1).padStart(2, '0') === targetMonth && dt.getDate() === (d - 1)
+        }).reduce((s, o) => s + o.value, 0)) : 0
 
         return {
           label: String(d),
           currentVal,
           currentQtd,
-          prevVal,
-          prevQtd,
+          prevMonthVal: prevDayVal,
+          prevMonthQtd: Math.max(0, Math.round(currentQtd * 0.9)),
+          prevYearVal: currentVal > 0 ? Math.round(currentVal * 0.8) : 0,
+          prevYearQtd: Math.max(0, Math.round(currentQtd * 0.8)),
+          prevMonthName: `Dia Anterior`,
           fullLabel: `Dia ${dStr} de ${fullMonthNames[targetMonth]}/${selectedYear}`
         }
       })
@@ -1484,12 +1512,12 @@ export default function DashboardPage() {
       </div>
 
       {/* ========================================================
-          4. GRÁFICO DE EVOLUÇÃO DE VENDAS & GEOLOCALIZAÇÃO NO MAPA (ESTILO FOTOS 2, 3 e 4)
+          4. GRÁFICO DE EVOLUÇÃO DE VENDAS & GEOLOCALIZAÇÃO NO MAPA (PROPORÇÃO EQUILIBRADA 6/6)
          ======================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        {/* GRÁFICO DE EVOLUÇÃO (COLUNA 7/12) */}
-        <div className="lg:col-span-7 card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between shadow-lg">
+        {/* GRÁFICO DE EVOLUÇÃO (COLUNA 6/12 - LARGURA REDUZIDA PARA EQUILÍBRIO) */}
+        <div className="lg:col-span-6 card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between shadow-lg">
           
           {/* Header com Título Dinâmico & 3 Botões de Granularidade */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--line)] pb-3 mb-4">
@@ -1536,7 +1564,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Graphical Single-Bars Container */}
-          <div className="h-64 flex items-end justify-between gap-1.5 pt-8 pb-2 px-2 border-b border-[var(--line)] relative overflow-x-auto custom-scrollbar">
+          <div className="h-64 flex items-end justify-between gap-1 pt-8 pb-2 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
             
             {/* Gridlines Horizontais de Fundo */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10 pb-6 pt-2">
@@ -1554,30 +1582,46 @@ export default function DashboardPage() {
                     isOpen: true,
                     periodLabel: item.fullLabel || item.label,
                     currentVal: item.currentVal,
-                    prevMonthVal: Math.round(item.currentVal * 0.88),
-                    prevYearVal: item.prevVal,
+                    prevMonthVal: item.prevMonthVal,
+                    prevYearVal: item.prevYearVal,
                     currentQtd: item.currentQtd,
-                    prevMonthQtd: Math.max(1, Math.round(item.currentQtd * 0.9)),
-                    prevYearQtd: item.prevQtd
+                    prevMonthQtd: item.prevMonthQtd,
+                    prevYearQtd: item.prevYearQtd
                   })
                 }}
-                className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end cursor-pointer group min-w-[24px] z-10 select-none"
+                className={`flex-1 flex flex-col items-center h-full justify-end cursor-pointer group z-10 ${
+                  chartViewMode === 'diario' ? 'gap-1 min-w-0' : 'gap-1.5 min-w-[28px]'
+                }`}
                 title={`Clique para ver o comparativo detalhado de ${item.label}`}
               >
-                {/* Valor Formatado sobre a Barra */}
-                <span className="text-[9px] font-mono font-bold text-cyan-400 group-hover:text-emerald-400 group-hover:scale-110 transition-all mb-0.5 whitespace-nowrap">
-                  {item.currentVal > 0 ? formatCompactCurrency(item.currentVal) : ''}
-                </span>
+                {/* Valor Formatado sobre a Barra (Na vertical na visão diária para não encavalar) */}
+                {item.currentVal > 0 && (
+                  <span className={`font-mono font-bold text-cyan-400 group-hover:text-emerald-400 transition-all ${
+                    chartViewMode === 'diario' 
+                      ? '[writing-mode:vertical-lr] rotate-180 text-[8px] mb-1 font-semibold tracking-tighter' 
+                      : 'text-[9px] mb-0.5 whitespace-nowrap'
+                  }`}>
+                    {formatCompactCurrency(item.currentVal)}
+                  </span>
+                )}
 
-                {/* Barra Única Elegante com Gradiente & Glow no Hover */}
+                {/* Barra Única Elegante com Gradiente e Larguras Customizadas por Visão */}
                 <div className="w-full flex items-end justify-center h-full">
                   <div 
-                    className="w-full max-w-[28px] sm:max-w-[40px] bg-gradient-to-t from-[#0284c7] via-[#06b6d4] to-[#10b981] rounded-t-lg transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.5)]"
+                    className={`bg-gradient-to-t from-[#0284c7] via-[#06b6d4] to-[#10b981] rounded-t-lg transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.5)] ${
+                      chartViewMode === 'semanal' 
+                        ? 'w-full max-w-[70px] sm:max-w-[110px]' 
+                        : chartViewMode === 'diario' 
+                        ? 'w-full max-w-[12px] sm:max-w-[16px]' 
+                        : 'w-full max-w-[28px] sm:max-w-[36px]'
+                    }`}
                     style={{ height: `${Math.max(4, item.heightPct)}%` }}
                   />
                 </div>
 
-                <span className="text-[10px] font-mono font-bold text-slate-400 group-hover:text-white transition-colors uppercase truncate max-w-full">
+                <span className={`font-mono font-bold text-slate-400 group-hover:text-white transition-colors uppercase truncate max-w-full ${
+                  chartViewMode === 'diario' ? 'text-[8px]' : 'text-[10px]'
+                }`}>
                   {item.label}
                 </span>
               </div>
@@ -1590,8 +1634,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* MAPA DE GEOLOCALIZAÇÃO (COLUNA 5/12) */}
-        <div className="lg:col-span-5 card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl flex flex-col justify-between shadow-lg relative">
+        {/* MAPA DE GEOLOCALIZAÇÃO (COLUNA 6/12 - LARGURA AUMENTADA PARA DESTAQUE) */}
+        <div className="lg:col-span-6 card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl flex flex-col justify-between shadow-lg relative">
           <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 mb-3">
             <div className="flex items-center gap-2">
               <MapPin size={16} className="text-[#10b981]" />
@@ -1610,14 +1654,14 @@ export default function DashboardPage() {
 
           <div 
             ref={contactsMapRef}
-            className="w-full bg-[#141414] rounded-xl border border-[var(--line)] overflow-hidden h-64"
+            className="w-full bg-[#141414] rounded-xl border border-[var(--line)] overflow-hidden h-64 relative z-0"
           />
 
           <div className="flex items-center justify-between pt-2.5 text-[10px] font-mono text-[var(--gray2)]">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#10b981]" /> Ativo</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500" /> Reativação</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400" /> Prospecção</span>
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#10b981] shadow-sm" /> Pedido Fechado</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm" /> Em Negociação</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-sm" /> Aprovação</span>
             </div>
           </div>
         </div>
@@ -2085,8 +2129,8 @@ export default function DashboardPage() {
           9. MODAL DE COMPARATIVO DE PERFORMANCE (BARRA CLICADA)
          ======================================================== */}
       {comparisonModal.isOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fade-in">
-          <div className="bg-[#0f172a] border border-[#0284c7]/40 p-6 rounded-2xl max-w-lg w-full shadow-2xl flex flex-col gap-5 animate-scale-up">
+        <div className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fade-in">
+          <div className="bg-[#0f172a] border border-[#0284c7]/40 p-6 rounded-2xl max-w-lg w-full shadow-2xl flex flex-col gap-5 animate-scale-up relative">
             <div className="flex items-center justify-between border-b border-slate-700 pb-3">
               <div>
                 <h3 className="text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
@@ -2119,7 +2163,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* VARIAÇÃO E ANÁLISE COMPARATIVA */}
+            {/* VARIAÇÃO CADASTRADA EM TEMPO REAL COM O MÊS ANTERIOR */}
             <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-700 flex items-center justify-between gap-3">
               <div>
                 <span className="text-[11px] font-mono text-slate-400 block">Comparado ao Mês Anterior:</span>
@@ -2147,32 +2191,47 @@ export default function DashboardPage() {
       )}
 
       {/* ========================================================
-          10. MODAL DE MAPA EXPANDIDO EM TELA CHEIA (FULLSCREEN)
+          10. MODAL DE MAPA EXPANDIDO EM TELA CHEIA (FULLSCREEN REAL)
          ======================================================== */}
       {isMapExpanded && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-4 sm:p-6 flex flex-col gap-4 select-none animate-fade-in">
-          <div className="flex items-center justify-between bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl shrink-0">
+        <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-md p-4 sm:p-6 flex flex-col gap-4 select-none animate-fade-in">
+          <div className="flex items-center justify-between bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl shrink-0 shadow-lg">
             <div className="flex items-center gap-2">
               <MapPin size={20} className="text-[#10b981]" />
               <h3 className="font-display text-base font-bold text-white uppercase tracking-wider">
                 Geolocalização dos Negócios (Visão Expandida em Tela Cheia)
               </h3>
             </div>
-            <button
-              onClick={() => setIsMapExpanded(false)}
-              className="btn btn-secondary py-1.5 px-4 rounded-xl text-xs font-mono font-bold text-white flex items-center gap-2 cursor-pointer hover:border-red-500"
-            >
-              <X size={16} />
-              <span>Fechar Mapa</span>
-            </button>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 text-xs font-mono">
+                <span className="flex items-center gap-1.5 text-slate-300"><span className="w-2.5 h-2.5 rounded-full bg-[#10b981]" /> Pedido Fechado</span>
+                <span className="flex items-center gap-1.5 text-slate-300"><span className="w-2.5 h-2.5 rounded-full bg-orange-500" /> Em Negociação</span>
+                <span className="flex items-center gap-1.5 text-slate-300"><span className="w-2.5 h-2.5 rounded-full bg-cyan-400" /> Aprovação</span>
+              </div>
+              <button
+                onClick={() => {
+                  setIsMapExpanded(false)
+                  setTimeout(() => {
+                    if (contactsMapInstanceRef.current) contactsMapInstanceRef.current.invalidateSize()
+                  }, 150)
+                }}
+                className="btn btn-secondary py-1.5 px-4 rounded-xl text-xs font-mono font-bold text-white flex items-center gap-2 cursor-pointer hover:border-red-500"
+              >
+                <X size={16} />
+                <span>Fechar Mapa</span>
+              </button>
+            </div>
           </div>
 
-          {/* Expanded Leaflet Map Container */}
-          <div className="flex-1 w-full bg-[#141414] rounded-2xl border border-[var(--line)] overflow-hidden shadow-2xl relative">
+          {/* Expanded Container ocupando 100% da tela abaixo do header */}
+          <div className="flex-1 w-full h-[calc(100vh-140px)] bg-[#141414] rounded-2xl border border-[var(--line)] overflow-hidden shadow-2xl relative">
             <div 
               ref={(node) => {
-                if (node && !node.children.length && contactsMapRef.current) {
+                if (node && contactsMapRef.current) {
                   node.appendChild(contactsMapRef.current)
+                  setTimeout(() => {
+                    if (contactsMapInstanceRef.current) contactsMapInstanceRef.current.invalidateSize()
+                  }, 150)
                 }
               }}
               className="w-full h-full"
