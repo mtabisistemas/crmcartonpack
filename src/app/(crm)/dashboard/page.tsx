@@ -1090,11 +1090,11 @@ export default function DashboardPage() {
       </div>
 
       {/* ========================================================
-          2. GRID DE CARDS KPI PRINCIPAIS (ESTILO FOTO 2 - BORDA LATERAL ESQUERDA)
+          2. LINHA DE 6 KPI CARDS (ESTILO FOTOS 1 E 2)
          ======================================================== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         
-        {/* CARD 1: PEDIDOS EMITIDOS / FATURADO */}
+        {/* CARD 1: TOTAL FATURADO / PEDIDOS FATURADOS */}
         <div 
           onClick={() => {
             const items: DrillDownItem[] = [
@@ -1105,47 +1105,43 @@ export default function DashboardPage() {
                 cnpj: o.cnpj,
                 representative: o.representative,
                 value: o.value,
-                stageOrStatus: 'FATURADO',
+                stageOrStatus: 'PEDIDO FATURADO',
                 curve: o.curve,
                 date: o.date
               })),
-              ...filteredData.deals.filter(d => d.stage === 'pedido' || d.stage === 'fechamento').map(d => ({
+              ...kpis.approvedDealsList.map(d => ({
                 id: d.id,
                 title: d.title,
                 company: d.contact?.company || d.contact?.name || 'Cliente',
                 cnpj: d.contact?.cnpj,
                 representative: d.assigned_to || 'Representante',
-                value: d.final_value || d.estimated_value || 0,
-                stageOrStatus: 'PEDIDO FECHADO',
+                value: d.estimated_value || 0,
+                stageOrStatus: d.stage.toUpperCase(),
                 curve: d.contact?.curve || 'C',
                 date: d.closed_at || d.stage_entered_at
               }))
             ]
             openDrillDown('PEDIDOS EMITIDOS / FATURADO', 'Lista de todas as vendas e pedidos faturados no período', items, '#10b981')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-[#10b981] p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-emerald-500/40 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border-t border-b border-r border-[var(--line)] border-l-4 border-l-[#10b981] p-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(16,185,129,0.2)] hover:border-emerald-500/50 transition-all duration-200 group select-none"
         >
-          <div className="flex items-start justify-between gap-2 z-10">
+          <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               PEDIDO EMITIDO / FATURADO
             </span>
-            <div className="w-8 h-8 rounded-full bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981] flex items-center justify-center shrink-0 shadow-sm">
-              <Trophy size={15} />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-900/10 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(16,185,129,0.3)] group-hover:scale-110 transition-transform">
+              <Trophy size={18} />
             </div>
           </div>
 
-          <div className="my-2 z-10">
+          <div className="my-3 z-10">
             <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-[#10b981] transition-colors">
               {formatCompactCurrency(kpis.totalFaturadoR$)}
             </div>
-            <div className="text-[11px] font-mono text-[var(--gray2)] mt-0.5">
-              <strong className="text-[var(--white)] font-bold">{kpis.totalPedidosQtd}</strong> pedidos faturados
-            </div>
           </div>
 
-          <div className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1 pt-2 border-t border-[var(--line)]/50 z-10">
-            <span>Ver detalhamento analítico</span>
-            <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+          <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] z-10">
+            <strong className="text-[var(--white)] font-bold">{kpis.totalPedidosQtd}</strong> pedidos faturados
           </div>
         </div>
 
@@ -1165,29 +1161,25 @@ export default function DashboardPage() {
             }))
             openDrillDown('EM NEGOCIAÇÃO / PIPELINE', 'Oportunidades ativas em andamento nas etapas do funil', items, '#f59e0b')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-amber-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-amber-500/40 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border-t border-b border-r border-[var(--line)] border-l-4 border-l-amber-500 p-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(245,158,11,0.2)] hover:border-amber-500/50 transition-all duration-200 group select-none"
         >
-          <div className="flex items-start justify-between gap-2 z-10">
+          <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               EM NEGOCIAÇÃO
             </span>
-            <div className="w-8 h-8 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0 shadow-sm">
-              <Briefcase size={15} />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-900/10 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(245,158,11,0.3)] group-hover:scale-110 transition-transform">
+              <Briefcase size={18} />
             </div>
           </div>
 
-          <div className="my-2 z-10">
+          <div className="my-3 z-10">
             <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-amber-400 transition-colors">
               {formatCompactCurrency(kpis.openR$)}
             </div>
-            <div className="text-[11px] font-mono text-[var(--gray2)] mt-0.5">
-              <strong className="text-[var(--white)] font-bold">{kpis.openQtd}</strong> negócios no funil
-            </div>
           </div>
 
-          <div className="text-[10px] font-mono text-amber-400 font-bold flex items-center gap-1 pt-2 border-t border-[var(--line)]/50 z-10">
-            <span>Ver oportunidades ativas</span>
-            <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+          <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] z-10">
+            <strong className="text-[var(--white)] font-bold">{kpis.openQtd}</strong> negócios no funil
           </div>
         </div>
 
@@ -1207,29 +1199,25 @@ export default function DashboardPage() {
             }))
             openDrillDown('OPORTUNIDADES APROVADAS', 'Negócios em fase de briefing, orçamento e aprovação final', items, '#06b6d4')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-cyan-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-cyan-500/40 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border-t border-b border-r border-[var(--line)] border-l-4 border-l-cyan-500 p-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(6,182,212,0.2)] hover:border-cyan-500/50 transition-all duration-200 group select-none"
         >
-          <div className="flex items-start justify-between gap-2 z-10">
+          <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               APROVAÇÃO / BRIEFING
             </span>
-            <div className="w-8 h-8 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shrink-0 shadow-sm">
-              <CheckCircle2 size={15} />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-900/10 border border-cyan-500/40 text-cyan-400 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(6,182,212,0.3)] group-hover:scale-110 transition-transform">
+              <CheckCircle2 size={18} />
             </div>
           </div>
 
-          <div className="my-2 z-10">
+          <div className="my-3 z-10">
             <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-cyan-400 transition-colors">
               {formatCompactCurrency(kpis.approvedR$)}
             </div>
-            <div className="text-[11px] font-mono text-[var(--gray2)] mt-0.5">
-              <strong className="text-[var(--white)] font-bold">{kpis.approvedQtd}</strong> propostas aprovadas
-            </div>
           </div>
 
-          <div className="text-[10px] font-mono text-cyan-400 font-bold flex items-center gap-1 pt-2 border-t border-[var(--line)]/50 z-10">
-            <span>Ver negócios em aprovação</span>
-            <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+          <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] z-10">
+            <strong className="text-[var(--white)] font-bold">{kpis.approvedQtd}</strong> propostas aprovadas
           </div>
         </div>
 
@@ -1250,30 +1238,26 @@ export default function DashboardPage() {
             }))
             openDrillDown('NEGÓCIOS PERDIDOS', 'Histórico de negociações não concluídas no período', items, '#e2483d')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-red-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-red-500/40 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border-t border-b border-r border-[var(--line)] border-l-4 border-l-red-500 p-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(239,68,68,0.2)] hover:border-red-500/50 transition-all duration-200 group select-none"
         >
-          <div className="flex items-start justify-between gap-2 z-10">
+          <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               NEGÓCIOS PERDIDOS
             </span>
-            <div className="w-8 h-8 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center shrink-0 shadow-sm">
-              <XCircle size={15} />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500/20 to-red-900/10 border border-red-500/40 text-red-400 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(239,68,68,0.3)] group-hover:scale-110 transition-transform">
+              <XCircle size={18} />
             </div>
           </div>
 
-          <div className="my-2 z-10">
+          <div className="my-3 z-10">
             <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-red-400 transition-colors">
               {formatCompactCurrency(kpis.lostR$)}
             </div>
-            <div className="text-[11px] font-mono text-[var(--gray2)] mt-0.5 flex items-center justify-between">
-              <span><strong className="text-[var(--white)] font-bold">{kpis.lostQtd}</strong> negócios</span>
-              <span className="text-red-400 font-bold bg-red-500/10 px-1.5 py-0.5 rounded text-[10px] border border-red-500/20">{kpis.lossRatePct}% Perda</span>
-            </div>
           </div>
 
-          <div className="text-[10px] font-mono text-red-400 font-bold flex items-center gap-1 pt-2 border-t border-[var(--line)]/50 z-10">
-            <span>Ver motivos de perda</span>
-            <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+          <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] flex items-center justify-between z-10">
+            <span><strong className="text-[var(--white)] font-bold">{kpis.lostQtd}</strong> negócios</span>
+            <span className="text-red-400 font-bold bg-red-500/10 px-1.5 py-0.5 rounded text-[10px] border border-red-500/20">{kpis.lossRatePct}% Perda</span>
           </div>
         </div>
 
@@ -1295,29 +1279,25 @@ export default function DashboardPage() {
             ]
             openDrillDown('ANÁLISE DE TICKET MÉDIO', 'Distribuição dos valores por pedido fechado na carteira', items, '#8b5cf6')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-purple-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-purple-500/40 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border-t border-b border-r border-[var(--line)] border-l-4 border-l-purple-500 p-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(168,85,247,0.2)] hover:border-purple-500/50 transition-all duration-200 group select-none"
         >
-          <div className="flex items-start justify-between gap-2 z-10">
+          <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               TICKET MÉDIO
             </span>
-            <div className="w-8 h-8 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center shrink-0 shadow-sm">
-              <DollarSign size={15} />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-900/10 border border-purple-500/40 text-purple-400 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(168,85,247,0.3)] group-hover:scale-110 transition-transform">
+              <DollarSign size={18} />
             </div>
           </div>
 
-          <div className="my-2 z-10">
+          <div className="my-3 z-10">
             <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-purple-400 transition-colors">
               {formatCurrency(kpis.ticketMedio)}
             </div>
-            <div className="text-[11px] font-mono text-[var(--gray2)] mt-0.5">
-              Valor médio por pedido fechado
-            </div>
           </div>
 
-          <div className="text-[10px] font-mono text-purple-400 font-bold flex items-center gap-1 pt-2 border-t border-[var(--line)]/50 z-10">
-            <span>Ver composição por pedido</span>
-            <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+          <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] z-10">
+            Valor médio por pedido fechado
           </div>
         </div>
 
@@ -1337,37 +1317,29 @@ export default function DashboardPage() {
             }))
             openDrillDown('CICLO MÉDIO DE FECHAMENTO', 'Tempo médio em dias entre a criação da oportunidade e o aceite', items, '#f97316')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-orange-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-orange-500/40 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border-t border-b border-r border-[var(--line)] border-l-4 border-l-orange-500 p-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(249,115,22,0.2)] hover:border-orange-500/50 transition-all duration-200 group select-none"
         >
-          <div className="flex items-start justify-between gap-2 z-10">
+          <div className="flex items-center justify-between gap-2 z-10">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               CICLO MÉDIO
             </span>
-            <div className="w-8 h-8 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-400 flex items-center justify-center shrink-0 shadow-sm">
-              <Clock size={15} />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-900/10 border border-orange-500/40 text-orange-400 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(249,115,22,0.3)] group-hover:scale-110 transition-transform">
+              <Clock size={18} />
             </div>
           </div>
 
-          <div className="my-2 z-10">
+          <div className="my-3 z-10">
             <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-orange-400 transition-colors">
               {kpis.avgCycleDays} <span className="text-sm font-normal text-[var(--gray2)]">dias</span>
             </div>
-            <div className="text-[11px] font-mono text-[var(--gray2)] mt-0.5">
-              Média de tempo até o aceite
-            </div>
           </div>
 
-          <div className="text-[10px] font-mono text-orange-400 font-bold flex items-center gap-1 pt-2 border-t border-[var(--line)]/50 z-10">
-            <span>Ver tempo no pipeline</span>
-            <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+          <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] z-10">
+            Média de tempo até o aceite
           </div>
         </div>
 
       </div>
-
-      {/* ========================================================
-          3. SEÇÃO DE CARTEIRA DE CLIENTES & CURVA ABC (ESTILO FOTO 2)
-         ======================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         
         {/* CARD 7: STATUS DA CARTEIRA DE CLIENTES */}
