@@ -35,7 +35,8 @@ import {
   Package,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Info
 } from 'lucide-react'
 import { whatsappLink, formatCurrency, formatCnaeCode, formatCnaeFullString, getUniqueCanonicalRepresentatives, isSameRepresentative, formatCanonicalRepName } from '@/lib/utils'
 import { supabase } from '@/services/supabase-client'
@@ -2614,6 +2615,7 @@ export default function ContactsPage() {
   const [selectedContact, setSelectedContact] = useState<MockContact | null>(null)
   const [showNewContactModal, setShowNewContactModal] = useState(false)
   const [showProspeccaoModal, setShowProspeccaoModal] = useState(false)
+  const [showAbcRulesModal, setShowAbcRulesModal] = useState(false)
   const [duplicateModalData, setDuplicateModalData] = useState<MockContact | null>(null)
 
   // Dynamic representatives list from CRM Users in localStorage
@@ -3333,7 +3335,7 @@ export default function ContactsPage() {
         </div>
 
         {/* Curva Filter */}
-        <div>
+        <div className="flex items-center gap-1.5">
           <select 
             className="input w-full text-xs py-1.5 px-2.5"
             value={selectedCurve}
@@ -3345,6 +3347,14 @@ export default function ContactsPage() {
             <option value="C">Curva C (Faturamento Baixo)</option>
             <option value="D">Curva D (Prospecção)</option>
           </select>
+          <button 
+            type="button"
+            onClick={() => setShowAbcRulesModal(true)}
+            className="w-7 h-7 rounded bg-[var(--charcoal)] border border-[var(--line)] text-[var(--lime)] hover:bg-[var(--lime)]/10 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+            title="Visualizar Regras da Curva ABC Automática"
+          >
+            <Info size={14} />
+          </button>
         </div>
 
         {/* Rep Filter — hidden for representatives */}
@@ -3890,6 +3900,94 @@ export default function ContactsPage() {
                 className="btn btn-primary py-2.5 px-6 text-xs font-bold uppercase tracking-wider text-[#060606] w-full rounded-xl"
               >
                 Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL INFORMATIVO DA CURVA ABC ── */}
+      {showAbcRulesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="card w-full max-w-lg p-5 border border-[var(--lime)]/30 bg-[var(--card)] shadow-2xl relative">
+            <button 
+              onClick={() => setShowAbcRulesModal(false)}
+              className="absolute top-4 right-4 text-[var(--gray2)] hover:text-[var(--white)] transition-colors p-1 cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-9 h-9 rounded-lg bg-[var(--lime)]/10 border border-[var(--lime)]/25 text-[var(--lime)] flex items-center justify-center shrink-0">
+                <Info size={18} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[var(--white)]">Regras da Curva ABC Automática</h3>
+                <p className="text-xs text-[var(--gray2)]">Classificação dinâmica por Faturamento Acumulado (Pareto 80/15/5) e Recorrência</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 my-4 text-xs">
+              {/* Curva A */}
+              <div className="p-3 rounded-lg bg-[var(--charcoal)] border border-[var(--lime)]/30 flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-bold text-[var(--lime)] text-xs uppercase flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[var(--lime)]" /> Curva A — Clientes VIP / Principais
+                  </span>
+                  <span className="text-[10px] font-mono text-[var(--lime)] bg-[var(--lime)]/10 px-2 py-0.5 rounded">Top 80% Receita</span>
+                </div>
+                <p className="text-[11px] text-[var(--gray)] mt-0.5">
+                  Clientes que compõem os <strong>primeiros 80% do faturamento acumulado</strong> da empresa <strong>E</strong> compram com alta frequência (≥ 2 pedidos no ano).
+                </p>
+              </div>
+
+              {/* Curva B */}
+              <div className="p-3 rounded-lg bg-[var(--charcoal)] border border-amber-500/30 flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-bold text-amber-400 text-xs uppercase flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-400" /> Curva B — Clientes Estratégicos
+                  </span>
+                  <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">80% a 95% Receita</span>
+                </div>
+                <p className="text-[11px] text-[var(--gray)] mt-0.5">
+                  Clientes da faixa intermediária de faturamento (de 80% a 95% do acumulado) <strong>OU</strong> clientes com compras pontuais de alto valor.
+                </p>
+              </div>
+
+              {/* Curva C */}
+              <div className="p-3 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-bold text-[var(--white)] text-xs uppercase flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[var(--gray)]" /> Curva C — Clientes Menor Faturamento
+                  </span>
+                  <span className="text-[10px] font-mono text-[var(--gray)] bg-white/5 px-2 py-0.5 rounded">Últimos 5% Receita</span>
+                </div>
+                <p className="text-[11px] text-[var(--gray)] mt-0.5">
+                  Clientes com histórico de compras que representam os últimos 5% do faturamento acumulado da empresa.
+                </p>
+              </div>
+
+              {/* Curva D */}
+              <div className="p-3 rounded-lg bg-[var(--charcoal)] border border-rose-500/30 flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-bold text-rose-400 text-xs uppercase flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-rose-400" /> Curva D — Prospecção / Leads
+                  </span>
+                  <span className="text-[10px] font-mono text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded">0 Compras</span>
+                </div>
+                <p className="text-[11px] text-[var(--gray)] mt-0.5">
+                  Clientes que ainda não possuem histórico de compras faturadas cadastrado no sistema.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 text-right">
+              <button 
+                type="button"
+                onClick={() => setShowAbcRulesModal(false)}
+                className="btn btn-primary text-xs py-1.5 px-5 cursor-pointer font-bold"
+              >
+                Entendi
               </button>
             </div>
           </div>
