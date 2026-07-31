@@ -122,10 +122,15 @@ export default function MetasPage() {
 
   const isGestor = (currentUser?.role || '').toLowerCase().includes('gestor')
 
-  // Gestor só visualiza Vendedores, Representantes e outros Gestores (Oculta Administradores)
+  // Gestor só visualiza Vendedores, Representantes e outros Gestores (Oculta Administradores e Mauricio Maciel)
   const visibleUsersForMetas = useMemo(() => {
     return registeredUsers.filter(u => {
       if (u.status === 'inativo') return false
+      const uName = (u.name || '').toLowerCase()
+      const uEmail = (u.email || '').toLowerCase()
+      if (uName.includes('mauricio') || uName.includes('maciel') || uEmail.includes('mauricio') || uEmail.includes('maciel')) {
+        return false // Ignora Mauricio Maciel em metas
+      }
       const uRole = (u.role || '').toLowerCase()
       if (isGestor && (uRole.includes('admin') || uRole === 'administrador')) {
         return false

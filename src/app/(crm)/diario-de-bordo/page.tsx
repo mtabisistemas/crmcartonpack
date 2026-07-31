@@ -331,8 +331,12 @@ export default function DiarioDeBordoPage() {
         visitsGoalSum = Number(goalsMap[equipeKey].visitsGoal)
       } else {
         Object.keys(goalsMap).forEach(key => {
+          const g = goalsMap[key]
+          const uName = (g?.userName || '').toLowerCase()
+          if (key.toLowerCase().includes('mauricio') || key.toLowerCase().includes('maciel') || uName.includes('mauricio') || uName.includes('maciel')) {
+            return // Ignora Mauricio Maciel
+          }
           if (key.startsWith(`${yearStr}_${monthStr}_`) && !key.startsWith('EQUIPE_')) {
-            const g = goalsMap[key]
             salesGoalSum += Number(g?.salesGoal || 0)
             visitsGoalSum += Number(g?.visitsGoal || 0)
           }

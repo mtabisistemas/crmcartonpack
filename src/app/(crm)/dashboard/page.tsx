@@ -837,6 +837,12 @@ export default function DashboardPage() {
     let sumGoal = 0
 
     Object.keys(goalsMap).forEach(k => {
+      const gObj = goalsMap[k]
+      const uName = (gObj?.userName || '').toLowerCase()
+      if (k.toLowerCase().includes('mauricio') || k.toLowerCase().includes('maciel') || uName.includes('mauricio') || uName.includes('maciel')) {
+        return // Ignora metas do Mauricio Maciel
+      }
+
       const parts = k.split('_')
       const gYear = parts[0]
       const gMonth = parts[1]
@@ -845,10 +851,10 @@ export default function DashboardPage() {
 
       if (monthFilter === 'all') {
         // Acumular metas de todos os meses do ano selecionado
-        sumGoal += (goalsMap[k]?.salesGoal || (goalsMap[k] as any)?.metaMonthly || 0)
+        sumGoal += (gObj?.salesGoal || (gObj as any)?.metaMonthly || 0)
       } else if (gMonth === monthFilter) {
         // Mês específico selecionado
-        sumGoal += (goalsMap[k]?.salesGoal || (goalsMap[k] as any)?.metaMonthly || 0)
+        sumGoal += (gObj?.salesGoal || (gObj as any)?.metaMonthly || 0)
       }
     })
 
