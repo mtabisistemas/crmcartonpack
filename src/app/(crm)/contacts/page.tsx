@@ -2494,22 +2494,23 @@ function NewContactModal({
                 )}
               </div>
 
-              <div className="grid grid-cols-5 gap-2">
-                <div className="col-span-2 flex flex-col gap-0.5">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-0.5">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Regime Tributário</label>
                   <select 
-                    className="input text-xs py-1 px-2.5" 
+                    className="input text-xs py-1 px-2.5 w-full font-bold" 
                     value={taxRegime} 
                     onChange={(e) => setTaxRegime(e.target.value as any)}
                   >
-                    <option value="MEI">MEI</option>
-                    <option value="Simples Nacional">Simples</option>
-                    <option value="Lucro Presumido">Presumido</option>
+                    <option value="">-</option>
+                    <option value="Simples Nacional">Simples Nacional</option>
+                    <option value="Lucro Presumido">Lucro Presumido</option>
                     <option value="Lucro Real">Lucro Real</option>
+                    <option value="MEI">MEI</option>
                   </select>
                 </div>
 
-                <div className="col-span-3 flex flex-col gap-0.5">
+                <div className="flex flex-col gap-0.5">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Situação Cadastral</label>
                   <input 
                     type="text" 
