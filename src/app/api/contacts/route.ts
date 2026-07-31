@@ -186,7 +186,7 @@ export async function POST(req: Request) {
       address: contact.address || existingContactRow?.address || '',
       bairro: contact.bairro || existingContactRow?.bairro || '',
       cep: contact.cep || existingContactRow?.cep || '',
-      tax_regime: contact.taxRegime || existingContactRow?.tax_regime || 'Simples Nacional',
+      tax_regime: contact.taxRegime ?? existingContactRow?.tax_regime ?? '',
       special_situation: contact.specialSituation || existingContactRow?.special_situation || 'Nenhuma',
       special_situation_date: contact.specialSituationDate || existingContactRow?.special_situation_date || '-',
       state_registration: contact.stateRegistration || existingContactRow?.state_registration || '',
