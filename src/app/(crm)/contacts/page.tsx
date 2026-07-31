@@ -897,7 +897,19 @@ function ContactDrawer({
             <span className="text-xs text-[var(--gray)] font-mono">{cnpj}</span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenRegisterActivity) onOpenRegisterActivity(contact.id)
+              }}
+              className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 font-bold hover:border-[var(--lime)] hover:text-[var(--lime)] transition-all cursor-pointer shadow-sm"
+              title="Registrar nova reunião, ligação, WhatsApp, e-mail ou anotação"
+            >
+              <CheckCircle size={14} className="text-[var(--lime)]" />
+              <span>Registrar Atividade</span>
+            </button>
+
             <button 
               type="button" 
               onClick={() => handleSaveGeneral()}
@@ -1334,9 +1346,7 @@ function ContactDrawer({
                           className="input text-xs py-1 px-2.5 font-bold w-full" 
                           value={taxRegime} 
                           onChange={(e) => {
-                            const val = e.target.value
-                            setTaxRegime(val)
-                            handleSaveGeneral({ taxRegime: val })
+                            setTaxRegime(e.target.value)
                           }}
                         >
                           <option value="">-</option>
@@ -1575,18 +1585,17 @@ function ContactDrawer({
                     </div>
                     <div className="relative flex items-center">
                       <input
-                        type="number"
-                        min="1"
-                        className="input text-xs py-1 px-2.5 font-bold font-mono pr-12"
+                        type="text"
+                        inputMode="numeric"
+                        className="input text-xs py-1 px-2.5 font-bold font-mono pr-12 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         placeholder="Ex: 30, 45, 60"
                         value={purchaseFrequencyDays || ''}
                         onChange={e => {
-                          const val = parseInt(e.target.value) || 0
+                          const val = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0
                           setPurchaseFrequencyDays(val)
-                          handleSaveGeneral({ purchaseFrequencyDays: val })
                         }}
                       />
-                      <span className="absolute right-2.5 text-[10px] font-bold text-[var(--gray2)] font-mono select-none">
+                      <span className="absolute right-2.5 text-[10px] font-bold text-[var(--gray2)] font-mono select-none pointer-events-none">
                         dias
                       </span>
                     </div>
@@ -1607,9 +1616,7 @@ function ContactDrawer({
                       className="input text-xs py-1 px-2.5 font-bold font-mono cursor-pointer"
                       value={lastPurchaseDate}
                       onChange={e => {
-                        const val = e.target.value
-                        setLastPurchaseDate(val)
-                        handleSaveGeneral({ lastPurchaseDate: val })
+                        setLastPurchaseDate(e.target.value)
                       }}
                     />
                     <span className="text-[8px] text-[var(--gray2)] font-mono">Data do último pedido fechado</span>
@@ -1628,9 +1635,7 @@ function ContactDrawer({
                   placeholder="Particularidades de compra, pico de sazonalidade, preferências de cartão/embalagem..."
                   value={planningNotes}
                   onChange={e => {
-                    const val = e.target.value
-                    setPlanningNotes(val)
-                    handleSaveGeneral({ planningNotes: val })
+                    setPlanningNotes(e.target.value)
                   }}
                 />
               </div>
