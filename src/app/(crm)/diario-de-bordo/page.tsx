@@ -257,7 +257,8 @@ export default function DiarioDeBordoPage() {
   }, [])
 
   // Admin / Gestor check
-  const isAdminOrManager = currentUser?.role === 'admin' || currentUser?.role === 'gestor'
+  const userRoleLower = (currentUser?.role || '').toLowerCase()
+  const isAdminOrManager = userRoleLower.includes('admin') || userRoleLower.includes('gestor')
 
   // Filtered contacts based on selected user filter (ou restrito ao próprio vendedor/representante)
   const filteredContacts = useMemo(() => {

@@ -329,7 +329,8 @@ export default function DashboardPage() {
   }, [])
 
   // User Role Checking
-  const isAdminOrManager = currentUser?.role === 'admin' || currentUser?.role === 'gestor'
+  const userRoleLower = (currentUser?.role || '').toLowerCase()
+  const isAdminOrManager = userRoleLower.includes('admin') || userRoleLower.includes('gestor')
   const effectiveRepFilter = (!isAdminOrManager && currentUser?.name) ? currentUser.name : repFilter
 
   // Available Representatives list for Filter
