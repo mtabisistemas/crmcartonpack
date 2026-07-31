@@ -252,8 +252,7 @@ export default function DiarioDeBordoPage() {
   }, [])
 
   // Admin / Gestor check
-  const isAdminOrManager = (currentUser?.role || '').toLowerCase().includes('admin') || 
-                           (currentUser?.role || '').toLowerCase().includes('gestor')
+  const isAdminOrManager = currentUser?.role === 'admin' || currentUser?.role === 'gestor'
 
   // Filtered contacts based on selected user filter (ou restrito ao próprio vendedor/representante)
   const filteredContacts = useMemo(() => {
@@ -281,24 +280,46 @@ export default function DiarioDeBordoPage() {
     )
   }, [deals, userFilter, usersList, isAdminOrManager, currentUser?.name])
 
-  // Appointments today
+  // Appointments today (filtrados por usuario se vendedor/rep e ordenados por horario com concluidos no fim)
   const todayAppointments = useMemo(() => {
-    return appointments.filter(a => a.date === todayStr)
-  }, [appointments, todayStr])
+    const activeFilter = (!isAdminOrManager && currentUser?.name) ? currentUser.name : userFilter
+    let list = appointments.filter(a => a.date === todayStr)
+
+    if (activeFilter !== 'all') {
+      const selUser = usersList.find(u => u.id === activeFilter || u.name === activeFilter)
+      const targetName = (selUser?.name || activeFilter || '').toLowerCase().trim()
+      list = list.filter(a => 
+        (a.user_id && (a.user_id === selUser?.id || a.user_id === activeFilter)) ||
+        (a.assigned_to && a.assigned_to.toLowerCase().includes(targetName)) ||
+        (a.user_name && a.user_name.toLowerCase().includes(targetName))
+      )
+    }
+
+    // Ordenacao: Pendentes primeiro (ordenados por horario mais recente/cedo), Concluidos ao FIM
+    return list.sort((a, b) => {
+      const aDone = a.status === 'concluido' ? 1 : 0
+      const bDone = b.status === 'concluido' ? 1 : 0
+
+      if (aDone !== bDone) return aDone - bDone
+      return (a.time || '').localeCompare(b.time || '')
+    })
+  }, [appointments, todayStr, userFilter, usersList, isAdminOrManager, currentUser?.name])
 
   // Business Days Stats
   const bizStats = useMemo(() => getBusinessDaysStats(), [])
 
-  // Calculate Meta & Sales Goal for selected Month/Year (e.g. 2026_07)
+  // Calculate Meta & Sales Goal for selected Month/Year
   const currentMonthGoal = useMemo(() => {
     const now = new Date()
     const yearStr = String(now.getFullYear())
     const monthStr = String(now.getMonth() + 1).padStart(2, '0')
 
+    const activeFilter = (!isAdminOrManager && currentUser?.name) ? currentUser.name : userFilter
+
     let salesGoalSum = 0
     let visitsGoalSum = 0
 
-    if (userFilter === 'all') {
+    if (activeFilter === 'all') {
       Object.keys(goalsMap).forEach(key => {
         if (key.startsWith(`${yearStr}_${monthStr}_`) || key.startsWith(`EQUIPE_${yearStr}_${monthStr}`)) {
           const g = goalsMap[key]
@@ -309,9 +330,9 @@ export default function DiarioDeBordoPage() {
       if (salesGoalSum === 0) salesGoalSum = 150000
       if (visitsGoalSum === 0) visitsGoalSum = 40
     } else {
-      const selUser = usersList.find(u => u.id === userFilter || u.name === userFilter)
-      const uId = selUser?.id || userFilter
-      const uName = selUser?.name || userFilter
+      const selUser = usersList.find(u => u.id === activeFilter || u.name === activeFilter)
+      const uId = selUser?.id || activeFilter
+      const uName = selUser?.name || activeFilter
 
       const goalKey1 = `${yearStr}_${monthStr}_${uId}`
       const goalKey2 = `${yearStr}_${monthStr}_${uName}`
@@ -325,7 +346,7 @@ export default function DiarioDeBordoPage() {
       salesGoal: salesGoalSum,
       visitsGoal: visitsGoalSum
     }
-  }, [goalsMap, userFilter, usersList])
+  }, [goalsMap, userFilter, usersList, isAdminOrManager, currentUser?.name])
 
   // 1. Pacing & Goal Calculations
   const pacingMetrics = useMemo(() => {
@@ -373,83 +394,7 @@ export default function DiarioDeBordoPage() {
     }
   }, [filteredDeals, currentMonthGoal, bizStats, appointments])
 
-  // 2. Client Status & Repurchase Overdue, Upcoming 15 Days & Inactivation Risk Alerts
-  const clientAlerts = useMemo(() => {
-    const now = new Date()
-    const overdueRepurchaseList: Array<{ contact: Contact; daysOverdue: number }> = []
-    const upcoming15DaysRepurchaseList: Array<{ contact: Contact; daysToRepurchase: number }> = []
-    const inactivationRiskList: Array<{ contact: Contact; daysWithoutActivity: number; daysUntilInactive: number }> = []
-
-    filteredContacts.forEach(c => {
-      // 1. Repurchase Alerts
-      let daysSincePurchase = (c as any).lastPurchaseDays
-      if (daysSincePurchase === undefined && c.lastPurchaseDate) {
-        const lastP = parseFlexibleDate(c.lastPurchaseDate)
-        if (lastP) {
-          daysSincePurchase = Math.floor((now.getTime() - lastP.getTime()) / (1000 * 60 * 60 * 24))
-        }
-      }
-      
-      const freq = c.purchaseFrequencyDays || 30
-      if (daysSincePurchase !== undefined) {
-        const daysToRepurchase = freq - daysSincePurchase
-        if (daysSincePurchase > freq) {
-          overdueRepurchaseList.push({
-            contact: c,
-            daysOverdue: daysSincePurchase - freq
-          })
-        } else if (daysToRepurchase >= 0 && daysToRepurchase <= 15) {
-          upcoming15DaysRepurchaseList.push({
-            contact: c,
-            daysToRepurchase
-          })
-        }
-      }
-
-      // 2. Inactivation Risk Alerts
-      // Calculates last activity date from activity history, purchase date, or creation date
-      let lastActDate = parseFlexibleDate((c as any).last_activity_date || (c as any).lastActivityDate)
-      if (!lastActDate && c.lastPurchaseDate) {
-        lastActDate = parseFlexibleDate(c.lastPurchaseDate)
-      }
-      if (!lastActDate && c.created_at) {
-        lastActDate = parseFlexibleDate(c.created_at)
-      }
-
-      let daysWithoutActivity = 0
-      if (lastActDate) {
-        daysWithoutActivity = Math.max(0, Math.floor((now.getTime() - lastActDate.getTime()) / (1000 * 60 * 60 * 24)))
-      }
-
-      const threshold = c.inactivityThresholdDays ?? 90
-      const isAutoInactive = daysWithoutActivity > threshold
-      const daysUntilInactive = threshold - daysWithoutActivity
-
-      // Alert starts when client is active and there are 30 days or fewer remaining before automatic inactivation
-      if (!isAutoInactive && daysUntilInactive >= 0 && daysUntilInactive <= 30) {
-        inactivationRiskList.push({
-          contact: c,
-          daysWithoutActivity,
-          daysUntilInactive
-        })
-      }
-    })
-
-    overdueRepurchaseList.sort((a, b) => b.daysOverdue - a.daysOverdue)
-    upcoming15DaysRepurchaseList.sort((a, b) => a.daysToRepurchase - b.daysToRepurchase)
-    inactivationRiskList.sort((a, b) => a.daysUntilInactive - b.daysUntilInactive)
-
-    return {
-      overdueRepurchaseList,
-      overdueRepurchaseCount: overdueRepurchaseList.length,
-      upcoming15DaysRepurchaseList,
-      upcoming15DaysRepurchaseCount: upcoming15DaysRepurchaseList.length,
-      inactivationRiskList,
-      inactivationRiskCount: inactivationRiskList.length
-    }
-  }, [filteredContacts])
-
-  // 3. Stagnant Deals (>7 days)
+  // Stagnant Deals (>7 days)
   const dealAlerts = useMemo(() => {
     const now = new Date()
     const stagnantDeals: Array<{ deal: Deal; days: number }> = []
@@ -472,13 +417,6 @@ export default function DiarioDeBordoPage() {
       stagnantDeals
     }
   }, [filteredDeals])
-
-  // Toggle appointment completed
-  const handleToggleAptDone = (apt: Appointment) => {
-    const newStatus = apt.status === 'concluido' ? 'agendado' : 'concluido'
-    updateAppointment({ ...apt, status: newStatus })
-    fetchData()
-  }
 
   return (
     <div className="page-content animate-fade-in w-full h-full flex flex-col gap-5 max-w-[1400px] mx-auto px-4 sm:px-6 py-6 pb-24 select-none overflow-y-auto custom-scrollbar bg-[var(--black)] text-[var(--white)]">
@@ -505,7 +443,7 @@ export default function DiarioDeBordoPage() {
           </h1>
         </div>
 
-        {/* Right Actions & Filter Selector */}
+        {/* Right Actions & Filter Selector (APENAS PARA GESTOR E ADMIN) */}
         <div className="flex items-center gap-3 z-10 shrink-0">
           {isAdminOrManager && (
             <div className="flex items-center gap-2 bg-[var(--charcoal)] border border-[var(--line)] px-3 py-1.5 rounded-xl">
@@ -536,309 +474,78 @@ export default function DiarioDeBordoPage() {
       </div>
 
       {/* ========================================================
-          2. HERO DUPLO: META DO MÊS (ESQUERDA) + ALERTAS DO DIA (DIREITA)
+          2. HERO RESULTADO X META DO MÊS (ESTICADA 100% LARGURA)
          ======================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl flex flex-col justify-between gap-4 shadow-lg hover:border-[var(--lime)]/30 transition-all">
         
-        {/* BLOCO ESQUERDA (7 Colunas): Resultado x Meta do Mês */}
-        <div className="lg:col-span-8 card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-lg hover:border-[var(--lime)]/30 transition-all">
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-lime-500/10 border border-lime-500/20 flex items-center justify-center text-[var(--lime)]">
-                <Target size={18} />
-              </div>
-              <div>
-                <h2 className="text-sm font-display font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2">
-                  <span>Resultado x Meta do Mês</span>
-                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                    pacingMetrics.isPacingAhead 
-                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' 
-                      : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-                  }`}>
-                    {pacingMetrics.isPacingAhead ? '▲ No Pacing' : '▼ Ritmo Abaixo do Pacing'}
-                  </span>
-                </h2>
-                <span className="text-[11px] font-mono text-[var(--gray2)]">
-                  Dia {bizStats.todayDate} de {bizStats.totalDays} · {bizStats.elapsedBusinessDays} de {bizStats.totalBusinessDays} dias úteis transcorridos
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-lime-500/10 border border-lime-500/20 flex items-center justify-center text-[var(--lime)] shrink-0">
+              <Target size={20} />
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-display font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2.5">
+                <span>Resultado x Meta do Mês</span>
+                <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                  pacingMetrics.isPacingAhead 
+                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' 
+                    : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                }`}>
+                  {pacingMetrics.isPacingAhead ? '▲ No Pacing' : '▼ Ritmo Abaixo do Pacing'}
                 </span>
-              </div>
-            </div>
-
-            <div className="text-right">
-              <span className="text-[10px] font-mono uppercase text-[var(--gray2)] font-bold block">Progresso</span>
-              <span className="text-2xl font-mono font-black text-[var(--lime)]">{pacingMetrics.salesProgressPct}%</span>
-            </div>
-          </div>
-
-          {/* Main Progress Value */}
-          <div className="flex flex-col gap-1.5 my-1">
-            <div className="flex items-baseline justify-between">
-              <span className="text-sm font-mono text-[var(--gray2)]">
-                Realizado: <strong className="text-2xl font-black text-[var(--white)] ml-1">{formatCurrency(pacingMetrics.totalSalesAchieved)}</strong>
-              </span>
-              <span className="text-xs font-mono text-[var(--gray2)]">
-                Meta: <strong className="text-[var(--white)] font-bold">{formatCurrency(pacingMetrics.salesTarget)}</strong>
+              </h2>
+              <span className="text-[11px] font-mono text-[var(--gray2)]">
+                Dia {bizStats.todayDate} de {bizStats.totalDays} · {bizStats.elapsedBusinessDays} de {bizStats.totalBusinessDays} dias úteis transcorridos
               </span>
             </div>
-
-            <div className="w-full h-2.5 bg-[var(--charcoal)] border border-[var(--line)] rounded-full overflow-hidden p-0.5">
-              <div 
-                className="h-full bg-[var(--lime)] rounded-full transition-all duration-500"
-                style={{ width: `${pacingMetrics.salesProgressPct}%` }}
-              />
-            </div>
           </div>
 
-          {/* Footer Metrics Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-[var(--line)] text-xs font-mono">
-            <div className="bg-[var(--charcoal)] p-2.5 rounded-xl border border-[var(--line)]">
-              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Esperado Hoje (Pacing)</span>
-              <span className="font-bold text-[var(--white)]">{formatCurrency(pacingMetrics.expectedSalesPacing)}</span>
-            </div>
-
-            <div className="bg-[var(--charcoal)] p-2.5 rounded-xl border border-[var(--line)]">
-              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Falta para 100%</span>
-              <span className="font-bold text-[var(--white)]">{formatCurrency(pacingMetrics.remainingSalesR$)}</span>
-            </div>
-
-            <div className="bg-[var(--charcoal)] p-2.5 rounded-xl border border-[var(--line)]">
-              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Meta Diária Necessária</span>
-              <span className="font-bold text-[var(--white)]">{formatCurrency(pacingMetrics.dailyPaceRequired)} / dia</span>
-            </div>
-
-            <div className="bg-[var(--charcoal)] p-2.5 rounded-xl border border-[var(--line)]">
-              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Visitas no Mês</span>
-              <span className="font-bold text-[var(--white)]">{pacingMetrics.currentMonthVisits} / {pacingMetrics.visitsTarget} realizados</span>
-            </div>
+          <div className="text-right">
+            <span className="text-[10px] font-mono uppercase text-[var(--gray2)] font-bold block">Progresso</span>
+            <span className="text-2xl sm:text-3xl font-mono font-black text-[var(--lime)]">{pacingMetrics.salesProgressPct}%</span>
           </div>
-
         </div>
 
-        {/* BLOCO DIREITA (4 Colunas): Alertas do Dia */}
-        <div className="lg:col-span-4 card bg-[var(--card)] border border-[var(--line)] p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-lg hover:border-[var(--lime)]/30 transition-all relative">
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertTriangle size={16} className="text-[var(--gray2)]" />
-              <h2 className="text-xs font-display font-bold text-[var(--white)] uppercase tracking-wider">
-                Alertas do Dia
-              </h2>
-            </div>
-            {activeAlertPopover && (
-              <span className="text-[10px] font-mono text-[var(--gray2)] bg-[var(--charcoal)] px-2 py-0.5 rounded border border-[var(--line)]">
-                Clique no card para fechar
-              </span>
-            )}
+        {/* Main Progress Value */}
+        <div className="flex flex-col gap-2 my-1">
+          <div className="flex items-baseline justify-between">
+            <span className="text-sm sm:text-base font-mono text-[var(--gray2)]">
+              Realizado: <strong className="text-2xl sm:text-3xl font-black text-[var(--white)] ml-1">{formatCurrency(pacingMetrics.totalSalesAchieved)}</strong>
+            </span>
+            <span className="text-xs sm:text-sm font-mono text-[var(--gray2)]">
+              Meta: <strong className="text-[var(--white)] font-bold">{formatCurrency(pacingMetrics.salesTarget)}</strong>
+            </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-2.5">
-            {/* Card 1: Recompra 15 Dias */}
-            <button
-              type="button"
-              onClick={() => {
-                setActiveAlertPopover(prev => prev === 'recompra15' ? null : 'recompra15')
-                setAlertSearchTerm('')
-              }}
-              className={`p-3 rounded-xl flex flex-col justify-between text-left transition-all cursor-pointer group ${
-                activeAlertPopover === 'recompra15'
-                  ? 'bg-[var(--charcoal)] border-2 border-amber-500/60 shadow-lg'
-                  : 'bg-[var(--charcoal)] border border-[var(--line)] hover:border-[var(--lime)]/50'
-              }`}
-              title="Clique para ver os clientes com recompra prevista em até 15 dias"
-            >
-              <div className="flex items-center justify-between w-full">
-                <span className="text-[9px] font-mono font-bold text-amber-400/90 uppercase tracking-tight flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                  Recompra 15d
-                </span>
-                <span className={`text-[8px] font-mono text-[var(--gray2)] transition-transform ${activeAlertPopover === 'recompra15' ? 'rotate-180' : ''}`}>▼</span>
-              </div>
-              <div className="my-1">
-                <span className="text-2xl font-mono font-black text-[var(--white)]">{clientAlerts.upcoming15DaysRepurchaseCount}</span>
-              </div>
-              <span className="text-[9px] font-mono text-[var(--gray2)] font-bold uppercase group-hover:text-amber-400">clientes ↗</span>
-            </button>
+          <div className="w-full h-3 bg-[var(--charcoal)] border border-[var(--line)] rounded-full overflow-hidden p-0.5">
+            <div 
+              className="h-full bg-[var(--lime)] rounded-full transition-all duration-500"
+              style={{ width: `${pacingMetrics.salesProgressPct}%` }}
+            />
+          </div>
+        </div>
 
-            {/* Card 2: Recompra Atrasada */}
-            <button
-              type="button"
-              onClick={() => {
-                setActiveAlertPopover(prev => prev === 'recompraAtrasada' ? null : 'recompraAtrasada')
-                setAlertSearchTerm('')
-              }}
-              className={`p-3 rounded-xl flex flex-col justify-between text-left transition-all cursor-pointer group ${
-                activeAlertPopover === 'recompraAtrasada'
-                  ? 'bg-[var(--charcoal)] border-2 border-red-500/60 shadow-lg'
-                  : 'bg-[var(--charcoal)] border border-[var(--line)] hover:border-[var(--lime)]/50'
-              }`}
-              title="Clique para ver os clientes com recompra em atraso"
-            >
-              <div className="flex items-center justify-between w-full">
-                <span className="text-[9px] font-mono font-bold text-red-400/90 uppercase tracking-tight flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
-                  Rec. Atrasada
-                </span>
-                <span className={`text-[8px] font-mono text-[var(--gray2)] transition-transform ${activeAlertPopover === 'recompraAtrasada' ? 'rotate-180' : ''}`}>▼</span>
-              </div>
-              <div className="my-1">
-                <span className="text-2xl font-mono font-black text-[var(--white)]">{clientAlerts.overdueRepurchaseCount}</span>
-              </div>
-              <span className="text-[9px] font-mono text-[var(--gray2)] font-bold uppercase group-hover:text-red-400">clientes ↗</span>
-            </button>
-
-            {/* Card 3: Risco Inativação */}
-            <button
-              type="button"
-              onClick={() => {
-                setActiveAlertPopover(prev => prev === 'riscoInativacao' ? null : 'riscoInativacao')
-                setAlertSearchTerm('')
-              }}
-              className={`p-3 rounded-xl flex flex-col justify-between text-left transition-all cursor-pointer group ${
-                activeAlertPopover === 'riscoInativacao'
-                  ? 'bg-[var(--charcoal)] border-2 border-rose-500/60 shadow-lg'
-                  : 'bg-[var(--charcoal)] border border-[var(--line)] hover:border-[var(--lime)]/50'
-              }`}
-              title="Clique para ver os clientes prestes a inativar (faltando até 30 dias para inativação)"
-            >
-              <div className="flex items-center justify-between w-full">
-                <span className="text-[9px] font-mono font-bold text-rose-400/90 uppercase tracking-tight flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                  Risco Inativação
-                </span>
-                <span className={`text-[8px] font-mono text-[var(--gray2)] transition-transform ${activeAlertPopover === 'riscoInativacao' ? 'rotate-180' : ''}`}>▼</span>
-              </div>
-              <div className="my-1">
-                <span className="text-2xl font-mono font-black text-[var(--white)]">{clientAlerts.inactivationRiskCount}</span>
-              </div>
-              <span className="text-[9px] font-mono text-[var(--gray2)] font-bold uppercase group-hover:text-rose-400">clientes ↗</span>
-            </button>
+        {/* Footer Metrics Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-3 border-t border-[var(--line)] text-xs font-mono">
+          <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
+            <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Esperado Hoje (Pacing)</span>
+            <span className="font-bold text-sm text-[var(--white)]">{formatCurrency(pacingMetrics.expectedSalesPacing)}</span>
           </div>
 
-          {/* POPOVER/TOOLTIP SUSPENSO DE CLIENTES */}
-          {activeAlertPopover && (
-            <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 bg-[var(--card)] border border-[var(--line)] rounded-2xl shadow-2xl p-4 flex flex-col gap-3 animate-fade-in backdrop-blur-xl">
-              
-              {/* Header do Popover */}
-              <div className="flex items-center justify-between border-b border-[var(--line)] pb-2.5">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${
-                    activeAlertPopover === 'recompra15' ? 'bg-amber-400' :
-                    activeAlertPopover === 'recompraAtrasada' ? 'bg-red-400' : 'bg-rose-400'
-                  }`} />
-                  <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--white)]">
-                    {activeAlertPopover === 'recompra15' && `Clientes com Recompra nos Próximos 15 Dias (${clientAlerts.upcoming15DaysRepurchaseCount})`}
-                    {activeAlertPopover === 'recompraAtrasada' && `Clientes com Recompra Atrasada (${clientAlerts.overdueRepurchaseCount})`}
-                    {activeAlertPopover === 'riscoInativacao' && `Clientes em Risco de Inativação (${clientAlerts.inactivationRiskCount})`}
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveAlertPopover(null)}
-                  className="text-[var(--gray2)] hover:text-[var(--white)] p-1 rounded-md hover:bg-[var(--charcoal)] transition-colors"
-                  title="Fechar"
-                >
-                  <X size={14} />
-                </button>
-              </div>
+          <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
+            <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Falta para 100%</span>
+            <span className="font-bold text-sm text-[var(--white)]">{formatCurrency(pacingMetrics.remainingSalesR$)}</span>
+          </div>
 
-              {/* Campo de Busca Rápida no Popover */}
-              <div className="relative">
-                <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--gray2)] pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="Buscar cliente..."
-                  value={alertSearchTerm}
-                  onChange={(e) => setAlertSearchTerm(e.target.value)}
-                  className="input text-xs pl-9 pr-3 py-1.5 w-full bg-[var(--charcoal)] border border-[var(--line)] text-[var(--white)] focus:border-[var(--lime)] outline-none"
-                />
-              </div>
+          <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
+            <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Meta Diária Necessária</span>
+            <span className="font-bold text-sm text-[var(--white)]">{formatCurrency(pacingMetrics.dailyPaceRequired)} / dia</span>
+          </div>
 
-              {/* Lista Scrollável de Clientes */}
-              <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto pr-1">
-                {(() => {
-                  let items: Array<{ contact: Contact; label: string; badgeBg: string; badgeText: string }> = []
-                  const term = alertSearchTerm.toLowerCase().trim()
-
-                  const getCompanyName = (c: Contact) => {
-                    return c.company || (c as any).tradeName || (c as any).company_name || c.name || 'Cliente sem nome'
-                  }
-
-                  if (activeAlertPopover === 'recompra15') {
-                    items = clientAlerts.upcoming15DaysRepurchaseList.map(item => ({
-                      contact: item.contact,
-                      label: getCompanyName(item.contact),
-                      badgeBg: 'bg-amber-500/10 border-amber-500/20 text-amber-500',
-                      badgeText: item.daysToRepurchase === 0 ? 'Recompra HOJE' : `Faltam ${item.daysToRepurchase}d p/ recompra`
-                    }))
-                  } else if (activeAlertPopover === 'recompraAtrasada') {
-                    items = clientAlerts.overdueRepurchaseList.map(item => ({
-                      contact: item.contact,
-                      label: getCompanyName(item.contact),
-                      badgeBg: 'bg-red-500/10 border-red-500/20 text-red-500',
-                      badgeText: `${item.daysOverdue} dias em atraso`
-                    }))
-                  } else if (activeAlertPopover === 'riscoInativacao') {
-                    items = clientAlerts.inactivationRiskList.map(item => ({
-                      contact: item.contact,
-                      label: getCompanyName(item.contact),
-                      badgeBg: 'bg-rose-500/10 border-rose-500/20 text-rose-500',
-                      badgeText: `${item.daysWithoutActivity}d s/ atividade (${item.daysUntilInactive}d p/ inativar)`
-                    }))
-                  }
-
-                  if (term) {
-                    items = items.filter(it => 
-                      it.label.toLowerCase().includes(term) ||
-                      (it.contact.name && it.contact.name.toLowerCase().includes(term)) ||
-                      (it.contact.representative && it.contact.representative.toLowerCase().includes(term))
-                    )
-                  }
-
-                  if (items.length === 0) {
-                    return (
-                      <div className="py-6 text-center text-xs font-mono text-[var(--gray2)]">
-                        {term ? 'Nenhum cliente encontrado para a busca.' : 'Nenhum cliente neste cenário.'}
-                      </div>
-                    )
-                  }
-
-                  return items.map((it, idx) => (
-                    <Link
-                      key={it.contact.id || idx}
-                      href={`/contacts?search=${encodeURIComponent(it.label)}`}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--charcoal)] hover:bg-[var(--card2)] border border-[var(--line)] hover:border-[var(--lime)]/50 transition-all group"
-                      onClick={() => setActiveAlertPopover(null)}
-                    >
-                      <div className="flex flex-col min-w-0 pr-2">
-                        <span className="text-xs font-bold text-[var(--white)] group-hover:text-[var(--lime)] truncate transition-colors flex items-center gap-1.5">
-                          {it.label}
-                          <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-[var(--gray2)]" />
-                        </span>
-                        <span className="text-[10px] font-mono text-[var(--gray2)] truncate flex items-center gap-1 mt-0.5">
-                          <Users size={9} />
-                          Rep: {it.contact.representative || 'Sem representante'}
-                          {it.contact.name && it.contact.name !== it.label && (
-                            <span> · Contato: {it.contact.name}</span>
-                          )}
-                        </span>
-                      </div>
-
-                      <span className={`px-2 py-1 rounded-lg text-[9px] font-mono font-bold border shrink-0 ${it.badgeBg}`}>
-                        {it.badgeText}
-                      </span>
-                    </Link>
-                  ))
-                })()}
-              </div>
-
-            </div>
-          )}
-
-          <p className="text-[11px] font-mono text-[var(--gray2)]">
-            Mantenha contato regular com os clientes para garantir o fluxo de vendas e evitar inativação de carteiras.
-          </p>
-
+          <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
+            <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Visitas no Mês</span>
+            <span className="font-bold text-sm text-[var(--white)]">{pacingMetrics.currentMonthVisits} / {pacingMetrics.visitsTarget} realizados</span>
+          </div>
         </div>
 
       </div>
@@ -891,35 +598,23 @@ export default function DiarioDeBordoPage() {
                 return (
                   <div
                     key={apt.id}
-                    className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all ${
+                    onClick={() => setCalendarOpen(true)}
+                    className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all cursor-pointer group ${
                       isConcluido
-                        ? 'bg-[var(--charcoal)] border-[var(--line)] opacity-65'
+                        ? 'bg-[var(--charcoal)] border-[var(--line)] opacity-60'
                         : isOverdue
-                        ? 'bg-red-500/10 border-red-500/40 shadow-sm'
-                        : 'bg-[var(--charcoal)] border-[var(--line)] hover:border-[var(--lime)]/50'
+                        ? 'bg-red-500/10 border-red-500/40 shadow-sm hover:border-red-500'
+                        : 'bg-[var(--charcoal)] border-[var(--line)] hover:border-[var(--lime)]/50 hover:bg-[var(--card2)]'
                     }`}
+                    title="Clique para abrir a agenda completa"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <button
-                        onClick={() => handleToggleAptDone(apt)}
-                        className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors cursor-pointer shrink-0 ${
-                          isConcluido
-                            ? 'bg-[var(--lime)] border-[var(--lime)] text-black'
-                            : isOverdue
-                            ? 'border-red-500/60 text-red-400 hover:bg-red-500/20'
-                            : 'border-[var(--line)] hover:border-[var(--lime)]'
-                        }`}
-                        title={isConcluido ? 'Marcar como pendente' : 'Concluir compromisso'}
-                      >
-                        {isConcluido && <Check size={13} strokeWidth={3} />}
-                      </button>
-
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className={`text-xs font-mono font-bold ${isOverdue ? 'text-red-400' : 'text-[var(--gray2)]'}`}>
                             {apt.time}
                           </span>
-                          <span className={`text-xs font-bold truncate ${isConcluido ? 'line-through text-[var(--gray2)]' : 'text-[var(--white)]'}`}>
+                          <span className={`text-xs font-bold truncate group-hover:text-[var(--lime)] transition-colors ${isConcluido ? 'line-through text-[var(--gray2)]' : 'text-[var(--white)]'}`}>
                             {apt.title}
                           </span>
                         </div>

@@ -260,6 +260,9 @@ export interface Appointment {
   deal_title?: string
   contact_name?: string
   company_name?: string
+  user_id?: string
+  user_name?: string
+  assigned_to?: string
   title: string
   date: string
   time: string
