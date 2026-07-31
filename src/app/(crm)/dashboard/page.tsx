@@ -1268,9 +1268,9 @@ export default function DashboardPage() {
       </div>
 
       {/* ========================================================
-          2. LINHA DE 6 KPI CARDS (MARCA D'ÁGUA 3D GRANDE NO TOPO DIREITO)
+          2. LINHA DE 6 KPI CARDS (MARCA D'ÁGUA 3D INTEIRA NO TOPO DIREITO)
          ======================================================== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 shrink-0">
         
         {/* CARD 1: TOTAL FATURADO / PEDIDOS FATURADOS */}
         <div 
@@ -1301,21 +1301,21 @@ export default function DashboardPage() {
             ]
             openDrillDown('PEDIDOS EMITIDOS / FATURADO', 'Lista de todas as vendas e pedidos faturados no período', items, '#10b981')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(16,185,129,0.25)] hover:border-emerald-500/50 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(16,185,129,0.25)] hover:border-emerald-500/50 transition-all duration-200 group select-none min-h-[110px]"
         >
           {/* FAIXA LATERAL ESQUERDA NEON */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#10b981] rounded-l-2xl z-20 shadow-[0_0_10px_#10b981]" />
 
-          {/* MARCA D'ÁGUA 3D GRANDE NO CANTO SUPERIOR DIREITO */}
-          <Trophy size={56} className="absolute -right-2 -top-2 text-[#10b981] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300 z-0" />
+          {/* MARCA D'ÁGUA 3D INTEIRA NO CANTO SUPERIOR DIREITO */}
+          <Trophy size={40} className="absolute right-3 top-3 text-[#10b981] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
           <div className="flex items-start justify-between gap-2 z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[130px]">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[120px]">
               PEDIDO EMITIDO / FATURADO
             </span>
           </div>
 
-          <div className="my-3 z-10">
+          <div className="my-2.5 z-10">
             <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-[#10b981] transition-colors">
               {formatCompactCurrency(kpis.totalFaturadoR$)}
             </div>
@@ -1342,21 +1342,21 @@ export default function DashboardPage() {
             }))
             openDrillDown('EM NEGOCIAÇÃO / PIPELINE', 'Oportunidades ativas em andamento nas etapas do funil', items, '#f59e0b')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(245,158,11,0.25)] hover:border-amber-500/50 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(245,158,11,0.25)] hover:border-amber-500/50 transition-all duration-200 group select-none min-h-[110px]"
         >
           {/* FAIXA LATERAL ESQUERDA NEON */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#f59e0b] rounded-l-2xl z-20 shadow-[0_0_10px_#f59e0b]" />
 
-          {/* MARCA D'ÁGUA 3D GRANDE NO CANTO SUPERIOR DIREITO */}
-          <Briefcase size={56} className="absolute -right-2 -top-2 text-[#f59e0b] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300 z-0" />
+          {/* MARCA D'ÁGUA 3D INTEIRA NO CANTO SUPERIOR DIREITO */}
+          <Briefcase size={40} className="absolute right-3 top-3 text-[#f59e0b] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
           <div className="flex items-start justify-between gap-2 z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[130px]">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[120px]">
               EM NEGOCIAÇÃO
             </span>
           </div>
 
-          <div className="my-3 z-10">
+          <div className="my-2.5 z-10">
             <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-amber-400 transition-colors">
               {formatCompactCurrency(kpis.openR$)}
             </div>
@@ -1383,21 +1383,21 @@ export default function DashboardPage() {
             }))
             openDrillDown('OPORTUNIDADES APROVADAS', 'Negócios em fase de briefing, orçamento e aprovação final', items, '#06b6d4')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(6,182,212,0.25)] hover:border-cyan-500/50 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(6,182,212,0.25)] hover:border-cyan-500/50 transition-all duration-200 group select-none min-h-[110px]"
         >
           {/* FAIXA LATERAL ESQUERDA NEON */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#06b6d4] rounded-l-2xl z-20 shadow-[0_0_10px_#06b6d4]" />
 
-          {/* MARCA D'ÁGUA 3D GRANDE NO CANTO SUPERIOR DIREITO */}
-          <CheckCircle2 size={56} className="absolute -right-2 -top-2 text-[#06b6d4] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300 z-0" />
+          {/* MARCA D'ÁGUA 3D INTEIRA NO CANTO SUPERIOR DIREITO */}
+          <CheckCircle2 size={40} className="absolute right-3 top-3 text-[#06b6d4] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
           <div className="flex items-start justify-between gap-2 z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[130px]">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[120px]">
               APROVAÇÃO / BRIEFING
             </span>
           </div>
 
-          <div className="my-3 z-10">
+          <div className="my-2.5 z-10">
             <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-cyan-400 transition-colors">
               {formatCompactCurrency(kpis.approvedR$)}
             </div>
@@ -1425,21 +1425,21 @@ export default function DashboardPage() {
             }))
             openDrillDown('NEGÓCIOS PERDIDOS', 'Histórico de negociações não concluídas no período', items, '#e2483d')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(239,68,68,0.25)] hover:border-red-500/50 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(239,68,68,0.25)] hover:border-red-500/50 transition-all duration-200 group select-none min-h-[110px]"
         >
           {/* FAIXA LATERAL ESQUERDA NEON */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#ef4444] rounded-l-2xl z-20 shadow-[0_0_10px_#ef4444]" />
 
-          {/* MARCA D'ÁGUA 3D GRANDE NO CANTO SUPERIOR DIREITO */}
-          <XCircle size={56} className="absolute -right-2 -top-2 text-[#ef4444] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300 z-0" />
+          {/* MARCA D'ÁGUA 3D INTEIRA NO CANTO SUPERIOR DIREITO */}
+          <XCircle size={40} className="absolute right-3 top-3 text-[#ef4444] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
           <div className="flex items-start justify-between gap-2 z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[130px]">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[120px]">
               NEGÓCIOS PERDIDOS
             </span>
           </div>
 
-          <div className="my-3 z-10">
+          <div className="my-2.5 z-10">
             <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-red-400 transition-colors">
               {formatCompactCurrency(kpis.lostR$)}
             </div>
@@ -1469,21 +1469,21 @@ export default function DashboardPage() {
             ]
             openDrillDown('ANÁLISE DE TICKET MÉDIO', 'Distribuição dos valores por pedido fechado na carteira', items, '#8b5cf6')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(168,85,247,0.25)] hover:border-purple-500/50 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(168,85,247,0.25)] hover:border-purple-500/50 transition-all duration-200 group select-none min-h-[110px]"
         >
           {/* FAIXA LATERAL ESQUERDA NEON */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#8b5cf6] rounded-l-2xl z-20 shadow-[0_0_10px_#8b5cf6]" />
 
-          {/* MARCA D'ÁGUA 3D GRANDE NO CANTO SUPERIOR DIREITO */}
-          <DollarSign size={56} className="absolute -right-2 -top-2 text-[#8b5cf6] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300 z-0" />
+          {/* MARCA D'ÁGUA 3D INTEIRA NO CANTO SUPERIOR DIREITO */}
+          <DollarSign size={40} className="absolute right-3 top-3 text-[#8b5cf6] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
           <div className="flex items-start justify-between gap-2 z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[130px]">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[120px]">
               TICKET MÉDIO
             </span>
           </div>
 
-          <div className="my-3 z-10">
+          <div className="my-2.5 z-10">
             <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-purple-400 transition-colors">
               {formatCurrency(kpis.ticketMedio)}
             </div>
@@ -1510,21 +1510,21 @@ export default function DashboardPage() {
             }))
             openDrillDown('CICLO MÉDIO DE FECHAMENTO', 'Tempo médio em dias entre a criação da oportunidade e o aceite', items, '#f97316')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(249,115,22,0.25)] hover:border-orange-500/50 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(249,115,22,0.25)] hover:border-orange-500/50 transition-all duration-200 group select-none min-h-[110px]"
         >
           {/* FAIXA LATERAL ESQUERDA NEON */}
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#f97316] rounded-l-2xl z-20 shadow-[0_0_10px_#f97316]" />
 
-          {/* MARCA D'ÁGUA 3D GRANDE NO CANTO SUPERIOR DIREITO */}
-          <Clock size={56} className="absolute -right-2 -top-2 text-[#f97316] opacity-15 pointer-events-none group-hover:scale-110 group-hover:opacity-25 transition-all duration-300 z-0" />
+          {/* MARCA D'ÁGUA 3D INTEIRA NO CANTO SUPERIOR DIREITO */}
+          <Clock size={40} className="absolute right-3 top-3 text-[#f97316] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
           <div className="flex items-start justify-between gap-2 z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[130px]">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[120px]">
               CICLO MÉDIO
             </span>
           </div>
 
-          <div className="my-3 z-10">
+          <div className="my-2.5 z-10">
             <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-orange-400 transition-colors">
               {kpis.avgCycleDays} <span className="text-sm font-normal text-[var(--gray2)]">dias</span>
             </div>
@@ -1540,7 +1540,7 @@ export default function DashboardPage() {
       {/* ========================================================
           3. PAINEL DE RESULTADO VS META DO MÊS (FULL-WIDTH 100%)
          ======================================================== */}
-      <div className="card bg-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl flex flex-col gap-5 shadow-xl relative overflow-hidden w-full">
+      <div className="card bg-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl flex flex-col gap-5 shadow-xl relative w-full shrink-0">
         
         {/* Header com Título & Indicador de Status Neon */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--line)] pb-4">
