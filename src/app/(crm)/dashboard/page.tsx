@@ -583,14 +583,22 @@ export default function DashboardPage() {
 
       const marker = L_Global.marker(finalLatLng, { icon: customIcon }).addTo(map)
 
-      const contactObj = contacts.find(c => c.id === (deal as any).contact_id || c.company === (deal as any).contact?.company || c.name === deal.title)
-      const cnpjStr = contactObj?.cnpj || (deal as any).contact?.cnpj || ''
+      const dealCnpj = ((deal as any).cnpj || (deal as any).contact?.cnpj || '').replace(/\D/g, '')
+      const contactObj = (deal as any).contact_id
+        ? contacts.find(c => c.id === (deal as any).contact_id)
+        : (dealCnpj
+          ? contacts.find(c => (c.cnpj || '').replace(/\D/g, '') === dealCnpj)
+          : contacts.find(c => (c.company || c.name || '').trim().toLowerCase() === (deal.title || '').trim().toLowerCase())
+        )
+
+      const compName = deal.title || contactObj?.company || contactObj?.name || 'Cliente'
+      const cnpjStr = (deal as any).cnpj || contactObj?.cnpj || (deal as any).contact?.cnpj || ''
       const phoneStr = contactObj?.phone || (deal as any).contact?.phone || ''
       const cityStr = deal.city || contactObj?.city || 'Novo Hamburgo'
-      const stateStr = (deal as any).state || contactObj?.state || 'RS'
-      const compName = deal.title || contactObj?.company || contactObj?.name || 'Cliente'
-      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${compName} ${cityStr}`)}`
-      const waUrl = phoneStr ? whatsappLink(phoneStr, `Olá, tudo bem?`) : 'https://wa.me/5551999999999'
+      const stateStr = deal.uf || (deal as any).state || contactObj?.state || 'RS'
+      const addressStr = (deal as any).address || contactObj?.address || ''
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([compName, addressStr, cityStr, stateStr, cnpjStr].filter(Boolean).join(', '))}`
+      const waUrl = phoneStr ? whatsappLink(phoneStr, `Olá ${deal.contactName || compName}, tudo bem?`) : 'https://wa.me/5551999999999'
 
       // Tooltip on Hover (Exibe ao passar o mouse)
       marker.bindTooltip(`
@@ -884,45 +892,80 @@ export default function DashboardPage() {
   // Helper to resolve city coordinates for Leaflet map pins
   const getCityCoords = (cityStr?: string): [number, number] | undefined => {
     if (!cityStr) return undefined
-    const clean = cityStr.trim().toLowerCase()
+    const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+    const clean = norm(cityStr)
     const coordsMap: Record<string, [number, number]> = {
       'novo hamburgo': [-29.6842, -51.1303],
-      'dois irmãos': [-29.5800, -51.0833],
       'dois irmaos': [-29.5800, -51.0833],
       'porto alegre': [-30.0346, -51.2177],
-      'gravataí': [-29.9419, -50.9925],
       'gravatai': [-29.9419, -50.9925],
       'canoas': [-29.9189, -51.1781],
       'sapucaia do sul': [-29.8272, -51.1444],
-      'são leopoldo': [-29.7606, -51.1472],
       'sao leopoldo': [-29.7606, -51.1472],
-      'estância velha': [-29.6508, -51.1783],
       'estancia velha': [-29.6508, -51.1783],
       'campo bom': [-29.6781, -51.0558],
       'ivoti': [-29.5939, -51.1606],
       'canela': [-29.3658, -50.8092],
       'gramado': [-29.3787, -50.8739],
       'caxias do sul': [-29.1681, -51.1794],
-      'bento gonçalves': [-29.1706, -51.5186],
+      'bento goncalves': [-29.1706, -51.5186],
       'sapiranga': [-29.6381, -51.0069],
       'nova hartz': [-29.5819, -50.9031],
       'igrejinha': [-29.5742, -50.7936],
-      'três coroas': [-29.5175, -50.7778],
       'tres coroas': [-29.5175, -50.7778],
-      'parobé': [-29.6289, -50.8344],
       'parobe': [-29.6289, -50.8344],
       'taquara': [-29.6517, -50.7817],
+      'sao jose': [-27.6136, -48.6366],
+      'tubarao': [-28.4736, -49.0069],
+      'santa rita do sapucai': [-22.2519, -45.7042],
+      'balneario camboriu': [-26.9926, -48.6349],
+      'balneario gaivota': [-29.1561, -49.5786],
+      'blumenau': [-26.9194, -49.0661],
+      'florianopolis': [-27.5954, -48.5480],
+      'joinville': [-26.3044, -48.8464],
+      'chapeco': [-27.1004, -52.6152],
+      'criciuma': [-28.6775, -49.3703],
+      'itajai': [-26.9078, -48.6619],
+      'palhoca': [-27.6453, -48.6683],
+      'curitiba': [-25.4284, -49.2733],
+      'londrina': [-23.3045, -51.1696],
+      'maringa': [-23.4210, -51.9331],
+      'ponta grossa': [-25.0950, -50.1619],
+      'cascavel': [-24.9558, -53.4552],
+      'foz do iguacu': [-25.5163, -54.5854],
+      'toledo': [-24.7244, -53.7431],
+      'osasco': [-23.5329, -46.7920],
+      'sao paulo': [-23.5505, -46.6333],
+      'campinas': [-22.9099, -47.0626],
+      'guarulhos': [-23.4542, -46.5337],
+      'sao bernardo do campo': [-23.6944, -46.5654],
+      'santo andre': [-23.6639, -46.5383],
+      'sorocaba': [-23.5015, -47.4526],
+      'ribeirao preto': [-21.1704, -47.8103],
+      'sao jose dos campos': [-23.1896, -45.8841],
+      'rio de janeiro': [-22.9068, -43.1729],
+      'belo horizonte': [-19.9167, -43.9345],
+      'brasilia': [-15.7975, -47.8919],
+      'goiania': [-16.6869, -49.2648],
+      'salvador': [-12.9777, -38.5016],
+      'itabuna': [-14.7878, -39.2783],
+      'vitoria da conquista': [-14.8661, -40.8394],
+      'manaus': [-3.1190, -60.0217],
+      'rio branco': [-9.9749, -67.8100]
     }
     return coordsMap[clean]
   }
 
   // Convert pipeline deals to dashboard deal format, matching with real contacts to get city
   const mappedDeals: DealMock[] = useMemo(() => {
-    const contactsMapByName = new Map<string, any>()
     const contactsMapById = new Map<string, any>()
+    const contactsMapByCnpj = new Map<string, any>()
+    const contactsMapByName = new Map<string, any>()
 
     contacts.forEach(c => {
       if (c.id) contactsMapById.set(c.id, c)
+      const cleanCnpj = (c.cnpj || '').replace(/\D/g, '')
+      if (cleanCnpj) contactsMapByCnpj.set(cleanCnpj, c)
       if (c.company) contactsMapByName.set(c.company.toLowerCase().trim(), c)
       if (c.name) contactsMapByName.set(c.name.toLowerCase().trim(), c)
     })
@@ -930,7 +973,11 @@ export default function DashboardPage() {
     return pipelineDeals.map(d => {
       const val = (d.final_value && d.final_value > 0) ? d.final_value : (d.estimated_value || 0)
       
+      const dealCnpj = (d.contact?.cnpj || (d as any).cnpj || (d as any).contact_cnpj || '').replace(/\D/g, '')
+
+      // PRIORIDADE MÁXIMA: Busca por ID de Contato e CNPJ exato para diferenciar filiais
       const matchedContact = (d.contact_id && contactsMapById.get(d.contact_id)) ||
+                             (dealCnpj && contactsMapByCnpj.get(dealCnpj)) ||
                              (d.contact?.company && contactsMapByName.get(d.contact.company.toLowerCase().trim())) ||
                              (d.contact?.name && contactsMapByName.get(d.contact.name.toLowerCase().trim())) ||
                              (d.title && contactsMapByName.get(d.title.toLowerCase().trim()))
@@ -953,6 +1000,10 @@ export default function DashboardPage() {
         phone: matchedContact?.phone || d.contact?.phone || '',
         city: city,
         uf: uf,
+        cnpj: matchedContact?.cnpj || d.contact?.cnpj || '',
+        address: matchedContact?.address || d.contact?.address || '',
+        bairro: matchedContact?.bairro || d.contact?.bairro || '',
+        contact_id: matchedContact?.id || d.contact_id,
         latLng: getCityCoords(city)
       }
     })

@@ -3620,7 +3620,7 @@ export default function ContactsPage() {
                 <div className="border-t border-[var(--line)] pt-2 flex items-center justify-around gap-1.5">
                   {/* Google Maps Navigation */}
                   <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${contact.company || contact.name} ${contact.city || ''}`)}`}
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([contact.company || contact.name, contact.address, contact.bairro, contact.city, contact.state, contact.cnpj].filter(Boolean).join(', '))}`}
                     target="_blank"
                     rel="noreferrer"
                     onClick={(e) => e.stopPropagation()}
