@@ -18,7 +18,8 @@ import {
   Search,
   X,
   ExternalLink,
-  Users
+  Users,
+  Loader2
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -320,13 +321,19 @@ export default function DiarioDeBordoPage() {
     let visitsGoalSum = 0
 
     if (activeFilter === 'all') {
-      Object.keys(goalsMap).forEach(key => {
-        if (key.startsWith(`${yearStr}_${monthStr}_`) || key.startsWith(`EQUIPE_${yearStr}_${monthStr}`)) {
-          const g = goalsMap[key]
-          salesGoalSum += Number(g?.salesGoal || 0)
-          visitsGoalSum += Number(g?.visitsGoal || 0)
-        }
-      })
+      const equipeKey = `EQUIPE_${yearStr}_${monthStr}`
+      if (goalsMap[equipeKey] && Number(goalsMap[equipeKey].salesGoal) > 0) {
+        salesGoalSum = Number(goalsMap[equipeKey].salesGoal)
+        visitsGoalSum = Number(goalsMap[equipeKey].visitsGoal)
+      } else {
+        Object.keys(goalsMap).forEach(key => {
+          if (key.startsWith(`${yearStr}_${monthStr}_`) && !key.startsWith('EQUIPE_')) {
+            const g = goalsMap[key]
+            salesGoalSum += Number(g?.salesGoal || 0)
+            visitsGoalSum += Number(g?.visitsGoal || 0)
+          }
+        })
+      }
       if (salesGoalSum === 0) salesGoalSum = 150000
       if (visitsGoalSum === 0) visitsGoalSum = 40
     } else {
@@ -489,79 +496,114 @@ export default function DiarioDeBordoPage() {
       {/* ========================================================
           2. HERO RESULTADO X META DO MÊS (ESTICADA 100% LARGURA)
          ======================================================== */}
-      <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl flex flex-col justify-between gap-4 shadow-lg hover:border-[var(--lime)]/30 transition-all">
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-lime-500/10 border border-lime-500/20 flex items-center justify-center text-[var(--lime)] shrink-0">
-              <Target size={20} />
+      {loading ? (
+        <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl flex flex-col justify-between gap-4 shadow-lg animate-pulse">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-lime-500/10 border border-lime-500/20 flex items-center justify-center text-[var(--lime)] shrink-0">
+                <Loader2 size={20} className="animate-spin text-[var(--lime)]" />
+              </div>
+              <div className="space-y-1.5">
+                <div className="h-4 w-48 bg-white/10 rounded-md" />
+                <div className="h-3 w-64 bg-white/5 rounded-md" />
+              </div>
             </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-display font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2.5">
-                <span>Resultado x Meta do Mês</span>
-                <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
-                  pacingMetrics.isPacingAhead 
-                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' 
-                    : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-                }`}>
-                  {pacingMetrics.isPacingAhead ? '▲ No Pacing' : '▼ Ritmo Abaixo do Pacing'}
+            <div className="space-y-1 text-right">
+              <div className="h-3 w-16 bg-white/10 rounded-md ml-auto" />
+              <div className="h-7 w-20 bg-lime-500/20 rounded-md ml-auto" />
+            </div>
+          </div>
+          <div className="space-y-2.5 my-1">
+            <div className="flex justify-between items-center">
+              <div className="h-6 w-44 bg-white/10 rounded-md" />
+              <div className="h-4 w-36 bg-white/10 rounded-md" />
+            </div>
+            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-3 border-t border-[var(--line)]">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)] space-y-2">
+                <div className="h-2.5 w-24 bg-white/10 rounded" />
+                <div className="h-4 w-28 bg-white/20 rounded font-bold" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl flex flex-col justify-between gap-4 shadow-lg hover:border-[var(--lime)]/30 transition-all">
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-lime-500/10 border border-lime-500/20 flex items-center justify-center text-[var(--lime)] shrink-0">
+                <Target size={20} />
+              </div>
+              <div>
+                <h2 className="text-sm sm:text-base font-display font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2.5">
+                  <span>Resultado x Meta do Mês</span>
+                  <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                    pacingMetrics.isPacingAhead 
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' 
+                      : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                  }`}>
+                    {pacingMetrics.isPacingAhead ? '▲ No Pacing' : '▼ Ritmo Abaixo do Pacing'}
+                  </span>
+                </h2>
+                <span className="text-[11px] font-mono text-[var(--gray2)]">
+                  Dia {bizStats.todayDate} de {bizStats.totalDays} · {bizStats.elapsedBusinessDays} de {bizStats.totalBusinessDays} dias úteis transcorridos
                 </span>
-              </h2>
-              <span className="text-[11px] font-mono text-[var(--gray2)]">
-                Dia {bizStats.todayDate} de {bizStats.totalDays} · {bizStats.elapsedBusinessDays} de {bizStats.totalBusinessDays} dias úteis transcorridos
+              </div>
+            </div>
+
+            <div className="text-right">
+              <span className="text-[10px] font-mono uppercase text-[var(--gray2)] font-bold block">Progresso</span>
+              <span className="text-2xl sm:text-3xl font-mono font-black text-[var(--lime)]">{pacingMetrics.salesProgressPct}%</span>
+            </div>
+          </div>
+
+          {/* Main Progress Value */}
+          <div className="flex flex-col gap-2 my-1">
+            <div className="flex items-baseline justify-between">
+              <span className="text-sm sm:text-base font-mono text-[var(--gray2)]">
+                Realizado: <strong className="text-2xl sm:text-3xl font-black text-[var(--white)] ml-1">{formatCurrency(pacingMetrics.totalSalesAchieved)}</strong>
+              </span>
+              <span className="text-xs sm:text-sm font-mono text-[var(--gray2)]">
+                Meta: <strong className="text-[var(--white)] font-bold">{formatCurrency(pacingMetrics.salesTarget)}</strong>
               </span>
             </div>
+
+            <div className="w-full h-3 bg-[var(--charcoal)] border border-[var(--line)] rounded-full overflow-hidden p-0.5">
+              <div 
+                className="h-full bg-[var(--lime)] rounded-full transition-all duration-500"
+                style={{ width: `${pacingMetrics.salesProgressPct}%` }}
+              />
+            </div>
           </div>
 
-          <div className="text-right">
-            <span className="text-[10px] font-mono uppercase text-[var(--gray2)] font-bold block">Progresso</span>
-            <span className="text-2xl sm:text-3xl font-mono font-black text-[var(--lime)]">{pacingMetrics.salesProgressPct}%</span>
+          {/* Footer Metrics Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-3 border-t border-[var(--line)] text-xs font-mono">
+            <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
+              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Esperado Hoje (Pacing)</span>
+              <span className="font-bold text-sm text-[var(--white)]">{formatCurrency(pacingMetrics.expectedSalesPacing)}</span>
+            </div>
+
+            <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
+              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Falta para 100%</span>
+              <span className="font-bold text-sm text-[var(--white)]">{formatCurrency(pacingMetrics.remainingSalesR$)}</span>
+            </div>
+
+            <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
+              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Meta Diária Necessária</span>
+              <span className="font-bold text-sm text-[var(--white)]">{formatCurrency(pacingMetrics.dailyPaceRequired)} / dia</span>
+            </div>
+
+            <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
+              <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Visitas no Mês</span>
+              <span className="font-bold text-sm text-[var(--white)]">{pacingMetrics.currentMonthVisits} / {pacingMetrics.visitsTarget} realizados</span>
+            </div>
           </div>
+
         </div>
-
-        {/* Main Progress Value */}
-        <div className="flex flex-col gap-2 my-1">
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm sm:text-base font-mono text-[var(--gray2)]">
-              Realizado: <strong className="text-2xl sm:text-3xl font-black text-[var(--white)] ml-1">{formatCurrency(pacingMetrics.totalSalesAchieved)}</strong>
-            </span>
-            <span className="text-xs sm:text-sm font-mono text-[var(--gray2)]">
-              Meta: <strong className="text-[var(--white)] font-bold">{formatCurrency(pacingMetrics.salesTarget)}</strong>
-            </span>
-          </div>
-
-          <div className="w-full h-3 bg-[var(--charcoal)] border border-[var(--line)] rounded-full overflow-hidden p-0.5">
-            <div 
-              className="h-full bg-[var(--lime)] rounded-full transition-all duration-500"
-              style={{ width: `${pacingMetrics.salesProgressPct}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Footer Metrics Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-3 border-t border-[var(--line)] text-xs font-mono">
-          <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
-            <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Esperado Hoje (Pacing)</span>
-            <span className="font-bold text-sm text-[var(--white)]">{formatCurrency(pacingMetrics.expectedSalesPacing)}</span>
-          </div>
-
-          <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
-            <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Falta para 100%</span>
-            <span className="font-bold text-sm text-[var(--white)]">{formatCurrency(pacingMetrics.remainingSalesR$)}</span>
-          </div>
-
-          <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
-            <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Meta Diária Necessária</span>
-            <span className="font-bold text-sm text-[var(--white)]">{formatCurrency(pacingMetrics.dailyPaceRequired)} / dia</span>
-          </div>
-
-          <div className="bg-[var(--charcoal)] p-3 rounded-xl border border-[var(--line)]">
-            <span className="text-[10px] text-[var(--gray2)] uppercase font-bold block">Visitas no Mês</span>
-            <span className="font-bold text-sm text-[var(--white)]">{pacingMetrics.currentMonthVisits} / {pacingMetrics.visitsTarget} realizados</span>
-          </div>
-        </div>
-
-      </div>
+      )}
 
       {/* ========================================================
           3. GRADE INFERIOR LIMPA (2 COLUNAS)

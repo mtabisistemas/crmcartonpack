@@ -92,12 +92,12 @@ export default function LoginPage() {
           phone: '51997587025',
           status: 'ativo'
         }
-        localStorage.setItem('crm_current_user', JSON.stringify(masterSession))
-        document.cookie = `cp_crm_session=${masterSession.id}; path=/; max-age=86400`
-        try { dbService.usuarios.save(masterSession) } catch (e) {}
-        
-        router.push('/dashboard')
-        router.refresh()
+      localStorage.setItem('crm_current_user', JSON.stringify(masterSession))
+      document.cookie = `cp_crm_session=${masterSession.id}; path=/; max-age=86400`
+      try { dbService.usuarios.save(masterSession) } catch (e) {}
+      
+      router.push('/diario-de-bordo')
+      router.refresh()
         return
       } else {
         setError('Senha de Administrador Master incorreta.')
@@ -179,7 +179,7 @@ export default function LoginPage() {
 
       // 4. Direct access granted! Save active session
       localStorage.setItem('crm_current_user', JSON.stringify(sessionData))
-      router.push('/dashboard')
+      router.push('/diario-de-bordo')
       router.refresh()
     } catch (err) {
       setError(loginType === 'representante' ? 'Nome de usuário ou senha incorretos.' : 'E-mail corporativo ou senha incorretos.')
