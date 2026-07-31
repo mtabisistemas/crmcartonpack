@@ -95,8 +95,20 @@ export async function GET() {
       }
       const assignedToName = (isUUID(d.assigned_to) ? null : d.assigned_to) || c?.representative || ''
 
+      let prob = typeof d.probability === 'number' ? d.probability : 50
+      let cleanNotes = d.lost_notes || ''
+      if (d.lost_notes && d.lost_notes.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(d.lost_notes)
+          if (typeof parsed.prob === 'number') prob = parsed.prob
+          if (typeof parsed.notes === 'string') cleanNotes = parsed.notes
+        } catch (e) {}
+      }
+
       return {
         ...d,
+        probability: prob,
+        lost_notes: cleanNotes,
         stage: mapDBStageToFrontend(d.stage),
         assigned_to: assignedToName,
         contact: contactObj
@@ -178,6 +190,11 @@ export async function POST(req: Request) {
 
       const dbStage = mapFrontendStageToDB(d.stage)
 
+      const serializedNotes = JSON.stringify({
+        prob: typeof d.probability === 'number' ? d.probability : 50,
+        notes: d.lost_notes || ''
+      })
+
       payloads.push({
         id: dealId,
         tenant_id: DEFAULT_TENANT_ID,
@@ -188,7 +205,7 @@ export async function POST(req: Request) {
         estimated_value: parseFloat(d.estimated_value) || 0,
         final_value: parseFloat(d.final_value) || 0,
         lost_reason: d.lost_reason || '',
-        lost_notes: d.lost_notes || '',
+        lost_notes: serializedNotes,
         position: parseInt(d.position) || 0,
         updated_at: new Date().toISOString()
       })
@@ -207,8 +224,21 @@ export async function POST(req: Request) {
     const returnedDeals = (data || []).map(d => {
       const c = d.contacts as any
       const assignedToName = (isUUID(d.assigned_to) ? null : d.assigned_to) || c?.representative || ''
+
+      let prob = 50
+      let cleanNotes = d.lost_notes || ''
+      if (d.lost_notes && d.lost_notes.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(d.lost_notes)
+          if (typeof parsed.prob === 'number') prob = parsed.prob
+          if (typeof parsed.notes === 'string') cleanNotes = parsed.notes
+        } catch (e) {}
+      }
+
       return {
         ...d,
+        probability: prob,
+        lost_notes: cleanNotes,
         stage: mapDBStageToFrontend(d.stage),
         assigned_to: assignedToName,
         contact: c ? {

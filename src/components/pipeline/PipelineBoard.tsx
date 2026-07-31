@@ -1517,6 +1517,8 @@ export function PipelineBoard() {
         deal={selectedDeal}
         onClose={() => setSelectedDeal(null)}
         onUpdateDeal={handleUpdateDeal}
+        onDeleteDeal={handleDeleteDeal}
+        onOpenCalendarModal={() => setShowCalendarModal(true)}
       />
 
       {/* Confirm Move Modal */}

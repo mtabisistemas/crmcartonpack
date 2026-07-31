@@ -41,9 +41,10 @@ interface DealDrawerProps {
   onClose: () => void
   onUpdateDeal: (updatedDeal: Deal) => void
   onDeleteDeal?: (dealId: string) => void
+  onOpenCalendarModal?: () => void
 }
 
-export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal }: DealDrawerProps) {
+export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCalendarModal }: DealDrawerProps) {
   const [activeTab, setActiveTab] = useState<'geral' | 'historico' | 'agenda' | 'orcamento'>('geral')
   const [isOpen, setIsOpen] = useState(false)
   const [isSavedSuccess, setIsSavedSuccess] = useState(false)
@@ -1219,11 +1220,15 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal }: DealDr
                     {appointments.map(apt => (
                       <div 
                         key={apt.id} 
-                        className={`p-3.5 rounded-xl border flex flex-col gap-2 transition-all ${
+                        onClick={() => {
+                          onOpenCalendarModal?.()
+                        }}
+                        className={`p-3.5 rounded-xl border flex flex-col gap-2 transition-all cursor-pointer hover:scale-[1.01] ${
                           apt.status === 'cancelado' 
                             ? 'bg-red-950/10 border-red-500/20 opacity-60' 
-                            : 'bg-[var(--card)] border-[var(--line)] hover:border-[var(--lime)]/40'
+                            : 'bg-[var(--card)] border-[var(--line)] hover:border-[var(--lime)]'
                         }`}
+                        title="Clique para abrir este compromisso na agenda"
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-2">
@@ -1236,25 +1241,6 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal }: DealDr
                               {apt.type}
                             </span>
                             <h4 className="text-xs font-bold text-[var(--white)]">{apt.title}</h4>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              title="Editar compromisso"
-                              onClick={() => handleStartEditApt(apt)}
-                              className="p-1 rounded text-gray-400 hover:text-white hover:bg-[var(--line)] cursor-pointer"
-                            >
-                              <Edit2 size={13} />
-                            </button>
-                            <button
-                              type="button"
-                              title="Cancelar agendamento"
-                              onClick={() => handleCancelApt(apt.id)}
-                              className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer"
-                            >
-                              <Trash2 size={13} />
-                            </button>
                           </div>
                         </div>
 

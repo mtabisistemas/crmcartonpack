@@ -1013,11 +1013,7 @@ export function PipelineCalendarModal({ isOpen, onClose, onCompleteAndRegisterAc
                         </span>
                       )
                     }
-                    return (
-                      <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                        Pendente
-                      </span>
-                    )
+                    return null
                   })()}
 
                   <h3 className="font-display text-sm font-bold text-[var(--white)]">Detalhes do Agendamento</h3>
