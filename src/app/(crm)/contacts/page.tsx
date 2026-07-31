@@ -3755,10 +3755,10 @@ export default function ContactsPage() {
                   </th>
                   <th 
                     onClick={() => handleSort('lastPurchaseDate')} 
-                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    className="py-2.5 px-3 text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
                     title="Ordenar por Data da Última Compra"
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center justify-center gap-1">
                       <span>Última Compra</span>
                       {sortField === 'lastPurchaseDate' ? (
                         sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
@@ -3767,7 +3767,7 @@ export default function ContactsPage() {
                       )}
                     </div>
                   </th>
-                  <th className="py-2.5 px-3 pr-4 text-right">Localização</th>
+                  <th className="py-2.5 px-3 pr-4 text-center">Localização</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--line)]">
@@ -3801,7 +3801,7 @@ export default function ContactsPage() {
                         <span 
                           className="font-mono text-[10px] font-black px-2 py-0.5 rounded whitespace-nowrap inline-block shrink-0"
                           style={{
-                            background: contact.curve === 'A' ? 'rgba(180,217,50,0.12)' : contact.curve === 'B' ? 'rgba(240,196,25,0.1)' : 'rgba(255,255,255,0.05)',
+                            background: contact.curve === 'A' ? 'rgba(180,217,50,0.12)' : contact.curve === 'B' ? 'rgba(240,196,25,0.1)' : 'rgba(255,255,25,0.05)',
                             color: contact.curve === 'A' ? 'var(--lime)' : contact.curve === 'B' ? 'var(--yellow)' : 'var(--gray)',
                             border: `1px solid ${contact.curve === 'A' ? 'rgba(180,217,50,0.25)' : contact.curve === 'B' ? 'rgba(240,196,25,0.2)' : 'var(--line)'}`
                           }}
@@ -3855,14 +3855,14 @@ export default function ContactsPage() {
                       </td>
 
                       {/* Ultima compra */}
-                      <td className="py-2 px-3 whitespace-nowrap">
+                      <td className="py-2 px-3 whitespace-nowrap text-center">
                         <span className="text-xs font-bold text-[var(--white)] font-mono">
                           {repInfo.daysSinceLastPurchase !== null ? `${repInfo.daysSinceLastPurchase} dias` : '-'}
                         </span>
                       </td>
 
                       {/* Localizacao — Google Maps icon */}
-                      <td className="py-2 px-3 pr-4 text-right">
+                      <td className="py-2 px-3 pr-4 text-center">
                         <button 
                           onClick={(e) => openMap(e, contact)}
                           title="Ver no Google Maps"
