@@ -1326,11 +1326,11 @@ function ContactDrawer({
                       )}
                     </div>
 
-                    <div className="grid grid-cols-5 gap-2">
-                      <div className="col-span-2 flex flex-col gap-0.5">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-0.5">
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Regime Tributário</label>
                         <select 
-                          className="input text-xs py-1 px-2.5 font-mono" 
+                          className="input text-xs py-1 px-2.5 font-bold w-full" 
                           value={taxRegime} 
                           onChange={(e) => {
                             const val = e.target.value
@@ -1338,16 +1338,15 @@ function ContactDrawer({
                             handleSaveGeneral({ taxRegime: val })
                           }}
                         >
-                          <option value="">Não informado</option>
-                          <option value="MEI">MEI</option>
+                          <option value="">-</option>
                           <option value="Simples Nacional">Simples Nacional</option>
                           <option value="Lucro Presumido">Lucro Presumido</option>
                           <option value="Lucro Real">Lucro Real</option>
-                          <option value="Lucro Presumido / Real">Lucro Presumido / Real</option>
+                          <option value="MEI">MEI</option>
                         </select>
                       </div>
 
-                      <div className="col-span-3 flex flex-col gap-0.5">
+                      <div className="flex flex-col gap-0.5">
                         <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Situação Cadastral</label>
                         <input 
                           type="text" 
@@ -1359,7 +1358,6 @@ function ContactDrawer({
                           }}
                           value={registrationStatus}
                           onChange={(e) => setRegistrationStatus(e.target.value)}
-                          
                         />
                       </div>
                     </div>
@@ -1935,7 +1933,7 @@ function NewContactModal({
   const [complement, setComplement] = useState('')
   const [bairro, setBairro] = useState('')
   const [cep, setCep] = useState('')
-  const [taxRegime, setTaxRegime] = useState<'MEI' | 'Simples Nacional' | 'Lucro Presumido' | 'Lucro Real'>('Simples Nacional')
+  const [taxRegime, setTaxRegime] = useState<string>('')
   const [specialSituation, setSpecialSituation] = useState('Nenhuma')
   const [specialSituationDate, setSpecialSituationDate] = useState('-')
   const [stateRegistration, setStateRegistration] = useState('')
@@ -2762,7 +2760,7 @@ export default function ContactsPage() {
                 bairro: item.bairro || '',
                 cep: item.cep || '',
                 sideActivities: item.side_activities ? (typeof item.side_activities === 'string' ? JSON.parse(item.side_activities) : item.side_activities) : [],
-                taxRegime: item.tax_regime || 'Simples Nacional',
+                taxRegime: item.tax_regime || '',
                 specialSituation: item.special_situation || 'Nenhuma',
                 specialSituationDate: item.special_situation_date || '-',
                 stateRegistration: item.state_registration || '',
