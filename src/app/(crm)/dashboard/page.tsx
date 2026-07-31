@@ -94,9 +94,13 @@ export default function DashboardPage() {
   const [goalsMap, setGoalsMap] = useState<Record<string, UserGoal>>({})
   const [loading, setLoading] = useState(true)
 
-  // Filters State
-  const [yearFilter, setYearFilter] = useState<string>('2026')
-  const [monthFilter, setMonthFilter] = useState<string>('all') // 'all', '01'..'12'
+  // Filters State (Default: Mês e Ano Atual)
+  const nowObj = new Date()
+  const currentYearStr = String(nowObj.getFullYear())
+  const currentMonthStr = String(nowObj.getMonth() + 1).padStart(2, '0')
+
+  const [yearFilter, setYearFilter] = useState<string>(currentYearStr)
+  const [monthFilter, setMonthFilter] = useState<string>(currentMonthStr)
   const [repFilter, setRepFilter] = useState<string>('all')
   const [curveFilter, setCurveFilter] = useState<string>('all')
 
@@ -404,13 +408,34 @@ export default function DashboardPage() {
     })
     const avgCycleDays = cycleCount > 0 ? Math.round(totalCycleDays / cycleCount) : 14
 
-    // 7. Status da Carteira
+    // 7. Status da Carteira (Cálculo Dinâmico Baseado no Histórico de Compras)
     let countAtivos = 0
     let countReativacao = 0
     let countProspeccao = 0
+    const nowTs = new Date().getTime()
 
     filteredData.contacts.forEach(c => {
-      const st = c.status || 'ativo'
+      let st = c.status
+      if (!st || st === 'ativo') {
+        const orders = c.orders && Array.isArray(c.orders) ? c.orders : []
+        const lastDateStr = c.lastPurchaseDate || (orders[0]?.date) || ''
+        if (!lastDateStr) {
+          st = 'prospeccao'
+        } else {
+          const lastDt = new Date(lastDateStr)
+          if (!isNaN(lastDt.getTime())) {
+            const diffDays = Math.floor((nowTs - lastDt.getTime()) / (1000 * 3600 * 24))
+            if (diffDays > 180) {
+              st = 'reativacao'
+            } else {
+              st = 'ativo'
+            }
+          } else {
+            st = 'prospeccao'
+          }
+        }
+      }
+
       if (st === 'prospeccao') countProspeccao++
       else if (st === 'reativacao') countReativacao++
       else countAtivos++
@@ -697,38 +722,16 @@ export default function DashboardPage() {
          ======================================================== */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden shrink-0">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[#10b981] text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5">
-              <BarChart3 size={12} />
-              Dashboard Comercial
-            </span>
-            <span className="text-xs text-[var(--gray2)] font-mono">Visão Consolidada CRM</span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-display font-black text-[var(--white)] tracking-tight flex items-center gap-2 mt-1">
-            Performance Comercial & Inteligência de Vendas
+          <h1 className="text-xl sm:text-2xl font-display font-black text-[var(--white)] tracking-tight">
+            Performance Comercial
           </h1>
         </div>
 
-        {/* Filters Controls Row */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 z-10">
+        {/* Filters Controls Row - Em linha única sem quebrar */}
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-nowrap shrink-0 overflow-x-auto z-10 py-0.5">
           
-          {/* Ano Filter */}
-          <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl text-xs font-mono">
-            <span className="text-[var(--gray2)] text-[10px] uppercase font-bold">Ano:</span>
-            <select
-              value={yearFilter}
-              onChange={(e) => setYearFilter(e.target.value)}
-              className="bg-transparent text-[var(--white)] font-bold outline-none cursor-pointer"
-            >
-              <option value="2026" className="bg-[var(--card)]">2026</option>
-              <option value="2025" className="bg-[var(--card)]">2025</option>
-              <option value="2024" className="bg-[var(--card)]">2024</option>
-              <option value="all" className="bg-[var(--card)]">Todos</option>
-            </select>
-          </div>
-
           {/* Mês Filter */}
-          <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl text-xs font-mono">
+          <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
             <span className="text-[var(--gray2)] text-[10px] uppercase font-bold">Mês:</span>
             <select
               value={monthFilter}
@@ -751,9 +754,24 @@ export default function DashboardPage() {
             </select>
           </div>
 
+          {/* Ano Filter */}
+          <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
+            <span className="text-[var(--gray2)] text-[10px] uppercase font-bold">Ano:</span>
+            <select
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+              className="bg-transparent text-[var(--white)] font-bold outline-none cursor-pointer"
+            >
+              <option value="2026" className="bg-[var(--card)]">2026</option>
+              <option value="2025" className="bg-[var(--card)]">2025</option>
+              <option value="2024" className="bg-[var(--card)]">2024</option>
+              <option value="all" className="bg-[var(--card)]">Todos</option>
+            </select>
+          </div>
+
           {/* Representante Filter (Apenas se Admin ou Gestor) */}
           {isAdminOrManager && (
-            <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl text-xs font-mono max-w-[210px]">
+            <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl text-xs font-mono max-w-[200px] shrink-0">
               <User size={13} className="text-[#10b981] shrink-0" />
               <select
                 value={repFilter}
@@ -774,7 +792,7 @@ export default function DashboardPage() {
           )}
 
           {/* Curva ABC Filter */}
-          <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl text-xs font-mono">
+          <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
             <span className="text-[var(--gray2)] text-[10px] uppercase font-bold">Curva:</span>
             <select
               value={curveFilter}
@@ -793,7 +811,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ========================================================
-          2. GRID DE CARDS KPI PRINCIPAIS (ESTILO FOTO 2)
+          2. GRID DE CARDS KPI PRINCIPAIS (ESTILO FOTO 2 - BORDA LATERAL ESQUERDA)
          ======================================================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         
@@ -826,14 +844,14 @@ export default function DashboardPage() {
             ]
             openDrillDown('PEDIDOS EMITIDOS / FATURADO', 'Lista de todas as vendas e pedidos faturados no período', items, '#10b981')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] border-t-4 border-t-[#10b981] p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-emerald-500/40 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-[#10b981] p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-emerald-500/40 transition-all duration-200 group select-none"
         >
-          <div className="flex items-center justify-between z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)]">
+          <div className="flex items-start justify-between gap-2 z-10">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               PEDIDO EMITIDO / FATURADO
             </span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[#10b981] flex items-center justify-center shrink-0">
-              <Trophy size={14} />
+            <div className="w-8 h-8 rounded-full bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981] flex items-center justify-center shrink-0 shadow-sm">
+              <Trophy size={15} />
             </div>
           </div>
 
@@ -850,9 +868,6 @@ export default function DashboardPage() {
             <span>Ver detalhamento analítico</span>
             <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
           </div>
-
-          {/* Watermark Icon */}
-          <CheckCircle2 size={70} className="absolute -right-3 -bottom-3 text-emerald-500/5 group-hover:text-emerald-500/10 transition-colors pointer-events-none" />
         </div>
 
         {/* CARD 2: EM NEGOCIAÇÃO (PIPELINE ABERTO) */}
@@ -871,14 +886,14 @@ export default function DashboardPage() {
             }))
             openDrillDown('EM NEGOCIAÇÃO / PIPELINE', 'Oportunidades ativas em andamento nas etapas do funil', items, '#f59e0b')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] border-t-4 border-t-amber-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-amber-500/40 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-amber-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-amber-500/40 transition-all duration-200 group select-none"
         >
-          <div className="flex items-center justify-between z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)]">
+          <div className="flex items-start justify-between gap-2 z-10">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               EM NEGOCIAÇÃO
             </span>
-            <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
-              <Briefcase size={14} />
+            <div className="w-8 h-8 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0 shadow-sm">
+              <Briefcase size={15} />
             </div>
           </div>
 
@@ -895,9 +910,6 @@ export default function DashboardPage() {
             <span>Ver oportunidades ativas</span>
             <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
           </div>
-
-          {/* Watermark Icon */}
-          <Layers size={70} className="absolute -right-3 -bottom-3 text-amber-500/5 group-hover:text-amber-500/10 transition-colors pointer-events-none" />
         </div>
 
         {/* CARD 3: OPORTUNIDADES APROVADAS */}
@@ -916,14 +928,14 @@ export default function DashboardPage() {
             }))
             openDrillDown('OPORTUNIDADES APROVADAS', 'Negócios em fase de briefing, orçamento e aprovação final', items, '#06b6d4')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] border-t-4 border-t-cyan-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-cyan-500/40 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-cyan-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-cyan-500/40 transition-all duration-200 group select-none"
         >
-          <div className="flex items-center justify-between z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)]">
+          <div className="flex items-start justify-between gap-2 z-10">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               APROVAÇÃO / BRIEFING
             </span>
-            <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
-              <CheckCircle2 size={14} />
+            <div className="w-8 h-8 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shrink-0 shadow-sm">
+              <CheckCircle2 size={15} />
             </div>
           </div>
 
@@ -940,9 +952,6 @@ export default function DashboardPage() {
             <span>Ver negócios em aprovação</span>
             <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
           </div>
-
-          {/* Watermark Icon */}
-          <Sparkles size={70} className="absolute -right-3 -bottom-3 text-cyan-500/5 group-hover:text-cyan-500/10 transition-colors pointer-events-none" />
         </div>
 
         {/* CARD 4: NEGÓCIOS PERDIDOS & TAXA % */}
@@ -962,14 +971,14 @@ export default function DashboardPage() {
             }))
             openDrillDown('NEGÓCIOS PERDIDOS', 'Histórico de negociações não concluídas no período', items, '#e2483d')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] border-t-4 border-t-red-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-red-500/40 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-red-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-red-500/40 transition-all duration-200 group select-none"
         >
-          <div className="flex items-center justify-between z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)]">
+          <div className="flex items-start justify-between gap-2 z-10">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               NEGÓCIOS PERDIDOS
             </span>
-            <div className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center shrink-0">
-              <XCircle size={14} />
+            <div className="w-8 h-8 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center shrink-0 shadow-sm">
+              <XCircle size={15} />
             </div>
           </div>
 
@@ -987,9 +996,6 @@ export default function DashboardPage() {
             <span>Ver motivos de perda</span>
             <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
           </div>
-
-          {/* Watermark Icon */}
-          <XCircle size={70} className="absolute -right-3 -bottom-3 text-red-500/5 group-hover:text-red-500/10 transition-colors pointer-events-none" />
         </div>
 
         {/* CARD 5: TICKET MÉDIO ACUMULADO */}
@@ -1010,14 +1016,14 @@ export default function DashboardPage() {
             ]
             openDrillDown('ANÁLISE DE TICKET MÉDIO', 'Distribuição dos valores por pedido fechado na carteira', items, '#8b5cf6')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] border-t-4 border-t-purple-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-purple-500/40 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-purple-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-purple-500/40 transition-all duration-200 group select-none"
         >
-          <div className="flex items-center justify-between z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)]">
+          <div className="flex items-start justify-between gap-2 z-10">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               TICKET MÉDIO
             </span>
-            <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
-              <DollarSign size={14} />
+            <div className="w-8 h-8 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center shrink-0 shadow-sm">
+              <DollarSign size={15} />
             </div>
           </div>
 
@@ -1034,9 +1040,6 @@ export default function DashboardPage() {
             <span>Ver composição por pedido</span>
             <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
           </div>
-
-          {/* Watermark Icon */}
-          <DollarSign size={70} className="absolute -right-3 -bottom-3 text-purple-500/5 group-hover:text-purple-500/10 transition-colors pointer-events-none" />
         </div>
 
         {/* CARD 6: CICLO MÉDIO DE VENDAS */}
@@ -1055,14 +1058,14 @@ export default function DashboardPage() {
             }))
             openDrillDown('CICLO MÉDIO DE FECHAMENTO', 'Tempo médio em dias entre a criação da oportunidade e o aceite', items, '#f97316')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] border-t-4 border-t-orange-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-orange-500/40 transition-all duration-200 group select-none"
+          className="card bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-orange-500 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-orange-500/40 transition-all duration-200 group select-none"
         >
-          <div className="flex items-center justify-between z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)]">
+          <div className="flex items-start justify-between gap-2 z-10">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
               CICLO MÉDIO
             </span>
-            <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center shrink-0">
-              <Clock size={14} />
+            <div className="w-8 h-8 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-400 flex items-center justify-center shrink-0 shadow-sm">
+              <Clock size={15} />
             </div>
           </div>
 
@@ -1079,9 +1082,6 @@ export default function DashboardPage() {
             <span>Ver tempo no pipeline</span>
             <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
           </div>
-
-          {/* Watermark Icon */}
-          <Clock size={70} className="absolute -right-3 -bottom-3 text-orange-500/5 group-hover:text-orange-500/10 transition-colors pointer-events-none" />
         </div>
 
       </div>
@@ -1097,10 +1097,12 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2">
               <Users size={16} className="text-[#10b981]" />
               <h3 className="font-display text-xs font-bold text-[var(--white)] uppercase tracking-wider">
-                Status da Carteira de Clientes ({kpis.totalContactsCount})
+                Status da Carteira de Clientes
               </h3>
             </div>
-            <span className="text-[10px] font-mono text-[var(--gray2)]">Visão Ativos vs Inativos</span>
+            <span className="text-[10px] font-mono text-[var(--gray2)] font-bold">
+              Total de Clientes: <strong className="text-white ml-1 font-black">{kpis.totalContactsCount.toLocaleString('pt-BR')}</strong>
+            </span>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
