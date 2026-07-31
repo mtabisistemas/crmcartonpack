@@ -94,6 +94,7 @@ export interface MockContact {
   lastPurchaseDate?: string
   inactivityThresholdDays?: number
   planningNotes?: string
+  orders?: any[]
   history?: Array<{ id: string; date: string; author: string; action: string; details: string }>
   created_at?: string
 }
@@ -202,7 +203,6 @@ export function getContactActivityAndRepurchaseInfo(contact: MockContact) {
   }
 
   const isAutoInactive = daysSinceLastActivity > inactivityThreshold
-  const computedStatus = isAutoInactive ? 'inativo' : (contact.status === 'prospeccao' ? 'prospeccao' : 'ativo')
 
   let daysToRepurchase = 9999
   let isOverdue = false
@@ -229,6 +229,14 @@ export function getContactActivityAndRepurchaseInfo(contact: MockContact) {
   }
 
   let daysSinceLastPurchase: number | null = null
+  let hasPurchaseHistory = false
+
+  if (contact.orders && Array.isArray(contact.orders) && contact.orders.length > 0) {
+    hasPurchaseHistory = true
+  } else if (contact.lastPurchaseDate) {
+    hasPurchaseHistory = true
+  }
+
   if (contact.lastPurchaseDate) {
     const lastDate = parseFlexibleDate(contact.lastPurchaseDate)
     if (lastDate && !isNaN(lastDate.getTime())) {
@@ -237,16 +245,29 @@ export function getContactActivityAndRepurchaseInfo(contact: MockContact) {
     }
   }
 
+  // Novas Regras de Status:
+  // - Ativo: clientes com compras realizadas nos últimos 180 dias
+  // - Reativação: clientes sem compras há mais de 180 dias
+  // - Prospecção: clientes que ainda não possuem histórico de compras
+  let computedStatus: 'prospeccao' | 'ativo' | 'reativacao'
+  if (!hasPurchaseHistory || daysSinceLastPurchase === null) {
+    computedStatus = 'prospeccao'
+  } else if (daysSinceLastPurchase <= 180) {
+    computedStatus = 'ativo'
+  } else {
+    computedStatus = 'reativacao'
+  }
+
   return {
     lastActivityDate,
     daysSinceLastActivity,
     daysSinceLastPurchase,
-    isAutoInactive,
+    hasPurchaseHistory,
     computedStatus,
-    daysToRepurchase,
-    isOverdue,
-    daysOverdue,
-    nextPurchaseDateStr
+    daysToRepurchase: 9999,
+    isOverdue: false,
+    daysOverdue: 0,
+    nextPurchaseDateStr: '-'
   }
 }
 
@@ -2702,32 +2723,27 @@ export default function ContactsPage() {
     })
   }, [contacts, isRep, currentUser?.name])
 
-  // ── Metrics Calculation (Total, Recompra Atrasada, Recompra 15 Dias, Recompra 30 Dias, Inativos) ──
+  // ── Metrics Calculation (Total, Ativos <= 180d, Reativação > 180d, Prospecção) ──
   const metrics = useMemo(() => {
     let total = 0
-    let atrasado = 0
-    let recompra15 = 0
-    let recompra30 = 0
-    let inativos = 0
+    let ativos = 0
+    let reativacao = 0
+    let prospeccao = 0
 
     scopedContacts.forEach(c => {
       total++
       const repInfo = getContactActivityAndRepurchaseInfo(c)
 
-      if (repInfo.computedStatus === 'inativo') {
-        inativos++
-      }
-
-      if (repInfo.isOverdue) {
-        atrasado++
-      } else if (repInfo.daysToRepurchase <= 15) {
-        recompra15++
-      } else if (repInfo.daysToRepurchase <= 30) {
-        recompra30++
+      if (repInfo.computedStatus === 'ativo') {
+        ativos++
+      } else if (repInfo.computedStatus === 'reativacao') {
+        reativacao++
+      } else if (repInfo.computedStatus === 'prospeccao') {
+        prospeccao++
       }
     })
 
-    return { total, atrasado, recompra15, recompra30, inativos }
+    return { total, ativos, reativacao, prospeccao }
   }, [scopedContacts])
 
   // Filtering logic — representatives only see their own clients
@@ -2757,7 +2773,7 @@ export default function ContactsPage() {
       } else if (repurchaseCategoryFilter === '30dias') {
         matchesCategory = !repInfo.isOverdue && repInfo.daysToRepurchase > 15 && repInfo.daysToRepurchase <= 30
       } else if (repurchaseCategoryFilter === 'inativo') {
-        matchesCategory = effectiveStatus === 'inativo'
+        matchesCategory = effectiveStatus === 'reativacao'
       }
 
       return matchesSearch && matchesCurve && matchesRep && matchesStatus && matchesCategory
@@ -3014,15 +3030,14 @@ export default function ContactsPage() {
       </div>
 
       {/* ── KPI METRICS SUMMARY CARDS ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
         {/* Card 1: Total de Clientes */}
         <div 
           onClick={() => {
-            setRepurchaseCategoryFilter('all')
             setSelectedStatus('all')
           }}
           className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            repurchaseCategoryFilter === 'all' && selectedStatus === 'all' 
+            selectedStatus === 'all' 
               ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
               : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
           }`}
@@ -3036,87 +3051,63 @@ export default function ContactsPage() {
           </div>
         </div>
 
-        {/* Card 2: Recompra Atrasada */}
+        {/* Card 2: Clientes Ativos (<= 180d) */}
         <div 
           onClick={() => {
-            setRepurchaseCategoryFilter('atrasado')
-            setSelectedStatus('all')
+            setSelectedStatus('ativo')
           }}
           className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            repurchaseCategoryFilter === 'atrasado' 
+            selectedStatus === 'ativo' 
               ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
               : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
           }`}
         >
           <div>
-            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Recompra Atrasada</span>
-            <span className="text-xl font-black text-red-500 font-display mt-0.5 block">{metrics.atrasado}</span>
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Clientes Ativos</span>
+            <span className="text-xl font-black text-[var(--lime)] font-display mt-0.5 block">{metrics.ativos}</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center shrink-0">
-            <AlertTriangle size={15} />
+          <div className="w-8 h-8 rounded-lg bg-[var(--lime)]/10 border border-[var(--lime)]/20 text-[var(--lime)] flex items-center justify-center shrink-0">
+            <CheckCircle size={15} />
           </div>
         </div>
 
-        {/* Card 3: Recompra 15 Dias */}
+        {/* Card 3: Reativação (> 180d) */}
         <div 
           onClick={() => {
-            setRepurchaseCategoryFilter('15dias')
-            setSelectedStatus('all')
+            setSelectedStatus('reativacao')
           }}
-          className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            repurchaseCategoryFilter === '15dias' 
-              ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
-              : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
+          className={`card p-3 border-l-4 border-l-orange-500 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedStatus === 'reativacao' 
+              ? 'border-orange-500 bg-[var(--charcoal)] shadow-md' 
+              : 'border-[var(--line)] bg-[var(--card)] hover:border-orange-500/50'
           }`}
         >
           <div>
-            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Recompra 15 Dias</span>
-            <span className="text-xl font-black text-amber-500 font-display mt-0.5 block">{metrics.recompra15}</span>
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Reativação</span>
+            <span className="text-xl font-black text-orange-400 font-display mt-0.5 block">{metrics.reativacao}</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
-            <Clock size={15} />
-          </div>
-        </div>
-
-        {/* Card 4: Recompra 30 Dias */}
-        <div 
-          onClick={() => {
-            setRepurchaseCategoryFilter('30dias')
-            setSelectedStatus('all')
-          }}
-          className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            repurchaseCategoryFilter === '30dias' 
-              ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
-              : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
-          }`}
-        >
-          <div>
-            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Recompra 30 Dias</span>
-            <span className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">{metrics.recompra30}</span>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--gray2)] flex items-center justify-center shrink-0">
-            <Calendar size={15} />
-          </div>
-        </div>
-
-        {/* Card 5: Clientes Inativos */}
-        <div 
-          onClick={() => {
-            setRepurchaseCategoryFilter('inativo')
-            setSelectedStatus('inativo')
-          }}
-          className={`card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
-            repurchaseCategoryFilter === 'inativo' || selectedStatus === 'inativo' 
-              ? 'border-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
-              : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50'
-          }`}
-        >
-          <div>
-            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Clientes Inativos</span>
-            <span className="text-xl font-black text-rose-500 font-display mt-0.5 block">{metrics.inativos}</span>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center shrink-0">
             <AlertCircle size={15} />
+          </div>
+        </div>
+
+        {/* Card 4: Prospecção (sem compras) */}
+        <div 
+          onClick={() => {
+            setSelectedStatus('prospeccao')
+          }}
+          className={`card p-3 border-l-4 border-l-amber-400 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            selectedStatus === 'prospeccao' 
+              ? 'border-amber-400 bg-[var(--charcoal)] shadow-md' 
+              : 'border-[var(--line)] bg-[var(--card)] hover:border-amber-400/50'
+          }`}
+        >
+          <div>
+            <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Prospecção</span>
+            <span className="text-xl font-black text-amber-300 font-display mt-0.5 block">{metrics.prospeccao}</span>
+          </div>
+          <div className="w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/20 text-amber-300 flex items-center justify-center shrink-0">
+            <UserPlus size={15} />
           </div>
         </div>
       </div>
@@ -3173,9 +3164,9 @@ export default function ContactsPage() {
             onChange={(e) => setSelectedStatus(e.target.value)}
           >
             <option value="all">Todos os Status</option>
-            <option value="ativo">Clientes Ativos</option>
-            <option value="inativo">Inativos / Alerta</option>
-            <option value="prospeccao">Em Prospecção</option>
+            <option value="ativo">Ativo (Compras ≤ 180d)</option>
+            <option value="reativacao">Reativação (Sem compras &gt; 180d)</option>
+            <option value="prospeccao">Prospecção (Sem compras)</option>
           </select>
         </div>
       </div>
@@ -3187,7 +3178,7 @@ export default function ContactsPage() {
           {paginatedContacts.map(contact => {
             const repInfo = getContactActivityAndRepurchaseInfo(contact)
             const effectiveStatus = repInfo.computedStatus
-            const isInactive = effectiveStatus === 'inativo'
+            const isInactive = effectiveStatus === 'reativacao'
             return (
               <div
                 key={contact.id}
@@ -3212,9 +3203,9 @@ export default function ContactsPage() {
                         Prospecção
                       </span>
                     )
-                    if (effectiveStatus === 'inativo') return (
-                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30 shrink-0" title={repInfo.isAutoInactive ? `Inativado por ${repInfo.daysSinceLastActivity}d sem atividade` : undefined}>
-                        Inativo
+                    if (effectiveStatus === 'reativacao') return (
+                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-400 border border-orange-500/30 shrink-0" title="Sem compras há mais de 180 dias">
+                        Reativação
                       </span>
                     )
                     return (
@@ -3314,7 +3305,7 @@ export default function ContactsPage() {
                 {paginatedContacts.map(contact => {
                   const repInfo = getContactActivityAndRepurchaseInfo(contact)
                   const effectiveStatus = repInfo.computedStatus
-                  const isInactive = effectiveStatus === 'inativo'
+                  const isInactive = effectiveStatus === 'reativacao'
                   return (
                     <tr 
                       key={contact.id} 
@@ -3330,12 +3321,6 @@ export default function ContactsPage() {
                           <div className="min-w-0 max-w-[280px]">
                             <div className="text-xs font-bold text-[var(--white)] flex items-center gap-2">
                               <span className="truncate" title={contact.company}>{contact.company}</span>
-                              {isInactive && (
-                                <span className="font-mono text-[9px] text-[var(--gray)] flex items-center gap-1 font-normal shrink-0" title={repInfo.isAutoInactive ? `Inativado por ${repInfo.daysSinceLastActivity}d sem atividade` : undefined}>
-                                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
-                                  Inativo
-                                </span>
-                              )}
                             </div>
                             <div className="text-[10px] text-[var(--gray)] font-mono leading-tight">{contact.cnpj}</div>
                           </div>
@@ -3375,10 +3360,10 @@ export default function ContactsPage() {
                               Prospecção
                             </span>
                           )
-                          if (effectiveStatus === 'inativo') return (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-red-500/10 border border-red-500/25 text-red-400" title={repInfo.isAutoInactive ? `Inativado por ${repInfo.daysSinceLastActivity}d sem atividade` : undefined}>
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
-                              Inativo
+                          if (effectiveStatus === 'reativacao') return (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-orange-500/10 border border-orange-500/25 text-orange-400" title="Sem compras há mais de 180 dias">
+                              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" />
+                              Reativação
                             </span>
                           )
                           return (
