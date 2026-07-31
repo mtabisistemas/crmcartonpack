@@ -3774,10 +3774,10 @@ export default function ContactsPage() {
         </div>
       </div>
 
-      {/* Filters Bar — 12 Column Layout with Toggle Lista / Mapa */}
+      {/* Filters Bar — Fixed 12-Column Single Row Layout for ALL Users */}
       <div className="card p-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-        {/* Search */}
-        <div className={`${isRep ? 'md:col-span-3' : 'md:col-span-3'} flex items-center gap-2 input w-full py-1.5 px-3`}>
+        {/* Search — 3 Columns */}
+        <div className="md:col-span-3 flex items-center gap-2 input w-full py-1.5 px-3">
           <Search size={13} className="text-[var(--gray2)] shrink-0" />
           <input
             className="bg-transparent border-none outline-none w-full text-xs text-[var(--white)] placeholder-[var(--gray2)]"
@@ -3787,8 +3787,8 @@ export default function ContactsPage() {
           />
         </div>
 
-        {/* Curva Filter — Clean Labels without Parenthetical Text */}
-        <div className={`${isRep ? 'md:col-span-3' : 'md:col-span-2'} flex items-center gap-1.5`}>
+        {/* Curva Filter — 2 Columns */}
+        <div className="md:col-span-2 flex items-center gap-1.5">
           <select 
             className="input w-full text-xs py-1.5 px-2.5 font-medium"
             value={selectedCurve}
@@ -3810,7 +3810,7 @@ export default function ContactsPage() {
           </button>
         </div>
 
-        {/* Rep Filter — Reduced Width */}
+        {/* Rep Filter — 3 Columns */}
         {!isRep ? (
           <div className="md:col-span-3">
             <select 
@@ -3836,8 +3836,8 @@ export default function ContactsPage() {
           </div>
         )}
 
-        {/* Status Filter — Increased Width */}
-        <div className={`${isRep ? 'md:col-span-3' : 'md:col-span-2'}`}>
+        {/* Status Filter — 2 Columns */}
+        <div className="md:col-span-2">
           <select 
             className="input w-full text-xs py-1.5 px-2.5"
             value={selectedStatus}
@@ -3850,8 +3850,8 @@ export default function ContactsPage() {
           </select>
         </div>
 
-        {/* Toggle Lista / Mapa */}
-        <div className={`${isRep ? 'md:col-span-3' : 'md:col-span-2'} flex items-center bg-[var(--charcoal)] border border-[var(--line)] rounded-xl p-0.5 w-full`}>
+        {/* Toggle Lista / Mapa — 2 Columns */}
+        <div className="md:col-span-2 flex items-center bg-[var(--charcoal)] border border-[var(--line)] rounded-xl p-0.5 w-full">
           <button
             type="button"
             onClick={() => setViewMode('lista')}

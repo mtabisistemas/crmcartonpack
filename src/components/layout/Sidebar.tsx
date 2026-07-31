@@ -76,7 +76,6 @@ export function Sidebar() {
     { href: '/dashboard?tab=painel', label: 'Painel do Rep', icon: Target },
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Clientes', icon: Users },
-    { href: '/dashboard?tab=mapa', label: 'Mapa de Clientes', icon: MapPin },
   ]
 
   const vendedorNavItems = [
@@ -84,7 +83,6 @@ export function Sidebar() {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Clientes', icon: Users },
-    { href: '/dashboard?tab=mapa', label: 'Mapa de Clientes', icon: MapPin },
   ]
 
   const adminNavItems = [
