@@ -451,46 +451,36 @@ export default function DiarioDeBordoPage() {
         </div>
 
         {/* Right Actions & Filter Selector (APENAS PARA GESTOR E ADMIN) */}
-        <div className="flex items-center gap-3 z-10 shrink-0">
-          {isAdminOrManager && (
-            <div className="flex items-center gap-2 bg-[var(--charcoal)] border border-[var(--line)] px-3 py-1.5 rounded-xl">
-              <Filter size={14} className="text-[var(--lime)]" />
-              <select
-                value={userFilter}
-                onChange={(e) => setUserFilter(e.target.value)}
-                className="bg-transparent text-xs font-bold text-[var(--white)] cursor-pointer outline-none"
-              >
-                <option value="all" className="bg-[var(--card)] text-[var(--white)]">Toda a Equipe</option>
-                {usersList
-                  .filter((u: any) => {
-                    const norm = (s: string) => (s || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
-                    const n = norm(u.name || '')
-                    const e = norm(u.email || '')
-                    return !n.includes('mauricio') && !n.includes('maciel') && !e.includes('mauricio')
-                  })
-                  .map((u: any) => {
-                    const normName = (u.name || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
-                    const isThaiane = normName.includes('thaiane')
-                    const displayRole = isThaiane ? 'gestor' : (u.role || 'Usuário')
+        {isAdminOrManager && (
+          <div className="flex items-center gap-2 bg-[var(--charcoal)] border border-[var(--line)] px-3 py-1.5 rounded-xl ml-auto shrink-0 max-w-[200px]">
+            <Filter size={14} className="text-[var(--lime)] shrink-0" />
+            <select
+              value={userFilter}
+              onChange={(e) => setUserFilter(e.target.value)}
+              className="w-full bg-transparent text-xs font-bold text-[var(--white)] cursor-pointer outline-none truncate"
+            >
+              <option value="all" className="bg-[var(--card)] text-[var(--white)]">Toda a Equipe</option>
+              {usersList
+                .filter((u: any) => {
+                  const norm = (s: string) => (s || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+                  const n = norm(u.name || '')
+                  const e = norm(u.email || '')
+                  return !n.includes('mauricio') && !n.includes('maciel') && !e.includes('mauricio')
+                })
+                .map((u: any) => {
+                  const normName = (u.name || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+                  const isThaiane = normName.includes('thaiane')
+                  const displayRole = isThaiane ? 'gestor' : (u.role || 'Usuário')
 
-                    return (
-                      <option key={u.id || u.name} value={u.id || u.name} className="bg-[var(--card)] text-[var(--white)]">
-                        {u.name} ({displayRole})
-                      </option>
-                    )
-                  })}
-              </select>
-            </div>
-          )}
-
-          <button
-            onClick={() => setCalendarOpen(true)}
-            className="btn btn-secondary text-xs py-2 px-3.5 flex items-center gap-2 font-bold cursor-pointer hover:border-[var(--lime)]"
-          >
-            <CalendarIcon size={15} className="text-[var(--lime)]" />
-            <span>Abrir Agenda</span>
-          </button>
-        </div>
+                  return (
+                    <option key={u.id || u.name} value={u.id || u.name} className="bg-[var(--card)] text-[var(--white)]">
+                      {u.name} ({displayRole})
+                    </option>
+                  )
+                })}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* ========================================================
@@ -623,7 +613,7 @@ export default function DiarioDeBordoPage() {
               onClick={() => setCalendarOpen(true)}
               className="text-xs font-mono font-bold text-[var(--gray2)] hover:text-[var(--white)] hover:underline flex items-center gap-1 cursor-pointer"
             >
-              <span>Ver Grade Completa</span>
+              <span>Ver Agenda</span>
               <ChevronRight size={13} />
             </button>
           </div>
