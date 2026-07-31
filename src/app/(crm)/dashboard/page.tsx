@@ -2212,12 +2212,12 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <table className="w-full text-left border-collapse text-xs font-mono">
-                  <thead className="sticky top-0 bg-[var(--charcoal)] shadow-sm">
-                    <tr className="border-b border-[var(--line)] text-[10px] text-[var(--gray2)] uppercase">
-                      <th className="py-2.5 px-3">Cliente / CNPJ</th>
-                      <th className="py-2.5 px-3">Negócio / Título</th>
-                      <th className="py-2.5 px-3">Representante</th>
-                      <th className="py-2.5 px-3 text-right">Valor (R$)</th>
+                  <thead className="sticky top-0 z-20 shadow-md">
+                    <tr className="border-b border-[var(--line)] text-[10px] text-[var(--gray2)] font-bold uppercase bg-slate-100 dark:bg-[#0d1117]">
+                      <th className="py-2.5 px-3 bg-slate-100 dark:bg-[#0d1117]">Cliente / CNPJ</th>
+                      <th className="py-2.5 px-3 bg-slate-100 dark:bg-[#0d1117]">Negócio / Título</th>
+                      <th className="py-2.5 px-3 bg-slate-100 dark:bg-[#0d1117]">Representante</th>
+                      <th className="py-2.5 px-3 text-right bg-slate-100 dark:bg-[#0d1117]">Valor (R$)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--line)]">
