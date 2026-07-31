@@ -425,52 +425,6 @@ export default function DiarioDeBordoPage() {
     }
   }, [filteredDeals])
 
-  if (loading) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center min-h-[80vh] p-6 animate-fade-in select-none">
-        {/* Central Animated Compass Radar Card */}
-        <div className="card bg-[var(--card)]/90 backdrop-blur-md border border-[var(--line)] p-8 sm:p-10 rounded-3xl max-w-md w-full flex flex-col items-center justify-center text-center shadow-2xl relative overflow-hidden">
-          
-          {/* Ambient Glow */}
-          <div className="absolute -top-24 -left-24 w-48 h-48 bg-[var(--lime)]/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-          {/* Pulsing Concentric Radar Icon */}
-          <div className="relative mb-6 flex items-center justify-center">
-            <div className="absolute w-20 h-20 rounded-full bg-[var(--lime)]/10 animate-ping" />
-            <div className="absolute w-16 h-16 rounded-full border border-[var(--lime)]/30 animate-pulse" />
-            <div className="w-14 h-14 rounded-2xl bg-[var(--charcoal)] border border-[var(--lime)]/40 flex items-center justify-center text-[var(--lime)] shadow-lg shadow-[var(--lime)]/15 relative z-10">
-              <Compass size={28} className="animate-spin text-[var(--lime)]" style={{ animationDuration: '6s' }} />
-            </div>
-          </div>
-
-          {/* Title & Animated Status Text */}
-          <h3 className="font-display font-black text-lg text-[var(--white)] tracking-wide uppercase">
-            Diário de Bordo
-          </h3>
-          <p className="text-xs font-mono text-[var(--lime)] font-semibold mt-1 tracking-wider animate-pulse">
-            Carregando metas, agenda e negociações...
-          </p>
-
-          {/* Shimmer Sweep Progress Bar */}
-          <div className="w-full h-1.5 bg-[var(--charcoal)] border border-[var(--line)] rounded-full overflow-hidden mt-6 relative">
-            <div className="h-full bg-gradient-to-r from-emerald-500 via-[var(--lime)] to-emerald-400 rounded-full animate-pulse w-full" />
-          </div>
-
-          <span className="text-[10px] font-mono text-[var(--gray2)] mt-3">
-            Carton Pack CRM Comercial
-          </span>
-        </div>
-
-        {/* Background Skeletons for Visual Context */}
-        <div className="w-full max-w-4xl mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 opacity-15 pointer-events-none">
-          <div className="h-28 bg-[var(--card)] border border-[var(--line)] rounded-2xl animate-pulse" />
-          <div className="h-28 bg-[var(--card)] border border-[var(--line)] rounded-2xl animate-pulse" />
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="page-content animate-fade-in w-full h-full flex flex-col gap-5 max-w-[1400px] mx-auto px-4 sm:px-6 py-6 pb-24 select-none overflow-y-auto custom-scrollbar bg-[var(--black)] text-[var(--white)]">
       
