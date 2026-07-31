@@ -1239,14 +1239,11 @@ export default function DashboardPage() {
     { key: 'fechamento', stage: 'Fechamento', count: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda' || d.stage === 'pedido').length, value: filteredDeals.filter(d => d.stage === 'fechamento' || d.stage === 'pos_venda' || d.stage === 'pedido').reduce((acc, d) => acc + d.value, 0) || null, color: '#22c55e' },
   ]
 
-  // Lista dos Usuários Cadastrados no Sistema para o filtro do Dashboard
+  // Lista dos Usuários Cadastrados no Sistema para o filtro do Dashboard (com formatação padronizada e sem Usuário Master)
   const representatives = useMemo(() => {
     if (systemUsers.length === 0) return []
-    return systemUsers
-      .filter(u => u.status !== 'inativo')
-      .map(u => u.name.trim())
-      .filter((name, idx, self) => name && self.indexOf(name) === idx)
-      .sort()
+    const names = systemUsers.filter(u => u.status !== 'inativo').map(u => u.name)
+    return getUniqueCanonicalRepresentatives(names)
   }, [systemUsers])
 
   // Suíte Completa de Métricas Avançadas

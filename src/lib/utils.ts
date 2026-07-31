@@ -110,7 +110,7 @@ export function normalizeRepKey(repStr?: string | null): string {
 }
 
 /**
- * Retorna o nome canônico formatado de forma limpa e padronizada (ex: "Bottega Representações LTDA")
+ * Retorna o nome canônico formatado de forma limpa e padronizada com Primeira Letra Maiúscula (ex: "Bottega Representações Ltda")
  */
 export function formatCanonicalRepName(repStr?: string | null): string {
   if (!repStr) return ''
@@ -122,10 +122,14 @@ export function formatCanonicalRepName(repStr?: string | null): string {
 
   const words = cleaned.split(/\s+/)
   return words.map((w, idx) => {
-    const upper = w.toUpperCase()
-    if (['LTDA', 'LTDA.', 'S.A.', 'S/A', 'S.A', 'E'].includes(upper)) return upper
-    if (w.length <= 2 && idx > 0 && idx < words.length - 1 && !/^[A-Z]\.$/.test(w)) return w.toLowerCase()
-    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+    if (!w) return ''
+    const lower = w.toLowerCase()
+    if (['de', 'da', 'do', 'dos', 'das', 'e'].includes(lower) && idx > 0 && idx < words.length - 1) {
+      return lower
+    }
+    return w.replace(/([a-zA-ZáàâãéèêíïóôõöúçñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ]+)/g, (match) => {
+      return match.charAt(0).toUpperCase() + match.slice(1).toLowerCase()
+    })
   }).join(' ')
 }
 
@@ -136,7 +140,10 @@ export function isMasterUser(nameOrEmail?: string | null): boolean {
   if (!nameOrEmail) return false
   const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
   const clean = norm(nameOrEmail)
-  return clean.includes('mauricio maciel') || clean.includes('mauricio.maciel') || clean.includes('mauricio.admin')
+  return clean.includes('mauricio maciel') || 
+         clean.includes('mauricio.maciel') || 
+         clean.includes('mauricio.admin') || 
+         (clean.includes('mauricio') && clean.includes('maciel'))
 }
 
 /**

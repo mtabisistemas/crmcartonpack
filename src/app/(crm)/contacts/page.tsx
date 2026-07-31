@@ -3259,8 +3259,8 @@ export default function ContactsPage() {
       let finalLng = baseCoords[1]
 
       if (indexInCity > 0) {
-        const angle = indexInCity * 1.8
-        const distance = 0.003 * Math.sqrt(indexInCity)
+        const angle = indexInCity * 0.85
+        const distance = Math.min(0.002, 0.00025 * Math.sqrt(indexInCity))
         finalLat += distance * Math.cos(angle)
         finalLng += distance * Math.sin(angle)
       }
@@ -3888,7 +3888,6 @@ export default function ContactsPage() {
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#B4D932]"></span> Ativo</span>
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#f97316]"></span> Reativação</span>
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></span> Prospecção</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#64748b]"></span> Inativo</span>
           </div>
         </div>
       ) : isRep ? (
@@ -4001,6 +4000,7 @@ export default function ContactsPage() {
                       )}
                     </div>
                   </th>
+
                   <th 
                     onClick={() => handleSort('curve')} 
                     className="py-2.5 px-3 text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
@@ -4015,6 +4015,22 @@ export default function ContactsPage() {
                       )}
                     </div>
                   </th>
+
+                  <th 
+                    onClick={() => handleSort('city')} 
+                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    title="Ordenar por Cidade"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Cidade</span>
+                      {sortField === 'city' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
+                      ) : (
+                        <ArrowUpDown size={10} className="opacity-30" />
+                      )}
+                    </div>
+                  </th>
+
                   <th 
                     onClick={() => handleSort('state')} 
                     className="py-2.5 px-3 text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
@@ -4029,6 +4045,22 @@ export default function ContactsPage() {
                       )}
                     </div>
                   </th>
+
+                  <th 
+                    onClick={() => handleSort('representative')} 
+                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    title="Ordenar por Representante"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Representante</span>
+                      {sortField === 'representative' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
+                      ) : (
+                        <ArrowUpDown size={10} className="opacity-30" />
+                      )}
+                    </div>
+                  </th>
+
                   <th 
                     onClick={() => handleSort('status')} 
                     className="py-2.5 px-3 text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
@@ -4091,6 +4123,11 @@ export default function ContactsPage() {
                         {contact.state || '-'}
                       </td>
 
+                      {/* Representante */}
+                      <td className="py-2 px-3 text-xs text-[var(--gray)] font-mono truncate max-w-[140px]">
+                        {formatCanonicalRepName(contact.representative) || '-'}
+                      </td>
+
                       {/* Status */}
                       <td className="py-2 px-3 text-center whitespace-nowrap">
                         {(() => {
@@ -4114,6 +4151,8 @@ export default function ContactsPage() {
                           )
                         })()}
                       </td>
+
+                      {/* Localização */}
                       <td className="py-2 px-3 text-center">
                         <button onClick={(e) => openMap(e, contact)} className="text-[var(--gray2)] hover:text-[var(--lime)] transition-colors">
                           <MapPin size={14} />
