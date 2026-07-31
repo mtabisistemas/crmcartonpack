@@ -455,6 +455,7 @@ function ContactDrawer({
   const [activities, setActivities] = useState<Activity[]>([])
   const [newNote, setNewNote] = useState('')
   const [activityType, setActivityType] = useState<Activity['type']>('nota')
+  const [autoCalculatedFreq, setAutoCalculatedFreq] = useState<number | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -489,10 +490,55 @@ function ContactDrawer({
       const pVal = (contact as any).projectedPurchaseValue ?? (contact as any).projected_purchase_value ?? 0
       setProjectedPurchaseValue(pVal)
       setProjectedValueInput(formatNumberToCurrencyStr(pVal))
-      setPurchaseFrequencyDays((contact as any).purchaseFrequencyDays ?? (contact as any).purchase_frequency_days ?? 30)
       setLastPurchaseDate((contact as any).lastPurchaseDate ?? (contact as any).last_purchase_date ?? '')
       setInactivityThresholdDays((contact as any).inactivityThresholdDays ?? (contact as any).inactivity_threshold_days ?? 90)
       setPlanningNotes((contact as any).planningNotes ?? (contact as any).planning_notes ?? '')
+
+      // ── Automatic Purchase Frequency Calculation from last 365 days orders ──
+      let contactOrders: any[] = (contact as any).orders || []
+      const cleanTargetCnpj = (contact.cnpj || '').replace(/\D/g, '')
+      const cleanTargetComp = (contact.company || contact.name || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^\w]/g, "")
+      
+      if (typeof window !== 'undefined') {
+        const rawContacts = localStorage.getItem('crm_contacts')
+        if (rawContacts) {
+          try {
+            const list = JSON.parse(rawContacts)
+            const matched = list.find((c: any) => {
+              const cCnpj = (c.cnpj || '').replace(/\D/g, '')
+              const cComp = (c.company || c.name || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^\w]/g, "")
+              return (cleanTargetCnpj && cCnpj && cleanTargetCnpj === cCnpj) || (cleanTargetComp && cComp && cleanTargetComp === cComp)
+            })
+            if (matched && matched.orders && matched.orders.length > 0) {
+              contactOrders = matched.orders
+            }
+          } catch (e) {}
+        }
+      }
+
+      const oneYearAgo = new Date()
+      oneYearAgo.setDate(oneYearAgo.getDate() - 365)
+      
+      const ordersInLastYear = contactOrders.filter((o: any) => {
+        if (!o.date) return false
+        const d = new Date(o.date)
+        return !isNaN(d.getTime()) && d >= oneYearAgo
+      }).sort((a: any, b: any) => (a.date || '').localeCompare(b.date || ''))
+
+      let calculatedAutoFreq: number | null = null
+      if (ordersInLastYear.length >= 2) {
+        const oldestD = new Date(ordersInLastYear[0].date)
+        const newestD = new Date(ordersInLastYear[ordersInLastYear.length - 1].date)
+        const diffMs = newestD.getTime() - oldestD.getTime()
+        const diffDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+        calculatedAutoFreq = Math.max(1, Math.round(diffDays / (ordersInLastYear.length - 1)))
+      }
+
+      const defaultFreq = (contact as any).purchaseFrequencyDays ?? (contact as any).purchase_frequency_days ?? 30
+      const finalFreq = calculatedAutoFreq !== null ? calculatedAutoFreq : defaultFreq
+      
+      setPurchaseFrequencyDays(finalFreq)
+      setAutoCalculatedFreq(calculatedAutoFreq)
       
       let parsedHist: any[] = []
       const rawHist = (contact as any).history
@@ -1478,7 +1524,7 @@ function ContactDrawer({
                   Parâmetros de Recompra & Projeção
                 </h4>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {/* Valor Projetado R$ */}
                   <div className="flex flex-col gap-0.5">
                     <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
@@ -1502,9 +1548,16 @@ function ContactDrawer({
 
                   {/* Frequência de Compra (Dias) */}
                   <div className="flex flex-col gap-0.5">
-                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
-                      Frequência de Compra (Dias)
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+                        Frequência de Compra (Dias)
+                      </label>
+                      {autoCalculatedFreq !== null && (
+                        <span className="text-[8px] font-mono font-bold text-[var(--lime)] bg-[var(--lime)]/10 px-1.5 py-0.5 rounded">
+                          AUTOMÁTICO 365D
+                        </span>
+                      )}
+                    </div>
                     <div className="relative flex items-center">
                       <input
                         type="number"
@@ -1522,7 +1575,11 @@ function ContactDrawer({
                         dias
                       </span>
                     </div>
-                    <span className="text-[8px] text-[var(--gray2)] font-mono">Intervalo numérico em dias</span>
+                    <span className="text-[8px] text-[var(--gray2)] font-mono">
+                      {autoCalculatedFreq !== null 
+                        ? `Calculado pelo histórico dos últimos 365 dias (Editável)` 
+                        : 'Intervalo em dias (Editável)'}
+                    </span>
                   </div>
 
                   {/* Data da Última Compra */}
@@ -1541,33 +1598,6 @@ function ContactDrawer({
                       }}
                     />
                     <span className="text-[8px] text-[var(--gray2)] font-mono">Data do último pedido fechado</span>
-                  </div>
-
-                  {/* Tempo para Inativação (Dias) */}
-                  <div className="flex flex-col gap-0.5">
-                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
-                      Tempo para Inativação (Dias)
-                    </label>
-                    <div className="relative flex items-center">
-                      <input
-                        type="number"
-                        min="1"
-                        className="input text-xs py-1 px-2.5 font-bold font-mono pr-12 text-amber-400"
-                        placeholder="Ex: 90"
-                        value={inactivityThresholdDays || ''}
-                        onChange={e => {
-                          const val = parseInt(e.target.value) || 90
-                          setInactivityThresholdDays(val)
-                          handleSaveGeneral({ inactivityThresholdDays: val })
-                        }}
-                      />
-                      <span className="absolute right-2.5 text-[10px] font-bold text-[var(--gray2)] font-mono select-none">
-                        dias
-                      </span>
-                    </div>
-                    <span className="text-[8px] text-amber-400/90 font-mono">
-                      Inativação automática após {inactivityThresholdDays || 90} dias sem atividades registradas
-                    </span>
                   </div>
                 </div>
               </div>
