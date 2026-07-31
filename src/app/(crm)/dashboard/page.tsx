@@ -1557,12 +1557,10 @@ export default function DashboardPage() {
                     <span className="text-[8px] font-mono font-bold text-cyan-300 opacity-90 group-hover/b1:scale-110 transition-transform mb-0.5 whitespace-nowrap">
                       {item.currentVal > 0 ? formatCompactCurrency(item.currentVal) : ''}
                     </span>
-                    <div className="w-full bg-slate-900 rounded-t overflow-hidden flex flex-col justify-end h-full">
-                      <div 
-                        className="w-full bg-[#0284c7] rounded-t transition-all duration-300 group-hover:brightness-125"
-                        style={{ height: `${Math.max(4, item.currentHeightPct)}%` }}
-                      />
-                    </div>
+                    <div 
+                      className="w-full bg-[#0284c7] rounded-t transition-all duration-300 group-hover:brightness-125 shadow-sm"
+                      style={{ height: `${Math.max(3, item.currentHeightPct)}%` }}
+                    />
                   </div>
 
                   {/* BARRA 2: SAÍDAS / COMPARATIVO (LARANJA AMBER) */}
@@ -1570,12 +1568,10 @@ export default function DashboardPage() {
                     <span className="text-[8px] font-mono font-bold text-amber-300 opacity-90 group-hover/b2:scale-110 transition-transform mb-0.5 whitespace-nowrap">
                       {item.prevVal > 0 ? formatCompactCurrency(item.prevVal) : ''}
                     </span>
-                    <div className="w-full bg-slate-900 rounded-t overflow-hidden flex flex-col justify-end h-full">
-                      <div 
-                        className="w-full bg-[#f59e0b] rounded-t transition-all duration-300 group-hover:brightness-125"
-                        style={{ height: `${Math.max(4, item.prevHeightPct)}%` }}
-                      />
-                    </div>
+                    <div 
+                      className="w-full bg-[#f59e0b] rounded-t transition-all duration-300 group-hover:brightness-125 shadow-sm"
+                      style={{ height: `${Math.max(3, item.prevHeightPct)}%` }}
+                    />
                   </div>
 
                 </div>
