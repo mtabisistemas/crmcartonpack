@@ -534,8 +534,10 @@ function ContactDrawer({
         calculatedAutoFreq = Math.max(1, Math.round(diffDays / (ordersInLastYear.length - 1)))
       }
 
-      const defaultFreq = (contact as any).purchaseFrequencyDays ?? (contact as any).purchase_frequency_days ?? 30
-      const finalFreq = calculatedAutoFreq !== null ? calculatedAutoFreq : defaultFreq
+      const rawSavedFreq = (contact as any).purchaseFrequencyDays ?? (contact as any).purchase_frequency_days
+      const finalFreq = calculatedAutoFreq !== null 
+        ? calculatedAutoFreq 
+        : (rawSavedFreq && rawSavedFreq !== 30 ? rawSavedFreq : null)
       
       setPurchaseFrequencyDays(finalFreq)
       setAutoCalculatedFreq(calculatedAutoFreq)
@@ -1549,9 +1551,17 @@ function ContactDrawer({
                   {/* Frequência de Compra (Dias) */}
                   <div className="flex flex-col gap-0.5">
                     <div className="flex items-center justify-between">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
-                        Frequência de Compra (Dias)
-                      </label>
+                      <div className="flex items-center gap-1">
+                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+                          Frequência de Compra (Dias)
+                        </label>
+                        <div className="group relative inline-flex items-center">
+                          <Info size={12} className="text-[var(--lime)] cursor-pointer hover:opacity-80 transition-opacity" />
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-64 p-2.5 rounded-xl bg-[var(--charcoal)] border border-[var(--line)] text-[10px] font-mono text-[var(--white)] shadow-2xl z-50 pointer-events-none leading-relaxed">
+                            Calculado automaticamente pela média de dias entre os pedidos faturados nos últimos 365 dias. Para clientes sem recompra recente, o campo fica em branco até novo histórico ou preenchimento manual.
+                          </div>
+                        </div>
+                      </div>
                       {autoCalculatedFreq !== null && (
                         <span className="text-[8px] font-mono font-bold text-[var(--lime)] bg-[var(--lime)]/10 px-1.5 py-0.5 rounded">
                           AUTOMÁTICO 365D
@@ -1578,7 +1588,7 @@ function ContactDrawer({
                     <span className="text-[8px] text-[var(--gray2)] font-mono">
                       {autoCalculatedFreq !== null 
                         ? `Calculado pelo histórico dos últimos 365 dias (Editável)` 
-                        : 'Intervalo em dias (Editável)'}
+                        : 'Vazio se sem recompra no ano (Editável)'}
                     </span>
                   </div>
 
@@ -3952,8 +3962,8 @@ export default function ContactsPage() {
 
       {/* ── MODAL INFORMATIVO DA CURVA ABC ── */}
       {showAbcRulesModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className="card w-full max-w-lg p-5 border border-[var(--lime)]/30 bg-[var(--card)] shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+          <div className="card w-full max-w-lg p-5 border border-[var(--line)] bg-[var(--card)] shadow-2xl relative">
             <button 
               onClick={() => setShowAbcRulesModal(false)}
               className="absolute top-4 right-4 text-[var(--gray2)] hover:text-[var(--white)] transition-colors p-1 cursor-pointer"
@@ -3962,64 +3972,64 @@ export default function ContactsPage() {
             </button>
 
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-[var(--lime)]/10 border border-[var(--lime)]/25 text-[var(--lime)] flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--lime)] flex items-center justify-center shrink-0">
                 <Info size={18} />
               </div>
               <div>
                 <h3 className="text-base font-bold text-[var(--white)]">Regras da Curva ABC Automática</h3>
-                <p className="text-xs text-[var(--gray2)]">Classificação dinâmica por Faturamento Acumulado (Pareto 80/15/5) e Recorrência</p>
+                <p className="text-xs text-[var(--gray2)] font-mono">Classificação dinâmica por Faturamento Acumulado (Pareto 80/15/5) e Recorrência</p>
               </div>
             </div>
 
-            <div className="space-y-3 my-4 text-xs">
+            <div className="space-y-2.5 my-4 text-xs">
               {/* Curva A */}
-              <div className="p-3 rounded-lg bg-[var(--charcoal)] border border-[var(--lime)]/30 flex flex-col gap-1">
+              <div className="p-3.5 rounded-xl bg-[var(--card2)] border border-[var(--line)] flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-[var(--lime)] text-xs uppercase flex items-center gap-1.5">
+                  <span className="font-mono font-bold text-[var(--white)] text-xs uppercase flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-[var(--lime)]" /> Curva A — Clientes VIP / Principais
                   </span>
-                  <span className="text-[10px] font-mono text-[var(--lime)] bg-[var(--lime)]/10 px-2 py-0.5 rounded">Top 80% Receita</span>
+                  <span className="text-[10px] font-mono text-[var(--lime)] bg-[var(--lime)]/10 border border-[var(--lime)]/20 px-2 py-0.5 rounded-md font-bold">Top 80% Receita</span>
                 </div>
-                <p className="text-[11px] text-[var(--gray)] mt-0.5">
+                <p className="text-[11px] text-[var(--gray2)] mt-1 font-mono leading-relaxed">
                   Clientes que compõem os <strong>primeiros 80% do faturamento acumulado</strong> da empresa <strong>E</strong> compram com alta frequência (≥ 2 pedidos no ano).
                 </p>
               </div>
 
               {/* Curva B */}
-              <div className="p-3 rounded-lg bg-[var(--charcoal)] border border-amber-500/30 flex flex-col gap-1">
+              <div className="p-3.5 rounded-xl bg-[var(--card2)] border border-[var(--line)] flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-amber-400 text-xs uppercase flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-400" /> Curva B — Clientes Estratégicos
+                  <span className="font-mono font-bold text-[var(--white)] text-xs uppercase flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-slate-300" /> Curva B — Clientes Estratégicos
                   </span>
-                  <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">80% a 95% Receita</span>
+                  <span className="text-[10px] font-mono text-[var(--white)] bg-[var(--charcoal)] border border-[var(--line)] px-2 py-0.5 rounded-md font-bold">80% a 95% Receita</span>
                 </div>
-                <p className="text-[11px] text-[var(--gray)] mt-0.5">
+                <p className="text-[11px] text-[var(--gray2)] mt-1 font-mono leading-relaxed">
                   Clientes da faixa intermediária de faturamento (de 80% a 95% do acumulado) <strong>OU</strong> clientes com compras pontuais de alto valor.
                 </p>
               </div>
 
               {/* Curva C */}
-              <div className="p-3 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] flex flex-col gap-1">
+              <div className="p-3.5 rounded-xl bg-[var(--card2)] border border-[var(--line)] flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-[var(--white)] text-xs uppercase flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[var(--gray)]" /> Curva C — Clientes Menor Faturamento
+                  <span className="font-mono font-bold text-[var(--white)] text-xs uppercase flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-zinc-500" /> Curva C — Clientes Menor Faturamento
                   </span>
-                  <span className="text-[10px] font-mono text-[var(--gray)] bg-white/5 px-2 py-0.5 rounded">Últimos 5% Receita</span>
+                  <span className="text-[10px] font-mono text-[var(--gray2)] bg-[var(--charcoal)] border border-[var(--line)] px-2 py-0.5 rounded-md">Últimos 5% Receita</span>
                 </div>
-                <p className="text-[11px] text-[var(--gray)] mt-0.5">
+                <p className="text-[11px] text-[var(--gray2)] mt-1 font-mono leading-relaxed">
                   Clientes com histórico de compras que representam os últimos 5% do faturamento acumulado da empresa.
                 </p>
               </div>
 
               {/* Curva D */}
-              <div className="p-3 rounded-lg bg-[var(--charcoal)] border border-rose-500/30 flex flex-col gap-1">
+              <div className="p-3.5 rounded-xl bg-[var(--card2)] border border-[var(--line)] flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-rose-400 text-xs uppercase flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-rose-400" /> Curva D — Prospecção / Leads
+                  <span className="font-mono font-bold text-[var(--white)] text-xs uppercase flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-zinc-600" /> Curva D — Prospecção / Leads
                   </span>
-                  <span className="text-[10px] font-mono text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded">0 Compras</span>
+                  <span className="text-[10px] font-mono text-[var(--gray2)] bg-[var(--charcoal)] border border-[var(--line)] px-2 py-0.5 rounded-md">0 Compras</span>
                 </div>
-                <p className="text-[11px] text-[var(--gray)] mt-0.5">
+                <p className="text-[11px] text-[var(--gray2)] mt-1 font-mono leading-relaxed">
                   Clientes que ainda não possuem histórico de compras faturadas cadastrado no sistema.
                 </p>
               </div>
@@ -4029,7 +4039,7 @@ export default function ContactsPage() {
               <button 
                 type="button"
                 onClick={() => setShowAbcRulesModal(false)}
-                className="btn btn-primary text-xs py-1.5 px-5 cursor-pointer font-bold"
+                className="btn btn-primary text-xs py-2 px-6 cursor-pointer font-bold uppercase tracking-wider text-[#060606]"
               >
                 Entendi
               </button>
