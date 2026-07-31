@@ -78,35 +78,26 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
   const [newNote, setNewNote] = useState('')
   const [activityType, setActivityType] = useState<Activity['type']>('nota')
 
-  // Orçamento Tab (Itens, Condição de Pagamento e Anexo)
-  interface BudgetItem {
-    id: string
-    description: string
-    quantity: number
-    unitPrice: number
-  }
-
-  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([
-    { id: 'b1', description: 'ITEM ORÇAMENTO', quantity: 1000, unitPrice: 0 }
-  ])
+  // Orçamento Tab (Valor Total, Condição de Pagamento e Anexo)
+  const [budgetValue, setBudgetValue] = useState<number>(0)
+  const [budgetValueInput, setBudgetValueInput] = useState<string>('')
   const [paymentTerms, setPaymentTerms] = useState('')
-  const [budgetAttachment, setBudgetAttachment] = useState<{ name: string; url: string } | null>(null)
+  const [budgetAttachment, setBudgetAttachment] = useState<{ name: string; url: string; type?: string } | null>(null)
 
-  const totalBudgetAmount = budgetItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
-
-  const handleAddBudgetItem = () => {
-    setBudgetItems(prev => [
-      ...prev,
-      { id: `item_${Date.now()}_${Math.random()}`, description: '', quantity: 1, unitPrice: 0 }
-    ])
+  const handleBudgetValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value
+    const cleanRaw = raw.replace(/[^\d.,]/g, '')
+    setBudgetValueInput(cleanRaw)
+    const num = parseCurrencyToNumber(cleanRaw)
+    setBudgetValue(num)
+    setEstimatedValue(num > 0 ? num : undefined)
+    setEstimatedValueInput(formatNumberToCurrencyStr(num))
   }
 
-  const handleRemoveBudgetItem = (id: string) => {
-    setBudgetItems(prev => prev.filter(item => item.id !== id))
-  }
-
-  const handleUpdateBudgetItem = (id: string, field: keyof BudgetItem, val: any) => {
-    setBudgetItems(prev => prev.map(item => item.id === id ? { ...item, [field]: val } : item))
+  const handleBudgetValueBlur = () => {
+    if (budgetValue) {
+      setBudgetValueInput(formatNumberToCurrencyStr(budgetValue))
+    }
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,11 +108,36 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
       if (evt.target?.result) {
         setBudgetAttachment({
           name: file.name,
+          type: file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/png'),
           url: evt.target.result as string
         })
       }
     }
     reader.readAsDataURL(file)
+  }
+
+  const openAttachment = (att: { name: string; url: string; type?: string }) => {
+    if (!att || !att.url) return
+    if (att.url.startsWith('data:')) {
+      try {
+        const arr = att.url.split(',')
+        const mimeMatch = arr[0].match(/:(.*?);/)
+        const mime = mimeMatch ? mimeMatch[1] : (att.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/png')
+        const bstr = atob(arr[1])
+        let n = bstr.length
+        const u8arr = new Uint8Array(n)
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n)
+        }
+        const blob = new Blob([u8arr], { type: mime })
+        const blobUrl = URL.createObjectURL(blob)
+        window.open(blobUrl, '_blank')
+        return
+      } catch (e) {
+        console.error('Error opening base64 blob:', e)
+      }
+    }
+    window.open(att.url, '_blank')
   }
 
   const [representative, setRepresentative] = useState('')
@@ -176,11 +192,14 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
 
       if ((deal as any).budget) {
         const b = (deal as any).budget
-        if (Array.isArray(b.items) && b.items.length > 0) setBudgetItems(b.items)
+        const bVal = b.totalAmount ?? b.value ?? val ?? 0
+        setBudgetValue(bVal)
+        setBudgetValueInput(formatNumberToCurrencyStr(bVal))
         if (b.paymentTerms) setPaymentTerms(b.paymentTerms)
         if (b.attachment) setBudgetAttachment(b.attachment)
       } else {
-        setBudgetItems([{ id: 'b1', description: 'ITEM ORÇAMENTO', quantity: 1000, unitPrice: val > 0 ? val / 1000 : 0 }])
+        setBudgetValue(val || 0)
+        setBudgetValueInput(formatNumberToCurrencyStr(val || 0))
         setPaymentTerms('')
         setBudgetAttachment(null)
       }
@@ -430,11 +449,16 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
     const updatedDeal: Deal = {
       ...deal,
       title: upperTitle,
-      estimated_value: estimatedValue,
+      estimated_value: estimatedValue || budgetValue,
       probability: probability,
       stage,
       order_number: orderNumber || deal.order_number,
       assigned_to: representative,
+      budget: {
+        totalAmount: budgetValue || estimatedValue || 0,
+        paymentTerms,
+        attachment: budgetAttachment
+      } as any,
       contact: {
         ...deal.contact,
         id: deal.contact?.id ?? 'c-temp',
@@ -525,14 +549,14 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
   }
 
   const handleApplyBudgetToDeal = () => {
-    const roundedValue = Math.round(totalBudgetAmount)
+    const roundedValue = Math.round(budgetValue)
     setEstimatedValue(roundedValue)
     setEstimatedValueInput(formatNumberToCurrencyStr(roundedValue))
     const updatedDeal: Deal = {
       ...deal,
       estimated_value: roundedValue,
       budget: {
-        items: budgetItems,
+        totalAmount: roundedValue,
         paymentTerms,
         attachment: budgetAttachment
       } as any
@@ -1249,157 +1273,103 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
 
           {/* TAB 3: ORÇAMENTO */}
           {activeTab === 'orcamento' && (
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-5 animate-fade-in">
               
-              {/* Itens do Orçamento */}
-              <div className="flex flex-col gap-4 bg-[var(--card)] border border-[var(--line)] rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono">
-                    Itens do Orçamento
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAddBudgetItem}
-                    className="btn btn-secondary text-xs py-1 px-3 flex items-center gap-1.5 font-bold text-white cursor-pointer"
-                  >
-                    <Plus size={13} className="text-[var(--lime)]" />
-                    <span>Adicionar Item</span>
-                  </button>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  {budgetItems.map((item) => (
-                    <div key={item.id} className="grid grid-cols-12 gap-2 items-center bg-[#141416] p-3 rounded-lg border border-[var(--line)]">
-                      <div className="col-span-5 flex flex-col gap-1">
-                        <label className="text-[9px] font-mono text-[var(--gray2)] uppercase">Descrição do Item</label>
-                        <input
-                          type="text"
-                          className="input w-full uppercase text-xs"
-                          placeholder="Ex: CAIXA PERSONALIZADA"
-                          value={item.description}
-                          onChange={(e) => handleUpdateBudgetItem(item.id, 'description', e.target.value.toUpperCase())}
-                        />
-                      </div>
-                      <div className="col-span-2 flex flex-col gap-1">
-                        <label className="text-[9px] font-mono text-[var(--gray2)] uppercase text-center">Qtd</label>
-                        <input
-                          type="number"
-                          min={1}
-                          className="input w-full text-center text-xs font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          value={item.quantity || ''}
-                          onChange={(e) => handleUpdateBudgetItem(item.id, 'quantity', Number(e.target.value) || 0)}
-                        />
-                      </div>
-                      <div className="col-span-2 flex flex-col gap-1">
-                        <label className="text-[9px] font-mono text-[var(--gray2)] uppercase text-center">Val. Unit (R$)</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min={0}
-                          className="input w-full text-center text-xs font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          value={item.unitPrice || ''}
-                          onChange={(e) => handleUpdateBudgetItem(item.id, 'unitPrice', Number(e.target.value) || 0)}
-                        />
-                      </div>
-                      <div className="col-span-2 flex flex-col gap-1 text-right">
-                        <label className="text-[9px] font-mono text-[var(--gray2)] uppercase">Subtotal</label>
-                        <div className="text-xs font-mono font-bold text-[var(--lime)] py-2">
-                          {formatCurrency(item.quantity * item.unitPrice)}
-                        </div>
-                      </div>
-                      <div className="col-span-1 flex items-center justify-end pt-4">
-                        {budgetItems.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveBudgetItem(item.id)}
-                            className="text-red-400 hover:text-red-300 p-1.5 rounded transition-colors cursor-pointer"
-                            title="Remover Item"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Resumo do Total */}
-                <div className="flex justify-between items-center bg-[var(--card2)] border border-[var(--line)] rounded-xl p-3.5 mt-1">
-                  <span className="text-xs font-bold text-[var(--white)] uppercase tracking-wider">Total do Orçamento:</span>
-                  <span className="font-mono text-lg font-black text-[var(--lime)]" style={{ filter: 'drop-shadow(0 0 8px rgba(180,217,50,0.25))' }}>
-                    {formatCurrency(totalBudgetAmount)}
+              {/* Valor Total do Orçamento */}
+              <div className="flex flex-col gap-3 bg-[var(--card)] border border-[var(--line)] rounded-xl p-4 shadow-sm">
+                <div className="flex items-center justify-between border-b border-[var(--line)] pb-2">
+                  <span className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono">
+                    Valor Total do Orçamento
+                  </span>
+                  <span className="text-[10px] font-mono text-[var(--gray2)]">
+                    Sincronizado com o Valor Estimado do Negócio
                   </span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleApplyBudgetToDeal}
-                  className="btn btn-primary w-full py-2.5 flex items-center justify-center gap-2 font-bold cursor-pointer mt-1"
-                >
-                  <CheckCircle size={15} />
-                  <span>Aplicar Valor no Negócio ({formatCurrency(totalBudgetAmount)})</span>
-                </button>
+                <div className="flex flex-col gap-1 mt-1">
+                  <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+                    Informe o Valor Total (R$) *
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 text-sm font-mono font-bold text-[var(--lime)] select-none pointer-events-none">
+                      R$
+                    </span>
+                    <input
+                      type="text"
+                      className="input w-full text-sm font-black font-mono text-[var(--lime)] py-2 px-3 !pl-10"
+                      placeholder="0,00"
+                      value={budgetValueInput}
+                      onChange={handleBudgetValueChange}
+                      onBlur={handleBudgetValueBlur}
+                    />
+                  </div>
+                  <span className="text-[9px] text-[var(--gray2)] font-mono">
+                    O valor digitado será aplicado como o valor da oportunidade no pipeline.
+                  </span>
+                </div>
               </div>
 
               {/* Condição de Pagamento */}
-              <div className="flex flex-col gap-3 bg-[var(--card)] border border-[var(--line)] rounded-xl p-4">
-                <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono">
+              <div className="flex flex-col gap-3 bg-[var(--card)] border border-[var(--line)] rounded-xl p-4 shadow-sm">
+                <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono border-b border-[var(--line)] pb-2">
                   Condição de Pagamento
                 </div>
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1 mt-1">
+                  <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+                    Descreva a Forma / Prazo de Pagamento
+                  </label>
                   <input
                     type="text"
-                    className="input w-full uppercase font-mono text-xs"
-                    placeholder="Ex: 30/60/90 DIAS NO BOLETO, À VISTA COM 5% DESC."
+                    className="input w-full uppercase font-mono text-xs py-2 px-3"
+                    placeholder="EX: 30/60/90 DIAS NO BOLETO, À VISTA COM 5% DESC."
                     value={paymentTerms}
                     onChange={(e) => setPaymentTerms(e.target.value.toUpperCase())}
                   />
                 </div>
               </div>
 
-              {/* Anexo de Orçamento */}
-              <div className="flex flex-col gap-3 bg-[var(--card)] border border-[var(--line)] rounded-xl p-4">
-                <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono">
+              {/* Anexar Orçamento (PDF / Imagem) */}
+              <div className="flex flex-col gap-3 bg-[var(--card)] border border-[var(--line)] rounded-xl p-4 shadow-sm">
+                <div className="text-xs font-bold text-[var(--lime)] uppercase tracking-wider font-mono border-b border-[var(--line)] pb-2">
                   Anexar Orçamento (PDF / Imagem)
                 </div>
 
                 {budgetAttachment ? (
-                  <div className="flex items-center justify-between bg-[#141416] p-3 rounded-lg border border-[var(--line)]">
+                  <div className="flex items-center justify-between bg-[#141416] p-3.5 rounded-xl border border-[var(--line)]">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="p-2 bg-[var(--lime)]/10 rounded-lg border border-[var(--lime)]/20 text-[var(--lime)] shrink-0">
-                        <FileText size={18} />
+                      <div className="p-2.5 bg-[var(--lime)]/10 rounded-xl border border-[var(--lime)]/20 text-[var(--lime)] shrink-0">
+                        <FileText size={20} />
                       </div>
                       <div className="min-w-0">
                         <div className="text-xs font-bold text-white truncate uppercase">{budgetAttachment.name}</div>
-                        <div className="text-[10px] text-[var(--gray2)] font-mono">Documento Anexado</div>
+                        <div className="text-[10px] text-emerald-400 font-mono font-bold mt-0.5">✓ Documento Salvo & Pronto para Visualização</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <a
-                        href={budgetAttachment.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn btn-secondary text-xs py-1 px-2.5 flex items-center gap-1 cursor-pointer text-white"
+                      <button
+                        type="button"
+                        onClick={() => openAttachment(budgetAttachment)}
+                        className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer text-white font-bold hover:border-[var(--lime)] hover:text-[var(--lime)] transition-colors"
                         title="Visualizar Orçamento"
                       >
-                        <ExternalLink size={13} />
-                        <span>Abrir</span>
-                      </a>
+                        <ExternalLink size={14} />
+                        <span>Visualizar Documento</span>
+                      </button>
                       <button
                         type="button"
                         onClick={() => setBudgetAttachment(null)}
-                        className="text-red-400 hover:text-red-300 p-1.5 rounded transition-colors cursor-pointer"
+                        className="text-red-400 hover:text-red-300 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
                         title="Remover Anexo"
                       >
-                        <Trash2 size={15} />
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <label className="border-2 border-dashed border-[var(--line)] hover:border-[var(--lime)]/50 rounded-xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-[#141416]/50">
-                    <Upload size={22} className="text-[var(--lime)]" />
-                    <span className="text-xs font-bold text-white">Clique para selecionar e anexar orçamento</span>
-                    <span className="text-[10px] text-[var(--gray2)] font-mono">Suporta PDF ou Imagens (Max 5MB)</span>
+                  <label className="border-2 border-dashed border-[var(--line)] hover:border-[var(--lime)]/50 rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-[#141416]/50 group">
+                    <Upload size={24} className="text-[var(--lime)] group-hover:scale-110 transition-transform" />
+                    <span className="text-xs font-bold text-white">Clique para selecionar e anexar arquivo de orçamento</span>
+                    <span className="text-[10px] text-[var(--gray2)] font-mono">Formatos aceitos: PDF ou Imagens (JPG, PNG)</span>
                     <input
                       type="file"
                       accept=".pdf,image/*"
