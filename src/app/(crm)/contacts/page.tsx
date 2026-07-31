@@ -2925,7 +2925,7 @@ export default function ContactsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 25
 
-  // ── Scoped Contacts for Metrics Calculation (Affected by Search, Curve, Rep filters) ──
+  // ── Scoped Contacts for Metrics Calculation (Affected by Search, Curve, Rep and Status filters) ──
   const scopedContactsForMetrics = useMemo(() => {
     return contacts.filter(contact => {
       // Enforce rep scope
@@ -2940,9 +2940,12 @@ export default function ContactsPage() {
       const matchesCurve = selectedCurve === 'all' || contact.curve === selectedCurve
       const matchesRep = selectedRep === 'all' || isSameRepresentative(contact.representative, selectedRep)
 
-      return matchesSearch && matchesCurve && matchesRep
+      const repInfo = getContactActivityAndRepurchaseInfo(contact)
+      const matchesStatus = selectedStatus === 'all' || repInfo.computedStatus === selectedStatus
+
+      return matchesSearch && matchesCurve && matchesRep && matchesStatus
     })
-  }, [contacts, isRep, currentUser?.name, searchTerm, selectedCurve, selectedRep])
+  }, [contacts, isRep, currentUser?.name, searchTerm, selectedCurve, selectedRep, selectedStatus])
 
   // ── Metrics Calculation (Total, Ativos, Reativação, Prospecção + Curvas A, B, C, D com % ) ──
   const metrics = useMemo(() => {
@@ -3283,58 +3286,44 @@ export default function ContactsPage() {
     setShowNewContactModal(false)
   }
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchTerm, selectedCurve, selectedRep, selectedStatus, repurchaseCategoryFilter])
-
   return (
-    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-3 overflow-hidden">
-      
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div>
-          <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
-            Carteira de Clientes
-          </h1>
-        </div>
+    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-2.5">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
+          Carteira de Clientes
+        </h1>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button 
-            type="button" 
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
             onClick={() => {
               setSelectedContactForActivity('')
               setShowActivityModal(true)
             }}
-            className="btn btn-secondary py-1.5 px-3 text-xs font-bold flex items-center gap-1.5 cursor-pointer text-white shadow-md"
+            className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer text-white font-bold shadow-md"
           >
-            <CheckCircle size={14} className="text-[var(--lime)]" />
-            <span>REGISTRAR ATIVIDADE</span>
-          </button>
-          
-          <button 
-            type="button" 
-            onClick={() => setShowProspeccaoModal(true)}
-            className="btn btn-secondary py-1.5 px-3 text-xs font-bold flex items-center gap-1.5 cursor-pointer text-white shadow-md"
-          >
-            <UserPlus size={14} className="text-[var(--lime)]" />
-            <span>PROSPECTAR LEADS</span>
+            <CheckCircle size={13} />
+            <span>Registrar Atividade</span>
           </button>
 
-          <button 
-            type="button" 
-            onClick={() => setShowNewContactModal(true)}
-            className="btn btn-primary py-1.5 px-3.5 text-xs font-bold flex items-center gap-1.5 cursor-pointer text-[#060606] shadow-lg"
+          <button
+            onClick={() => setShowProspeccaoModal(true)}
+            className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer text-[var(--lime)] border-[var(--lime)]/30 hover:border-[var(--lime)] font-bold shadow-md"
           >
-            <Plus size={14} />
-            <span>NOVO CLIENTE</span>
+            <UserPlus size={13} />
+            <span>Prospectar Leads</span>
+          </button>
+
+          <button onClick={() => setShowNewContactModal(true)} className="btn btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer">
+            <Plus size={13} />
+            <span>Novo Cliente</span>
           </button>
         </div>
       </div>
 
-      {/* ── KPI METRICS SUMMARY CARDS (Separados em 2 grupos com cores diferenciadas e responsividade a todos os filtros) ── */}
+      {/* ── KPI METRICS SUMMARY CARDS (Separados em 2 grupos com bordas laterais elegantes, ícones coloridos e letras para Curvas) ── */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-        {/* GRUPO 1: STATUS DA CARTEIRA (4 Cards com Fundo Padrão) */}
+        {/* GRUPO 1: STATUS DA CARTEIRA (4 Cards) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {/* Card 1: Total */}
           <div 
@@ -3428,15 +3417,15 @@ export default function ContactsPage() {
           </div>
         </div>
 
-        {/* GRUPO 2: CURVAS ABC (4 Cards com Fundo Diferenciado bg-[#161722] e Selos Vibrantes) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 xl:pt-0 border-t xl:border-t-0 xl:border-l border-[var(--line)] xl:pl-3 bg-gradient-to-r from-transparent via-purple-950/10 to-transparent p-1 rounded-xl">
+        {/* GRUPO 2: CURVAS ABC (4 Cards com Letras A, B, C, D em selos vibrantes) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 xl:pt-0 border-t xl:border-t-0 xl:border-l border-[var(--line)] xl:pl-3">
           {/* Card 5: Curva A */}
           <div 
             onClick={() => setSelectedCurve(prev => prev === 'A' ? 'all' : 'A')}
-            className={`card p-2.5 border-l-[3px] border-l-[var(--lime)] flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            className={`card p-2.5 border-l-[3px] border-l-[var(--lime)]/70 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
               selectedCurve === 'A' 
                 ? 'border-l-[var(--lime)] bg-[var(--charcoal)] shadow-md' 
-                : 'border-purple-500/20 bg-[#161722] hover:border-l-[var(--lime)] hover:bg-[#1b1c2a]'
+                : 'border-[var(--line)] bg-[var(--card)] hover:border-l-[var(--lime)]'
             }`}
             title={selectedCurve === 'A' ? 'Clique para desfiltrar' : 'Filtrar pela Curva A'}
           >
@@ -3453,10 +3442,10 @@ export default function ContactsPage() {
           {/* Card 6: Curva B */}
           <div 
             onClick={() => setSelectedCurve(prev => prev === 'B' ? 'all' : 'B')}
-            className={`card p-2.5 border-l-[3px] border-l-amber-400 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            className={`card p-2.5 border-l-[3px] border-l-amber-400/70 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
               selectedCurve === 'B' 
                 ? 'border-l-amber-400 bg-[var(--charcoal)] shadow-md' 
-                : 'border-purple-500/20 bg-[#161722] hover:border-l-amber-400 hover:bg-[#1b1c2a]'
+                : 'border-[var(--line)] bg-[var(--card)] hover:border-l-amber-400'
             }`}
             title={selectedCurve === 'B' ? 'Clique para desfiltrar' : 'Filtrar pela Curva B'}
           >
@@ -3473,10 +3462,10 @@ export default function ContactsPage() {
           {/* Card 7: Curva C */}
           <div 
             onClick={() => setSelectedCurve(prev => prev === 'C' ? 'all' : 'C')}
-            className={`card p-2.5 border-l-[3px] border-l-sky-500 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            className={`card p-2.5 border-l-[3px] border-l-sky-500/70 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
               selectedCurve === 'C' 
                 ? 'border-l-sky-400 bg-[var(--charcoal)] shadow-md' 
-                : 'border-purple-500/20 bg-[#161722] hover:border-l-sky-400 hover:bg-[#1b1c2a]'
+                : 'border-[var(--line)] bg-[var(--card)] hover:border-l-sky-400'
             }`}
             title={selectedCurve === 'C' ? 'Clique para desfiltrar' : 'Filtrar pela Curva C'}
           >
@@ -3493,10 +3482,10 @@ export default function ContactsPage() {
           {/* Card 8: Curva D */}
           <div 
             onClick={() => setSelectedCurve(prev => prev === 'D' ? 'all' : 'D')}
-            className={`card p-2.5 border-l-[3px] border-l-purple-500 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
+            className={`card p-2.5 border-l-[3px] border-l-purple-500/70 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] ${
               selectedCurve === 'D' 
                 ? 'border-l-purple-400 bg-[var(--charcoal)] shadow-md' 
-                : 'border-purple-500/20 bg-[#161722] hover:border-l-purple-400 hover:bg-[#1b1c2a]'
+                : 'border-[var(--line)] bg-[var(--card)] hover:border-l-purple-400'
             }`}
             title={selectedCurve === 'D' ? 'Clique para desfiltrar' : 'Filtrar pela Curva D'}
           >
@@ -3510,6 +3499,11 @@ export default function ContactsPage() {
             <span className="w-7 h-7 rounded-lg bg-purple-500/15 border border-purple-500/40 text-purple-300 font-mono font-black text-xs flex items-center justify-center shrink-0 select-none shadow-sm">D</span>
           </div>
         </div>
+      </div>
+
+      {/* Filters Bar — 12 Column Layout for Proportional Widths */}
+      <div className="card p-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+        {/* Search — Compact width */}
         <div className={`${isRep ? 'md:col-span-4' : 'md:col-span-3'} flex items-center gap-2 input w-full py-1.5 px-3`}>
           <Search size={13} className="text-[var(--gray2)] shrink-0" />
           <input
