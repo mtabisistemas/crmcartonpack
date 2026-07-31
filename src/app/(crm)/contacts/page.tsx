@@ -2691,8 +2691,16 @@ export default function ContactsPage() {
 
   const getCityCoords = (cityStr?: string, stateStr?: string): [number, number] => {
     const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
-    const cleanCity = cityStr ? norm(cityStr) : ''
-    const cleanState = stateStr ? norm(stateStr) : ''
+    
+    let rawCity = cityStr ? cityStr.split(/[-/]/)[0] : ''
+    const cleanCity = norm(rawCity)
+    
+    let resolvedState = stateStr ? norm(stateStr) : ''
+    if (!resolvedState && cityStr && cityStr.includes('-')) {
+      resolvedState = norm(cityStr.split('-').pop() || '')
+    } else if (!resolvedState && cityStr && cityStr.includes('/')) {
+      resolvedState = norm(cityStr.split('/').pop() || '')
+    }
 
     const coordsMap: Record<string, [number, number]> = {
       'novo hamburgo': [-29.6842, -51.1303],
@@ -2708,6 +2716,7 @@ export default function ContactsPage() {
       'canela': [-29.3658, -50.8092],
       'gramado': [-29.3787, -50.8739],
       'caxias do sul': [-29.1681, -51.1794],
+      'sao marcos': [-28.9714, -51.0681],
       'bento goncalves': [-29.1706, -51.5186],
       'sapiranga': [-29.6381, -51.0069],
       'nova hartz': [-29.5819, -50.9031],
@@ -2776,7 +2785,7 @@ export default function ContactsPage() {
       'df': [-15.7975, -47.8919]
     }
 
-    if (cleanState && stateMap[cleanState]) return stateMap[cleanState]
+    if (resolvedState && stateMap[resolvedState]) return stateMap[resolvedState]
 
     return [-29.6842, -51.1303]
   }
@@ -2791,8 +2800,36 @@ export default function ContactsPage() {
     if (typeof window === 'undefined') return
     let interval: any = null
 
-    if ((window as any).L) {
+    const loadLeafletCluster = () => {
+      if (!document.getElementById('leaflet-cluster-css')) {
+        const link1 = document.createElement('link')
+        link1.id = 'leaflet-cluster-css'
+        link1.rel = 'stylesheet'
+        link1.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css'
+        document.head.appendChild(link1)
+
+        const link2 = document.createElement('link')
+        link2.id = 'leaflet-cluster-default-css'
+        link2.rel = 'stylesheet'
+        link2.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css'
+        document.head.appendChild(link2)
+      }
+
+      if (!document.getElementById('leaflet-cluster-js')) {
+        const script = document.createElement('script')
+        script.id = 'leaflet-cluster-js'
+        script.src = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js'
+        script.onload = () => setLeafletReady(true)
+        document.head.appendChild(script)
+      } else {
+        setLeafletReady(true)
+      }
+    }
+
+    if ((window as any).L && (window as any).L.markerClusterGroup) {
       setLeafletReady(true)
+    } else if ((window as any).L) {
+      loadLeafletCluster()
     } else {
       if (!document.getElementById('leaflet-css')) {
         const link = document.createElement('link')
@@ -2805,12 +2842,12 @@ export default function ContactsPage() {
         const script = document.createElement('script')
         script.id = 'leaflet-js'
         script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
-        script.onload = () => setLeafletReady(true)
+        script.onload = () => loadLeafletCluster()
         document.head.appendChild(script)
       } else {
         interval = setInterval(() => {
           if ((window as any).L) {
-            setLeafletReady(true)
+            loadLeafletCluster()
             clearInterval(interval)
           }
         }, 100)
@@ -3246,7 +3283,6 @@ export default function ContactsPage() {
   // Plot markers on contactsMapRef whenever viewMode === 'mapa', leafletReady or filteredContacts changes
   useEffect(() => {
     if (viewMode !== 'mapa' || !leafletReady || !contactsMapRef.current) return
-
     const L_Global = (window as any).L
     if (!L_Global) return
 
@@ -3269,7 +3305,14 @@ export default function ContactsPage() {
       attribution: '&copy; OpenStreetMap'
     }).addTo(map)
 
-    const coordsCount: Record<string, number> = {}
+    // Use Leaflet MarkerClusterGroup if available, fallback to direct layer Group
+    const markersGroup = (L_Global.markerClusterGroup) ? L_Global.markerClusterGroup({
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      maxClusterRadius: 40
+    }) : L_Global.layerGroup()
+
     const bounds: [number, number][] = []
 
     filteredContacts.forEach((contact) => {
@@ -3281,20 +3324,15 @@ export default function ContactsPage() {
       else if (computedStatus === 'reativacao') pinColor = '#f97316' // orange
       else if ((computedStatus as string) === 'inativo') pinColor = '#64748b' // gray
 
-      let baseCoords = getCityCoords(contact.city) || [-29.6842, -51.1303]
-      const key = `${baseCoords[0].toFixed(3)}_${baseCoords[1].toFixed(3)}`
-      const indexInCity = coordsCount[key] || 0
-      coordsCount[key] = indexInCity + 1
+      const baseCoords = getCityCoords(contact.city, contact.state) || [-29.6842, -51.1303]
 
-      let finalLat = baseCoords[0]
-      let finalLng = baseCoords[1]
+      // Natural deterministic scatter based on contact ID
+      const key = contact.id || contact.cnpj || contact.company || contact.name || 'c'
+      const h1 = Math.sin(key.split('').reduce((a, b) => a + b.charCodeAt(0), 0) * 888.8)
+      const h2 = Math.cos(key.split('').reduce((a, b) => a + b.charCodeAt(0), 0) * 777.7)
 
-      if (indexInCity > 0) {
-        const angle = indexInCity * 0.85
-        const distance = Math.min(0.002, 0.00025 * Math.sqrt(indexInCity))
-        finalLat += distance * Math.cos(angle)
-        finalLng += distance * Math.sin(angle)
-      }
+      const finalLat = baseCoords[0] + (h1 * 0.008)
+      const finalLng = baseCoords[1] + (h2 * 0.008)
 
       const finalLatLng: [number, number] = [finalLat, finalLng]
       bounds.push(finalLatLng)
@@ -3310,10 +3348,11 @@ export default function ContactsPage() {
           </div>
         `,
         iconSize: [22, 26],
-        iconAnchor: [11, 26]
+        iconAnchor: [11, 26],
+        popupAnchor: [0, -26]
       })
 
-      const marker = L_Global.marker(finalLatLng, { icon: customIcon }).addTo(map)
+      const marker = L_Global.marker(finalLatLng, { icon: customIcon })
 
       const compName = contact.company || contact.name || 'Cliente'
       const cityStr = contact.city || 'Cidade não informada'
@@ -4011,15 +4050,15 @@ export default function ContactsPage() {
           })}
         </div>
       ) : (
-        /* ── ADMIN / GESTOR TABLE VIEW (LAYOUT EXATO CONFORME PRINT 2) ── */
+        /* ── ADMIN / GESTOR TABLE VIEW (RESTAURAÇÃO EXATA DO ESTILO ORIGINAL AF003FA) ── */
         <div className="card overflow-hidden border border-[var(--line)] rounded-2xl flex flex-col">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-[var(--line)] bg-[var(--charcoal)]/50 text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider">
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="sticky top-0 z-10 bg-[var(--charcoal)] shadow-sm">
+                <tr className="border-b border-[var(--line)] bg-[var(--charcoal)] font-mono text-[9px] text-[var(--gray)] uppercase tracking-wider select-none">
                   <th 
                     onClick={() => handleSort('company')} 
-                    className="py-2.5 px-4 cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    className="py-2.5 px-3 pl-4 whitespace-nowrap cursor-pointer hover:text-[var(--lime)] transition-colors"
                     title="Ordenar por Cliente / CNPJ"
                   >
                     <div className="flex items-center gap-1">
@@ -4034,7 +4073,7 @@ export default function ContactsPage() {
 
                   <th 
                     onClick={() => handleSort('curve')} 
-                    className="py-2.5 px-3 text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    className="py-2.5 px-3 whitespace-nowrap text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
                     title="Ordenar por Curva ABC"
                   >
                     <div className="flex items-center justify-center gap-1">
@@ -4049,7 +4088,7 @@ export default function ContactsPage() {
 
                   <th 
                     onClick={() => handleSort('city')} 
-                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    className="py-2.5 px-3 whitespace-nowrap cursor-pointer hover:text-[var(--lime)] transition-colors"
                     title="Ordenar por Cidade"
                   >
                     <div className="flex items-center gap-1">
@@ -4064,7 +4103,7 @@ export default function ContactsPage() {
 
                   <th 
                     onClick={() => handleSort('state')} 
-                    className="py-2.5 px-3 text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    className="py-2.5 px-3 whitespace-nowrap text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
                     title="Ordenar por Estado (UF)"
                   >
                     <div className="flex items-center justify-center gap-1">
@@ -4079,7 +4118,7 @@ export default function ContactsPage() {
 
                   <th 
                     onClick={() => handleSort('status')} 
-                    className="py-2.5 px-3 text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    className="py-2.5 px-3 whitespace-nowrap text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
                     title="Ordenar por Status"
                   >
                     <div className="flex items-center justify-center gap-1">
@@ -4094,7 +4133,7 @@ export default function ContactsPage() {
 
                   <th 
                     onClick={() => handleSort('representative')} 
-                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    className="py-2.5 px-3 whitespace-nowrap cursor-pointer hover:text-[var(--lime)] transition-colors"
                     title="Ordenar por Representante"
                   >
                     <div className="flex items-center gap-1">
@@ -4109,8 +4148,8 @@ export default function ContactsPage() {
 
                   <th 
                     onClick={() => handleSort('lastPurchaseDate')} 
-                    className="py-2.5 px-3 text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
-                    title="Ordenar por Última Compra"
+                    className="py-2.5 px-3 whitespace-nowrap text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    title="Ordenar por Data da Última Compra"
                   >
                     <div className="flex items-center justify-center gap-1">
                       <span>Última Compra</span>
@@ -4122,7 +4161,7 @@ export default function ContactsPage() {
                     </div>
                   </th>
 
-                  <th className="py-2.5 px-3 text-center">Localização</th>
+                  <th className="py-2.5 px-3 pr-4 whitespace-nowrap text-center">Localização</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--line)]">
@@ -4134,54 +4173,59 @@ export default function ContactsPage() {
                     <tr 
                       key={contact.id} 
                       onClick={() => setSelectedContact(contact)}
-                      className="hover:bg-[var(--lime)]/5 transition-colors cursor-pointer group"
+                      className="hover:bg-[var(--charcoal)] transition-colors cursor-pointer group"
                     >
                       {/* Cliente / CNPJ */}
-                      <td className="py-2.5 px-4">
+                      <td className="py-2 px-3 pl-4 whitespace-nowrap">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--gray)] group-hover:border-[var(--lime)]/40 group-hover:text-[var(--lime)] flex items-center justify-center shrink-0 transition-colors">
-                            <Building2 size={13} />
+                          <div className="w-7 h-7 rounded-lg bg-[var(--line)] flex items-center justify-center text-[var(--white)] shrink-0">
+                            <Building2 size={14} />
                           </div>
-                          <div className="min-w-0">
-                            <span className="text-xs font-bold text-[var(--white)] group-hover:text-[var(--lime)] transition-colors block truncate">
-                              {contact.company || contact.name}
-                            </span>
-                            <span className="text-[10px] font-mono text-[var(--gray2)] block">
-                              {contact.cnpj || 'CNPJ não informado'}
-                            </span>
+                          <div className="min-w-0 max-w-[280px]">
+                            <div className="text-xs font-bold text-[var(--white)] flex items-center gap-2">
+                              <span className="truncate" title={contact.company || contact.name}>{contact.company || contact.name}</span>
+                            </div>
+                            <div className="text-[10px] text-[var(--gray)] font-mono leading-tight">{contact.cnpj || 'CNPJ não informado'}</div>
                           </div>
                         </div>
                       </td>
 
-                      {/* Curva ABC */}
-                      <td className="py-2 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[var(--charcoal)] border border-[var(--line)] text-[var(--gray)]">
+                      {/* Curva ABC (Badge Original) */}
+                      <td className="py-2 px-3 whitespace-nowrap text-center">
+                        <span 
+                          className="font-mono text-[10px] font-black px-2 py-0.5 rounded whitespace-nowrap inline-block shrink-0"
+                          style={{
+                            background: contact.curve === 'A' ? 'rgba(180,217,50,0.12)' : contact.curve === 'B' ? 'rgba(240,196,25,0.1)' : 'rgba(255,255,25,0.05)',
+                            color: contact.curve === 'A' ? 'var(--lime)' : contact.curve === 'B' ? 'var(--yellow)' : 'var(--gray)',
+                            border: `1px solid ${contact.curve === 'A' ? 'rgba(180,217,50,0.25)' : contact.curve === 'B' ? 'rgba(240,196,25,0.2)' : 'var(--line)'}`
+                          }}
+                        >
                           Curva {contact.curve || 'D'}
                         </span>
                       </td>
 
                       {/* Cidade */}
-                      <td className="py-2 px-3 text-xs text-[var(--gray)] font-mono uppercase">
-                        {contact.city || '-'}
+                      <td className="py-2 px-3 whitespace-nowrap">
+                        <span className="text-[11px] text-[var(--white)] font-mono">{(contact.city || '').toUpperCase() || <span className="text-[var(--gray2)]">-</span>}</span>
                       </td>
 
                       {/* UF */}
-                      <td className="py-2 px-3 text-xs text-center text-[var(--gray)] font-mono uppercase">
-                        {contact.state || '-'}
+                      <td className="py-2 px-3 whitespace-nowrap text-center">
+                        <span className="text-[11px] font-bold text-[var(--gray)] font-mono uppercase">{contact.state || '-'}</span>
                       </td>
 
                       {/* Status */}
-                      <td className="py-2 px-3 text-center whitespace-nowrap">
+                      <td className="py-2 px-3 whitespace-nowrap text-center">
                         {(() => {
                           if (effectiveStatus === 'prospeccao') return (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-amber-400/10 border border-amber-400/25 text-amber-300">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-pulse" />
                               Prospecção
                             </span>
                           )
                           if (effectiveStatus === 'reativacao') return (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-orange-500/10 border border-orange-500/25 text-orange-400">
-                              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 inline-block animate-pulse" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" />
                               Reativação
                             </span>
                           )
@@ -4194,23 +4238,35 @@ export default function ContactsPage() {
                         })()}
                       </td>
 
-                      {/* Representante com icone User */}
-                      <td className="py-2 px-3 text-xs font-mono truncate max-w-[170px]">
-                        <div className="flex items-center gap-1.5 text-zinc-200">
-                          <User size={13} className="text-zinc-400 shrink-0" />
-                          <span className="font-bold text-white">{formatCanonicalRepName(contact.representative) || '-'}</span>
+                      {/* Representante */}
+                      <td className="py-2 px-3 whitespace-nowrap text-xs font-semibold text-[var(--white)] max-w-[200px]">
+                        <div className="flex items-center gap-1.5">
+                          <User size={11} className="text-[var(--gray)] shrink-0" />
+                          <span className="truncate" title={formatCanonicalRepName(contact.representative)}>
+                            {formatCanonicalRepName(contact.representative) || <span className="text-[var(--gray2)] font-normal italic">Sem representante</span>}
+                          </span>
                         </div>
                       </td>
 
                       {/* Última Compra */}
-                      <td className="py-2 px-3 text-xs text-center font-mono text-zinc-300 font-semibold">
-                        {repInfo.daysSinceLastPurchase !== null ? `${repInfo.daysSinceLastPurchase} dias` : '-'}
+                      <td className="py-2 px-3 whitespace-nowrap text-center font-mono">
+                        <span className="text-xs font-bold text-[var(--white)] font-mono">
+                          {repInfo.daysSinceLastPurchase !== null ? `${repInfo.daysSinceLastPurchase} dias` : '-'}
+                        </span>
                       </td>
 
                       {/* Localização */}
-                      <td className="py-2 px-3 text-center">
-                        <button onClick={(e) => openMap(e, contact)} className="text-[var(--lime)] hover:scale-110 transition-transform cursor-pointer" title="Ver no Google Maps">
-                          <MapPin size={14} />
+                      <td className="py-2 px-3 pr-4 text-center whitespace-nowrap">
+                        <button 
+                          onClick={(e) => openMap(e, contact)}
+                          title="Ver no Google Maps"
+                          className={`inline-flex items-center justify-center transition-colors ${
+                            (contact.address || contact.city)
+                              ? 'text-[var(--lime)] hover:opacity-70 cursor-pointer'
+                              : 'text-[var(--gray2)] opacity-30 pointer-events-none'
+                          }`}
+                        >
+                          <MapPin size={15} />
                         </button>
                       </td>
                     </tr>
