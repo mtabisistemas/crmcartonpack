@@ -775,31 +775,43 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal }: DealDr
                   </div>
                 </div>
 
-                {/* Barra de Probabilidade de Fechamento (Idêntica ao Print 4) */}
-                <div className="flex flex-col gap-2 p-3.5 rounded-xl bg-[var(--charcoal)] border border-[var(--line)]">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
-                      PROB. FECHAMENTO
-                    </label>
-                    <span className="text-sm font-black font-mono text-[var(--lime)]">
-                      {probability}%
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="100" 
-                      step="5"
-                      value={probability}
-                      onChange={(e) => {
-                        const val = Number(e.target.value)
-                        setProbability(val)
-                      }}
-                      className="w-full h-2 bg-[var(--card)] rounded-lg appearance-none cursor-pointer accent-[var(--lime)] border border-[var(--line)]"
-                    />
-                  </div>
-                </div>
+                {/* Barra de Probabilidade de Fechamento com Cores Dinâmicas (Idêntica aos Prints 1-4) */}
+                {(() => {
+                  const getProbColor = (p: number) => {
+                    if (p <= 30) return { hex: '#ef4444', textClass: 'text-red-400' }
+                    if (p <= 60) return { hex: '#f59e0b', textClass: 'text-amber-400' }
+                    if (p <= 80) return { hex: '#b4d932', textClass: 'text-[var(--lime)]' }
+                    return { hex: '#10b981', textClass: 'text-emerald-400' }
+                  }
+                  const probColor = getProbColor(probability)
+                  return (
+                    <div className="flex flex-col gap-2.5 p-3.5 rounded-xl bg-[var(--charcoal)] border border-[var(--line)]">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+                          PROB. FECHAMENTO
+                        </label>
+                        <span className={`text-sm font-black font-mono ${probColor.textClass}`}>
+                          {probability}%
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="100" 
+                          step="5"
+                          value={probability}
+                          onChange={(e) => setProbability(Number(e.target.value))}
+                          style={{
+                            background: `linear-gradient(to right, ${probColor.hex} 0%, ${probColor.hex} ${probability}%, #18181b ${probability}%, #18181b 100%)`,
+                            accentColor: probColor.hex
+                          }}
+                          className="w-full h-2 rounded-lg appearance-none cursor-pointer border border-[var(--line)]"
+                        />
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {(stage === 'pedido' || orderNumber) && (
                   <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-[var(--charcoal)] border border-[var(--lime)]/40 animate-fade-in">

@@ -43,7 +43,32 @@ function DealCard({ deal, overlay = false, onCardClick }: { deal: Deal; overlay?
     : (deal.estimated_value && deal.estimated_value > 0 ? deal.estimated_value : 0)
 
   const prob = deal.probability ?? 50
-  const nextActionText = deal.next_action || (deal.activities && deal.activities.length > 0 ? deal.activities[0].content : null)
+
+  const getProbBadgeStyle = (p: number) => {
+    if (p <= 30) return 'border-red-500/40 text-red-400 bg-red-500/10'
+    if (p <= 60) return 'border-amber-500/40 text-amber-400 bg-amber-500/10'
+    if (p <= 80) return 'border-[var(--lime)]/40 text-[var(--lime)] bg-[var(--lime)]/10'
+    return 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10'
+  }
+
+  // Buscar compromisso ativo da agenda para este negócio/cliente
+  let agendaApt: any = null
+  try {
+    const rawApts = typeof window !== 'undefined' ? localStorage.getItem('cp_crm_appointments') : null
+    if (rawApts) {
+      const parsed = JSON.parse(rawApts)
+      if (Array.isArray(parsed)) {
+        const cleanTitle = (deal.title || '').trim().toLowerCase()
+        agendaApt = parsed.find((a: any) => 
+          a.status !== 'cancelado' && (
+            (a.deal_id && a.deal_id === deal.id) ||
+            (a.company_name && a.company_name.trim().toLowerCase() === cleanTitle) ||
+            (a.deal_title && a.deal_title.trim().toLowerCase() === cleanTitle)
+          )
+        )
+      }
+    }
+  } catch (e) {}
 
   const style = {
     ...(overlay ? {} : {
@@ -63,31 +88,33 @@ function DealCard({ deal, overlay = false, onCardClick }: { deal: Deal; overlay?
       onClick={() => onCardClick?.(deal)}
       className="card p-3 rounded-xl border border-[var(--line)] bg-[var(--card)] hover:border-[var(--lime)]/50 transition-all cursor-pointer shadow-sm animate-fade-in select-none group flex flex-col gap-1.5"
     >
-      {/* Top Row: Client Name + Probability Badge */}
+      {/* Top Row: Client Name + Dynamic Colored Probability Badge */}
       <div className="flex items-start justify-between gap-2">
         <div className="text-xs font-bold text-[var(--white)] font-display uppercase tracking-tight leading-snug line-clamp-2 flex-1 group-hover:text-[var(--lime)] transition-colors">
           {deal.title}
         </div>
 
-        <div className="px-2 py-0.5 rounded-md bg-[var(--charcoal)] border border-amber-500/30 text-amber-400 font-mono text-[10px] font-bold shrink-0">
+        <div className={`px-2 py-0.5 rounded-md border font-mono text-[10px] font-bold shrink-0 ${getProbBadgeStyle(prob)}`}>
           {prob}%
         </div>
       </div>
 
-      {/* Middle Row: Agenda / Ação se houver */}
-      {nextActionText && (
-        <div className="text-[11px] text-[var(--gray)] font-mono truncate flex items-center gap-1 mt-0.5">
-          <span className="text-[var(--gray2)] shrink-0 font-normal">Ação:</span>
-          <span className="truncate text-white/90">{nextActionText}</span>
+      {/* Middle Row: Somente Compromisso da Agenda (com ícone de agenda) */}
+      {agendaApt && (
+        <div className="text-[11px] text-[var(--gray)] font-mono truncate flex items-center gap-1.5 mt-0.5">
+          <Calendar size={12} className="text-[var(--lime)] shrink-0" />
+          <span className="truncate text-white/90 font-medium">
+            {agendaApt.title} ({agendaApt.date.split('-').reverse().join('/')} {agendaApt.time})
+          </span>
         </div>
       )}
 
       {/* Thin Horizontal Line Divider */}
       <div className="border-t border-[var(--line)]/60 my-1.5" />
 
-      {/* Bottom Row: Value (Left) + Days Since Last Activity/Stage Change (Right) */}
-      <div className="flex items-center justify-between font-mono text-xs">
-        <div className="font-black text-[var(--white)]">
+      {/* Bottom Row: Value (Menor) + Days */}
+      <div className="flex items-center justify-between font-mono text-[11px]">
+        <div className="font-bold text-white/90">
           {formatCurrency(value || 0)}
         </div>
 
