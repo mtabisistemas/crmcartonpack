@@ -2684,16 +2684,16 @@ export default function ContactsPage() {
     }
   }, [])
 
-  // View mode state (Lista / Mapa) & Leaflet Map setup
   const [viewMode, setViewMode] = useState<'lista' | 'mapa'>('lista')
   const contactsMapRef = useRef<HTMLDivElement>(null)
   const contactsMapInstanceRef = useRef<any>(null)
   const [leafletReady, setLeafletReady] = useState(false)
 
-  const getCityCoords = (cityStr?: string): [number, number] | undefined => {
-    if (!cityStr) return undefined
+  const getCityCoords = (cityStr?: string, stateStr?: string): [number, number] => {
     const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
-    const clean = norm(cityStr)
+    const cleanCity = cityStr ? norm(cityStr) : ''
+    const cleanState = stateStr ? norm(stateStr) : ''
+
     const coordsMap: Record<string, [number, number]> = {
       'novo hamburgo': [-29.6842, -51.1303],
       'dois irmaos': [-29.5800, -51.0833],
@@ -2742,6 +2742,7 @@ export default function ContactsPage() {
       'santo andre': [-23.6639, -46.5383],
       'sorocaba': [-23.5015, -47.4526],
       'ribeirao preto': [-21.1704, -47.8103],
+      'franca': [-20.5386, -47.4008],
       'sao jose dos campos': [-23.1896, -45.8841],
       'rio de janeiro': [-22.9068, -43.1729],
       'belo horizonte': [-19.9167, -43.9345],
@@ -2751,9 +2752,39 @@ export default function ContactsPage() {
       'itabuna': [-14.7878, -39.2783],
       'vitoria da conquista': [-14.8661, -40.8394],
       'manaus': [-3.1190, -60.0217],
-      'rio branco': [-9.9749, -67.8100]
+      'rio branco': [-9.9749, -67.8100],
+      'maceio': [-9.6658, -35.7350],
+      'recife': [-8.0476, -34.8770],
+      'fortaleza': [-3.7319, -38.5267],
+      'porto velho': [-8.7619, -63.9039]
     }
-    return coordsMap[clean]
+
+    if (cleanCity && coordsMap[cleanCity]) return coordsMap[cleanCity]
+
+    const stateMap: Record<string, [number, number]> = {
+      'rs': [-29.6842, -51.1303],
+      'sc': [-27.5954, -48.5480],
+      'pr': [-25.4284, -49.2733],
+      'sp': [-23.5505, -46.6333],
+      'mg': [-19.9167, -43.9345],
+      'rj': [-22.9068, -43.1729],
+      'ba': [-12.9777, -38.5016],
+      'am': [-3.1190, -60.0217],
+      'ac': [-9.9749, -67.8100],
+      'al': [-9.6658, -35.7350],
+      'go': [-16.6869, -49.2648],
+      'df': [-15.7975, -47.8919]
+    }
+
+    if (cleanState && stateMap[cleanState]) return stateMap[cleanState]
+
+    return [-29.6842, -51.1303]
+  }
+
+  const hashStr = (str: string) => {
+    let h = 0
+    for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0
+    return h
   }
 
   useEffect(() => {
@@ -3980,7 +4011,7 @@ export default function ContactsPage() {
           })}
         </div>
       ) : (
-        /* ── ADMIN / GESTOR TABLE VIEW ── */
+        /* ── ADMIN / GESTOR TABLE VIEW (LAYOUT EXATO CONFORME PRINT 2) ── */
         <div className="card overflow-hidden border border-[var(--line)] rounded-2xl flex flex-col">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -4047,6 +4078,21 @@ export default function ContactsPage() {
                   </th>
 
                   <th 
+                    onClick={() => handleSort('status')} 
+                    className="py-2.5 px-3 text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
+                    title="Ordenar por Status"
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span>Status</span>
+                      {sortField === 'status' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
+                      ) : (
+                        <ArrowUpDown size={10} className="opacity-30" />
+                      )}
+                    </div>
+                  </th>
+
+                  <th 
                     onClick={() => handleSort('representative')} 
                     className="py-2.5 px-3 cursor-pointer hover:text-[var(--lime)] transition-colors"
                     title="Ordenar por Representante"
@@ -4062,19 +4108,20 @@ export default function ContactsPage() {
                   </th>
 
                   <th 
-                    onClick={() => handleSort('status')} 
+                    onClick={() => handleSort('lastPurchaseDate')} 
                     className="py-2.5 px-3 text-center cursor-pointer hover:text-[var(--lime)] transition-colors"
-                    title="Ordenar por Status"
+                    title="Ordenar por Última Compra"
                   >
                     <div className="flex items-center justify-center gap-1">
-                      <span>Status</span>
-                      {sortField === 'status' ? (
+                      <span>Última Compra</span>
+                      {sortField === 'lastPurchaseDate' ? (
                         sortOrder === 'asc' ? <ArrowUp size={11} className="text-[var(--lime)]" /> : <ArrowDown size={11} className="text-[var(--lime)]" />
                       ) : (
                         <ArrowUpDown size={10} className="opacity-30" />
                       )}
                     </div>
                   </th>
+
                   <th className="py-2.5 px-3 text-center">Localização</th>
                 </tr>
               </thead>
@@ -4123,11 +4170,6 @@ export default function ContactsPage() {
                         {contact.state || '-'}
                       </td>
 
-                      {/* Representante */}
-                      <td className="py-2 px-3 text-xs text-[var(--gray)] font-mono truncate max-w-[140px]">
-                        {formatCanonicalRepName(contact.representative) || '-'}
-                      </td>
-
                       {/* Status */}
                       <td className="py-2 px-3 text-center whitespace-nowrap">
                         {(() => {
@@ -4152,9 +4194,22 @@ export default function ContactsPage() {
                         })()}
                       </td>
 
+                      {/* Representante com icone User */}
+                      <td className="py-2 px-3 text-xs font-mono truncate max-w-[170px]">
+                        <div className="flex items-center gap-1.5 text-zinc-200">
+                          <User size={13} className="text-zinc-400 shrink-0" />
+                          <span className="font-bold text-white">{formatCanonicalRepName(contact.representative) || '-'}</span>
+                        </div>
+                      </td>
+
+                      {/* Última Compra */}
+                      <td className="py-2 px-3 text-xs text-center font-mono text-zinc-300 font-semibold">
+                        {repInfo.daysSinceLastPurchase !== null ? `${repInfo.daysSinceLastPurchase} dias` : '-'}
+                      </td>
+
                       {/* Localização */}
                       <td className="py-2 px-3 text-center">
-                        <button onClick={(e) => openMap(e, contact)} className="text-[var(--gray2)] hover:text-[var(--lime)] transition-colors">
+                        <button onClick={(e) => openMap(e, contact)} className="text-[var(--lime)] hover:scale-110 transition-transform cursor-pointer" title="Ver no Google Maps">
                           <MapPin size={14} />
                         </button>
                       </td>
