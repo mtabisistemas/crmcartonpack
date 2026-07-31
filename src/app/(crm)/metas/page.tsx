@@ -521,23 +521,6 @@ export default function MetasPage() {
                 />
                 <span className="text-[10px] text-[var(--gray2)] font-mono">dias</span>
               </div>
-
-              {/* Filtro por Função (Igual ao estilo da Página de Usuários) */}
-              <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-3 py-1.5 rounded-xl">
-                <Users size={13} className="text-[var(--lime)]" />
-                <span className="text-[10px] font-mono font-bold text-[var(--gray2)] uppercase">Função:</span>
-                <select
-                  value={selectedRole}
-                  onChange={e => setSelectedRole(e.target.value)}
-                  className="bg-transparent text-xs font-mono font-bold text-[var(--white)] outline-none cursor-pointer"
-                >
-                  <option value="all" className="bg-[var(--charcoal)]">Todas as Funções</option>
-                  <option value="gestor" className="bg-[var(--charcoal)]">Gestor Comercial</option>
-                  <option value="vendedor" className="bg-[var(--charcoal)]">Vendedor</option>
-                  <option value="representante" className="bg-[var(--charcoal)]">Representante</option>
-                  <option value="admin" className="bg-[var(--charcoal)]">Administrador</option>
-                </select>
-              </div>
             </div>
 
             {/* Alternador de Visualização (Mensal / Semanal / Diária) */}
@@ -580,7 +563,7 @@ export default function MetasPage() {
           </div>
 
           {/* Cards Resumo Geral da Equipe */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
             {/* Card 1: Meta Faturamento */}
             <div className="card p-4 bg-[var(--card)] border border-[var(--line)] border-l-4 border-l-[var(--lime)] flex items-center justify-between shadow-sm">
               <div>
@@ -624,30 +607,46 @@ export default function MetasPage() {
             </div>
           </div>
 
+          {/* ── BARRA DE FILTROS DEDICADA (Exatamente igual ao Padrão de Contatos e Usuários) ── */}
+          <div className="card p-3 grid grid-cols-1 md:grid-cols-5 gap-3 items-center">
+            {/* Campo de Busca por Nome (Aumentado o comprimento: 3 colunas) */}
+            <div className="md:col-span-3 flex items-center gap-2 input w-full py-1.5 px-3">
+              <Search size={13} className="text-[var(--gray2)] shrink-0" />
+              <input
+                className="bg-transparent border-none outline-none w-full text-xs text-[var(--white)] placeholder-[var(--gray2)]"
+                placeholder="Buscar por vendedor ou representante..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            {/* Filtro de Função ao lado do campo de busca (2 colunas) */}
+            <div className="md:col-span-2">
+              <select 
+                className="input w-full py-1.5 px-3 text-xs"
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+              >
+                <option value="all">Todas as Funções</option>
+                <option value="gestor">Gestor Comercial</option>
+                <option value="vendedor">Vendedor</option>
+                <option value="representante">Representante</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+          </div>
+
           {/* Tabela de Definição de Metas por Vendedor / Representante */}
           <div className="card p-5 bg-[var(--card)] border border-[var(--line)] flex flex-col gap-4 overflow-hidden">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
+            <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
               <h3 className="text-sm font-bold text-[var(--white)] font-display flex items-center gap-2">
                 <Users size={16} className="text-[var(--lime)]" />
                 <span>Metas Individuais da Equipe Comercial ({filteredTeamUsers.length} Usuários)</span>
               </h3>
 
-              <div className="flex items-center gap-3">
-                {/* Search Bar — Exact match to Users Page */}
-                <div className="flex items-center gap-2 input py-1.5 px-3 w-full sm:w-64">
-                  <Search size={13} className="text-[var(--gray2)] shrink-0" />
-                  <input
-                    className="bg-transparent border-none outline-none w-full text-xs text-[var(--white)] placeholder-[var(--gray2)]"
-                    placeholder="Buscar por nome..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-
-                <span className="text-[10px] font-mono text-[var(--gray2)] uppercase shrink-0">
-                  {MONTH_NAMES[parseInt(selectedMonth, 10) - 1]} / {selectedYear}
-                </span>
-              </div>
+              <span className="text-[10px] font-mono text-[var(--gray2)] uppercase shrink-0">
+                {MONTH_NAMES[parseInt(selectedMonth, 10) - 1]} / {selectedYear}
+              </span>
             </div>
 
             {filteredTeamUsers.length === 0 ? (
