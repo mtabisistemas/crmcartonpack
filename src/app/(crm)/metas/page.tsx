@@ -64,9 +64,10 @@ export default function MetasPage() {
   const [currentUser, setCurrentUser] = useState<any | null>(null)
   const [activeTab, setActiveTab] = useState<'metas' | 'motivos'>('metas')
 
-  // Ano e Mês selecionados para metas
-  const [selectedYear, setSelectedYear] = useState<string>('2026')
-  const [selectedMonth, setSelectedMonth] = useState<string>('07') // "07" = Julho
+  // Ano e Mês selecionados para metas (Inicia dinamicamente pelo ano e mês atual)
+  const now = new Date()
+  const [selectedYear, setSelectedYear] = useState<string>(String(now.getFullYear()))
+  const [selectedMonth, setSelectedMonth] = useState<string>(String(now.getMonth() + 1).padStart(2, '0'))
   const [viewMode, setViewMode] = useState<'mensal' | 'semanal' | 'diaria'>('mensal')
 
   // Lista de Usuários Cadastrados no CRM

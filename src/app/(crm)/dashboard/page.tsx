@@ -865,7 +865,7 @@ export default function DashboardPage() {
         }
       })
 
-      const fallbackBase = 1500000
+      const fallbackBase = 390000 // R$ 390.000,00 (13 usuários x R$ 30.000)
       const fallbackTotal = monthFilter === 'all' ? fallbackBase * 12 : fallbackBase
       totalGoal = sumGoal > 0 ? sumGoal : fallbackTotal
     } else {

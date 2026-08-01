@@ -351,8 +351,8 @@ export default function DiarioDeBordoPage() {
         }
       })
 
-      if (salesGoalSum === 0) salesGoalSum = 1500000
-      if (visitsGoalSum === 0) visitsGoalSum = 40
+      if (salesGoalSum === 0) salesGoalSum = 390000 // R$ 390.000,00 (13 usuários x R$ 30.000)
+      if (visitsGoalSum === 0) visitsGoalSum = 130
     } else {
       const selUser = availableReps.find(r => r === activeFilter || isSameRepresentative(r, activeFilter))
       const targetName = selUser || activeFilter
