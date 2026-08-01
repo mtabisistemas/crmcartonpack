@@ -371,16 +371,35 @@ export default function DiarioDeBordoPage() {
       const selUser = availableReps.find(r => r === activeFilter || isSameRepresentative(r, activeFilter))
       const targetName = selUser || activeFilter
 
-      const k1 = `${yearStr}_${monthStr}_${targetName}`
-      const gObj = goalsMap[k1]
-      
-      if (gObj) {
-        salesGoalSum = Number(gObj.salesGoal || 0)
-        userHasVisitsGoal = gObj.hasVisitsGoal !== false && (gObj.visitsGoal === undefined || Number(gObj.visitsGoal) > 0)
-        visitsGoalSum = userHasVisitsGoal ? Number(gObj.visitsGoal !== undefined ? gObj.visitsGoal : 20) : 0
+      // Robust goal lookup for individual user matching keys, names, IDs, or representatives
+      let gObj: UserGoal | null = null
+      const prefix = `${yearStr}_${monthStr}_`
 
-        userHasContactsGoal = gObj.hasContactsGoal !== false && (gObj.contactsGoal === undefined || Number(gObj.contactsGoal) > 0)
-        contactsGoalSum = userHasContactsGoal ? Number(gObj.contactsGoal !== undefined ? gObj.contactsGoal : 400) : 0
+      Object.keys(goalsMap).forEach(key => {
+        if (key.startsWith(prefix)) {
+          const g = goalsMap[key]
+          const keyUser = key.replace(prefix, '')
+          const gName = g?.userName || keyUser
+          const gId = g?.userId || ''
+
+          if (
+            isSameRepresentative(gName, targetName) ||
+            isSameRepresentative(keyUser, targetName) ||
+            (gId && isSameRepresentative(gId, targetName))
+          ) {
+            gObj = g
+          }
+        }
+      })
+
+      if (gObj) {
+        const goalItem = gObj as UserGoal
+        salesGoalSum = Number(goalItem.salesGoal || 0)
+        userHasVisitsGoal = goalItem.hasVisitsGoal !== false && Number(goalItem.visitsGoal) > 0
+        visitsGoalSum = userHasVisitsGoal ? Number(goalItem.visitsGoal !== undefined ? goalItem.visitsGoal : 20) : 0
+
+        userHasContactsGoal = goalItem.hasContactsGoal !== false && Number(goalItem.contactsGoal) > 0
+        contactsGoalSum = userHasContactsGoal ? Number(goalItem.contactsGoal !== undefined ? goalItem.contactsGoal : 400) : 0
       } else {
         salesGoalSum = 30000
         visitsGoalSum = 20

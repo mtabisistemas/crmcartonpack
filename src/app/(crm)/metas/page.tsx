@@ -822,14 +822,14 @@ export default function MetasPage() {
                                   <button
                                     type="button"
                                     onClick={() => handleToggleGoal(key, 'visitsGoal', !isVisitsActive)}
-                                    className={`p-1 rounded-md transition-all cursor-pointer border ${
-                                      isVisitsActive 
-                                        ? 'bg-[var(--lime)]/15 border-[var(--lime)]/40 text-[var(--lime)]' 
-                                        : 'bg-neutral-800 border-neutral-700 text-gray-500 hover:text-gray-300'
-                                    }`}
+                                    className="bg-transparent border-none p-0.5 outline-none cursor-pointer flex items-center justify-center"
                                     title={isVisitsActive ? 'Desabilitar Meta de Visitas (zerar)' : 'Habilitar Meta de Visitas'}
                                   >
-                                    {isVisitsActive ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                                    {isVisitsActive ? (
+                                      <ToggleRight size={20} className="text-[var(--lime)] transition-colors" />
+                                    ) : (
+                                      <ToggleLeft size={20} className="text-neutral-600 hover:text-neutral-400 transition-colors" />
+                                    )}
                                   </button>
                                   <div className={`inline-flex items-center gap-1 bg-[var(--charcoal)] border rounded-xl px-2.5 py-1 transition-all ${
                                     isVisitsActive ? 'border-[var(--line)] focus-within:border-[var(--lime)]' : 'border-neutral-800 opacity-40 select-none'
@@ -863,14 +863,14 @@ export default function MetasPage() {
                                   <button
                                     type="button"
                                     onClick={() => handleToggleGoal(key, 'contactsGoal', !isContactsActive)}
-                                    className={`p-1 rounded-md transition-all cursor-pointer border ${
-                                      isContactsActive 
-                                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400' 
-                                        : 'bg-neutral-800 border-neutral-700 text-gray-500 hover:text-gray-300'
-                                    }`}
+                                    className="bg-transparent border-none p-0.5 outline-none cursor-pointer flex items-center justify-center"
                                     title={isContactsActive ? 'Desabilitar Meta de Contatos (zerar)' : 'Habilitar Meta de Contatos'}
                                   >
-                                    {isContactsActive ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                                    {isContactsActive ? (
+                                      <ToggleRight size={20} className="text-[var(--lime)] transition-colors" />
+                                    ) : (
+                                      <ToggleLeft size={20} className="text-neutral-600 hover:text-neutral-400 transition-colors" />
+                                    )}
                                   </button>
                                   <div className={`inline-flex items-center gap-1 bg-[var(--charcoal)] border rounded-xl px-2.5 py-1 transition-all ${
                                     isContactsActive ? 'border-[var(--line)] focus-within:border-[var(--lime)]' : 'border-neutral-800 opacity-40 select-none'
