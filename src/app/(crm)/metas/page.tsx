@@ -19,7 +19,8 @@ import {
   GripVertical,
   RefreshCw,
   X,
-  Search
+  Search,
+  Phone
 } from 'lucide-react'
 import { UserGoal, LossReason, DEFAULT_LOSS_REASONS } from '@/types'
 import { supabase } from '@/services/supabase-client'
@@ -274,7 +275,8 @@ export default function MetasPage() {
             year: selectedYear,
             month: selectedMonth,
             salesGoal: 30000,
-            visitsGoal: 10,
+            visitsGoal: 20,
+            contactsGoal: 400,
             newClientsGoal: 2,
             updatedAt: new Date().toISOString()
           }
@@ -286,7 +288,7 @@ export default function MetasPage() {
   }, [registeredUsers, selectedYear, selectedMonth])
 
   // Atualiza um campo da meta do usuário
-  const handleUpdateGoalField = (userKey: string, field: 'salesGoal' | 'visitsGoal' | 'newClientsGoal', rawVal: string) => {
+  const handleUpdateGoalField = (userKey: string, field: 'salesGoal' | 'visitsGoal' | 'contactsGoal' | 'newClientsGoal', rawVal: string) => {
     const num = Math.max(0, parseFloat(rawVal) || 0)
     setGoalsMap(prev => ({
       ...prev,
@@ -349,7 +351,7 @@ export default function MetasPage() {
       showToast('Motivo de perda atualizado!')
     } else {
       const newReason: LossReason = {
-        id: Date.now().toString(),
+        id: `reason_${Date.now()}`,
         label: reasonLabel.trim(),
         description: reasonDesc.trim(),
         active: reasonActive,
@@ -358,7 +360,7 @@ export default function MetasPage() {
       }
       const updated = [...lossReasons, newReason]
       handleSaveLossReasons(updated)
-      showToast('Novo motivo de perda cadastrado!')
+      showToast('Novo motivo de perda adicionado!')
     }
 
     setShowReasonModal(false)
@@ -367,10 +369,19 @@ export default function MetasPage() {
     setReasonDesc('')
   }
 
+  const handleEditReason = (r: LossReason) => {
+    setEditingReason(r)
+    setReasonLabel(r.label)
+    setReasonDesc(r.description || '')
+    setReasonActive(r.active)
+    setReasonDefinitive(r.isDefinitive ?? true)
+    setShowReasonModal(true)
+  }
+
   const handleDeleteReason = (id: string) => {
     const updated = lossReasons.filter(r => r.id !== id)
     handleSaveLossReasons(updated)
-    showToast('Motivo de perda excluído!')
+    showToast('Motivo de perda removido!')
   }
 
   // HTML5 Drag and Drop handlers for reordering reasons
@@ -404,17 +415,19 @@ export default function MetasPage() {
   const teamTotals = useMemo(() => {
     let salesSum = 0
     let visitsSum = 0
+    let contactsSum = 0
     let newClientsSum = 0
 
     visibleUsersForMetas.forEach(u => {
       const key = `${selectedYear}_${selectedMonth}_${u.id || u.name}`
-      const g = goalsMap[key] || { salesGoal: 30000, visitsGoal: 10, newClientsGoal: 2 }
+      const g = goalsMap[key] || { salesGoal: 30000, visitsGoal: 20, contactsGoal: 400, newClientsGoal: 2 }
       salesSum += g.salesGoal || 0
-      visitsSum += g.visitsGoal || 0
+      visitsSum += (g.visitsGoal !== undefined && g.visitsGoal !== null) ? g.visitsGoal : 20
+      contactsSum += (g.contactsGoal !== undefined && g.contactsGoal !== null) ? g.contactsGoal : 400
       newClientsSum += g.newClientsGoal || 0
     })
 
-    return { sales: salesSum, visits: visitsSum, newClients: newClientsSum }
+    return { sales: salesSum, visits: visitsSum, contacts: contactsSum, newClients: newClientsSum }
   }, [visibleUsersForMetas, goalsMap, selectedYear, selectedMonth])
 
   return (
@@ -559,7 +572,7 @@ export default function MetasPage() {
           </div>
 
           {/* Cards Resumo Geral da Equipe (Padrão Exato de Contatos) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5 sm:gap-3">
             {/* Card 1: Meta Faturamento */}
             <div className="card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between shadow-sm">
               <div>
@@ -577,21 +590,35 @@ export default function MetasPage() {
             {/* Card 2: Meta Visitas */}
             <div className="card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between shadow-sm">
               <div>
-                <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Meta Visitas/Contatos</span>
+                <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Meta Visitas (Equipe)</span>
                 <div className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">
                   {Math.round(viewMode === 'mensal' ? teamTotals.visits : viewMode === 'semanal' ? teamTotals.visits / 4.4 : teamTotals.visits / businessDays).toLocaleString('pt-BR')} visitas
                   <span className="text-[10px] font-mono text-[var(--gray2)] font-normal ml-1">/{viewMode === 'mensal' ? 'mês' : viewMode === 'semanal' ? 'sem' : 'dia'}</span>
                 </div>
               </div>
-              <div className="w-8 h-8 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[var(--lime)] flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-[#8b5cf6] flex items-center justify-center shrink-0">
                 <Users size={15} />
               </div>
             </div>
 
-            {/* Card 3: Meta Novos Clientes */}
+            {/* Card 3: Meta Contatos */}
             <div className="card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between shadow-sm">
               <div>
-                <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Meta Novos Clientes (Pedido Fechado)</span>
+                <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Meta Contatos (Equipe)</span>
+                <div className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">
+                  {Math.round(viewMode === 'mensal' ? teamTotals.contacts : viewMode === 'semanal' ? teamTotals.contacts / 4.4 : teamTotals.contacts / businessDays).toLocaleString('pt-BR')} contatos
+                  <span className="text-[10px] font-mono text-[var(--gray2)] font-normal ml-1">/{viewMode === 'mensal' ? 'mês' : viewMode === 'semanal' ? 'sem' : 'dia'}</span>
+                </div>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-[var(--charcoal)] border border-[var(--line)] text-cyan-400 flex items-center justify-center shrink-0">
+                <Phone size={15} />
+              </div>
+            </div>
+
+            {/* Card 4: Meta Novos Clientes */}
+            <div className="card p-3 border-l-4 border-l-[var(--lime)] flex items-center justify-between shadow-sm">
+              <div>
+                <span className="text-[9px] font-mono text-[var(--gray2)] uppercase tracking-wider block font-bold">Meta Novos Clientes</span>
                 <div className="text-xl font-black text-[var(--white)] font-display mt-0.5 block">
                   {Math.round(viewMode === 'mensal' ? teamTotals.newClients : viewMode === 'semanal' ? teamTotals.newClients / 4.4 : teamTotals.newClients / businessDays).toLocaleString('pt-BR')} clientes
                   <span className="text-[10px] font-mono text-[var(--gray2)] font-normal ml-1">/{viewMode === 'mensal' ? 'mês' : viewMode === 'semanal' ? 'sem' : 'dia'}</span>
@@ -603,9 +630,9 @@ export default function MetasPage() {
             </div>
           </div>
 
-          {/* ── BARRA DE FILTROS DEDICADA (Exatamente igual ao Padrão de Contatos e Usuários) ── */}
+          {/* ── BARRA DE FILTROS DEDICADA ── */}
           <div className="card p-3 grid grid-cols-1 md:grid-cols-5 gap-3 items-center">
-            {/* Campo de Busca por Nome (Aumentado o comprimento: 3 colunas) */}
+            {/* Campo de Busca por Nome */}
             <div className="md:col-span-3 flex items-center gap-2 input w-full py-1.5 px-3">
               <Search size={13} className="text-[var(--gray2)] shrink-0" />
               <input
@@ -616,7 +643,7 @@ export default function MetasPage() {
               />
             </div>
 
-            {/* Filtro de Função ao lado do campo de busca (2 colunas) */}
+            {/* Filtro de Função */}
             <div className="md:col-span-2">
               <select 
                 className="input w-full py-1.5 px-3 text-xs"
@@ -657,17 +684,22 @@ export default function MetasPage() {
                       <th className="py-3 px-3">Vendedor / Representante</th>
                       <th className="py-3 px-3">Função</th>
                       <th className="py-3 px-3 text-right">Meta Vendas (R$) {viewMode !== 'mensal' ? `(${viewMode})` : ''}</th>
-                      <th className="py-3 px-3 text-right">Meta Visitas/Contatos (Qtd) {viewMode !== 'mensal' ? `(${viewMode})` : ''}</th>
+                      <th className="py-3 px-3 text-right">Meta Visitas (Qtd) {viewMode !== 'mensal' ? `(${viewMode})` : ''}</th>
+                      <th className="py-3 px-3 text-right">Meta Contatos (Qtd) {viewMode !== 'mensal' ? `(${viewMode})` : ''}</th>
                       <th className="py-3 px-3 text-right">Meta Novos Clientes (Qtd) {viewMode !== 'mensal' ? `(${viewMode})` : ''}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--line)]/50 text-xs">
                     {filteredTeamUsers.map(u => {
                       const key = `${selectedYear}_${selectedMonth}_${u.id || u.name}`
-                      const g = goalsMap[key] || { salesGoal: 30000, visitsGoal: 10, newClientsGoal: 2 }
+                      const g = goalsMap[key] || { salesGoal: 30000, visitsGoal: 20, contactsGoal: 400, newClientsGoal: 2 }
+
+                      const rawVisits = (g.visitsGoal !== undefined && g.visitsGoal !== null) ? g.visitsGoal : 20
+                      const rawContacts = (g.contactsGoal !== undefined && g.contactsGoal !== null) ? g.contactsGoal : 400
 
                       const salesDisp = viewMode === 'mensal' ? g.salesGoal : viewMode === 'semanal' ? Math.round(g.salesGoal / 4.4) : Math.round(g.salesGoal / businessDays)
-                      const visitsDisp = viewMode === 'mensal' ? g.visitsGoal : viewMode === 'semanal' ? Math.round(g.visitsGoal / 4.4) : Math.round(g.visitsGoal / businessDays)
+                      const visitsDisp = viewMode === 'mensal' ? rawVisits : viewMode === 'semanal' ? Math.round(rawVisits / 4.4) : Math.round(rawVisits / businessDays)
+                      const contactsDisp = viewMode === 'mensal' ? rawContacts : viewMode === 'semanal' ? Math.round(rawContacts / 4.4) : Math.round(rawContacts / businessDays)
                       const clientsDisp = viewMode === 'mensal' ? g.newClientsGoal : viewMode === 'semanal' ? Math.round(g.newClientsGoal / 4.4) : Math.round(g.newClientsGoal / businessDays)
 
                       return (
@@ -739,22 +771,41 @@ export default function MetasPage() {
                             </div>
                           </td>
 
-                          {/* Campo Meta Visitas/Contatos */}
+                          {/* Campo Meta Visitas */}
                           <td className="py-3.5 px-3 text-right font-mono">
                             <div className="inline-flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2.5 py-1 focus-within:border-[var(--lime)]">
                               <input
                                 type="text"
                                 inputMode="numeric"
-                                value={formatNumberBr(viewMode === 'mensal' ? (g.visitsGoal || 0) : visitsDisp)}
+                                value={formatNumberBr(viewMode === 'mensal' ? rawVisits : visitsDisp)}
                                 onChange={e => {
                                   let val = parseNumberBr(e.target.value)
                                   if (viewMode === 'semanal') val = Math.round(val * 4.4)
                                   if (viewMode === 'diaria') val = Math.round(val * businessDays)
                                   handleUpdateGoalField(key, 'visitsGoal', val.toString())
                                 }}
-                                className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] text-right w-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] text-right w-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               />
                               <span className="text-[10px] text-[var(--gray2)]">visitas</span>
+                            </div>
+                          </td>
+
+                          {/* Campo Meta Contatos */}
+                          <td className="py-3.5 px-3 text-right font-mono">
+                            <div className="inline-flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2.5 py-1 focus-within:border-[var(--lime)]">
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formatNumberBr(viewMode === 'mensal' ? rawContacts : contactsDisp)}
+                                onChange={e => {
+                                  let val = parseNumberBr(e.target.value)
+                                  if (viewMode === 'semanal') val = Math.round(val * 4.4)
+                                  if (viewMode === 'diaria') val = Math.round(val * businessDays)
+                                  handleUpdateGoalField(key, 'contactsGoal', val.toString())
+                                }}
+                                className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] text-right w-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                              <span className="text-[10px] text-[var(--gray2)]">contatos</span>
                             </div>
                           </td>
 

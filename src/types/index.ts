@@ -301,12 +301,15 @@ export interface UserGoal {
   year: string
   month: string // "01" - "12"
   salesGoal: number // R$
-  visitsGoal: number // Qtd
+  visitsGoal: number // Qtd Visitas
+  contactsGoal: number // Qtd Contatos
   newClientsGoal: number // Qtd novos clientes com pedido fechado
   customWeeklySalesGoal?: number
   customDailySalesGoal?: number
   customWeeklyVisitsGoal?: number
   customDailyVisitsGoal?: number
+  customWeeklyContactsGoal?: number
+  customDailyContactsGoal?: number
   customWeeklyNewClientsGoal?: number
   customDailyNewClientsGoal?: number
   updatedAt?: string

@@ -24,7 +24,8 @@ import {
   Sparkles,
   Trophy,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Phone
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -322,13 +323,12 @@ export default function DiarioDeBordoPage() {
   const bizStats = useMemo(() => getBusinessDaysStats(), [])
 
   // Calculate Meta & Sales Goal for selected Month/Year
-  // Calculate Meta & Sales Goal for selected Month/Year
   const currentMonthGoal = useMemo(() => {
     const now = new Date()
     const yearStr = String(now.getFullYear())
     const monthStr = String(now.getMonth() + 1).padStart(2, '0')
 
-    const activeFilter = (!isAdminOrManager && currentUser?.name) ? currentUser.name : userFilter
+    const activeFilter = ((!isAdminOrManager && currentUser?.name) ? currentUser.name : userFilter).toLowerCase().trim()
 
     const norm = (s: string) => (s || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
     const isMauricio = (s: string) => {
@@ -338,6 +338,7 @@ export default function DiarioDeBordoPage() {
 
     let salesGoalSum = 0
     let visitsGoalSum = 0
+    let contactsGoalSum = 0
 
     if (activeFilter === 'all') {
       Object.keys(goalsMap).forEach(key => {
@@ -347,21 +348,23 @@ export default function DiarioDeBordoPage() {
 
         if (key.startsWith(`${yearStr}_${monthStr}_`) && !key.startsWith('EQUIPE_')) {
           salesGoalSum += Number(g?.salesGoal || 0)
-          visitsGoalSum += Number(g?.visitsGoal || 0)
+          visitsGoalSum += Number(g?.visitsGoal !== undefined && g?.visitsGoal !== null ? g.visitsGoal : 20)
+          contactsGoalSum += Number(g?.contactsGoal !== undefined && g?.contactsGoal !== null ? g.contactsGoal : 400)
         }
       })
 
-      if (salesGoalSum === 0) salesGoalSum = 390000 // R$ 390.000,00 (13 usuários x R$ 30.000)
-      if (visitsGoalSum === 0) visitsGoalSum = 130
+      if (salesGoalSum === 0) salesGoalSum = 390000 // R$ 390.000,00
+      if (visitsGoalSum === 0) visitsGoalSum = 260
+      if (contactsGoalSum === 0) contactsGoalSum = 5200
     } else {
       const selUser = availableReps.find(r => r === activeFilter || isSameRepresentative(r, activeFilter))
       const targetName = selUser || activeFilter
 
-      // Direct key lookup
       const k1 = `${yearStr}_${monthStr}_${targetName}`
       if (goalsMap[k1] && Number(goalsMap[k1].salesGoal) > 0) {
         salesGoalSum = Number(goalsMap[k1].salesGoal)
-        visitsGoalSum = Number(goalsMap[k1].visitsGoal || 10)
+        visitsGoalSum = Number(goalsMap[k1].visitsGoal !== undefined ? goalsMap[k1].visitsGoal : 20)
+        contactsGoalSum = Number(goalsMap[k1].contactsGoal !== undefined ? goalsMap[k1].contactsGoal : 400)
       } else {
         Object.keys(goalsMap).forEach(key => {
           if (isMauricio(key)) return
@@ -376,19 +379,22 @@ export default function DiarioDeBordoPage() {
             const gUserName = gObj?.userName || parts.slice(2).join('_')
             if (isSameRepresentative(gUserName, targetName)) {
               salesGoalSum += Number(gObj?.salesGoal || 0)
-              visitsGoalSum += Number(gObj?.visitsGoal || 0)
+              visitsGoalSum += Number(gObj?.visitsGoal !== undefined ? gObj.visitsGoal : 20)
+              contactsGoalSum += Number(gObj?.contactsGoal !== undefined ? gObj.contactsGoal : 400)
             }
           }
         })
       }
 
       if (salesGoalSum === 0) salesGoalSum = 30000
-      if (visitsGoalSum === 0) visitsGoalSum = 10
+      if (visitsGoalSum === 0) visitsGoalSum = 20
+      if (contactsGoalSum === 0) contactsGoalSum = 400
     }
 
     return {
       salesGoal: salesGoalSum,
-      visitsGoal: visitsGoalSum
+      visitsGoal: visitsGoalSum,
+      contactsGoal: contactsGoalSum
     }
   }, [goalsMap, userFilter, availableReps, isAdminOrManager, currentUser?.name])
 
@@ -441,9 +447,23 @@ export default function DiarioDeBordoPage() {
     const remainingSalesR$ = Math.max(0, salesTarget - totalSalesAchieved)
     const dailyPaceRequired = remainingSalesR$ / Math.max(1, bizStats.remainingBusinessDays)
 
-    // Visits calculation
-    const currentMonthVisits = appointments.filter(a => {
+    // Filter appointments for user
+    const userAppointments = appointments.filter(a => {
+      if (userFilter === 'all') return true
+      const aUser = a.assigned_to || (a as any).assignedTo || ''
+      return isSameRepresentative(aUser, userFilter)
+    })
+
+    // Visits calculation (Presenciais / Visitas)
+    const currentMonthVisits = userAppointments.filter(a => {
       if (a.type !== 'visita' && a.type !== 'reuniao') return false
+      const dt = new Date(a.date)
+      return (dt.getMonth() + 1) === (now.getMonth() + 1) && dt.getFullYear() === now.getFullYear()
+    }).length
+
+    // Contacts calculation (Ligações, WhatsApp, E-mails, Follow-ups)
+    const currentMonthContacts = userAppointments.filter(a => {
+      if (a.type === 'visita' || a.type === 'reuniao') return false
       const dt = new Date(a.date)
       return (dt.getMonth() + 1) === (now.getMonth() + 1) && dt.getFullYear() === now.getFullYear()
     }).length
@@ -457,9 +477,11 @@ export default function DiarioDeBordoPage() {
       remainingSalesR$,
       dailyPaceRequired,
       currentMonthVisits,
-      visitsTarget: currentMonthGoal.visitsGoal
+      visitsTarget: currentMonthGoal.visitsGoal,
+      currentMonthContacts,
+      contactsTarget: currentMonthGoal.contactsGoal
     }
-  }, [filteredContacts, filteredDeals, currentMonthGoal, bizStats, appointments])
+  }, [filteredContacts, filteredDeals, currentMonthGoal, bizStats, appointments, userFilter])
 
   // Stagnant Deals (>7 days)
   const dealAlerts = useMemo(() => {
@@ -649,106 +671,131 @@ export default function DiarioDeBordoPage() {
             </div>
           </div>
 
-          {/* 4 KPIs NUMÉRICOS COM DESIGN IDÊNTICO AOS CARDS DO DASHBOARD (FAIXAS NEON + MARCA D'ÁGUA 3D) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 5 KPIs NUMÉRICOS COM DESIGN IDÊNTICO AOS CARDS DO DASHBOARD (FAIXAS NEON + MARCA D'ÁGUA 3D) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             
             {/* KPI 1: ESPERADO HOJE (PACING) */}
-            <div className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
+            <div className="card bg-[var(--card)] border border-[var(--line)] pl-4 pr-3 py-3.5 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
               {/* FAIXA LATERAL ESQUERDA NEON */}
               <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#0284c7] rounded-l-2xl z-20 shadow-[0_0_10px_#0284c7]" />
 
               {/* MARCA D'ÁGUA 3D INTEIRA */}
-              <Target size={40} className="absolute right-3 top-3 text-[#0284c7] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+              <Target size={36} className="absolute right-2 top-2 text-[#0284c7] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
-              <div className="flex items-start justify-between gap-2 z-10">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-sky-400 leading-tight">
+              <div className="flex items-start justify-between gap-1 z-10">
+                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-sky-400 leading-tight">
                   ESPERADO HOJE (PACING)
                 </span>
               </div>
 
-              <div className="my-2 z-10">
-                <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight">
+              <div className="my-1.5 z-10">
+                <div className="text-lg sm:text-xl font-mono font-black text-[var(--white)] tracking-tight">
                   {formatCurrency(pacingMetrics.expectedSalesPacing)}
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] font-semibold z-10">
+              <div className="pt-1.5 border-t border-[var(--line)]/50 text-[10px] font-mono text-[var(--gray2)] font-semibold z-10">
                 Ritmo planejado até hoje
               </div>
             </div>
 
             {/* KPI 2: FALTA PARA 100% */}
-            <div className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
+            <div className="card bg-[var(--card)] border border-[var(--line)] pl-4 pr-3 py-3.5 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
               {/* FAIXA LATERAL ESQUERDA NEON */}
               <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#f59e0b] rounded-l-2xl z-20 shadow-[0_0_10px_#f59e0b]" />
 
               {/* MARCA D'ÁGUA 3D INTEIRA */}
-              <AlertCircle size={40} className="absolute right-3 top-3 text-[#f59e0b] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+              <AlertCircle size={36} className="absolute right-2 top-2 text-[#f59e0b] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
-              <div className="flex items-start justify-between gap-2 z-10">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 leading-tight">
+              <div className="flex items-start justify-between gap-1 z-10">
+                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-amber-400 leading-tight">
                   FALTA PARA 100%
                 </span>
               </div>
 
-              <div className="my-2 z-10">
-                <div className="text-xl sm:text-2xl font-mono font-black text-amber-400 tracking-tight">
+              <div className="my-1.5 z-10">
+                <div className="text-lg sm:text-xl font-mono font-black text-amber-400 tracking-tight">
                   {formatCurrency(pacingMetrics.remainingSalesR$)}
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-amber-400/90 font-bold z-10">
-                {pacingMetrics.remainingSalesR$ > 0 ? 'Diferença para atingir a meta' : 'Meta 100% atingida!'}
+              <div className="pt-1.5 border-t border-[var(--line)]/50 text-[10px] font-mono text-amber-400/90 font-bold z-10">
+                {pacingMetrics.remainingSalesR$ > 0 ? 'Diferença p/ meta' : '100% Atingida!'}
               </div>
             </div>
 
             {/* KPI 3: META DIÁRIA NECESSÁRIA */}
-            <div className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
+            <div className="card bg-[var(--card)] border border-[var(--line)] pl-4 pr-3 py-3.5 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
               {/* FAIXA LATERAL ESQUERDA NEON */}
               <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#06b6d4] rounded-l-2xl z-20 shadow-[0_0_10px_#06b6d4]" />
 
               {/* MARCA D'ÁGUA 3D INTEIRA */}
-              <TrendingUp size={40} className="absolute right-3 top-3 text-[#06b6d4] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+              <TrendingUp size={36} className="absolute right-2 top-2 text-[#06b6d4] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
-              <div className="flex items-start justify-between gap-2 z-10">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 leading-tight">
-                  META DIÁRIA NECESSÁRIA
+              <div className="flex items-start justify-between gap-1 z-10">
+                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-cyan-400 leading-tight">
+                  META DIÁRIA
                 </span>
               </div>
 
-              <div className="my-2 z-10">
-                <div className="text-xl sm:text-2xl font-mono font-black text-cyan-400 tracking-tight">
-                  {formatCurrency(pacingMetrics.dailyPaceRequired)} <span className="text-xs font-normal text-[var(--gray2)]">/ dia</span>
+              <div className="my-1.5 z-10">
+                <div className="text-lg sm:text-xl font-mono font-black text-cyan-400 tracking-tight">
+                  {formatCurrency(pacingMetrics.dailyPaceRequired)} <span className="text-[10px] font-normal text-[var(--gray2)]">/dia</span>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] font-semibold z-10">
+              <div className="pt-1.5 border-t border-[var(--line)]/50 text-[10px] font-mono text-[var(--gray2)] font-semibold z-10">
                 Faltam <strong className="text-[var(--white)]">{bizStats.remainingBusinessDays}</strong> dias úteis
               </div>
             </div>
 
             {/* KPI 4: VISITAS NO MÊS */}
-            <div className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
+            <div className="card bg-[var(--card)] border border-[var(--line)] pl-4 pr-3 py-3.5 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
               {/* FAIXA LATERAL ESQUERDA NEON */}
               <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#8b5cf6] rounded-l-2xl z-20 shadow-[0_0_10px_#8b5cf6]" />
 
               {/* MARCA D'ÁGUA 3D INTEIRA */}
-              <Users size={40} className="absolute right-3 top-3 text-[#8b5cf6] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+              <Users size={36} className="absolute right-2 top-2 text-[#8b5cf6] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
-              <div className="flex items-start justify-between gap-2 z-10">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-purple-400 leading-tight">
+              <div className="flex items-start justify-between gap-1 z-10">
+                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-purple-400 leading-tight">
                   VISITAS NO MÊS
                 </span>
               </div>
 
-              <div className="my-2 z-10">
-                <div className="text-xl sm:text-2xl font-mono font-black text-[#8b5cf6] tracking-tight">
-                  {pacingMetrics.currentMonthVisits} <span className="text-xs font-normal text-[var(--gray2)]">/ {pacingMetrics.visitsTarget}</span>
+              <div className="my-1.5 z-10">
+                <div className="text-lg sm:text-xl font-mono font-black text-[#8b5cf6] tracking-tight">
+                  {pacingMetrics.currentMonthVisits} <span className="text-[10px] font-normal text-[var(--gray2)]">/ {pacingMetrics.visitsTarget}</span>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] font-semibold z-10">
-                Atendimentos realizados
+              <div className="pt-1.5 border-t border-[var(--line)]/50 text-[10px] font-mono text-[var(--gray2)] font-semibold z-10">
+                Visitas / Reuniões
+              </div>
+            </div>
+
+            {/* KPI 5: CONTATOS NO MÊS */}
+            <div className="card bg-[var(--card)] border border-[var(--line)] pl-4 pr-3 py-3.5 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
+              {/* FAIXA LATERAL ESQUERDA NEON */}
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#10b981] rounded-l-2xl z-20 shadow-[0_0_10px_#10b981]" />
+
+              {/* MARCA D'ÁGUA 3D INTEIRA */}
+              <Phone size={36} className="absolute right-2 top-2 text-[#10b981] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+
+              <div className="flex items-start justify-between gap-1 z-10">
+                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-400 leading-tight">
+                  CONTATOS NO MÊS
+                </span>
+              </div>
+
+              <div className="my-1.5 z-10">
+                <div className="text-lg sm:text-xl font-mono font-black text-[#10b981] tracking-tight">
+                  {pacingMetrics.currentMonthContacts} <span className="text-[10px] font-normal text-[var(--gray2)]">/ {pacingMetrics.contactsTarget}</span>
+                </div>
+              </div>
+
+              <div className="pt-1.5 border-t border-[var(--line)]/50 text-[10px] font-mono text-[var(--gray2)] font-semibold z-10">
+                Ligações / WhatsApp / E-mails
               </div>
             </div>
 
