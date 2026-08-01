@@ -954,7 +954,7 @@ export default function DiarioDeBordoPage() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <strong className="text-xs font-bold text-white block truncate">{contact.company || contact.name}</strong>
+                        <strong className="text-xs font-bold text-[var(--white)] block truncate">{contact.company || contact.name}</strong>
                         <span className="text-[10px] font-mono text-[var(--gray2)] truncate block">{contact.representative || 'Sem rep'}</span>
                       </div>
                       <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
@@ -973,7 +973,7 @@ export default function DiarioDeBordoPage() {
                     </div>
 
                     <div className="flex items-center justify-between text-[11px] font-mono text-[var(--gray2)] pt-1 border-t border-[var(--line)]/50">
-                      <span>Última Compra: <strong className="text-white font-bold">{formatCurrency(lastPurchaseValue)}</strong></span>
+                      <span>Última Compra: <strong className="text-[var(--white)] font-bold">{formatCurrency(lastPurchaseValue)}</strong></span>
                       <button
                         onClick={() => setSelectedContactForActivity(contact)}
                         className="text-[10px] font-bold text-[var(--lime)] hover:underline flex items-center gap-1 cursor-pointer bg-[var(--lime)]/10 px-2 py-0.5 rounded-md border border-[var(--lime)]/25 hover:bg-[var(--lime)]/20 transition-all"
