@@ -408,12 +408,10 @@ export default function MetasPage() {
 
     visibleUsersForMetas.forEach(u => {
       const key = `${selectedYear}_${selectedMonth}_${u.id || u.name}`
-      const g = goalsMap[key]
-      if (g) {
-        salesSum += g.salesGoal || 0
-        visitsSum += g.visitsGoal || 0
-        newClientsSum += g.newClientsGoal || 0
-      }
+      const g = goalsMap[key] || { salesGoal: 30000, visitsGoal: 10, newClientsGoal: 2 }
+      salesSum += g.salesGoal || 0
+      visitsSum += g.visitsGoal || 0
+      newClientsSum += g.newClientsGoal || 0
     })
 
     return { sales: salesSum, visits: visitsSum, newClients: newClientsSum }
