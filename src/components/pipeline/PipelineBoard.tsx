@@ -846,23 +846,25 @@ export function PipelineBoard() {
               final_value: item.final_value || 0,
               probability: typeof item.probability === 'number' ? item.probability : (item.probability ? parseInt(item.probability) : 50),
               assigned_to: item.assigned_to || matched?.representative || '',
+              order_number: item.order_number || '',
+              budget: item.budget || null,
               stage_entered_at: item.stage_entered_at || item.created_at || new Date().toISOString(),
               created_at: item.created_at || new Date().toISOString(),
               updated_at: item.updated_at || new Date().toISOString(),
               contact: {
                 id: item.contact_id || matched?.id || `c_${Date.now()}`,
-                name: matched?.name || item.title,
-                company: matched?.company || item.title,
-                phone: matched?.phone || '',
-                email: matched?.email || '',
-                cnpj: matched?.cnpj || '',
-                address: matched?.address || '',
-                bairro: matched?.bairro || '',
-                cep: matched?.cep || '',
-                city: matched?.city || '',
-                state: matched?.state || '',
-                curve: matched?.curve || 'C',
-                representative: item.assigned_to || matched?.representative || ''
+                name: item.contact?.name || matched?.name || item.title,
+                company: item.contact?.company || matched?.company || item.title,
+                phone: item.contact?.phone || matched?.phone || '',
+                email: item.contact?.email || matched?.email || '',
+                cnpj: item.contact?.cnpj || matched?.cnpj || '',
+                address: item.contact?.address || matched?.address || '',
+                bairro: item.contact?.bairro || matched?.bairro || '',
+                cep: item.contact?.cep || matched?.cep || '',
+                city: item.contact?.city || matched?.city || '',
+                state: item.contact?.state || matched?.state || '',
+                curve: item.contact?.curve || matched?.curve || 'C',
+                representative: item.assigned_to || item.contact?.representative || matched?.representative || ''
               } as any
             }
           })

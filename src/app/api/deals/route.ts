@@ -98,12 +98,14 @@ export async function GET() {
       let prob = typeof d.probability === 'number' ? d.probability : 50
       let cleanNotes = d.lost_notes || ''
       let budgetObj = null
+      let orderNumber = d.order_number || ''
       if (d.lost_notes && d.lost_notes.trim().startsWith('{')) {
         try {
           const parsed = JSON.parse(d.lost_notes)
           if (typeof parsed.prob === 'number') prob = parsed.prob
           if (typeof parsed.notes === 'string') cleanNotes = parsed.notes
           if (parsed.budget) budgetObj = parsed.budget
+          if (parsed.order_number) orderNumber = parsed.order_number
         } catch (e) {}
       }
 
@@ -112,6 +114,7 @@ export async function GET() {
         probability: prob,
         lost_notes: cleanNotes,
         budget: budgetObj || d.budget || null,
+        order_number: orderNumber,
         stage: mapDBStageToFrontend(d.stage),
         assigned_to: assignedToName,
         contact: contactObj
@@ -202,7 +205,8 @@ export async function POST(req: Request) {
       const serializedNotes = JSON.stringify({
         prob: typeof d.probability === 'number' ? d.probability : 50,
         notes: d.lost_notes || '',
-        budget: budgetData
+        budget: budgetData,
+        order_number: d.order_number || ''
       })
 
       payloads.push({
@@ -238,12 +242,14 @@ export async function POST(req: Request) {
       let prob = 50
       let cleanNotes = d.lost_notes || ''
       let budgetObj = null
+      let orderNumber = d.order_number || ''
       if (d.lost_notes && d.lost_notes.trim().startsWith('{')) {
         try {
           const parsed = JSON.parse(d.lost_notes)
           if (typeof parsed.prob === 'number') prob = parsed.prob
           if (typeof parsed.notes === 'string') cleanNotes = parsed.notes
           if (parsed.budget) budgetObj = parsed.budget
+          if (parsed.order_number) orderNumber = parsed.order_number
         } catch (e) {}
       }
 
@@ -252,6 +258,7 @@ export async function POST(req: Request) {
         probability: prob,
         lost_notes: cleanNotes,
         budget: budgetObj || d.budget || null,
+        order_number: orderNumber,
         stage: mapDBStageToFrontend(d.stage),
         assigned_to: assignedToName,
         contact: c ? {
