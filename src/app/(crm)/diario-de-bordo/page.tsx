@@ -205,7 +205,7 @@ export default function DiarioDeBordoPage() {
         if (rawGoals) {
           try {
             const parsedG = JSON.parse(rawGoals)
-            loadedGoalsMap = { ...parsedG, ...loadedGoalsMap }
+            loadedGoalsMap = { ...loadedGoalsMap, ...parsedG }
           } catch (e) {}
         }
       }
@@ -230,12 +230,16 @@ export default function DiarioDeBordoPage() {
       window.addEventListener('storage-deals-changed', handleStorageChange)
       window.addEventListener('storage-contacts-changed', handleStorageChange)
       window.addEventListener('storage-appointments-changed', handleStorageChange)
+      window.addEventListener('storage-goals-changed', handleStorageChange)
+      window.addEventListener('storage', handleStorageChange)
     }
     return () => {
       if (typeof window !== 'undefined') {
         window.removeEventListener('storage-deals-changed', handleStorageChange)
         window.removeEventListener('storage-contacts-changed', handleStorageChange)
         window.removeEventListener('storage-appointments-changed', handleStorageChange)
+        window.removeEventListener('storage-goals-changed', handleStorageChange)
+        window.removeEventListener('storage', handleStorageChange)
       }
     }
   }, [])
@@ -342,6 +346,7 @@ export default function DiarioDeBordoPage() {
     let userHasContactsGoal = true
 
     if (activeFilter === 'all') {
+      let activeEntriesCount = 0
       Object.keys(goalsMap).forEach(key => {
         if (isMauricio(key)) return
         const g = goalsMap[key]
@@ -349,6 +354,7 @@ export default function DiarioDeBordoPage() {
 
         if (key.startsWith(`${yearStr}_${monthStr}_`) && !key.startsWith('EQUIPE_')) {
           salesGoalSum += Number(g?.salesGoal || 0)
+          activeEntriesCount++
           
           const isVActive = g?.hasVisitsGoal !== false && (g?.visitsGoal === undefined || Number(g?.visitsGoal) > 0)
           if (isVActive) {
@@ -362,9 +368,9 @@ export default function DiarioDeBordoPage() {
         }
       })
 
-      if (salesGoalSum === 0) salesGoalSum = 390000
-      if (visitsGoalSum === 0) visitsGoalSum = 260
-      if (contactsGoalSum === 0) contactsGoalSum = 5200
+      if (salesGoalSum === 0 || activeEntriesCount < 5) salesGoalSum = 390000
+      if (visitsGoalSum === 0 || activeEntriesCount < 5) visitsGoalSum = 260
+      if (contactsGoalSum === 0 || activeEntriesCount < 5) contactsGoalSum = 5200
       userHasVisitsGoal = true
       userHasContactsGoal = true
     } else {
