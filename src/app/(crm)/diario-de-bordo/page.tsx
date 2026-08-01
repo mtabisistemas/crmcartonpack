@@ -34,6 +34,7 @@ import { getPipelineDeals } from '@/services/pipeline-service'
 import { DealDrawer } from '@/components/pipeline/DealDrawer'
 import { PipelineCalendarModal } from '@/components/pipeline/PipelineCalendarModal'
 import { RegisterActivityModal } from '@/components/RegisterActivityModal'
+import { getUniqueCanonicalRepresentatives, isSameRepresentative } from '@/lib/utils'
 
 // Helper format currency
 function formatCurrency(val: number): string {
@@ -261,31 +262,35 @@ export default function DiarioDeBordoPage() {
   const userRoleLower = (currentUser?.role || '').toLowerCase()
   const isAdminOrManager = userRoleLower.includes('admin') || userRoleLower.includes('gestor')
 
+  // Available Representatives list for Filter (Identical to Dashboard)
+  const availableReps = useMemo(() => {
+    const fromContacts = contacts.map(c => c.representative).filter(Boolean) as string[]
+    const fromDeals = deals.map(d => d.assigned_to).filter(Boolean) as string[]
+    const merged = Array.from(new Set([...fromContacts, ...fromDeals]))
+    return getUniqueCanonicalRepresentatives(merged)
+  }, [contacts, deals])
+
   // Filtered contacts based on selected user filter (ou restrito ao próprio vendedor/representante)
   const filteredContacts = useMemo(() => {
     const activeFilter = (!isAdminOrManager && currentUser?.name) ? currentUser.name : userFilter
     if (activeFilter === 'all') return contacts
-    const selUser = usersList.find(u => u.id === activeFilter || u.name === activeFilter)
-    const targetName = (selUser?.name || activeFilter).toLowerCase().trim()
 
     return contacts.filter(c => 
-      (c.representative || '').toLowerCase().includes(targetName) ||
-      (c.assigned_to || '').toLowerCase().includes(targetName)
+      isSameRepresentative(c.representative, activeFilter) ||
+      isSameRepresentative(c.assigned_to, activeFilter)
     )
-  }, [contacts, userFilter, usersList, isAdminOrManager, currentUser?.name])
+  }, [contacts, userFilter, isAdminOrManager, currentUser?.name])
 
   // Filtered deals based on selected user filter (ou restrito ao próprio vendedor/representante)
   const filteredDeals = useMemo(() => {
     const activeFilter = (!isAdminOrManager && currentUser?.name) ? currentUser.name : userFilter
     if (activeFilter === 'all') return deals
-    const selUser = usersList.find(u => u.id === activeFilter || u.name === activeFilter)
-    const targetName = (selUser?.name || activeFilter).toLowerCase().trim()
 
     return deals.filter(d => 
-      (d.assigned_to || '').toLowerCase().includes(targetName) ||
-      (d.contact?.representative || '').toLowerCase().includes(targetName)
+      isSameRepresentative(d.assigned_to, activeFilter) ||
+      isSameRepresentative(d.contact?.representative, activeFilter)
     )
-  }, [deals, userFilter, usersList, isAdminOrManager, currentUser?.name])
+  }, [deals, userFilter, isAdminOrManager, currentUser?.name])
 
   // Appointments today (filtrados por usuario se vendedor/rep e ordenados por horario com concluidos no fim)
   const todayAppointments = useMemo(() => {
@@ -536,24 +541,14 @@ export default function DiarioDeBordoPage() {
               className="w-full bg-transparent text-xs font-bold text-[var(--white)] cursor-pointer outline-none truncate"
             >
               <option value="all" className="bg-[var(--card)] text-[var(--white)]">Toda a Equipe</option>
-              {usersList
-                .filter((u: any) => {
-                  const norm = (s: string) => (s || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
-                  const n = norm(u.name || '')
-                  const e = norm(u.email || '')
-                  return !n.includes('mauricio') && !n.includes('maciel') && !e.includes('mauricio')
+              {availableReps
+                .filter(rep => {
+                  const normR = rep.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+                  return !normR.includes('mauricio') && !normR.includes('maciel')
                 })
-                .map((u: any) => {
-                  const normName = (u.name || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
-                  const isThaiane = normName.includes('thaiane')
-                  const displayRole = isThaiane ? 'gestor' : (u.role || 'Usuário')
-
-                  return (
-                    <option key={u.id || u.name} value={u.id || u.name} className="bg-[var(--card)] text-[var(--white)]">
-                      {u.name} ({displayRole})
-                    </option>
-                  )
-                })}
+                .map(rep => (
+                  <option key={rep} value={rep} className="bg-[var(--card)] text-[var(--white)]">{rep}</option>
+                ))}
             </select>
           </div>
         )}
