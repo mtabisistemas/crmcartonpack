@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Deal, DealStage, STAGE_CONFIG, Appointment } from '@/types'
+import { Deal, DealStage, STAGE_CONFIG, ACTIVE_STAGES, Appointment } from '@/types'
 import { 
   X, User, Mail, Phone, Building, Calendar, DollarSign, Tag,
   MessageSquare, FileText, Send, PhoneCall, Users, CheckCircle, ArrowRight, Save, Clock, Trash2, Edit2, Plus,
@@ -414,9 +414,9 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
     setAptNotes('')
   }
 
-  // Hide Budget tab if stage is before briefing
+  // Hide Budget tab if stage is before briefing (Orçamento)
   useEffect(() => {
-    const showBudget = ['briefing', 'aprovacao', 'fechamento', 'pedido', 'pos_venda', 'perdido'].includes(stage)
+    const showBudget = ['briefing', 'potencial', 'pedido', 'pos_venda', 'perdido'].includes(stage)
     if (!showBudget && activeTab === 'orcamento') {
       setActiveTab('geral')
     }
@@ -424,7 +424,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
 
   if (!deal) return null
 
-  const showBudgetTab = ['briefing', 'aprovacao', 'fechamento', 'pedido', 'pos_venda', 'perdido'].includes(stage)
+  const showBudgetTab = ['briefing', 'potencial', 'pedido', 'pos_venda', 'perdido'].includes(stage)
 
   const handleEstimatedValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value
@@ -808,9 +808,9 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
                       value={stage}
                       onChange={(e) => setStage(e.target.value as DealStage)}
                     >
-                      {Object.keys(STAGE_CONFIG).map((key) => (
+                      {ACTIVE_STAGES.map((key) => (
                         <option key={key} value={key}>
-                          {STAGE_CONFIG[key as DealStage].label}
+                          {STAGE_CONFIG[key].label}
                         </option>
                       ))}
                     </select>

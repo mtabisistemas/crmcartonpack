@@ -18,7 +18,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useDroppable } from '@dnd-kit/core'
-import { Deal, DealStage, STAGE_CONFIG, FOLLOW_UP_LOST_REASONS } from '@/types'
+import { Deal, DealStage, STAGE_CONFIG, ACTIVE_STAGES, normalizeDealStage, FOLLOW_UP_LOST_REASONS } from '@/types'
 import { formatCurrency, daysSince, isSameRepresentative, getUniqueCanonicalRepresentatives } from '@/lib/utils'
 import { Plus, Clock, Trophy, XCircle, Search, Filter, Building2, Calendar } from 'lucide-react'
 import { DealDrawer } from './DealDrawer'
@@ -834,7 +834,7 @@ export function PipelineBoard() {
               (comp && (c.company || c.name || '').trim().toLowerCase() === comp)
             )
 
-            const normalizedStage = item.stage === 'pos_venda' ? 'pedido' : item.stage
+            const normalizedStage = normalizeDealStage(item.stage)
 
             return {
               id: item.id,
@@ -1037,19 +1037,8 @@ export function PipelineBoard() {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   )
 
-  // Map active stages to Kanban board columns (order: leads -> ... -> fechamento -> pedido -> perdido)
-  const activeStages: DealStage[] = [
-    'leads',
-    'prospect',
-    'dinamica',
-    'potencial',
-    'visita',
-    'briefing',
-    'aprovacao',
-    'fechamento',
-    'pedido',
-    'perdido'
-  ]
+  // Map active stages to Kanban board columns (order: leads -> prospect -> briefing -> potencial -> pedido -> perdido)
+  const activeStages: DealStage[] = ACTIVE_STAGES
 
   const dealsByStage = (Object.keys(STAGE_CONFIG) as DealStage[]).reduce((acc, stage) => {
     acc[stage] = filteredDeals.filter(d => d.stage === stage).sort((a, b) => (a.position ?? 0) - (b.position ?? 0))

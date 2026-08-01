@@ -30,12 +30,12 @@ export const ACTION_OPTIONS: Array<{
 }> = [
   { id: 'prospeccao', label: 'Prospecção / 1º Contato', stage: 'prospect', icon: Target, description: 'Apresentação inicial ou prospecção ativa' },
   { id: 'briefing', label: 'Orçamento / Solicitou Briefing', stage: 'briefing', icon: FileText, description: 'Cliente solicitou cotação de embalagem' },
-  { id: 'amostra', label: 'Envio de Amostra / Layout', stage: 'aprovacao', icon: Package, description: 'Amostra física ou mockup em aprovação' },
+  { id: 'amostra', label: 'Envio de Amostra / Layout', stage: 'briefing', icon: Package, description: 'Amostra física ou mockup em aprovação' },
   { id: 'negociacao', label: 'Negociação / Proposta', stage: 'potencial', icon: Briefcase, description: 'Apresentação de proposta comercial ou negociação' },
-  { id: 'visita_relato', label: 'Reunião / Acompanhamento', stage: 'visita', icon: MapPin, description: 'Reunião técnica ou alinhamento comercial' },
-  { id: 'fechamento', label: 'Fechamento de Venda', stage: 'fechamento', icon: Trophy, description: 'Pedido fechado e venda realizada' },
-  { id: 'pos_venda', label: 'Pós-Venda / Atendimento', stage: 'pos_venda', icon: Handshake, description: 'Manutenção de carteira e acompanhamento' },
-  { id: 'reativacao', label: 'Reativação de Inativo', stage: 'dinamica', icon: RefreshCw, description: 'Contato para reativar cliente sem compra' },
+  { id: 'visita_relato', label: 'Reunião / Acompanhamento', stage: 'prospect', icon: MapPin, description: 'Reunião técnica ou alinhamento comercial' },
+  { id: 'fechamento', label: 'Fechamento de Venda', stage: 'pedido', icon: Trophy, description: 'Pedido fechado e venda realizada' },
+  { id: 'pos_venda', label: 'Pós-Venda / Atendimento', stage: 'pedido', icon: Handshake, description: 'Manutenção de carteira e acompanhamento' },
+  { id: 'reativacao', label: 'Reativação de Inativo', stage: 'prospect', icon: RefreshCw, description: 'Contato para reativar cliente sem compra' },
   { id: 'perdido', label: 'Sem Interesse / Perdido', stage: 'perdido', icon: AlertCircle, description: 'Cliente declinou a proposta ou sem interesse' },
 ]
 

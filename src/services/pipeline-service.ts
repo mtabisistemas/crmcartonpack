@@ -1,4 +1,4 @@
-import { Deal, DealStage } from '@/types'
+import { Deal, DealStage, normalizeDealStage } from '@/types'
 import { MockContact } from '@/app/(crm)/contacts/page'
 import { formatCnaeCode } from '@/lib/utils'
 
@@ -19,6 +19,12 @@ export function getPipelineDeals(defaultDeals: Deal[] = []): Deal[] {
   } catch (e) {
     console.error(e)
   }
+
+  // Always normalize stages for backward compatibility
+  rawDeals = rawDeals.map(d => ({
+    ...d,
+    stage: normalizeDealStage(d.stage)
+  }))
 
   // Auto-normalize deals missing representative against crm_contacts
   try {

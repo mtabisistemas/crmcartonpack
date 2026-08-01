@@ -40,6 +40,9 @@ const mapFrontendStageToDB = (stage: string): string => {
 const mapDBStageToFrontend = (stage: string): string => {
   if (!stage) return 'leads'
   if (stage === 'pos_venda') return 'pedido'
+  if (stage === 'dinamica' || stage === 'visita') return 'prospect'
+  if (stage === 'aprovacao') return 'briefing'
+  if (stage === 'fechamento') return 'potencial'
   return stage
 }
 

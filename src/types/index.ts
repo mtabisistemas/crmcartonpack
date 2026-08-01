@@ -200,18 +200,39 @@ export interface KanbanColumn {
   showValue: boolean
 }
 
+export const ACTIVE_STAGES: DealStage[] = [
+  'leads',
+  'prospect',
+  'briefing',
+  'potencial',
+  'pedido',
+  'perdido'
+]
+
 export const STAGE_CONFIG: Record<DealStage, { label: string; color: string; icon: any; showValue: boolean }> = {
-  leads:      { label: 'Leads / Banco',         color: '#555555', icon: Target, showValue: false },
-  prospect:   { label: 'Prospect',               color: '#3b82f6', icon: Radio, showValue: false },
-  dinamica:   { label: 'Dinâmica',               color: '#8b5cf6', icon: RefreshCw, showValue: false },
-  potencial:  { label: 'Potencial / Negociação', color: '#f0c419', icon: Briefcase, showValue: false },
-  visita:     { label: 'Visita',                 color: '#06b6d4', icon: Car, showValue: false },
-  briefing:   { label: 'Briefing / Orçamento',   color: '#f97316', icon: FileText, showValue: true  },
-  aprovacao:  { label: 'Aprovação',              color: '#a855f7', icon: CheckCircle, showValue: true  },
-  fechamento: { label: 'Fechamento',             color: '#b4d932', icon: Trophy, showValue: true  },
-  pedido:     { label: 'Pedido Fechado',         color: '#10b981', icon: CheckCircle, showValue: true  },
-  perdido:    { label: 'Perdidos',               color: '#e2483d', icon: XCircle, showValue: true  },
-  pos_venda:  { label: 'Pós-Vendas',             color: '#48c767', icon: Handshake, showValue: true  },
+  leads:      { label: 'Leads / Banco',  color: '#555555', icon: Target, showValue: false },
+  prospect:   { label: 'Prospect',        color: '#3b82f6', icon: Radio, showValue: false },
+  briefing:   { label: 'Orçamento',      color: '#f97316', icon: FileText, showValue: true  },
+  potencial:  { label: 'Negociação',     color: '#f0c419', icon: Briefcase, showValue: true },
+  pedido:     { label: 'Pedido Fechado',  color: '#10b981', icon: CheckCircle, showValue: true  },
+  perdido:    { label: 'Perdidos',        color: '#e2483d', icon: XCircle, showValue: true  },
+  // Legacy stage fallbacks for backward compatibility
+  dinamica:   { label: 'Prospect',        color: '#3b82f6', icon: Radio, showValue: false },
+  visita:     { label: 'Prospect',        color: '#3b82f6', icon: Radio, showValue: false },
+  aprovacao:  { label: 'Orçamento',      color: '#f97316', icon: FileText, showValue: true  },
+  fechamento: { label: 'Negociação',     color: '#f0c419', icon: Briefcase, showValue: true },
+  pos_venda:  { label: 'Pós-Vendas',      color: '#48c767', icon: Handshake, showValue: true  },
+}
+
+export function normalizeDealStage(stage?: string): DealStage {
+  if (!stage) return 'leads'
+  const lower = stage.toLowerCase()
+  if (lower === 'pos_venda') return 'pedido'
+  if (lower === 'dinamica' || lower === 'visita') return 'prospect'
+  if (lower === 'aprovacao') return 'briefing'
+  if (lower === 'fechamento') return 'potencial'
+  if (ACTIVE_STAGES.includes(lower as DealStage)) return lower as DealStage
+  return 'leads'
 }
 
 export const FOLLOW_UP_LOST_REASONS = [
