@@ -13,13 +13,41 @@ export function formatCurrency(value?: number | null): string {
   }).format(value)
 }
 
+export function parseFlexibleDate(dateStr?: string | null): Date | null {
+  if (!dateStr) return null
+  const s = String(dateStr).trim()
+  if (!s) return null
+
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
+    const parts = s.split(/[\sT]+/)
+    const dmy = parts[0].split('/')
+    const day = parseInt(dmy[0], 10)
+    const month = parseInt(dmy[1], 10) - 1
+    const year = parseInt(dmy[2], 10)
+    let hours = 12, minutes = 0, seconds = 0
+    if (parts[1]) {
+      const hms = parts[1].split(':')
+      hours = parseInt(hms[0], 10) || 0
+      minutes = parseInt(hms[1], 10) || 0
+      seconds = parseInt(hms[2], 10) || 0
+    }
+    const dt = new Date(year, month, day, hours, minutes, seconds)
+    return isNaN(dt.getTime()) ? null : dt
+  }
+
+  const dt = new Date(s)
+  return isNaN(dt.getTime()) ? null : dt
+}
+
 export function formatDate(date?: string | null): string {
   if (!date) return '—'
+  const parsed = parseFlexibleDate(date)
+  if (!parsed) return '—'
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-  }).format(new Date(date))
+  }).format(parsed)
 }
 
 export function formatDateTime(date?: string | null): string {

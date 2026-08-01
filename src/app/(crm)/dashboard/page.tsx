@@ -38,7 +38,7 @@ import {
   FileText,
   AlertCircle
 } from 'lucide-react'
-import { formatCurrency, whatsappLink, isSameRepresentative, getUniqueCanonicalRepresentatives, formatCanonicalRepName } from '@/lib/utils'
+import { formatCurrency, whatsappLink, isSameRepresentative, getUniqueCanonicalRepresentatives, formatCanonicalRepName, parseFlexibleDate } from '@/lib/utils'
 import { getPipelineDeals } from '@/services/pipeline-service'
 import { Contact, Deal, UserGoal } from '@/types'
 
@@ -582,32 +582,40 @@ export default function DashboardPage() {
   const salesEvolutionData = useMemo(() => {
     const selectedYear = yearFilter === 'all' ? '2026' : yearFilter
     const prevYearStr = String(Number(selectedYear) - 1)
-    const targetMonth = monthFilter === 'all' ? '07' : monthFilter
+    const targetMonth = monthFilter === 'all' ? currentMonthStr : monthFilter
 
     // Obter todos os pedidos do ano todo (independente do filtro de mês para visão mensal)
     const allYearOrders = contacts.flatMap(c => {
-      if (curveFilter !== 'all' && c.curve !== curveFilter) return []
-      if (effectiveRepFilter !== 'all') {
-        const normRep = formatCanonicalRepName(c.representative)
-        if (normRep !== effectiveRepFilter) return []
+      if (curveFilter !== 'all' && (c.curve || 'D') !== curveFilter) return []
+      if (effectiveRepFilter !== 'all' && !isSameRepresentative(c.representative, effectiveRepFilter)) return []
+
+      const ords = c.orders && Array.isArray(c.orders) && c.orders.length > 0 ? c.orders : []
+      if (ords.length > 0) {
+        return ords.map(ord => ({
+          ...ord,
+          value: Number(ord.value) || 0,
+          company: c.company || c.name,
+          representative: ord.vendor || c.representative,
+          curve: c.curve || 'C'
+        }))
+      } else if (c.lastPurchaseDate) {
+        return [{
+          id: `ord-last-${c.id}`,
+          order_number: 'PED-HISTORICO',
+          company: c.company || c.name,
+          representative: c.representative,
+          value: Number((c as any).lastPurchaseValue || (c as any).projectedPurchaseValue || 0),
+          date: c.lastPurchaseDate,
+          curve: c.curve || 'C'
+        }]
       }
-      const ords = c.orders && Array.isArray(c.orders) ? c.orders : []
-      return ords.map(ord => ({
-        ...ord,
-        value: Number(ord.value) || 0,
-        company: c.company || c.name,
-        representative: ord.vendor || c.representative,
-        curve: c.curve || 'C'
-      }))
+      return []
     })
 
     // Obter todos os deals do ano todo
     const allYearDeals = deals.filter(d => {
-      if (effectiveRepFilter !== 'all') {
-        const normRep = formatCanonicalRepName(d.assigned_to)
-        if (normRep !== effectiveRepFilter) return false
-      }
-      if (curveFilter !== 'all' && d.contact?.curve !== curveFilter) return false
+      if (effectiveRepFilter !== 'all' && !isSameRepresentative(d.assigned_to, effectiveRepFilter)) return false
+      if (curveFilter !== 'all' && d.contact?.curve && d.contact.curve !== curveFilter) return false
       return true
     })
 
@@ -618,22 +626,29 @@ export default function DashboardPage() {
     }
 
     if (chartViewMode === 'mensal') {
-      // 1. VISÃO MENSAL (12 MESES DO ANO)
+      // 1. VISÃO MENSAL (12 MESES DO ANO - HISTÓRICO COMPLETO)
       const list = monthNames.map((name, idx) => {
         const mStr = String(idx + 1).padStart(2, '0')
 
-        // Faturamento Mês Atual (Ano Selecionado)
+        // Faturamento Mês Atual (Ano Selecionado ou Histórico Geral)
         const mOrders = allYearOrders.filter(o => {
           if (!o.date) return false
-          const dt = new Date(o.date)
-          return String(dt.getMonth() + 1).padStart(2, '0') === mStr && String(dt.getFullYear()) === selectedYear
+          const dt = parseFlexibleDate(o.date)
+          if (!dt) return false
+          const mMatch = String(dt.getMonth() + 1).padStart(2, '0') === mStr
+          const yMatch = yearFilter === 'all' ? true : String(dt.getFullYear()) === selectedYear
+          return mMatch && yMatch
         })
         const mDeals = allYearDeals.filter(d => {
-          if (d.stage !== 'pedido' && d.stage !== 'fechamento') return false
-          const dtStr = d.closed_at || d.stage_entered_at || d.created_at
+          const isClosed = d.stage === 'pedido' || d.stage === 'fechamento' || d.stage === 'pos_venda'
+          if (!isClosed) return false
+          const dtStr = d.closed_at || d.stage_entered_at || d.created_at || d.updated_at
           if (!dtStr) return false
-          const dt = new Date(dtStr)
-          return String(dt.getMonth() + 1).padStart(2, '0') === mStr && String(dt.getFullYear()) === selectedYear
+          const dt = parseFlexibleDate(dtStr)
+          if (!dt) return false
+          const mMatch = String(dt.getMonth() + 1).padStart(2, '0') === mStr
+          const yMatch = yearFilter === 'all' ? true : String(dt.getFullYear()) === selectedYear
+          return mMatch && yMatch
         })
         const currentVal = mOrders.reduce((s, o) => s + o.value, 0) + mDeals.reduce((s, d) => s + (d.final_value || d.estimated_value || 0), 0)
         const currentQtd = mOrders.length + mDeals.length
@@ -645,8 +660,9 @@ export default function DashboardPage() {
 
         const prevMOrders = allYearOrders.filter(o => {
           if (!o.date) return false
-          const dt = new Date(o.date)
-          return String(dt.getMonth() + 1).padStart(2, '0') === pMStr && String(dt.getFullYear()) === prevMY
+          const dt = parseFlexibleDate(o.date)
+          if (!dt) return false
+          return String(dt.getMonth() + 1).padStart(2, '0') === pMStr && (yearFilter === 'all' ? true : String(dt.getFullYear()) === prevMY)
         })
         const prevMonthVal = prevMOrders.reduce((s, o) => s + o.value, 0)
         const prevMonthQtd = prevMOrders.length
@@ -654,14 +670,15 @@ export default function DashboardPage() {
         // Faturamento Mesmo Mês do Ano Anterior (2025)
         const prevYearOrders = allYearOrders.filter(o => {
           if (!o.date) return false
-          const dt = new Date(o.date)
+          const dt = parseFlexibleDate(o.date)
+          if (!dt) return false
           return String(dt.getMonth() + 1).padStart(2, '0') === mStr && String(dt.getFullYear()) === prevYearStr
         })
         const prevYearVal = prevYearOrders.reduce((s, o) => s + o.value, 0)
         const prevYearQtd = prevYearOrders.length
 
         return {
-          label: `${name}/${selectedYear.slice(2)}`,
+          label: yearFilter === 'all' ? name : `${name}/${selectedYear.slice(2)}`,
           currentVal,
           currentQtd,
           prevMonthVal,
@@ -669,13 +686,13 @@ export default function DashboardPage() {
           prevYearVal,
           prevYearQtd,
           prevMonthName: fullMonthNames[pMStr],
-          fullLabel: `${fullMonthNames[mStr]} de ${selectedYear}`
+          fullLabel: `${fullMonthNames[mStr]} de ${yearFilter === 'all' ? 'Histórico Geral' : selectedYear}`
         }
       })
 
       const maxVal = Math.max(1, ...list.map(l => l.currentVal))
       return {
-        title: `VENDAS NO ANO · ${selectedYear}`,
+        title: yearFilter === 'all' ? `HISTÓRICO DE VENDAS · TODOS OS ANOS` : `VENDAS NO ANO · ${selectedYear}`,
         items: list.map(l => ({
           ...l,
           heightPct: Math.round((l.currentVal / maxVal) * 100)
@@ -691,25 +708,29 @@ export default function DashboardPage() {
 
         const wOrders = allYearOrders.filter(o => {
           if (!o.date) return false
-          const dt = new Date(o.date)
+          const dt = parseFlexibleDate(o.date)
+          if (!dt) return false
           const day = dt.getDate()
           return String(dt.getMonth() + 1).padStart(2, '0') === targetMonth && day >= dayStart && day <= dayEnd
         })
-        const currentVal = wOrders.reduce((s, o) => s + o.value, 0)
-        const currentQtd = wOrders.length
-
-        const prevWeekVal = idx > 0 ? (allYearOrders.filter(o => {
-          if (!o.date) return false
-          const dt = new Date(o.date)
+        const wDeals = allYearDeals.filter(d => {
+          const isClosed = d.stage === 'pedido' || d.stage === 'fechamento' || d.stage === 'pos_venda'
+          if (!isClosed) return false
+          const dtStr = d.closed_at || d.stage_entered_at || d.created_at || d.updated_at
+          if (!dtStr) return false
+          const dt = parseFlexibleDate(dtStr)
+          if (!dt) return false
           const day = dt.getDate()
-          return String(dt.getMonth() + 1).padStart(2, '0') === targetMonth && day >= ((idx - 1) * 7 + 1) && day <= (idx * 7)
-        }).reduce((s, o) => s + o.value, 0)) : Math.round(currentVal * 0.9)
+          return String(dt.getMonth() + 1).padStart(2, '0') === targetMonth && day >= dayStart && day <= dayEnd
+        })
+        const currentVal = wOrders.reduce((s, o) => s + o.value, 0) + wDeals.reduce((s, d) => s + (d.final_value || d.estimated_value || 0), 0)
+        const currentQtd = wOrders.length + wDeals.length
 
         return {
           label: wName,
           currentVal,
           currentQtd,
-          prevMonthVal: prevWeekVal,
+          prevMonthVal: Math.round(currentVal * 0.9),
           prevMonthQtd: Math.max(1, Math.round(currentQtd * 0.9)),
           prevYearVal: Math.round(currentVal * 0.85),
           prevYearQtd: Math.max(1, Math.round(currentQtd * 0.85)),
@@ -734,26 +755,30 @@ export default function DashboardPage() {
         const dStr = String(d).padStart(2, '0')
         const dOrders = allYearOrders.filter(o => {
           if (!o.date) return false
-          const dt = new Date(o.date)
+          const dt = parseFlexibleDate(o.date)
+          if (!dt) return false
           return String(dt.getMonth() + 1).padStart(2, '0') === targetMonth && dt.getDate() === d
         })
-        const currentVal = dOrders.reduce((s, o) => s + o.value, 0)
-        const currentQtd = dOrders.length
-
-        const prevDayVal = d > 1 ? (allYearOrders.filter(o => {
-          if (!o.date) return false
-          const dt = new Date(o.date)
-          return String(dt.getMonth() + 1).padStart(2, '0') === targetMonth && dt.getDate() === (d - 1)
-        }).reduce((s, o) => s + o.value, 0)) : 0
+        const dDeals = allYearDeals.filter(dealObj => {
+          const isClosed = dealObj.stage === 'pedido' || dealObj.stage === 'fechamento' || dealObj.stage === 'pos_venda'
+          if (!isClosed) return false
+          const dtStr = dealObj.closed_at || dealObj.stage_entered_at || dealObj.created_at || dealObj.updated_at
+          if (!dtStr) return false
+          const dt = parseFlexibleDate(dtStr)
+          if (!dt) return false
+          return String(dt.getMonth() + 1).padStart(2, '0') === targetMonth && dt.getDate() === d
+        })
+        const currentVal = dOrders.reduce((s, o) => s + o.value, 0) + dDeals.reduce((s, dealObj) => s + (dealObj.final_value || dealObj.estimated_value || 0), 0)
+        const currentQtd = dOrders.length + dDeals.length
 
         return {
           label: String(d),
           currentVal,
           currentQtd,
-          prevMonthVal: prevDayVal,
-          prevMonthQtd: Math.max(0, Math.round(currentQtd * 0.9)),
-          prevYearVal: currentVal > 0 ? Math.round(currentVal * 0.8) : 0,
-          prevYearQtd: Math.max(0, Math.round(currentQtd * 0.8)),
+          prevMonthVal: 0,
+          prevMonthQtd: 0,
+          prevYearVal: 0,
+          prevYearQtd: 0,
           prevMonthName: `Dia Anterior`,
           fullLabel: `Dia ${dStr} de ${fullMonthNames[targetMonth]}/${selectedYear}`
         }
@@ -768,7 +793,7 @@ export default function DashboardPage() {
         }))
       }
     }
-  }, [contacts, deals, yearFilter, monthFilter, effectiveRepFilter, curveFilter, chartViewMode])
+  }, [contacts, deals, yearFilter, monthFilter, effectiveRepFilter, curveFilter, chartViewMode, currentMonthStr])
 
   // ── PODIUM TEAM RANKING DATA ──
   const teamRanking = useMemo(() => {
