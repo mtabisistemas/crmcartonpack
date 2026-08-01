@@ -637,10 +637,7 @@ export default function DashboardPage() {
     }
 
     if (chartViewMode === 'mensal') {
-      // 1. VISÃO MENSAL (12 MESES DO ANO - HISTÓRICO COMPLETO)
-      const teamBaseline = [295000, 310000, 345000, 280000, 360000, 325000, 355000, 340000, 330000, 370000, 385000, 410000]
-      const repBaseline = [22500, 24000, 26500, 21500, 28000, 25000, 27000, 26000, 25500, 28500, 29500, 31500]
-
+      // 1. VISÃO MENSAL (12 MESES DO ANO - APENAS DADOS REAIS DE PEDIDOS E DEALS)
       const list = monthNames.map((name, idx) => {
         const mStr = String(idx + 1).padStart(2, '0')
 
@@ -664,15 +661,10 @@ export default function DashboardPage() {
           const yMatch = yearFilter === 'all' ? true : String(dt.getFullYear()) === selectedYear
           return mMatch && yMatch
         })
-        const rawCurrentVal = mOrders.reduce((s, o) => s + o.value, 0) + mDeals.reduce((s, d) => s + (d.final_value || d.estimated_value || 0), 0)
-        const rawCurrentQtd = mOrders.length + mDeals.length
+        const currentVal = mOrders.reduce((s, o) => s + o.value, 0) + mDeals.reduce((s, d) => s + (d.final_value || d.estimated_value || 0), 0)
+        const currentQtd = mOrders.length + mDeals.length
 
-        // Se houver vendas reais registradas no mês, usa o valor real; caso contrário, exibe o histórico de vendas de referência
-        const isTeam = effectiveRepFilter === 'all'
-        const currentVal = rawCurrentVal > 0 ? rawCurrentVal : (isTeam ? teamBaseline[idx] : repBaseline[idx])
-        const currentQtd = rawCurrentQtd > 0 ? rawCurrentQtd : Math.max(1, Math.round(currentVal / (isTeam ? 18000 : 12000)))
-
-        // Faturamento Mês Anterior (Cálculo Real / Referência)
+        // Faturamento Mês Anterior (Cálculo Real para Comparativo)
         const prevMIdx = idx === 0 ? 11 : idx - 1
         const prevMY = idx === 0 ? String(Number(selectedYear) - 1) : selectedYear
         const pMStr = String(prevMIdx + 1).padStart(2, '0')
@@ -683,9 +675,8 @@ export default function DashboardPage() {
           if (!dt) return false
           return String(dt.getMonth() + 1).padStart(2, '0') === pMStr && (yearFilter === 'all' ? true : String(dt.getFullYear()) === prevMY)
         })
-        const rawPrevVal = prevMOrders.reduce((s, o) => s + o.value, 0)
-        const prevMonthVal = rawPrevVal > 0 ? rawPrevVal : Math.round(currentVal * 0.92)
-        const prevMonthQtd = rawPrevVal > 0 ? prevMOrders.length : Math.max(1, Math.round(prevMonthVal / (isTeam ? 18000 : 12000)))
+        const prevMonthVal = prevMOrders.reduce((s, o) => s + o.value, 0)
+        const prevMonthQtd = prevMOrders.length
 
         // Faturamento Mesmo Mês do Ano Anterior (2025)
         const prevYearOrders = allYearOrders.filter(o => {
@@ -694,9 +685,8 @@ export default function DashboardPage() {
           if (!dt) return false
           return String(dt.getMonth() + 1).padStart(2, '0') === mStr && String(dt.getFullYear()) === prevYearStr
         })
-        const rawPrevYearVal = prevYearOrders.reduce((s, o) => s + o.value, 0)
-        const prevYearVal = rawPrevYearVal > 0 ? rawPrevYearVal : Math.round(currentVal * 0.86)
-        const prevYearQtd = rawPrevYearVal > 0 ? prevYearOrders.length : Math.max(1, Math.round(prevYearVal / (isTeam ? 18000 : 12000)))
+        const prevYearVal = prevYearOrders.reduce((s, o) => s + o.value, 0)
+        const prevYearQtd = prevYearOrders.length
 
         return {
           label: yearFilter === 'all' ? name : `${name}/${selectedYear.slice(2)}`,
@@ -744,13 +734,8 @@ export default function DashboardPage() {
           const day = dt.getDate()
           return String(dt.getMonth() + 1).padStart(2, '0') === targetMonth && day >= dayStart && day <= dayEnd
         })
-        const rawCurrentVal = wOrders.reduce((s, o) => s + o.value, 0) + wDeals.reduce((s, d) => s + (d.final_value || d.estimated_value || 0), 0)
-        const rawCurrentQtd = wOrders.length + wDeals.length
-        
-        const isTeam = effectiveRepFilter === 'all'
-        const baseWeekly = Math.round((isTeam ? 330000 : 26000) / 4.4)
-        const currentVal = rawCurrentVal > 0 ? rawCurrentVal : Math.round(baseWeekly * (0.85 + (idx % 3) * 0.12))
-        const currentQtd = rawCurrentQtd > 0 ? rawCurrentQtd : Math.max(1, Math.round(currentVal / (isTeam ? 18000 : 12000)))
+        const currentVal = wOrders.reduce((s, o) => s + o.value, 0) + wDeals.reduce((s, d) => s + (d.final_value || d.estimated_value || 0), 0)
+        const currentQtd = wOrders.length + wDeals.length
 
         return {
           label: wName,
