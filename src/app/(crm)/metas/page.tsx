@@ -295,9 +295,51 @@ export default function MetasPage() {
       [userKey]: {
         ...prev[userKey],
         [field]: num,
+        ...(field === 'visitsGoal' ? { hasVisitsGoal: num > 0 } : {}),
+        ...(field === 'contactsGoal' ? { hasContactsGoal: num > 0 } : {}),
         updatedAt: new Date().toISOString()
       }
     }))
+  }
+
+  // Habilita / Desabilita Meta de Visitas ou Contatos
+  const handleToggleGoal = (userKey: string, goalType: 'visitsGoal' | 'contactsGoal', enable: boolean) => {
+    setGoalsMap(prev => {
+      const current = prev[userKey] || {
+        id: userKey,
+        userName: userKey,
+        year: selectedYear,
+        month: selectedMonth,
+        salesGoal: 30000,
+        visitsGoal: 20,
+        contactsGoal: 400,
+        newClientsGoal: 2
+      }
+
+      if (goalType === 'visitsGoal') {
+        const visitsVal = enable ? ((current.visitsGoal && current.visitsGoal > 0) ? current.visitsGoal : 20) : 0
+        return {
+          ...prev,
+          [userKey]: {
+            ...current,
+            hasVisitsGoal: enable,
+            visitsGoal: visitsVal,
+            updatedAt: new Date().toISOString()
+          }
+        }
+      } else {
+        const contactsVal = enable ? ((current.contactsGoal && current.contactsGoal > 0) ? current.contactsGoal : 400) : 0
+        return {
+          ...prev,
+          [userKey]: {
+            ...current,
+            hasContactsGoal: enable,
+            contactsGoal: contactsVal,
+            updatedAt: new Date().toISOString()
+          }
+        }
+      }
+    })
   }
 
   // Salvar Metas no LocalStorage e no Supabase via API
@@ -771,42 +813,86 @@ export default function MetasPage() {
                             </div>
                           </td>
 
-                          {/* Campo Meta Visitas */}
+                          {/* Campo Meta Visitas com Toggle */}
                           <td className="py-3.5 px-3 text-right font-mono">
-                            <div className="inline-flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2.5 py-1 focus-within:border-[var(--lime)]">
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={formatNumberBr(viewMode === 'mensal' ? rawVisits : visitsDisp)}
-                                onChange={e => {
-                                  let val = parseNumberBr(e.target.value)
-                                  if (viewMode === 'semanal') val = Math.round(val * 4.4)
-                                  if (viewMode === 'diaria') val = Math.round(val * businessDays)
-                                  handleUpdateGoalField(key, 'visitsGoal', val.toString())
-                                }}
-                                className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] text-right w-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              />
-                              <span className="text-[10px] text-[var(--gray2)]">visitas</span>
-                            </div>
+                            {(() => {
+                              const isVisitsActive = g.hasVisitsGoal !== false && rawVisits > 0
+                              return (
+                                <div className="inline-flex items-center gap-1.5 justify-end">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleGoal(key, 'visitsGoal', !isVisitsActive)}
+                                    className={`p-1 rounded-md transition-all cursor-pointer border ${
+                                      isVisitsActive 
+                                        ? 'bg-[var(--lime)]/15 border-[var(--lime)]/40 text-[var(--lime)]' 
+                                        : 'bg-neutral-800 border-neutral-700 text-gray-500 hover:text-gray-300'
+                                    }`}
+                                    title={isVisitsActive ? 'Desabilitar Meta de Visitas (zerar)' : 'Habilitar Meta de Visitas'}
+                                  >
+                                    {isVisitsActive ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                                  </button>
+                                  <div className={`inline-flex items-center gap-1 bg-[var(--charcoal)] border rounded-xl px-2.5 py-1 transition-all ${
+                                    isVisitsActive ? 'border-[var(--line)] focus-within:border-[var(--lime)]' : 'border-neutral-800 opacity-40 select-none'
+                                  }`}>
+                                    <input
+                                      type="text"
+                                      inputMode="numeric"
+                                      disabled={!isVisitsActive}
+                                      value={isVisitsActive ? formatNumberBr(viewMode === 'mensal' ? rawVisits : visitsDisp) : '0'}
+                                      onChange={e => {
+                                        let val = parseNumberBr(e.target.value)
+                                        if (viewMode === 'semanal') val = Math.round(val * 4.4)
+                                        if (viewMode === 'diaria') val = Math.round(val * businessDays)
+                                        handleUpdateGoalField(key, 'visitsGoal', val.toString())
+                                      }}
+                                      className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] text-right w-14 disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    />
+                                    <span className="text-[10px] text-[var(--gray2)]">visitas</span>
+                                  </div>
+                                </div>
+                              )
+                            })()}
                           </td>
 
-                          {/* Campo Meta Contatos */}
+                          {/* Campo Meta Contatos com Toggle */}
                           <td className="py-3.5 px-3 text-right font-mono">
-                            <div className="inline-flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2.5 py-1 focus-within:border-[var(--lime)]">
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={formatNumberBr(viewMode === 'mensal' ? rawContacts : contactsDisp)}
-                                onChange={e => {
-                                  let val = parseNumberBr(e.target.value)
-                                  if (viewMode === 'semanal') val = Math.round(val * 4.4)
-                                  if (viewMode === 'diaria') val = Math.round(val * businessDays)
-                                  handleUpdateGoalField(key, 'contactsGoal', val.toString())
-                                }}
-                                className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] text-right w-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              />
-                              <span className="text-[10px] text-[var(--gray2)]">contatos</span>
-                            </div>
+                            {(() => {
+                              const isContactsActive = g.hasContactsGoal !== false && rawContacts > 0
+                              return (
+                                <div className="inline-flex items-center gap-1.5 justify-end">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleGoal(key, 'contactsGoal', !isContactsActive)}
+                                    className={`p-1 rounded-md transition-all cursor-pointer border ${
+                                      isContactsActive 
+                                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400' 
+                                        : 'bg-neutral-800 border-neutral-700 text-gray-500 hover:text-gray-300'
+                                    }`}
+                                    title={isContactsActive ? 'Desabilitar Meta de Contatos (zerar)' : 'Habilitar Meta de Contatos'}
+                                  >
+                                    {isContactsActive ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                                  </button>
+                                  <div className={`inline-flex items-center gap-1 bg-[var(--charcoal)] border rounded-xl px-2.5 py-1 transition-all ${
+                                    isContactsActive ? 'border-[var(--line)] focus-within:border-[var(--lime)]' : 'border-neutral-800 opacity-40 select-none'
+                                  }`}>
+                                    <input
+                                      type="text"
+                                      inputMode="numeric"
+                                      disabled={!isContactsActive}
+                                      value={isContactsActive ? formatNumberBr(viewMode === 'mensal' ? rawContacts : contactsDisp) : '0'}
+                                      onChange={e => {
+                                        let val = parseNumberBr(e.target.value)
+                                        if (viewMode === 'semanal') val = Math.round(val * 4.4)
+                                        if (viewMode === 'diaria') val = Math.round(val * businessDays)
+                                        handleUpdateGoalField(key, 'contactsGoal', val.toString())
+                                      }}
+                                      className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] text-right w-14 disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    />
+                                    <span className="text-[10px] text-[var(--gray2)]">contatos</span>
+                                  </div>
+                                </div>
+                              )
+                            })()}
                           </td>
 
                           {/* Campo Meta Novos Clientes */}

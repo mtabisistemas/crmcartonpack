@@ -335,10 +335,11 @@ export default function DiarioDeBordoPage() {
       const n = norm(s)
       return n.includes('mauricio') || n.includes('maciel')
     }
-
     let salesGoalSum = 0
     let visitsGoalSum = 0
     let contactsGoalSum = 0
+    let userHasVisitsGoal = true
+    let userHasContactsGoal = true
 
     if (activeFilter === 'all') {
       Object.keys(goalsMap).forEach(key => {
@@ -348,53 +349,53 @@ export default function DiarioDeBordoPage() {
 
         if (key.startsWith(`${yearStr}_${monthStr}_`) && !key.startsWith('EQUIPE_')) {
           salesGoalSum += Number(g?.salesGoal || 0)
-          visitsGoalSum += Number(g?.visitsGoal !== undefined && g?.visitsGoal !== null ? g.visitsGoal : 20)
-          contactsGoalSum += Number(g?.contactsGoal !== undefined && g?.contactsGoal !== null ? g.contactsGoal : 400)
+          
+          const isVActive = g?.hasVisitsGoal !== false && (g?.visitsGoal === undefined || Number(g?.visitsGoal) > 0)
+          if (isVActive) {
+            visitsGoalSum += Number(g?.visitsGoal !== undefined ? g.visitsGoal : 20)
+          }
+
+          const isCActive = g?.hasContactsGoal !== false && (g?.contactsGoal === undefined || Number(g?.contactsGoal) > 0)
+          if (isCActive) {
+            contactsGoalSum += Number(g?.contactsGoal !== undefined ? g.contactsGoal : 400)
+          }
         }
       })
 
-      if (salesGoalSum === 0) salesGoalSum = 390000 // R$ 390.000,00
+      if (salesGoalSum === 0) salesGoalSum = 390000
       if (visitsGoalSum === 0) visitsGoalSum = 260
       if (contactsGoalSum === 0) contactsGoalSum = 5200
+      userHasVisitsGoal = true
+      userHasContactsGoal = true
     } else {
       const selUser = availableReps.find(r => r === activeFilter || isSameRepresentative(r, activeFilter))
       const targetName = selUser || activeFilter
 
       const k1 = `${yearStr}_${monthStr}_${targetName}`
-      if (goalsMap[k1] && Number(goalsMap[k1].salesGoal) > 0) {
-        salesGoalSum = Number(goalsMap[k1].salesGoal)
-        visitsGoalSum = Number(goalsMap[k1].visitsGoal !== undefined ? goalsMap[k1].visitsGoal : 20)
-        contactsGoalSum = Number(goalsMap[k1].contactsGoal !== undefined ? goalsMap[k1].contactsGoal : 400)
+      const gObj = goalsMap[k1]
+      
+      if (gObj) {
+        salesGoalSum = Number(gObj.salesGoal || 0)
+        userHasVisitsGoal = gObj.hasVisitsGoal !== false && (gObj.visitsGoal === undefined || Number(gObj.visitsGoal) > 0)
+        visitsGoalSum = userHasVisitsGoal ? Number(gObj.visitsGoal !== undefined ? gObj.visitsGoal : 20) : 0
+
+        userHasContactsGoal = gObj.hasContactsGoal !== false && (gObj.contactsGoal === undefined || Number(gObj.contactsGoal) > 0)
+        contactsGoalSum = userHasContactsGoal ? Number(gObj.contactsGoal !== undefined ? gObj.contactsGoal : 400) : 0
       } else {
-        Object.keys(goalsMap).forEach(key => {
-          if (isMauricio(key)) return
-          const gObj = goalsMap[key]
-          if (isMauricio(gObj?.userName || '')) return
-
-          const parts = key.split('_')
-          const gYear = parts[0]
-          const gMonth = parts[1]
-
-          if (gYear === yearStr && gMonth === monthStr) {
-            const gUserName = gObj?.userName || parts.slice(2).join('_')
-            if (isSameRepresentative(gUserName, targetName)) {
-              salesGoalSum += Number(gObj?.salesGoal || 0)
-              visitsGoalSum += Number(gObj?.visitsGoal !== undefined ? gObj.visitsGoal : 20)
-              contactsGoalSum += Number(gObj?.contactsGoal !== undefined ? gObj.contactsGoal : 400)
-            }
-          }
-        })
+        salesGoalSum = 30000
+        visitsGoalSum = 20
+        contactsGoalSum = 400
+        userHasVisitsGoal = true
+        userHasContactsGoal = true
       }
-
-      if (salesGoalSum === 0) salesGoalSum = 30000
-      if (visitsGoalSum === 0) visitsGoalSum = 20
-      if (contactsGoalSum === 0) contactsGoalSum = 400
     }
 
     return {
       salesGoal: salesGoalSum,
       visitsGoal: visitsGoalSum,
-      contactsGoal: contactsGoalSum
+      contactsGoal: contactsGoalSum,
+      hasVisitsGoal: userHasVisitsGoal,
+      hasContactsGoal: userHasContactsGoal
     }
   }, [goalsMap, userFilter, availableReps, isAdminOrManager, currentUser?.name])
 
@@ -478,8 +479,10 @@ export default function DiarioDeBordoPage() {
       dailyPaceRequired,
       currentMonthVisits,
       visitsTarget: currentMonthGoal.visitsGoal,
+      hasVisitsGoal: currentMonthGoal.hasVisitsGoal,
       currentMonthContacts,
-      contactsTarget: currentMonthGoal.contactsGoal
+      contactsTarget: currentMonthGoal.contactsGoal,
+      hasContactsGoal: currentMonthGoal.hasContactsGoal
     }
   }, [filteredContacts, filteredDeals, currentMonthGoal, bizStats, appointments, userFilter])
 
@@ -671,8 +674,14 @@ export default function DiarioDeBordoPage() {
             </div>
           </div>
 
-          {/* 5 KPIs NUMÉRICOS COM DESIGN IDÊNTICO AOS CARDS DO DASHBOARD (FAIXAS NEON + MARCA D'ÁGUA 3D) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* KPIs NUMÉRICOS COM DESIGN IDÊNTICO AOS CARDS DO DASHBOARD (FAIXAS NEON + MARCA D'ÁGUA 3D) */}
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${
+            (pacingMetrics.hasVisitsGoal && pacingMetrics.hasContactsGoal)
+              ? 'lg:grid-cols-5'
+              : (pacingMetrics.hasVisitsGoal || pacingMetrics.hasContactsGoal)
+              ? 'lg:grid-cols-4'
+              : 'lg:grid-cols-3'
+          } gap-3`}>
             
             {/* KPI 1: ESPERADO HOJE (PACING) */}
             <div className="card bg-[var(--card)] border border-[var(--line)] pl-4 pr-3 py-3.5 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
@@ -749,55 +758,59 @@ export default function DiarioDeBordoPage() {
               </div>
             </div>
 
-            {/* KPI 4: VISITAS NO MÊS */}
-            <div className="card bg-[var(--card)] border border-[var(--line)] pl-4 pr-3 py-3.5 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
-              {/* FAIXA LATERAL ESQUERDA NEON */}
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#8b5cf6] rounded-l-2xl z-20 shadow-[0_0_10px_#8b5cf6]" />
+            {/* KPI 4: VISITAS NO MÊS (Condicional) */}
+            {pacingMetrics.hasVisitsGoal && (
+              <div className="card bg-[var(--card)] border border-[var(--line)] pl-4 pr-3 py-3.5 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
+                {/* FAIXA LATERAL ESQUERDA NEON */}
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#8b5cf6] rounded-l-2xl z-20 shadow-[0_0_10px_#8b5cf6]" />
 
-              {/* MARCA D'ÁGUA 3D INTEIRA */}
-              <Users size={36} className="absolute right-2 top-2 text-[#8b5cf6] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+                {/* MARCA D'ÁGUA 3D INTEIRA */}
+                <Users size={36} className="absolute right-2 top-2 text-[#8b5cf6] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
-              <div className="flex items-start justify-between gap-1 z-10">
-                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-purple-400 leading-tight">
-                  VISITAS NO MÊS
-                </span>
-              </div>
+                <div className="flex items-start justify-between gap-1 z-10">
+                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-purple-400 leading-tight">
+                    VISITAS NO MÊS
+                  </span>
+                </div>
 
-              <div className="my-1.5 z-10">
-                <div className="text-lg sm:text-xl font-mono font-black text-[#8b5cf6] tracking-tight">
-                  {pacingMetrics.currentMonthVisits} <span className="text-[10px] font-normal text-[var(--gray2)]">/ {pacingMetrics.visitsTarget}</span>
+                <div className="my-1.5 z-10">
+                  <div className="text-lg sm:text-xl font-mono font-black text-[#8b5cf6] tracking-tight">
+                    {pacingMetrics.currentMonthVisits} <span className="text-[10px] font-normal text-[var(--gray2)]">/ {pacingMetrics.visitsTarget}</span>
+                  </div>
+                </div>
+
+                <div className="pt-1.5 border-t border-[var(--line)]/50 text-[10px] font-mono text-[var(--gray2)] font-semibold z-10">
+                  Visitas / Reuniões
                 </div>
               </div>
+            )}
 
-              <div className="pt-1.5 border-t border-[var(--line)]/50 text-[10px] font-mono text-[var(--gray2)] font-semibold z-10">
-                Visitas / Reuniões
-              </div>
-            </div>
+            {/* KPI 5: CONTATOS NO MÊS (Condicional) */}
+            {pacingMetrics.hasContactsGoal && (
+              <div className="card bg-[var(--card)] border border-[var(--line)] pl-4 pr-3 py-3.5 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
+                {/* FAIXA LATERAL ESQUERDA NEON */}
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#10b981] rounded-l-2xl z-20 shadow-[0_0_10px_#10b981]" />
 
-            {/* KPI 5: CONTATOS NO MÊS */}
-            <div className="card bg-[var(--card)] border border-[var(--line)] pl-4 pr-3 py-3.5 rounded-2xl flex flex-col justify-between relative overflow-hidden group select-none min-h-[110px]">
-              {/* FAIXA LATERAL ESQUERDA NEON */}
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#10b981] rounded-l-2xl z-20 shadow-[0_0_10px_#10b981]" />
+                {/* MARCA D'ÁGUA 3D INTEIRA */}
+                <Phone size={36} className="absolute right-2 top-2 text-[#10b981] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
-              {/* MARCA D'ÁGUA 3D INTEIRA */}
-              <Phone size={36} className="absolute right-2 top-2 text-[#10b981] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+                <div className="flex items-start justify-between gap-1 z-10">
+                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-400 leading-tight">
+                    CONTATOS NO MÊS
+                  </span>
+                </div>
 
-              <div className="flex items-start justify-between gap-1 z-10">
-                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-400 leading-tight">
-                  CONTATOS NO MÊS
-                </span>
-              </div>
+                <div className="my-1.5 z-10">
+                  <div className="text-lg sm:text-xl font-mono font-black text-[#10b981] tracking-tight">
+                    {pacingMetrics.currentMonthContacts} <span className="text-[10px] font-normal text-[var(--gray2)]">/ {pacingMetrics.contactsTarget}</span>
+                  </div>
+                </div>
 
-              <div className="my-1.5 z-10">
-                <div className="text-lg sm:text-xl font-mono font-black text-[#10b981] tracking-tight">
-                  {pacingMetrics.currentMonthContacts} <span className="text-[10px] font-normal text-[var(--gray2)]">/ {pacingMetrics.contactsTarget}</span>
+                <div className="pt-1.5 border-t border-[var(--line)]/50 text-[10px] font-mono text-[var(--gray2)] font-semibold z-10">
+                  Ligações / WhatsApp / E-mails
                 </div>
               </div>
-
-              <div className="pt-1.5 border-t border-[var(--line)]/50 text-[10px] font-mono text-[var(--gray2)] font-semibold z-10">
-                Ligações / WhatsApp / E-mails
-              </div>
-            </div>
+            )}
 
           </div>
 

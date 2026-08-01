@@ -304,6 +304,8 @@ export interface UserGoal {
   visitsGoal: number // Qtd Visitas
   contactsGoal: number // Qtd Contatos
   newClientsGoal: number // Qtd novos clientes com pedido fechado
+  hasVisitsGoal?: boolean
+  hasContactsGoal?: boolean
   customWeeklySalesGoal?: number
   customDailySalesGoal?: number
   customWeeklyVisitsGoal?: number
