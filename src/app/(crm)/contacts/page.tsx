@@ -540,9 +540,10 @@ function ContactDrawer({
       }
 
       const rawSavedFreq = (contact as any).purchaseFrequencyDays ?? (contact as any).purchase_frequency_days
-      const finalFreq = calculatedAutoFreq !== null 
-        ? calculatedAutoFreq 
-        : (rawSavedFreq && rawSavedFreq !== 30 ? rawSavedFreq : null)
+      const savedNum = Number(rawSavedFreq)
+      const finalFreq = (savedNum > 0)
+        ? savedNum 
+        : (calculatedAutoFreq !== null ? calculatedAutoFreq : 0)
       
       setPurchaseFrequencyDays(finalFreq)
       setAutoCalculatedFreq(calculatedAutoFreq)
