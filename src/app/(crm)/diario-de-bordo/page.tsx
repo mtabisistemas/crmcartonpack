@@ -315,6 +315,7 @@ export default function DiarioDeBordoPage() {
   const bizStats = useMemo(() => getBusinessDaysStats(), [])
 
   // Calculate Meta & Sales Goal for selected Month/Year
+  // Calculate Meta & Sales Goal for selected Month/Year
   const currentMonthGoal = useMemo(() => {
     const now = new Date()
     const yearStr = String(now.getFullYear())
@@ -343,7 +344,7 @@ export default function DiarioDeBordoPage() {
           }
         })
       }
-      if (salesGoalSum === 0) salesGoalSum = 150000
+      if (salesGoalSum === 0) salesGoalSum = 1500000 // R$ 1.500.000,00 team goal fallback (identical to Dashboard)
       if (visitsGoalSum === 0) visitsGoalSum = 40
     } else {
       const selUser = usersList.find(u => u.id === activeFilter || u.name === activeFilter)
@@ -354,7 +355,7 @@ export default function DiarioDeBordoPage() {
       const goalKey2 = `${yearStr}_${monthStr}_${uName}`
 
       const foundGoal = goalsMap[goalKey1] || goalsMap[goalKey2]
-      salesGoalSum = Number(foundGoal?.salesGoal || 50000)
+      salesGoalSum = Number(foundGoal?.salesGoal || 150000)
       visitsGoalSum = Number(foundGoal?.visitsGoal || 20)
     }
 
@@ -364,22 +365,45 @@ export default function DiarioDeBordoPage() {
     }
   }, [goalsMap, userFilter, usersList, isAdminOrManager, currentUser?.name])
 
-  // 1. Pacing & Goal Calculations
+  // 1. Pacing & Goal Calculations (Unified with Dashboard)
   const pacingMetrics = useMemo(() => {
     const now = new Date()
-    const currentMonth = now.getMonth()
-    const currentYear = now.getFullYear()
+    const currentMonthStr = String(now.getMonth() + 1).padStart(2, '0')
+    const currentYearStr = String(now.getFullYear())
 
-    // Won deals in current month
-    const wonDeals = filteredDeals.filter(d => {
-      if (d.stage !== 'fechamento') return false
-      const closeDate = d.closed_at || d.updated_at
-      if (!closeDate) return false
-      const dt = new Date(closeDate)
-      return dt.getMonth() === currentMonth && dt.getFullYear() === currentYear
+    let totalSalesAchieved = 0
+
+    // 1. Accumulate orders in current month from filteredContacts
+    filteredContacts.forEach(c => {
+      if (c.orders && Array.isArray(c.orders)) {
+        c.orders.forEach((o: any) => {
+          if (o.date) {
+            const dt = new Date(o.date)
+            const mStr = String(dt.getMonth() + 1).padStart(2, '0')
+            const yStr = String(dt.getFullYear())
+            if (mStr === currentMonthStr && yStr === currentYearStr) {
+              totalSalesAchieved += (Number(o.value) || 0)
+            }
+          }
+        })
+      }
     })
 
-    const totalSalesAchieved = wonDeals.reduce((sum, d) => sum + (d.final_value || d.estimated_value || 0), 0)
+    // 2. Accumulate won deals in current month from filteredDeals
+    filteredDeals.forEach(d => {
+      if (d.stage === 'fechamento' || d.stage === 'pedido') {
+        const closeDate = d.closed_at || d.updated_at || d.stage_entered_at
+        if (closeDate) {
+          const dt = new Date(closeDate)
+          const mStr = String(dt.getMonth() + 1).padStart(2, '0')
+          const yStr = String(dt.getFullYear())
+          if (mStr === currentMonthStr && yStr === currentYearStr) {
+            totalSalesAchieved += (d.final_value || d.estimated_value || 0)
+          }
+        }
+      }
+    })
+
     const salesTarget = currentMonthGoal.salesGoal
     const salesProgressPct = Math.min(100, Math.round((totalSalesAchieved / Math.max(1, salesTarget)) * 100))
 
@@ -394,7 +418,7 @@ export default function DiarioDeBordoPage() {
     const currentMonthVisits = appointments.filter(a => {
       if (a.type !== 'visita' && a.type !== 'reuniao') return false
       const dt = new Date(a.date)
-      return dt.getMonth() === currentMonth && dt.getFullYear() === currentYear
+      return (dt.getMonth() + 1) === (now.getMonth() + 1) && dt.getFullYear() === now.getFullYear()
     }).length
 
     return {
@@ -408,7 +432,7 @@ export default function DiarioDeBordoPage() {
       currentMonthVisits,
       visitsTarget: currentMonthGoal.visitsGoal
     }
-  }, [filteredDeals, currentMonthGoal, bizStats, appointments])
+  }, [filteredContacts, filteredDeals, currentMonthGoal, bizStats, appointments])
 
   // Stagnant Deals (>7 days)
   const dealAlerts = useMemo(() => {
