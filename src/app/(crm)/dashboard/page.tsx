@@ -237,8 +237,11 @@ export default function DashboardPage() {
               const localC = JSON.parse(rawC)
               if (Array.isArray(localC) && localC.length > 0) {
                 const mapById = new Map<string, any>()
-                localC.forEach(c => mapById.set(c.id, c))
                 loadedContacts.forEach(c => mapById.set(c.id, c))
+                localC.forEach(c => {
+                  const existing = mapById.get(c.id) || {}
+                  mapById.set(c.id, { ...existing, ...c })
+                })
                 loadedContacts = Array.from(mapById.values())
               }
             } catch (e) {}
@@ -247,13 +250,25 @@ export default function DashboardPage() {
         setContacts(loadedContacts)
 
         // Load Metas / Goals Map
+        let loadedGoalsMap: Record<string, UserGoal> = {}
         try {
           const resM = await fetch('/api/metas', { cache: 'no-store' })
           if (resM.ok) {
             const jsonM = await resM.json()
-            if (jsonM.goalsMap) setGoalsMap(jsonM.goalsMap)
+            if (jsonM.goalsMap) loadedGoalsMap = jsonM.goalsMap
           }
         } catch (e) {}
+
+        if (typeof window !== 'undefined') {
+          const rawGoals = localStorage.getItem('cp_crm_user_goals')
+          if (rawGoals) {
+            try {
+              const parsedG = JSON.parse(rawGoals)
+              loadedGoalsMap = { ...loadedGoalsMap, ...parsedG }
+            } catch (e) {}
+          }
+        }
+        setGoalsMap(loadedGoalsMap)
       } catch (e) {
         console.error('Error loading dashboard data:', e)
       } finally {
@@ -262,6 +277,22 @@ export default function DashboardPage() {
     }
 
     loadDashboardData()
+
+    const handleStorageChange = () => loadDashboardData()
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage-deals-changed', handleStorageChange)
+      window.addEventListener('storage-contacts-changed', handleStorageChange)
+      window.addEventListener('storage-goals-changed', handleStorageChange)
+      window.addEventListener('storage', handleStorageChange)
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage-deals-changed', handleStorageChange)
+        window.removeEventListener('storage-contacts-changed', handleStorageChange)
+        window.removeEventListener('storage-goals-changed', handleStorageChange)
+        window.removeEventListener('storage', handleStorageChange)
+      }
+    }
   }, [])
 
   // Leaflet Dynamic Loading
@@ -917,6 +948,7 @@ export default function DashboardPage() {
 
     if (effectiveRepFilter === 'all') {
       let sumGoal = 0
+      let entriesCount = 0
       Object.keys(goalsMap).forEach(k => {
         if (isMauricio(k)) return
         const gObj = goalsMap[k]
@@ -931,14 +963,16 @@ export default function DashboardPage() {
 
         if (monthFilter === 'all') {
           sumGoal += (gObj?.salesGoal || (gObj as any)?.metaMonthly || 0)
+          entriesCount++
         } else if (gMonth === monthFilter) {
           sumGoal += (gObj?.salesGoal || (gObj as any)?.metaMonthly || 0)
+          entriesCount++
         }
       })
 
       const fallbackBase = 390000 // R$ 390.000,00 (13 usuários x R$ 30.000)
       const fallbackTotal = monthFilter === 'all' ? fallbackBase * 12 : fallbackBase
-      totalGoal = sumGoal > 0 ? sumGoal : fallbackTotal
+      totalGoal = (sumGoal > 0 && entriesCount >= 5) ? sumGoal : fallbackTotal
     } else {
       // Individual Rep filter selected (e.g. Thaiane Antunes)
       const selUser = systemUsers?.find(u => 
