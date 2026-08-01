@@ -4,12 +4,14 @@ import { useState, useEffect, useRef } from 'react'
 import {
   DndContext,
   DragOverlay,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
   PointerSensor,
   useSensor,
   useSensors,
   type DragStartEvent,
   type DragEndEvent,
+  type CollisionDetection,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -18,6 +20,14 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useDroppable } from '@dnd-kit/core'
+
+const customCollisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args)
+  if (pointerCollisions.length > 0) {
+    return pointerCollisions
+  }
+  return rectIntersection(args)
+}
 import { Deal, DealStage, STAGE_CONFIG, ACTIVE_STAGES, normalizeDealStage, FOLLOW_UP_LOST_REASONS } from '@/types'
 import { formatCurrency, daysSince, isSameRepresentative, getUniqueCanonicalRepresentatives } from '@/lib/utils'
 import { Plus, Clock, Trophy, XCircle, Search, Filter, Building2, Calendar } from 'lucide-react'
@@ -147,7 +157,7 @@ function KanbanColumn({
   } as React.CSSProperties
 
   return (
-    <div className="kanban-col" style={style}>
+    <div className="kanban-col" ref={setNodeRef} style={style}>
       <div className="kanban-col-header">
         <span className="kanban-col-icon">
           <cfg.icon size={14} />
@@ -167,7 +177,7 @@ function KanbanColumn({
         </div>
       </div>
 
-      <div className="kanban-cards" ref={setNodeRef}>
+      <div className="kanban-cards">
         <SortableContext items={deals.map(d => d.id)} strategy={verticalListSortingStrategy}>
           {deals.map(deal => (
             <DealCard key={deal.id} deal={deal} onCardClick={onCardClick} />
@@ -1067,14 +1077,30 @@ export function PipelineBoard() {
     } else if (activeStages.includes(over.id as DealStage)) {
       newStage = over.id as DealStage
     } else {
-      newStage = deals.find(d => d.id === over.id)?.stage
+      const overDeal = deals.find(d => d.id === over.id)
+      if (overDeal) {
+        newStage = normalizeDealStage(overDeal.stage)
+      }
     }
 
-    if (!newStage || newStage === draggedDeal.stage) return
+    const currentStageNormalized = normalizeDealStage(draggedDeal.stage)
+    if (!newStage || newStage === currentStageNormalized) return
 
-    // 🔍 ALWAYS REQUIRE USER CONFIRMATION BEFORE MOVING CARD!
+    const normalizedDeal = {
+      ...draggedDeal,
+      stage: currentStageNormalized
+    }
+
+    // IF TARGET IS PERDIDO: Open LostReasonModal directly (bypasses ConfirmMoveModal completely)
+    if (newStage === 'perdido') {
+      setLostModalDeal(normalizedDeal)
+      setPendingMove(null)
+      return
+    }
+
+    // IF TARGET IS OPEN STAGE OR PEDIDO: Open ConfirmMoveModal
     setPendingMove({
-      deal: draggedDeal,
+      deal: normalizedDeal,
       targetStage: newStage
     })
   }
@@ -1098,7 +1124,7 @@ export function PipelineBoard() {
     const currentUser = userRaw ? JSON.parse(userRaw) : null
     const authorName = currentUser?.name || currentUser?.nome || 'Usuário'
 
-    const currentStageLabel = STAGE_CONFIG[targetDeal.stage]?.label || targetDeal.stage
+    const currentStageLabel = STAGE_CONFIG[normalizeDealStage(targetDeal.stage)]?.label || targetDeal.stage
     const targetStageLabel = STAGE_CONFIG[targetStage]?.label || targetStage
 
     const finalOrderNumber = orderNumber || targetDeal.order_number || (targetStage === 'pedido' ? `PED-${Date.now().toString().slice(-6)}` : undefined)
@@ -1134,7 +1160,7 @@ export function PipelineBoard() {
 
     updateAndSaveDeals(prev => prev.map(d => d.id === targetDeal.id ? updatedDeal : d))
 
-    const isClosedDeal = targetStage === 'fechamento' || targetStage === 'pedido' || targetStage === 'pos_venda'
+    const isClosedDeal = targetStage === 'pedido' || targetStage === 'pos_venda'
     const todayStr = new Date().toISOString().split('T')[0]
 
     // Sync activity, order history log, and last purchase date with contacts in localStorage
@@ -1466,7 +1492,7 @@ export function PipelineBoard() {
       {mounted ? (
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={customCollisionDetection}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >

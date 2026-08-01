@@ -482,7 +482,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
         } as any
       }
 
-      const isClosedStage = stage === 'fechamento' || stage === 'pedido' || stage === 'pos_venda'
+      const isClosedStage = stage === 'pedido' || stage === 'pos_venda'
       const todayStr = new Date().toISOString().split('T')[0]
 
       onUpdateDeal(updatedDeal)

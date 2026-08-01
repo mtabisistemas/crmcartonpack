@@ -330,7 +330,7 @@ export function RegisterActivityModal({
             const matchesComp = selectedContact.company && c.company && c.company.toLowerCase().trim() === selectedContact.company.toLowerCase().trim()
             const matchesName = selectedContact.name && c.name && c.name.toLowerCase().trim() === selectedContact.name.toLowerCase().trim()
             if (matchesId || matchesComp || matchesName) {
-              const isFinal = c.pipelineStage === 'fechamento' || c.pipelineStage === 'pos_venda' || c.pipelineStage === 'perdido'
+              const isFinal = c.pipelineStage === 'pedido' || c.pipelineStage === 'pos_venda' || c.pipelineStage === 'perdido'
               const preservedStage = isFinal ? c.pipelineStage : (c.pipelineStage || selectedActionObj.stage)
 
               return {
