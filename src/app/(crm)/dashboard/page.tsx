@@ -1555,18 +1555,18 @@ export default function DashboardPage() {
             <Target size={40} className="absolute right-3 top-3 text-[#94a3b8] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
             <div className="flex items-start justify-between gap-2 z-10">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-700 dark:text-[var(--gray2)] leading-tight">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight">
                 {monthFilter === 'all' ? 'OBJETIVO / META DO ANO' : 'OBJETIVO / META DO MÊS'}
               </span>
             </div>
 
             <div className="my-2 z-10">
-              <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight">
+              <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight">
                 {formatCurrency(metaCalculated.totalGoal)}
               </div>
             </div>
 
-            <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-slate-600 dark:text-[var(--gray2)] font-semibold z-10">
+            <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] font-semibold z-10">
               Target planejado para a equipe
             </div>
           </div>
@@ -1609,19 +1609,19 @@ export default function DashboardPage() {
             <Trophy size={40} className="absolute right-3 top-3 text-[#10b981] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
             <div className="flex items-start justify-between gap-2 z-10">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 leading-tight">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 leading-tight">
                 FATURADO REALIZADO
               </span>
             </div>
 
             <div className="my-2 z-10">
-              <div className="text-xl sm:text-2xl font-mono font-black text-emerald-700 dark:text-emerald-400 tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
+              <div className="text-xl sm:text-2xl font-mono font-black text-emerald-400 tracking-tight group-hover:text-emerald-300 transition-colors">
                 {formatCurrency(metaCalculated.faturado)}
               </div>
             </div>
 
-            <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-slate-700 dark:text-[var(--gray2)] font-semibold z-10">
-              <strong className="text-slate-900 dark:text-[var(--white)] font-black">{kpis.totalPedidosQtd}</strong> pedidos confirmados
+            <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] font-semibold z-10">
+              <strong className="text-[var(--white)] font-black">{kpis.totalPedidosQtd}</strong> pedidos confirmados
             </div>
           </div>
 
@@ -1634,18 +1634,18 @@ export default function DashboardPage() {
             <AlertCircle size={40} className="absolute right-3 top-3 text-[#f59e0b] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
             <div className="flex items-start justify-between gap-2 z-10">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 leading-tight">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 leading-tight">
                 DIFERENÇA / RESTANTE
               </span>
             </div>
 
             <div className="my-2 z-10">
-              <div className="text-xl sm:text-2xl font-mono font-black text-amber-700 dark:text-amber-400 tracking-tight">
+              <div className="text-xl sm:text-2xl font-mono font-black text-amber-400 tracking-tight">
                 {metaCalculated.falta > 0 ? formatCurrency(metaCalculated.falta) : 'R$ 0,00'}
               </div>
             </div>
 
-            <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-amber-800 dark:text-amber-500/80 font-bold z-10">
+            <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-amber-400/90 font-bold z-10">
               {metaCalculated.falta > 0 ? 'Falta para atingir 100%' : 'Meta 100% superada!'}
             </div>
           </div>
@@ -1659,18 +1659,18 @@ export default function DashboardPage() {
             <TrendingUp size={40} className="absolute right-3 top-3 text-[#06b6d4] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
             <div className="flex items-start justify-between gap-2 z-10">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-400 leading-tight">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 leading-tight">
                 PROJEÇÃO DE FECHAMENTO
               </span>
             </div>
 
             <div className="my-2 z-10">
-              <div className="text-xl sm:text-2xl font-mono font-black text-cyan-700 dark:text-cyan-400 tracking-tight">
+              <div className="text-xl sm:text-2xl font-mono font-black text-cyan-400 tracking-tight">
                 {formatCurrency(metaCalculated.projecao > 0 ? metaCalculated.projecao : metaCalculated.faturado)}
               </div>
             </div>
 
-            <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-slate-600 dark:text-[var(--gray2)] font-semibold z-10">
+            <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] font-semibold z-10">
               Ritmo atual + pipeline em andamento
             </div>
           </div>
@@ -1680,17 +1680,17 @@ export default function DashboardPage() {
         {/* BARRA DE PROGRESSO NEON 3D COMPLETA COM BANDEIRA % */}
         <div className="flex flex-col gap-2 pt-1">
           <div className="flex items-center justify-between text-xs font-mono">
-            <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+            <span className="font-bold text-[var(--white)] flex items-center gap-1.5">
               <span>Progresso Geral de Atingimento:</span>
-              <strong className="text-emerald-700 dark:text-emerald-400 font-mono text-sm">{metaCalculated.pct.toFixed(1)}%</strong>
+              <strong className="text-emerald-400 font-mono text-sm">{metaCalculated.pct.toFixed(1)}%</strong>
             </span>
-            <span className="text-slate-700 dark:text-[var(--gray2)] font-bold">
+            <span className="text-[var(--gray2)] font-bold">
               {metaCalculated.faturado >= metaCalculated.totalGoal ? '100% Concluído' : `${(100 - metaCalculated.pct).toFixed(1)}% Restantes`}
             </span>
           </div>
 
           {/* Barra Tridimensional Glowing */}
-          <div className="w-full h-4 rounded-full bg-slate-200 dark:bg-[#090d16] p-0.5 border border-slate-300 dark:border-slate-700/60 overflow-hidden relative shadow-inner">
+          <div className="w-full h-4 rounded-full bg-[#090d16] p-0.5 border border-[var(--line)] overflow-hidden relative shadow-inner">
             <div 
               className="bg-gradient-to-r from-[#0284c7] via-[#06b6d4] to-[#10b981] h-full rounded-full transition-all duration-700 shadow-[0_0_15px_rgba(16,185,129,0.6)]"
               style={{ width: `${Math.min(100, Math.max(2, metaCalculated.pct))}%` }}
@@ -1880,11 +1880,11 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 mb-6">
           <div className="flex items-center gap-2">
             <Trophy size={18} className="text-[#f0c419]" />
-            <h3 className="font-display text-xs sm:text-sm font-bold text-slate-900 dark:text-[var(--white)] uppercase tracking-wider">
+            <h3 className="font-display text-xs sm:text-sm font-bold text-[var(--white)] uppercase tracking-wider">
               Pódio de Performance Comercial · Ranking da Equipe
             </h3>
           </div>
-          <span className="text-[10px] font-mono text-slate-700 dark:text-[var(--gray2)] font-bold">Faturamento Realizado por Representante</span>
+          <span className="text-[10px] font-mono text-[var(--gray2)] font-bold">Faturamento Realizado por Representante</span>
         </div>
 
         {/* PÓDIO 3D CONTAINER */}
@@ -1919,21 +1919,21 @@ export default function DashboardPage() {
                 ]
                 openDrillDown(`DESEMPENHO: 2º LUGAR - ${rep}`, `Vendas e contratos faturados por ${rep}`, items, '#e2e8f0')
               }}
-              className="order-2 md:order-1 bg-[var(--charcoal)] border-2 border-slate-400 dark:border-slate-400/40 p-5 rounded-2xl flex flex-col items-center text-center relative hover:-translate-y-1 hover:border-slate-500 transition-all cursor-pointer group shadow-xl"
+              className="order-2 md:order-1 bg-[var(--charcoal)] border-2 border-slate-400/40 p-5 rounded-2xl flex flex-col items-center text-center relative hover:-translate-y-1 hover:border-slate-400 transition-all cursor-pointer group shadow-xl"
             >
-              <div className="w-10 h-10 rounded-full bg-slate-300 dark:bg-slate-300/20 border-2 border-slate-500 text-slate-950 dark:text-slate-200 flex items-center justify-center font-mono font-black text-sm mb-2 shadow-lg">
+              <div className="w-10 h-10 rounded-full bg-slate-300/20 border-2 border-slate-400 text-slate-200 flex items-center justify-center font-mono font-black text-sm mb-2 shadow-lg">
                 2º
               </div>
-              <span className="text-xs font-mono font-black text-slate-900 dark:text-[var(--white)] truncate max-w-full">
+              <span className="text-xs font-mono font-black text-[var(--white)] truncate max-w-full">
                 {teamRanking.top2.name}
               </span>
-              <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-slate-100 mt-1">
+              <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] mt-1">
                 {formatCurrency(teamRanking.top2.totalR$)}
               </div>
-              <span className="text-[11px] font-mono text-slate-800 dark:text-slate-300 font-extrabold mt-0.5">
+              <span className="text-[11px] font-mono text-[var(--gray2)] font-extrabold mt-0.5">
                 {teamRanking.top2.pedidosCount} vendas concluídas
               </span>
-              <Award size={20} className="text-slate-600 dark:text-slate-400 mt-2" />
+              <Award size={20} className="text-slate-400 mt-2" />
             </div>
           )}
 
@@ -1971,16 +1971,16 @@ export default function DashboardPage() {
               <div className="absolute -top-4 bg-[#f0c419] text-slate-950 text-[10px] font-mono font-black px-3 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-md">
                 <Crown size={12} /> CAMPEÃO DE VENDAS
               </div>
-              <div className="w-12 h-12 rounded-full bg-[#f0c419]/30 border-2 border-[#f0c419] text-amber-800 dark:text-[#f0c419] flex items-center justify-center font-mono font-black text-lg mb-2 shadow-lg">
+              <div className="w-12 h-12 rounded-full bg-[#f0c419]/30 border-2 border-[#f0c419] text-[#f0c419] flex items-center justify-center font-mono font-black text-lg mb-2 shadow-lg">
                 1º
               </div>
-              <span className="text-sm font-mono font-black text-slate-900 dark:text-[var(--white)] truncate max-w-full">
+              <span className="text-sm font-mono font-black text-[var(--white)] truncate max-w-full">
                 {teamRanking.top1.name}
               </span>
-              <div className="text-2xl font-mono font-black text-amber-700 dark:text-[#f0c419] mt-1">
+              <div className="text-2xl font-mono font-black text-[#f0c419] mt-1">
                 {formatCurrency(teamRanking.top1.totalR$)}
               </div>
-              <span className="text-[11px] font-mono text-slate-900 dark:text-slate-200 font-extrabold mt-0.5">
+              <span className="text-[11px] font-mono text-[var(--gray2)] font-extrabold mt-0.5">
                 {teamRanking.top1.pedidosCount} vendas concluídas
               </span>
               <Trophy size={24} className="text-[#f0c419] mt-3 animate-bounce" />
@@ -2018,19 +2018,19 @@ export default function DashboardPage() {
               }}
               className="order-3 md:order-3 bg-[var(--charcoal)] border-2 border-amber-600/50 p-5 rounded-2xl flex flex-col items-center text-center relative hover:-translate-y-1 hover:border-amber-600 transition-all cursor-pointer group shadow-xl"
             >
-              <div className="w-10 h-10 rounded-full bg-amber-200 dark:bg-amber-700/20 border-2 border-amber-600 text-amber-900 dark:text-amber-400 flex items-center justify-center font-mono font-black text-sm mb-2 shadow-lg">
+              <div className="w-10 h-10 rounded-full bg-amber-700/20 border-2 border-amber-600 text-amber-400 flex items-center justify-center font-mono font-black text-sm mb-2 shadow-lg">
                 3º
               </div>
-              <span className="text-xs font-mono font-black text-slate-900 dark:text-[var(--white)] truncate max-w-full">
+              <span className="text-xs font-mono font-black text-[var(--white)] truncate max-w-full">
                 {teamRanking.top3.name}
               </span>
-              <div className="text-xl sm:text-2xl font-mono font-black text-amber-700 dark:text-amber-500 mt-1">
+              <div className="text-xl sm:text-2xl font-mono font-black text-amber-500 mt-1">
                 {formatCurrency(teamRanking.top3.totalR$)}
               </div>
-              <span className="text-[11px] font-mono text-slate-800 dark:text-slate-300 font-extrabold mt-0.5">
+              <span className="text-[11px] font-mono text-[var(--gray2)] font-extrabold mt-0.5">
                 {teamRanking.top3.pedidosCount} vendas concluídas
               </span>
-              <Award size={20} className="text-amber-700 dark:text-amber-600 mt-2" />
+              <Award size={20} className="text-amber-500 mt-2" />
             </div>
           )}
 
@@ -2039,10 +2039,10 @@ export default function DashboardPage() {
         {/* TABELA CLASSIFICAÇÃO RESTANTE DA EQUIPE */}
         {teamRanking.remaining.length > 0 && (
           <div className="border-t border-[var(--line)] pt-4 overflow-x-auto">
-            <h4 className="text-xs font-mono uppercase font-black text-slate-900 dark:text-[var(--white)] mb-3">Classificação Geral da Equipe</h4>
+            <h4 className="text-xs font-mono uppercase font-black text-[var(--white)] mb-3">Classificação Geral da Equipe</h4>
             <table className="w-full text-left border-collapse text-xs font-mono">
               <thead>
-                <tr className="border-b border-[var(--line)] text-[11px] text-slate-900 dark:text-slate-300 font-black uppercase">
+                <tr className="border-b border-[var(--line)] text-[11px] text-[var(--gray2)] font-black uppercase">
                   <th className="py-2.5 px-3 text-center">Posição</th>
                   <th className="py-2.5 px-3">Representante Comercial</th>
                   <th className="py-2.5 px-3 text-center">Vendas Concluídas</th>
@@ -2078,15 +2078,15 @@ export default function DashboardPage() {
                       ]
                       openDrillDown(`DESEMPENHO: ${idx + 4}º LUGAR - ${item.name}`, `Vendas e contratos faturados por ${item.name}`, items, '#94a3b8')
                     }}
-                    className="hover:bg-slate-200/60 dark:hover:bg-[var(--charcoal)] transition-colors cursor-pointer"
+                    className="hover:bg-[var(--charcoal)] transition-colors cursor-pointer"
                   >
-                    <td className="py-3 px-3 text-center font-black text-slate-900 dark:text-slate-300">{idx + 4}º</td>
-                    <td className="py-3 px-3 font-black text-slate-950 dark:text-white flex items-center gap-2">
-                      <User size={14} className="text-slate-700 dark:text-slate-400" />
+                    <td className="py-3 px-3 text-center font-black text-[var(--gray2)]">{idx + 4}º</td>
+                    <td className="py-3 px-3 font-black text-[var(--white)] flex items-center gap-2">
+                      <User size={14} className="text-[var(--gray2)]" />
                       <span>{item.name}</span>
                     </td>
-                    <td className="py-3 px-3 text-center font-black text-slate-900 dark:text-slate-200">{item.pedidosCount}</td>
-                    <td className="py-3 px-3 text-right font-black text-emerald-700 dark:text-[#10b981]">{formatCurrency(item.totalR$)}</td>
+                    <td className="py-3 px-3 text-center font-black text-[var(--white)]">{item.pedidosCount}</td>
+                    <td className="py-3 px-3 text-right font-black text-[#10b981]">{formatCurrency(item.totalR$)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -2102,16 +2102,16 @@ export default function DashboardPage() {
       <div className="card bg-[var(--card)] border border-[var(--line)] p-5 sm:p-6 rounded-2xl flex flex-col justify-between shadow-lg">
         <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 mb-4">
           <div className="flex items-center gap-2">
-            <AlertTriangle size={18} className="text-red-600 dark:text-red-400" />
-            <h3 className="font-display text-xs sm:text-sm font-bold text-slate-900 dark:text-[var(--white)] uppercase tracking-wider">
+            <AlertTriangle size={18} className="text-red-400" />
+            <h3 className="font-display text-xs sm:text-sm font-bold text-[var(--white)] uppercase tracking-wider">
               Análise de Motivos de Negócios Perdidos ({kpis.lostQtd} Perdas)
             </h3>
           </div>
-          <span className="text-[10px] font-mono text-red-700 dark:text-red-400 font-bold">Total Perdido: {formatCurrency(kpis.lostR$)}</span>
+          <span className="text-[10px] font-mono text-red-400 font-bold">Total Perdido: {formatCurrency(kpis.lostR$)}</span>
         </div>
 
         {lostReasonsData.length === 0 ? (
-          <div className="py-8 text-center text-xs font-mono text-slate-700 dark:text-[var(--gray2)] font-bold">
+          <div className="py-8 text-center text-xs font-mono text-[var(--gray2)] font-bold">
             Nenhuma perda registrada com os filtros selecionados.
           </div>
         ) : (

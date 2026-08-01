@@ -43,6 +43,11 @@ export function Sidebar() {
     if (typeof window !== 'undefined') {
       const activeTheme = (document.documentElement.getAttribute('data-theme') || 'dark') as 'dark' | 'light'
       setTheme(activeTheme)
+      if (activeTheme === 'dark') {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
 
       const session = localStorage.getItem('crm_current_user')
       if (session) {
@@ -59,6 +64,11 @@ export function Sidebar() {
     const newTheme = theme === 'dark' ? 'light' : 'dark'
     setTheme(newTheme)
     document.documentElement.setAttribute('data-theme', newTheme)
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
     localStorage.setItem('cp_crm_theme', newTheme)
     localStorage.setItem('theme', newTheme)
     document.cookie = `cp_crm_theme=${newTheme}; path=/; max-age=31536000; SameSite=Lax`

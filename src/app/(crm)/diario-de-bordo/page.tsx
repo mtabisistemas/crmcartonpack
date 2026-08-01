@@ -580,18 +580,18 @@ export default function DiarioDeBordoPage() {
                 <Target size={20} />
               </div>
               <div>
-                <h2 className="font-display text-sm sm:text-base font-bold text-slate-900 dark:text-[var(--white)] uppercase tracking-wider flex items-center gap-2.5">
+                <h2 className="font-display text-sm sm:text-base font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2.5">
                   <span>Resultado x Meta do Mês</span>
                   <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
                     pacingMetrics.isPacingAhead 
-                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)]' 
-                      : 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)]' 
+                      : 'bg-amber-500/15 border-amber-500/30 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
                   }`}>
                     <Sparkles size={12} />
                     <span>{pacingMetrics.isPacingAhead ? '▲ NO PACING' : '▼ RITMO ABAIXO DO PACING'}</span>
                   </span>
                 </h2>
-                <p className="text-xs font-mono text-slate-600 dark:text-[var(--gray2)] font-semibold mt-0.5">
+                <p className="text-xs font-mono text-[var(--gray2)] font-semibold mt-0.5">
                   Dia {bizStats.todayDate} de {bizStats.totalDays} · {bizStats.elapsedBusinessDays} de {bizStats.totalBusinessDays} dias úteis transcorridos
                 </p>
               </div>
@@ -599,11 +599,11 @@ export default function DiarioDeBordoPage() {
 
             {/* Total Realizado vs Meta Banner (Direita) */}
             <div className="text-left sm:text-right flex flex-col items-start sm:items-end shrink-0">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-700 dark:text-[var(--gray2)]">
-                Realizado: <strong className="text-lg sm:text-xl font-mono font-black text-slate-900 dark:text-white ml-1">{formatCurrency(pacingMetrics.totalSalesAchieved)}</strong>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)]">
+                Realizado: <strong className="text-lg sm:text-xl font-mono font-black text-[var(--white)] ml-1">{formatCurrency(pacingMetrics.totalSalesAchieved)}</strong>
               </span>
-              <span className="text-[11px] font-mono text-slate-600 dark:text-[var(--gray2)] font-semibold">
-                Meta do Mês: <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{formatCurrency(pacingMetrics.salesTarget)}</strong>
+              <span className="text-[11px] font-mono text-[var(--gray2)] font-semibold">
+                Meta do Mês: <strong className="text-emerald-400 font-bold">{formatCurrency(pacingMetrics.salesTarget)}</strong>
               </span>
             </div>
           </div>
@@ -620,18 +620,18 @@ export default function DiarioDeBordoPage() {
               <Target size={40} className="absolute right-3 top-3 text-[#0284c7] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
               <div className="flex items-start justify-between gap-2 z-10">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-sky-700 dark:text-sky-400 leading-tight">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-sky-400 leading-tight">
                   ESPERADO HOJE (PACING)
                 </span>
               </div>
 
               <div className="my-2 z-10">
-                <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight">
+                <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight">
                   {formatCurrency(pacingMetrics.expectedSalesPacing)}
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-slate-600 dark:text-[var(--gray2)] font-semibold z-10">
+              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] font-semibold z-10">
                 Ritmo planejado até hoje
               </div>
             </div>
@@ -645,18 +645,18 @@ export default function DiarioDeBordoPage() {
               <AlertCircle size={40} className="absolute right-3 top-3 text-[#f59e0b] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
               <div className="flex items-start justify-between gap-2 z-10">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 leading-tight">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 leading-tight">
                   FALTA PARA 100%
                 </span>
               </div>
 
               <div className="my-2 z-10">
-                <div className="text-xl sm:text-2xl font-mono font-black text-amber-700 dark:text-amber-400 tracking-tight">
+                <div className="text-xl sm:text-2xl font-mono font-black text-amber-400 tracking-tight">
                   {formatCurrency(pacingMetrics.remainingSalesR$)}
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-amber-800 dark:text-amber-500/80 font-bold z-10">
+              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-amber-400/90 font-bold z-10">
                 {pacingMetrics.remainingSalesR$ > 0 ? 'Diferença para atingir a meta' : 'Meta 100% atingida!'}
               </div>
             </div>
@@ -670,19 +670,19 @@ export default function DiarioDeBordoPage() {
               <TrendingUp size={40} className="absolute right-3 top-3 text-[#06b6d4] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
               <div className="flex items-start justify-between gap-2 z-10">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-400 leading-tight">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 leading-tight">
                   META DIÁRIA NECESSÁRIA
                 </span>
               </div>
 
               <div className="my-2 z-10">
-                <div className="text-xl sm:text-2xl font-mono font-black text-cyan-700 dark:text-cyan-400 tracking-tight">
-                  {formatCurrency(pacingMetrics.dailyPaceRequired)} <span className="text-xs font-normal text-slate-600 dark:text-[var(--gray2)]">/ dia</span>
+                <div className="text-xl sm:text-2xl font-mono font-black text-cyan-400 tracking-tight">
+                  {formatCurrency(pacingMetrics.dailyPaceRequired)} <span className="text-xs font-normal text-[var(--gray2)]">/ dia</span>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-slate-600 dark:text-[var(--gray2)] font-semibold z-10">
-                Faltam <strong className="text-slate-900 dark:text-white">{bizStats.remainingBusinessDays}</strong> dias úteis
+              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] font-semibold z-10">
+                Faltam <strong className="text-[var(--white)]">{bizStats.remainingBusinessDays}</strong> dias úteis
               </div>
             </div>
 
@@ -695,18 +695,18 @@ export default function DiarioDeBordoPage() {
               <Users size={40} className="absolute right-3 top-3 text-[#8b5cf6] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
               <div className="flex items-start justify-between gap-2 z-10">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400 leading-tight">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-purple-400 leading-tight">
                   VISITAS NO MÊS
                 </span>
               </div>
 
               <div className="my-2 z-10">
                 <div className="text-xl sm:text-2xl font-mono font-black text-[#8b5cf6] tracking-tight">
-                  {pacingMetrics.currentMonthVisits} <span className="text-xs font-normal text-slate-600 dark:text-[var(--gray2)]">/ {pacingMetrics.visitsTarget}</span>
+                  {pacingMetrics.currentMonthVisits} <span className="text-xs font-normal text-[var(--gray2)]">/ {pacingMetrics.visitsTarget}</span>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-slate-600 dark:text-[var(--gray2)] font-semibold z-10">
+              <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] font-semibold z-10">
                 Atendimentos realizados
               </div>
             </div>
@@ -716,17 +716,17 @@ export default function DiarioDeBordoPage() {
           {/* BARRA DE PROGRESSO NEON 3D COMPLETA COM BANDEIRA % (IDÊNTICA AO DASHBOARD) */}
           <div className="flex flex-col gap-2 pt-1">
             <div className="flex items-center justify-between text-xs font-mono">
-              <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+              <span className="font-bold text-[var(--white)] flex items-center gap-1.5">
                 <span>Progresso Geral de Atingimento:</span>
-                <strong className="text-emerald-700 dark:text-emerald-400 font-mono text-sm">{pacingMetrics.salesProgressPct}%</strong>
+                <strong className="text-emerald-400 font-mono text-sm">{pacingMetrics.salesProgressPct}%</strong>
               </span>
-              <span className="text-slate-700 dark:text-[var(--gray2)] font-bold">
+              <span className="text-[var(--gray2)] font-bold">
                 {pacingMetrics.salesProgressPct >= 100 ? '100% Concluído' : `${(100 - pacingMetrics.salesProgressPct).toFixed(0)}% Restantes`}
               </span>
             </div>
 
             {/* Barra Tridimensional Glowing */}
-            <div className="w-full h-4 rounded-full bg-slate-200 dark:bg-[#090d16] p-0.5 border border-slate-300 dark:border-slate-700/60 overflow-hidden relative shadow-inner">
+            <div className="w-full h-4 rounded-full bg-[#090d16] p-0.5 border border-[var(--line)] overflow-hidden relative shadow-inner">
               <div 
                 className="bg-gradient-to-r from-[#0284c7] via-[#06b6d4] to-[#10b981] h-full rounded-full transition-all duration-700 shadow-[0_0_15px_rgba(16,185,129,0.6)]"
                 style={{ width: `${Math.min(100, Math.max(2, pacingMetrics.salesProgressPct))}%` }}
