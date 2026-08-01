@@ -23,7 +23,8 @@ import {
   RefreshCw,
   Sparkles,
   Trophy,
-  AlertCircle
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -975,9 +976,11 @@ export default function DiarioDeBordoPage() {
                       <span>Última Compra: <strong className="text-white font-bold">{formatCurrency(lastPurchaseValue)}</strong></span>
                       <button
                         onClick={() => setSelectedContactForActivity(contact)}
-                        className="text-[10px] font-bold text-[var(--lime)] hover:underline flex items-center gap-1 cursor-pointer"
+                        className="text-[10px] font-bold text-[var(--lime)] hover:underline flex items-center gap-1 cursor-pointer bg-[var(--lime)]/10 px-2 py-0.5 rounded-md border border-[var(--lime)]/25 hover:bg-[var(--lime)]/20 transition-all"
+                        title="Registrar Atividade com este cliente"
                       >
-                        📝 Atividade
+                        <CheckCircle size={12} className="text-[var(--lime)]" />
+                        <span>Registrar Atividade</span>
                       </button>
                     </div>
                   </div>
