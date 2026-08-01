@@ -193,10 +193,16 @@ export async function POST(req: Request) {
 
       const dbStage = mapFrontendStageToDB(d.stage)
 
+      const budgetData = d.budget || {
+        totalAmount: parseFloat(d.estimated_value) || 0,
+        paymentTerms: d.payment_terms || d.paymentTerms || '',
+        attachment: d.attachment || d.budget_attachment || null
+      }
+
       const serializedNotes = JSON.stringify({
         prob: typeof d.probability === 'number' ? d.probability : 50,
         notes: d.lost_notes || '',
-        budget: d.budget || null
+        budget: budgetData
       })
 
       payloads.push({

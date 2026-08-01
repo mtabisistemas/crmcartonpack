@@ -47,6 +47,7 @@ interface DealDrawerProps {
 export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCalendarModal }: DealDrawerProps) {
   const [activeTab, setActiveTab] = useState<'geral' | 'historico' | 'agenda' | 'orcamento'>('geral')
   const [isOpen, setIsOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [isSavedSuccess, setIsSavedSuccess] = useState(false)
   const [showActivityModal, setShowActivityModal] = useState(false)
   const [copiedEmailToast, setCopiedEmailToast] = useState(false)
@@ -190,19 +191,15 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
       setStage(deal.stage)
       setOrderNumber(deal.order_number || '')
 
-      if ((deal as any).budget) {
-        const b = (deal as any).budget
-        const bVal = b.totalAmount ?? b.value ?? val ?? 0
-        setBudgetValue(bVal)
-        setBudgetValueInput(formatNumberToCurrencyStr(bVal))
-        if (b.paymentTerms) setPaymentTerms(b.paymentTerms)
-        if (b.attachment) setBudgetAttachment(b.attachment)
-      } else {
-        setBudgetValue(val || 0)
-        setBudgetValueInput(formatNumberToCurrencyStr(val || 0))
-        setPaymentTerms('')
-        setBudgetAttachment(null)
-      }
+      const b = (deal as any).budget || {}
+      const bVal = b.totalAmount ?? b.value ?? (deal as any).budget_value ?? val ?? 0
+      const pTerms = b.paymentTerms || (deal as any).payment_terms || (deal as any).paymentTerms || ''
+      const pAtt = b.attachment || (deal as any).attachment || (deal as any).budget_attachment || null
+
+      setBudgetValue(bVal)
+      setBudgetValueInput(formatNumberToCurrencyStr(bVal))
+      setPaymentTerms(pTerms)
+      setBudgetAttachment(pAtt)
 
       let initialContactName = deal.contact?.name ?? ''
       let initialContactCompany = deal.contact?.company ?? ''
@@ -444,108 +441,132 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
   }
 
   const handleSaveGeneral = async () => {
-    const upperTitle = title.trim().toUpperCase()
-
-    const updatedDeal: Deal = {
-      ...deal,
-      title: upperTitle,
-      estimated_value: estimatedValue || budgetValue,
-      probability: probability,
-      stage,
-      order_number: orderNumber || deal.order_number,
-      assigned_to: representative,
-      budget: {
-        totalAmount: budgetValue || estimatedValue || 0,
-        paymentTerms,
-        attachment: budgetAttachment
-      } as any,
-      contact: {
-        ...deal.contact,
-        id: deal.contact?.id ?? 'c-temp',
-        name: contactName,
-        phone: contactPhone,
-        email: contactEmail,
-        company: contactCompany,
-        curve: curve,
-        representative: representative,
-        cnpj: contactCnpj,
-        address: contactAddress,
-        bairro: contactBairro,
-        cep: contactCep,
-        city: contactCity,
-        state: contactState,
-        created_at: deal.contact?.created_at ?? new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      } as any
-    }
-
-    const isClosedStage = stage === 'fechamento' || stage === 'pedido' || stage === 'pos_venda'
-    const todayStr = new Date().toISOString().split('T')[0]
-
-    onUpdateDeal(updatedDeal)
-
-    // Sync closed order log in localStorage crm_contacts with representative snapshot
-    if (stage === 'pedido' && (orderNumber || deal.order_number) && typeof window !== 'undefined') {
-      try {
-        const rawContacts = localStorage.getItem('crm_contacts')
-        if (rawContacts) {
-          const list = JSON.parse(rawContacts)
-          const cleanComp = (contactCompany || title || '').trim().toLowerCase()
-          const finalOrdNum = orderNumber || deal.order_number || `PED-${Date.now().toString().slice(-6)}`
-          const dealVal = (deal.final_value && deal.final_value > 0) ? deal.final_value : (estimatedValue || deal.estimated_value || 0)
-
-          const updatedContacts = list.map((c: any) => {
-            const matchesId = c.id === deal.contact_id || c.id === deal.contact?.id
-            const matchesComp = cleanComp && (c.company || c.name || '').trim().toLowerCase() === cleanComp
-            if (matchesId || matchesComp) {
-              const newOrderObj = {
-                id: `ord_${Date.now()}`,
-                order_number: finalOrdNum,
-                deal_id: deal.id,
-                deal_title: title,
-                value: dealVal,
-                date: todayStr,
-                vendor: representative || c.representative || c.assignedTo || c.assigned_to || 'Vendedor'
-              }
-              const existingOrders = Array.isArray(c.orders) ? c.orders : []
-              const updatedOrders = [newOrderObj, ...existingOrders.filter((o: any) => o.order_number !== finalOrdNum)]
-              return { ...c, orders: updatedOrders, lastPurchaseDate: todayStr }
-            }
-            return c
-          })
-          localStorage.setItem('crm_contacts', JSON.stringify(updatedContacts))
-          window.dispatchEvent(new Event('storage-contacts-changed'))
-        }
-      } catch (e) {}
-    }
-
-    // Save deal update to Supabase via /api/deals
+    setIsSaving(true)
     try {
-      await fetch('/api/deals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([updatedDeal])
-      })
-    } catch (e) {}
+      const upperTitle = title.trim().toUpperCase()
 
-    // Only update last purchase date on contact if deal is closed
-    if (isClosedStage && (deal.contact?.id || contactCompany)) {
+      const budgetObj = {
+        totalAmount: budgetValue || estimatedValue || 0,
+        paymentTerms: paymentTerms || '',
+        attachment: budgetAttachment || null
+      }
+
+      const updatedDeal: Deal = {
+        ...deal,
+        title: upperTitle,
+        estimated_value: (budgetValue && budgetValue > 0) ? budgetValue : (estimatedValue || 0),
+        probability: probability,
+        stage,
+        order_number: orderNumber || deal.order_number,
+        assigned_to: representative,
+        budget: budgetObj as any,
+        ...(paymentTerms ? { payment_terms: paymentTerms } as any : {}),
+        ...(budgetAttachment ? { attachment: budgetAttachment, budget_attachment: budgetAttachment } as any : {}),
+        contact: {
+          ...deal.contact,
+          id: deal.contact?.id ?? 'c-temp',
+          name: contactName,
+          phone: contactPhone,
+          email: contactEmail,
+          company: contactCompany,
+          curve: curve,
+          representative: representative,
+          cnpj: contactCnpj,
+          address: contactAddress,
+          bairro: contactBairro,
+          cep: contactCep,
+          city: contactCity,
+          state: contactState,
+          created_at: deal.contact?.created_at ?? new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as any
+      }
+
+      const isClosedStage = stage === 'fechamento' || stage === 'pedido' || stage === 'pos_venda'
+      const todayStr = new Date().toISOString().split('T')[0]
+
+      onUpdateDeal(updatedDeal)
+
+      // Sync local storage deals list so budget & attachments persist locally immediately
+      if (typeof window !== 'undefined') {
+        try {
+          const rawDeals = localStorage.getItem('cp_crm_pipeline_deals')
+          if (rawDeals) {
+            const list = JSON.parse(rawDeals)
+            const updatedList = list.map((d: any) => d.id === updatedDeal.id ? updatedDeal : d)
+            localStorage.setItem('cp_crm_pipeline_deals', JSON.stringify(updatedList))
+            window.dispatchEvent(new Event('storage-deals-changed'))
+          }
+        } catch (e) {}
+      }
+
+      // Sync closed order log in localStorage crm_contacts with representative snapshot
+      if (stage === 'pedido' && (orderNumber || deal.order_number) && typeof window !== 'undefined') {
+        try {
+          const rawContacts = localStorage.getItem('crm_contacts')
+          if (rawContacts) {
+            const list = JSON.parse(rawContacts)
+            const cleanComp = (contactCompany || title || '').trim().toLowerCase()
+            const finalOrdNum = orderNumber || deal.order_number || `PED-${Date.now().toString().slice(-6)}`
+            const dealVal = (deal.final_value && deal.final_value > 0) ? deal.final_value : (estimatedValue || deal.estimated_value || 0)
+
+            const updatedContacts = list.map((c: any) => {
+              const matchesId = c.id === deal.contact_id || c.id === deal.contact?.id
+              const matchesComp = cleanComp && (c.company || c.name || '').trim().toLowerCase() === cleanComp
+              if (matchesId || matchesComp) {
+                const newOrderObj = {
+                  id: `ord_${Date.now()}`,
+                  order_number: finalOrdNum,
+                  deal_id: deal.id,
+                  deal_title: title,
+                  value: dealVal,
+                  date: todayStr,
+                  vendor: representative || c.representative || c.assignedTo || c.assigned_to || 'Vendedor'
+                }
+                const existingOrders = Array.isArray(c.orders) ? c.orders : []
+                const updatedOrders = [newOrderObj, ...existingOrders.filter((o: any) => o.order_number !== finalOrdNum)]
+                return { ...c, orders: updatedOrders, lastPurchaseDate: todayStr }
+              }
+              return c
+            })
+            localStorage.setItem('crm_contacts', JSON.stringify(updatedContacts))
+            window.dispatchEvent(new Event('storage-contacts-changed'))
+          }
+        } catch (e) {}
+      }
+
+      // Save deal update to Supabase via /api/deals
       try {
-        await fetch('/api/contacts', {
+        await fetch('/api/deals', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: deal.contact?.id,
-            company: contactCompany,
-            lastPurchaseDate: todayStr,
-            status: 'ativo'
-          })
+          body: JSON.stringify([updatedDeal])
         })
-      } catch (err) {}
-    }
+      } catch (e) {}
 
-    setIsSavedSuccess(true)
-    setTimeout(() => setIsSavedSuccess(false), 2500)
+      // Only update last purchase date on contact if deal is closed
+      if (isClosedStage && (deal.contact?.id || contactCompany)) {
+        try {
+          await fetch('/api/contacts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: deal.contact?.id,
+              company: contactCompany,
+              lastPurchaseDate: todayStr,
+              status: 'ativo'
+            })
+          })
+        } catch (err) {}
+      }
+
+      setIsSavedSuccess(true)
+      setTimeout(() => setIsSavedSuccess(false), 2500)
+    } catch (e) {
+      console.error('Error saving deal:', e)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleApplyBudgetToDeal = () => {
@@ -1457,6 +1478,11 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
               <CheckCircle size={15} />
               <span>Alterações salvas com sucesso!</span>
             </div>
+          ) : isSaving ? (
+            <div className="flex items-center gap-2 text-xs text-[var(--gray2)] font-mono animate-fade-in">
+              <Loader2 size={14} className="animate-spin" />
+              <span>Salvando alterações...</span>
+            </div>
           ) : (
             <span className="text-[11px] text-[var(--gray2)] font-mono">
               Salvar para atualizar oportunidade.
@@ -1467,17 +1493,28 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
             <button
               type="button"
               onClick={onClose}
-              className="btn btn-secondary text-xs py-2 px-3 font-bold uppercase tracking-wider"
+              disabled={isSaving}
+              className="btn btn-secondary text-xs py-2 px-3 font-bold uppercase tracking-wider disabled:opacity-50"
             >
               Fechar
             </button>
             <button
               type="button"
               onClick={handleSaveGeneral}
-              className="btn btn-primary text-xs py-2 px-4 font-bold uppercase tracking-wider text-[#060606] flex items-center gap-2"
+              disabled={isSaving}
+              className="btn btn-primary text-xs py-2 px-4 font-bold uppercase tracking-wider text-[#060606] flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              <Save size={14} />
-              <span>Salvar Alterações</span>
+              {isSaving ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Salvando...</span>
+                </>
+              ) : (
+                <>
+                  <Save size={14} />
+                  <span>Salvar Alterações</span>
+                </>
+              )}
             </button>
           </div>
         </div>
