@@ -1457,7 +1457,20 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
                               src={(act as any).photoUrl} 
                               alt="Anexo da Atividade" 
                               className="w-full h-auto max-h-48 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() => window.open((act as any).photoUrl, '_blank')}
+                              onClick={() => {
+                                const url = (act as any).photoUrl as string
+                                if (!url) return
+                                // For base64 data URLs, write directly into a new window (Chrome blocks data: href navigation)
+                                if (url.startsWith('data:')) {
+                                  const win = window.open('', '_blank')
+                                  if (win) {
+                                    win.document.write(`<!DOCTYPE html><html><head><title>Anexo</title><style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;}img{max-width:100%;max-height:100vh;object-fit:contain;}</style></head><body><img src="${url}" alt="Anexo"/></body></html>`)
+                                    win.document.close()
+                                  }
+                                } else {
+                                  window.open(url, '_blank')
+                                }
+                              }}
                             />
                           </div>
                         )}
