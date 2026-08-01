@@ -362,7 +362,7 @@ export default function DashboardPage() {
   // User Role Checking
   const userRoleLower = (currentUser?.role || '').toLowerCase()
   const isAdminOrManager = userRoleLower.includes('admin') || userRoleLower.includes('gestor')
-  const effectiveRepFilter = (!isAdminOrManager && currentUser?.name) ? currentUser.name : repFilter
+  const effectiveRepFilter = repFilter
 
   // Available Representatives list for Filter (Includes Contacts, Deals and registered Users/Gestores)
   const availableReps = useMemo(() => {
