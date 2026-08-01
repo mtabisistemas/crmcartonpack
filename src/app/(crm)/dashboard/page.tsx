@@ -1712,19 +1712,19 @@ export default function DashboardPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--line)] pb-3 mb-4">
             <div className="flex items-center gap-2">
               <TrendingUp size={16} className="text-[#0284c7]" />
-              <h3 className="font-display text-xs sm:text-sm font-bold text-slate-900 dark:text-[var(--white)] uppercase tracking-wider">
+              <h3 className="font-display text-xs sm:text-sm font-bold text-[var(--white)] uppercase tracking-wider">
                 {salesEvolutionData.title}
               </h3>
             </div>
 
             {/* 3 Botões no Canto Superior Direito: Mensal, Semanal, Diário */}
-            <div className="flex items-center gap-1 bg-slate-200 dark:bg-[#0f172a] border border-slate-300 dark:border-[var(--line)] p-1 rounded-xl shrink-0 self-start sm:self-auto">
+            <div className="flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] p-1 rounded-xl shrink-0 self-start sm:self-auto">
               <button
                 onClick={() => setChartViewMode('mensal')}
                 className={`text-xs font-mono font-bold px-3 py-1 rounded-lg transition-all ${
                   chartViewMode === 'mensal'
                     ? 'bg-[#0284c7] text-white shadow-md'
-                    : 'text-slate-700 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white'
+                    : 'text-[var(--gray2)] hover:text-[var(--white)]'
                 }`}
               >
                 Mensal
@@ -1734,7 +1734,7 @@ export default function DashboardPage() {
                 className={`text-xs font-mono font-bold px-3 py-1 rounded-lg transition-all ${
                   chartViewMode === 'semanal'
                     ? 'bg-[#0284c7] text-white shadow-md'
-                    : 'text-slate-700 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white'
+                    : 'text-[var(--gray2)] hover:text-[var(--white)]'
                 }`}
               >
                 Semanal
@@ -1744,7 +1744,7 @@ export default function DashboardPage() {
                 className={`text-xs font-mono font-bold px-3 py-1 rounded-lg transition-all ${
                   chartViewMode === 'diario'
                     ? 'bg-[#0284c7] text-white shadow-md'
-                    : 'text-slate-700 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white'
+                    : 'text-[var(--gray2)] hover:text-[var(--white)]'
                 }`}
               >
                 Diário
