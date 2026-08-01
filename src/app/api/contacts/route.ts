@@ -53,7 +53,8 @@ export async function GET() {
         inactivityThresholdDays: notesObj.inactivityThresholdDays ?? item.inactivity_threshold_days ?? 90,
         planningNotes: notesObj.planningNotes || item.planning_notes || '',
         history: notesObj.history || item.history || [],
-        activities: notesObj.activities || item.activities || []
+        activities: notesObj.activities || item.activities || [],
+        orders: notesObj.orders || item.orders || []
       }
     })
 

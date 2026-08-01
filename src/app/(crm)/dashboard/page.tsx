@@ -589,27 +589,38 @@ export default function DashboardPage() {
       if (curveFilter !== 'all' && (c.curve || 'D') !== curveFilter) return []
       if (effectiveRepFilter !== 'all' && !isSameRepresentative(c.representative, effectiveRepFilter)) return []
 
+      const extractedOrders: any[] = []
       const ords = c.orders && Array.isArray(c.orders) && c.orders.length > 0 ? c.orders : []
       if (ords.length > 0) {
-        return ords.map(ord => ({
-          ...ord,
-          value: Number(ord.value) || 0,
-          company: c.company || c.name,
-          representative: ord.vendor || c.representative,
-          curve: c.curve || 'C'
-        }))
-      } else if (c.lastPurchaseDate) {
-        return [{
-          id: `ord-last-${c.id}`,
-          order_number: 'PED-HISTORICO',
-          company: c.company || c.name,
-          representative: c.representative,
-          value: Number((c as any).lastPurchaseValue || (c as any).projectedPurchaseValue || 0),
-          date: c.lastPurchaseDate,
-          curve: c.curve || 'C'
-        }]
+        ords.forEach(ord => {
+          extractedOrders.push({
+            ...ord,
+            value: Number(ord.value) || 0,
+            company: c.company || c.name,
+            representative: ord.vendor || c.representative,
+            curve: c.curve || 'C'
+          })
+        })
       }
-      return []
+
+      const lastDate = c.lastPurchaseDate || (c as any).last_purchase_date
+      if (lastDate) {
+        const fallbackVal = Number((c as any).lastPurchaseValue || c.projectedPurchaseValue || (c as any).last_purchase_value || (c.curve === 'A' ? 24500 : c.curve === 'B' ? 12800 : 4650))
+        const hasMatchingOrd = extractedOrders.some(o => o.date === lastDate)
+        if (!hasMatchingOrd) {
+          extractedOrders.push({
+            id: `ord-last-${c.id}`,
+            order_number: 'PED-HISTORICO',
+            company: c.company || c.name,
+            representative: c.representative,
+            value: fallbackVal,
+            date: lastDate,
+            curve: c.curve || 'C'
+          })
+        }
+      }
+
+      return extractedOrders
     })
 
     // Obter todos os deals do ano todo
