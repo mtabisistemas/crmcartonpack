@@ -330,47 +330,67 @@ export default function DiarioDeBordoPage() {
 
     const activeFilter = (!isAdminOrManager && currentUser?.name) ? currentUser.name : userFilter
 
+    const norm = (s: string) => (s || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+    const isMauricio = (s: string) => {
+      const n = norm(s)
+      return n.includes('mauricio') || n.includes('maciel')
+    }
+
     let salesGoalSum = 0
     let visitsGoalSum = 0
 
     if (activeFilter === 'all') {
-      const equipeKey = `EQUIPE_${yearStr}_${monthStr}`
-      if (goalsMap[equipeKey] && Number(goalsMap[equipeKey].salesGoal) > 0) {
-        salesGoalSum = Number(goalsMap[equipeKey].salesGoal)
-        visitsGoalSum = Number(goalsMap[equipeKey].visitsGoal)
+      Object.keys(goalsMap).forEach(key => {
+        if (isMauricio(key)) return
+        const g = goalsMap[key]
+        if (isMauricio(g?.userName || '')) return
+
+        if (key.startsWith(`${yearStr}_${monthStr}_`) && !key.startsWith('EQUIPE_')) {
+          salesGoalSum += Number(g?.salesGoal || 0)
+          visitsGoalSum += Number(g?.visitsGoal || 0)
+        }
+      })
+
+      if (salesGoalSum === 0) salesGoalSum = 1500000
+      if (visitsGoalSum === 0) visitsGoalSum = 40
+    } else {
+      const selUser = availableReps.find(r => r === activeFilter || isSameRepresentative(r, activeFilter))
+      const targetName = selUser || activeFilter
+
+      // Direct key lookup
+      const k1 = `${yearStr}_${monthStr}_${targetName}`
+      if (goalsMap[k1] && Number(goalsMap[k1].salesGoal) > 0) {
+        salesGoalSum = Number(goalsMap[k1].salesGoal)
+        visitsGoalSum = Number(goalsMap[k1].visitsGoal || 10)
       } else {
         Object.keys(goalsMap).forEach(key => {
-          const g = goalsMap[key]
-          const uName = (g?.userName || '').toLowerCase()
-          if (key.toLowerCase().includes('mauricio') || key.toLowerCase().includes('maciel') || uName.includes('mauricio') || uName.includes('maciel')) {
-            return // Ignora Mauricio Maciel
-          }
-          if (key.startsWith(`${yearStr}_${monthStr}_`) && !key.startsWith('EQUIPE_')) {
-            salesGoalSum += Number(g?.salesGoal || 0)
-            visitsGoalSum += Number(g?.visitsGoal || 0)
+          if (isMauricio(key)) return
+          const gObj = goalsMap[key]
+          if (isMauricio(gObj?.userName || '')) return
+
+          const parts = key.split('_')
+          const gYear = parts[0]
+          const gMonth = parts[1]
+
+          if (gYear === yearStr && gMonth === monthStr) {
+            const gUserName = gObj?.userName || parts.slice(2).join('_')
+            if (isSameRepresentative(gUserName, targetName)) {
+              salesGoalSum += Number(gObj?.salesGoal || 0)
+              visitsGoalSum += Number(gObj?.visitsGoal || 0)
+            }
           }
         })
       }
-      if (salesGoalSum === 0) salesGoalSum = 1500000 // R$ 1.500.000,00 team goal fallback (identical to Dashboard)
-      if (visitsGoalSum === 0) visitsGoalSum = 40
-    } else {
-      const selUser = usersList.find(u => u.id === activeFilter || u.name === activeFilter)
-      const uId = selUser?.id || activeFilter
-      const uName = selUser?.name || activeFilter
 
-      const goalKey1 = `${yearStr}_${monthStr}_${uId}`
-      const goalKey2 = `${yearStr}_${monthStr}_${uName}`
-
-      const foundGoal = goalsMap[goalKey1] || goalsMap[goalKey2]
-      salesGoalSum = Number(foundGoal?.salesGoal || 150000)
-      visitsGoalSum = Number(foundGoal?.visitsGoal || 20)
+      if (salesGoalSum === 0) salesGoalSum = 30000
+      if (visitsGoalSum === 0) visitsGoalSum = 10
     }
 
     return {
       salesGoal: salesGoalSum,
       visitsGoal: visitsGoalSum
     }
-  }, [goalsMap, userFilter, usersList, isAdminOrManager, currentUser?.name])
+  }, [goalsMap, userFilter, availableReps, isAdminOrManager, currentUser?.name])
 
   // 1. Pacing & Goal Calculations (Unified with Dashboard)
   const pacingMetrics = useMemo(() => {

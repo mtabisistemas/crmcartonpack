@@ -836,34 +836,89 @@ export default function DashboardPage() {
 
   // Total Target Goal calculation from goalsMap or fallback
   const metaCalculated = useMemo(() => {
-    let sumGoal = 0
+    const norm = (s: string) => (s || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+    const isMauricio = (s: string) => {
+      const n = norm(s)
+      return n.includes('mauricio') || n.includes('maciel')
+    }
 
-    Object.keys(goalsMap).forEach(k => {
-      const gObj = goalsMap[k]
-      const uName = (gObj?.userName || '').toLowerCase()
-      if (k.toLowerCase().includes('mauricio') || k.toLowerCase().includes('maciel') || uName.includes('mauricio') || uName.includes('maciel')) {
-        return // Ignora metas do Mauricio Maciel
+    let totalGoal = 0
+
+    if (effectiveRepFilter === 'all') {
+      let sumGoal = 0
+      Object.keys(goalsMap).forEach(k => {
+        if (isMauricio(k)) return
+        const gObj = goalsMap[k]
+        const uName = (gObj?.userName || '').toLowerCase()
+        if (isMauricio(uName)) return
+
+        const parts = k.split('_')
+        const gYear = parts[0]
+        const gMonth = parts[1]
+
+        if (yearFilter !== 'all' && gYear !== yearFilter) return
+
+        if (monthFilter === 'all') {
+          sumGoal += (gObj?.salesGoal || (gObj as any)?.metaMonthly || 0)
+        } else if (gMonth === monthFilter) {
+          sumGoal += (gObj?.salesGoal || (gObj as any)?.metaMonthly || 0)
+        }
+      })
+
+      const fallbackBase = 1500000
+      const fallbackTotal = monthFilter === 'all' ? fallbackBase * 12 : fallbackBase
+      totalGoal = sumGoal > 0 ? sumGoal : fallbackTotal
+    } else {
+      // Individual Rep filter selected (e.g. Thaiane Antunes)
+      const selUser = systemUsers?.find(u => 
+        u.id === effectiveRepFilter || 
+        u.name === effectiveRepFilter || 
+        isSameRepresentative(u.name, effectiveRepFilter)
+      )
+      const uId = selUser?.id
+      const uName = selUser?.name || effectiveRepFilter
+
+      let individualGoal = 0
+
+      // Try direct keys first
+      if (yearFilter !== 'all' && monthFilter !== 'all') {
+        const k1 = `${yearFilter}_${monthFilter}_${uId}`
+        const k2 = `${yearFilter}_${monthFilter}_${uName}`
+        const k3 = `${yearFilter}_${monthFilter}_${effectiveRepFilter}`
+
+        if (goalsMap[k1] && Number(goalsMap[k1].salesGoal) > 0) individualGoal = Number(goalsMap[k1].salesGoal)
+        else if (goalsMap[k2] && Number(goalsMap[k2].salesGoal) > 0) individualGoal = Number(goalsMap[k2].salesGoal)
+        else if (goalsMap[k3] && Number(goalsMap[k3].salesGoal) > 0) individualGoal = Number(goalsMap[k3].salesGoal)
       }
 
-      const parts = k.split('_')
-      const gYear = parts[0]
-      const gMonth = parts[1]
+      if (individualGoal === 0) {
+        Object.keys(goalsMap).forEach(key => {
+          if (isMauricio(key)) return
+          const gObj = goalsMap[key]
+          if (isMauricio(gObj?.userName || '')) return
 
-      if (yearFilter !== 'all' && gYear !== yearFilter) return
+          const parts = key.split('_')
+          const gYear = parts[0]
+          const gMonth = parts[1]
 
-      if (monthFilter === 'all') {
-        // Acumular metas de todos os meses do ano selecionado
-        sumGoal += (gObj?.salesGoal || (gObj as any)?.metaMonthly || 0)
-      } else if (gMonth === monthFilter) {
-        // Mês específico selecionado
-        sumGoal += (gObj?.salesGoal || (gObj as any)?.metaMonthly || 0)
+          if (yearFilter !== 'all' && gYear !== yearFilter) return
+          if (monthFilter !== 'all' && gMonth !== monthFilter) return
+
+          const gUserName = gObj?.userName || parts.slice(2).join('_')
+          const gUserId = gObj?.userId
+
+          if (
+            (uId && gUserId === uId) ||
+            isSameRepresentative(gUserName, effectiveRepFilter) ||
+            isSameRepresentative(gUserName, uName)
+          ) {
+            individualGoal += (Number(gObj?.salesGoal) || 0)
+          }
+        })
       }
-    })
 
-    // Caso não haja metas cadastradas no goalsMap, usa fallback (1.5M * 12 no ano ou 1.5M no mês)
-    const fallbackBase = 1500000
-    const fallbackTotal = monthFilter === 'all' ? fallbackBase * 12 : fallbackBase
-    const totalGoal = sumGoal > 0 ? sumGoal : fallbackTotal
+      totalGoal = individualGoal > 0 ? individualGoal : 30000
+    }
 
     const faturado = kpis.totalFaturadoR$
     const pct = totalGoal > 0 ? (faturado / totalGoal) * 100 : 0
@@ -877,7 +932,7 @@ export default function DashboardPage() {
       falta,
       projecao
     }
-  }, [goalsMap, yearFilter, monthFilter, kpis.totalFaturadoR$])
+  }, [goalsMap, yearFilter, monthFilter, effectiveRepFilter, systemUsers, kpis.totalFaturadoR$])
 
   // MapItems filtrados exatamente pelos pedidos e negocios do periodo selecionado (ex: 56 pedidos em Julho)
   const mapItems = useMemo(() => {
