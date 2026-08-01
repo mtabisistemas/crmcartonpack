@@ -540,14 +540,11 @@ function ContactDrawer({
       }
 
       const rawSavedFreq = (contact as any).purchaseFrequencyDays ?? (contact as any).purchase_frequency_days
-      
-      // Priority: manually saved value takes precedence over auto-calculated.
-      // Auto-calculated is only used as a default when no manual value has been saved.
-      // This prevents the auto-recalculation from overwriting a user's manual input on every open.
-      const hasSavedManualFreq = rawSavedFreq !== null && rawSavedFreq !== undefined && rawSavedFreq !== 30
+      const savedNum = Number(rawSavedFreq)
+      const hasSavedManualFreq = !isNaN(savedNum) && savedNum > 0
       const finalFreq = hasSavedManualFreq 
-        ? rawSavedFreq 
-        : (calculatedAutoFreq ?? null)
+        ? savedNum 
+        : (calculatedAutoFreq !== null ? calculatedAutoFreq : 0)
       
       setPurchaseFrequencyDays(finalFreq)
       setAutoCalculatedFreq(calculatedAutoFreq)
