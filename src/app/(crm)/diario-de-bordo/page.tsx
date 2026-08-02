@@ -846,6 +846,107 @@ export default function DiarioDeBordoPage() {
     }
   }, [appointments, filteredContacts, userFilter, usersList, activityChartViewMode, selectedYear, selectedMonth, currentMonthGoal, bizStats])
 
+  // Performance de cada usuário para os painéis laterais de Visitas e Contatos
+  const repsPerformance = useMemo(() => {
+    const selYearNum = parseInt(selectedYear, 10) || new Date().getFullYear()
+    const selMonthNum = parseInt(selectedMonth, 10) - 1
+    const prefix = `${selectedYear}_${selectedMonth}_`
+
+    const list: Array<{
+      id: string
+      name: string
+      visits: number
+      visitsGoal: number
+      visitsPct: number
+      hasVisitsGoal: boolean
+      contacts: number
+      contactsGoal: number
+      contactsPct: number
+      hasContactsGoal: boolean
+    }> = []
+
+    availableReps.forEach(repName => {
+      const u = usersList.find(usr => usr.name === repName || isSameRepresentative(usr.name, repName))
+      const uId = u?.id || ''
+
+      let gObj: any = null
+      Object.keys(goalsMap).forEach(key => {
+        if (key.startsWith(prefix)) {
+          const g = goalsMap[key]
+          const keyUser = key.replace(prefix, '')
+          const gName = g?.userName || keyUser
+          const gId = g?.userId || keyUser
+
+          if (
+            (uId && (gId === uId || keyUser === uId)) ||
+            isSameRepresentative(gName, repName) ||
+            isSameRepresentative(keyUser, repName)
+          ) {
+            gObj = g
+          }
+        }
+      })
+
+      const visitsGoal = gObj?.hasVisitsGoal !== false && gObj?.visitsGoal !== undefined ? Number(gObj.visitsGoal) : 20
+      const hasVisitsGoal = gObj?.hasVisitsGoal !== false && (gObj?.visitsGoal === undefined || Number(gObj.visitsGoal) > 0)
+
+      const contactsGoal = gObj?.hasContactsGoal !== false && gObj?.contactsGoal !== undefined ? Number(gObj.contactsGoal) : 400
+      const hasContactsGoal = gObj?.hasContactsGoal !== false && (gObj?.contactsGoal === undefined || Number(gObj.contactsGoal) > 0)
+
+      const repApts = appointments.filter(a => {
+        const aUser = a.assigned_to || (a as any).assignedTo || a.user_name || ''
+        return isSameRepresentative(aUser, repName) || (uId && a.user_id === uId)
+      })
+
+      let visitsCount = repApts.filter(a => {
+        if (a.type !== 'visita' && a.type !== 'reuniao') return false
+        const dt = parseFlexibleDate(a.date)
+        return dt && dt.getMonth() === selMonthNum && dt.getFullYear() === selYearNum
+      }).length
+
+      let contactsCount = repApts.filter(a => {
+        if (a.type === 'visita' || a.type === 'reuniao') return false
+        const dt = parseFlexibleDate(a.date)
+        return dt && dt.getMonth() === selMonthNum && dt.getFullYear() === selYearNum
+      }).length
+
+      filteredContacts.forEach(c => {
+        if (isSameRepresentative(c.representative || '', repName)) {
+          const cActs = (c as any).activities
+          if (cActs && Array.isArray(cActs)) {
+            cActs.forEach((act: any) => {
+              if (act.timestamp) {
+                const dt = parseFlexibleDate(act.timestamp)
+                if (dt && dt.getMonth() === selMonthNum && dt.getFullYear() === selYearNum) {
+                  if (act.type === 'visita' || act.type === 'reuniao') visitsCount++
+                  else contactsCount++
+                }
+              }
+            })
+          }
+        }
+      })
+
+      const visitsPct = Math.min(100, Math.round((visitsCount / Math.max(1, visitsGoal)) * 100))
+      const contactsPct = Math.min(100, Math.round((contactsCount / Math.max(1, contactsGoal)) * 100))
+
+      list.push({
+        id: uId || repName,
+        name: repName,
+        visits: visitsCount,
+        visitsGoal,
+        visitsPct,
+        hasVisitsGoal,
+        contacts: contactsCount,
+        contactsGoal,
+        contactsPct,
+        hasContactsGoal
+      })
+    })
+
+    return list.sort((a, b) => b.visits - a.visits)
+  }, [availableReps, usersList, goalsMap, appointments, filteredContacts, selectedYear, selectedMonth])
+
   // Stagnant Deals (>7 days)
   const dealAlerts = useMemo(() => {
     const now = new Date()
@@ -1235,29 +1336,20 @@ export default function DiarioDeBordoPage() {
       )}
 
       {/* ========================================================
-          2.5. GRÁFICO DE ACOMPANHAMENTO DIÁRIO DE ATIVIDADES (VISITAS X CONTATOS)
+          2.5. GRÁFICOS SEPARADOS DE ATIVIDADES (VISITAS X CONTATOS) E DESEMPENHO POR REPRESENTANTE
          ======================================================== */}
-      <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-4 relative overflow-hidden select-none shrink-0 min-h-[360px]">
+      <div className="flex flex-col gap-5 shrink-0">
         
-        {/* Cabeçalho do Gráfico */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500/25 to-purple-900/10 border border-purple-500/40 text-purple-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
-              <BarChart3 size={18} />
-            </div>
-            <div>
-              <h3 className="font-display text-sm sm:text-base font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2">
-                <span>Acompanhamento Diário de Atividades</span>
-              </h3>
-              <p className="text-xs font-mono text-[var(--gray2)] font-semibold mt-0.5 flex flex-wrap items-center gap-4">
-                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#8b5cf6] inline-block shadow-[0_0_8px_#8b5cf6]" /> Visitas Presenciais</span>
-                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#10b981] inline-block shadow-[0_0_8px_#10b981]" /> Contatos & Interações</span>
-              </p>
-            </div>
+        {/* BARRA DE BOTÕES DE GRANULARIDADE (DIÁRIO, SEMANAL, MENSAL) */}
+        <div className="flex items-center justify-between gap-3 bg-[var(--card)] border border-[var(--line)] px-4 py-3 rounded-2xl shadow-lg">
+          <div className="flex items-center gap-2.5">
+            <BarChart3 size={18} className="text-purple-400" />
+            <h3 className="font-display text-sm font-bold text-[var(--white)] uppercase tracking-wider">
+              Acompanhamento Diário de Atividades da Equipe
+            </h3>
           </div>
 
-          {/* Toggle de Modo do Gráfico */}
-          <div className="flex items-center gap-1 bg-[var(--charcoal)] p-1 rounded-xl border border-[var(--line)] self-start sm:self-auto">
+          <div className="flex items-center gap-1 bg-[var(--charcoal)] p-1 rounded-xl border border-[var(--line)]">
             <button
               type="button"
               onClick={() => setActivityChartViewMode('diario')}
@@ -1294,101 +1386,247 @@ export default function DiarioDeBordoPage() {
           </div>
         </div>
 
-        {/* Container do Gráfico com Barras Duplas (Visitas e Contatos lado a lado) */}
-        <div className="h-60 flex items-end justify-between gap-1 pt-8 pb-1 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
-          {/* Gridlines Horizontais de Fundo */}
-          <div className="absolute inset-x-0 top-3 bottom-0 flex flex-col justify-between pointer-events-none opacity-10">
-            <div className="border-b border-white w-full" />
-            <div className="border-b border-white w-full" />
-            <div className="border-b border-white w-full" />
-            <div className="border-b border-white w-full" />
-          </div>
+        {/* GRID DE 2 CARDS DEDICADOS (VISITAS E CONTATOS) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 shrink-0">
+          
+          {/* CARD 1: VISITAS PRESENCIAIS & REUNIÕES (ROXO) */}
+          <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-4 relative overflow-hidden select-none shrink-0 min-h-[360px]">
+            
+            {/* Header do Card 1 */}
+            <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-400 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(168,85,247,0.3)]">
+                  <Users size={16} />
+                </div>
+                <div>
+                  <h4 className="font-display text-sm font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2">
+                    <span>Visitas Presenciais & Reuniões</span>
+                  </h4>
+                  <p className="text-[11px] font-mono text-purple-300 font-semibold mt-0.5">
+                    Total no Mês: {pacingMetrics.currentMonthVisits} / {pacingMetrics.visitsTarget}
+                  </p>
+                </div>
+              </div>
 
-          {/* LINHA PONTILHADA DA META (100% - TOPO DO GRÁFICO) */}
-          <div className="absolute inset-x-0 top-7 border-b-2 border-dashed border-slate-600/80 z-20 pointer-events-none flex items-center justify-end pr-3">
-            <div className="flex items-center gap-2 -mt-4">
               {pacingMetrics.hasVisitsGoal && activityChartData.visitsTarget > 0 && (
-                <span className="bg-purple-950/90 text-purple-300 text-[8px] sm:text-[9px] font-mono font-bold px-2 py-0.5 rounded-md border border-purple-500/40 shadow-sm">
+                <span className="bg-purple-950/90 text-purple-300 text-[10px] font-mono font-bold px-2 py-1 rounded-lg border border-purple-500/40 shadow-sm shrink-0">
                   Meta Visitas: {activityChartData.visitsTarget}
                 </span>
               )}
+            </div>
+
+            {/* Layout Flex: Gráfico (Esquerda) + Ranking de Reps (Direita) */}
+            <div className="flex flex-col xl:flex-row gap-4 flex-1">
+              
+              {/* Plot Area Visitas */}
+              <div className="flex-1 flex flex-col justify-end">
+                <div className="h-44 flex items-end justify-between gap-1 pt-6 pb-0 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
+                  {/* Gridlines */}
+                  <div className="absolute inset-x-0 top-2 bottom-0 flex flex-col justify-between pointer-events-none opacity-10">
+                    <div className="border-b border-white w-full" />
+                    <div className="border-b border-white w-full" />
+                    <div className="border-b border-white w-full" />
+                  </div>
+
+                  {/* Linha da Meta 100% */}
+                  {activityChartData.visitsTarget > 0 && (
+                    <div className="absolute inset-x-0 top-4 border-b-2 border-dashed border-purple-500/80 z-20 pointer-events-none" />
+                  )}
+
+                  {activityChartData.slots.map((item, idx) => {
+                    const vPct = item.visitsCount > 0 ? Math.max(4, Math.min(100, Math.round((item.visitsCount / Math.max(1, activityChartData.visitsTarget)) * 100))) : 0
+
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          if (item.items.filter(i => i.type.includes('Visita')).length > 0) {
+                            setActivityDrillDown({
+                              isOpen: true,
+                              title: `VISITAS REGISTRADAS — ${item.label}`,
+                              dateLabel: item.dateStr,
+                              items: item.items.filter(i => i.type.includes('Visita'))
+                            })
+                          }
+                        }}
+                        className="flex-1 flex flex-col items-center justify-end h-full cursor-pointer group z-10 min-w-0"
+                        title={`${item.label}: ${item.visitsCount} Visitas (${vPct}% da meta)`}
+                      >
+                        <div className="w-full flex flex-col justify-end items-center h-full">
+                          {item.visitsCount > 0 && (
+                            <span className="text-[9px] font-mono font-black text-purple-400 mb-0.5 z-20">
+                              {item.visitsCount}
+                            </span>
+                          )}
+                          <div
+                            className="bg-gradient-to-t from-[#7c3aed] via-[#8b5cf6] to-[#a855f7] rounded-t-md transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_12px_rgba(139,92,246,0.6)] w-full"
+                            style={{ height: item.visitsCount > 0 ? `${vPct}%` : '0%' }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Eixo X Visitas (COLADO DIRETAMENTE NA LINHA DO EIXO) */}
+                <div className="flex justify-between gap-1 pt-1 pb-0 px-1 select-none">
+                  {activityChartData.slots.map((item, idx) => (
+                    <div key={idx} className="flex-1 text-center truncate">
+                      <span className="font-mono font-bold text-slate-400 group-hover:text-white transition-colors text-[9px] sm:text-[10px] inline-block leading-tight">
+                        {item.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ranking Lateral de Reps (Visitas) */}
+              <div className="w-full xl:w-52 shrink-0 border-t xl:border-t-0 xl:border-l border-[var(--line)] pt-3 xl:pt-0 xl:pl-4 flex flex-col gap-2">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-purple-400 block border-b border-[var(--line)] pb-1">
+                  Visitas por Vendedor
+                </span>
+                <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                  {repsPerformance.map(rep => (
+                    <div key={rep.id} className="flex flex-col gap-1 text-xs font-mono">
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="font-bold text-white truncate max-w-[120px]">{rep.name}</span>
+                        <span className="text-purple-400 font-bold">{rep.visits} <span className="text-[9px] text-[var(--gray2)]">/ {rep.visitsGoal}</span></span>
+                      </div>
+                      <div className="w-full h-1.5 bg-[#090d16] rounded-full overflow-hidden border border-[var(--line)]">
+                        <div
+                          className="bg-purple-500 h-full rounded-full transition-all duration-500 shadow-[0_0_8px_#8b5cf6]"
+                          style={{ width: `${Math.min(100, rep.visitsPct)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* CARD 2: CONTATOS & INTERAÇÕES (VERDE) */}
+          <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-4 relative overflow-hidden select-none shrink-0 min-h-[360px]">
+            
+            {/* Header do Card 2 */}
+            <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                  <Phone size={16} />
+                </div>
+                <div>
+                  <h4 className="font-display text-sm font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2">
+                    <span>Contatos & Interações</span>
+                  </h4>
+                  <p className="text-[11px] font-mono text-emerald-300 font-semibold mt-0.5">
+                    Total no Mês: {pacingMetrics.currentMonthContacts} / {pacingMetrics.contactsTarget}
+                  </p>
+                </div>
+              </div>
+
               {pacingMetrics.hasContactsGoal && activityChartData.contactsTarget > 0 && (
-                <span className="bg-emerald-950/90 text-emerald-300 text-[8px] sm:text-[9px] font-mono font-bold px-2 py-0.5 rounded-md border border-emerald-500/40 shadow-sm">
+                <span className="bg-emerald-950/90 text-emerald-300 text-[10px] font-mono font-bold px-2 py-1 rounded-lg border border-emerald-500/40 shadow-sm shrink-0">
                   Meta Contatos: {activityChartData.contactsTarget}
                 </span>
               )}
             </div>
-          </div>
 
-          {activityChartData.slots.map((item, idx) => {
-            const vPct = item.visitsCount > 0 ? Math.max(4, Math.min(100, Math.round((item.visitsCount / Math.max(1, activityChartData.visitsTarget)) * 100))) : 0
-            const cPct = item.contactsCount > 0 ? Math.max(4, Math.min(100, Math.round((item.contactsCount / Math.max(1, activityChartData.contactsTarget)) * 100))) : 0
-
-            return (
-              <div
-                key={idx}
-                onClick={() => {
-                  if (item.items.length > 0) {
-                    setActivityDrillDown({
-                      isOpen: true,
-                      title: `ATIVIDADES REGISTRADAS — ${item.label}`,
-                      dateLabel: item.dateStr,
-                      items: item.items
-                    })
-                  }
-                }}
-                className={`flex-1 flex flex-col items-center justify-end h-full cursor-pointer group z-10 ${
-                  activityChartViewMode === 'diario' ? 'min-w-0' : 'min-w-[24px]'
-                }`}
-                title={`${item.label}: ${item.visitsCount} Visitas (${vPct}% da meta) | ${item.contactsCount} Contatos (${cPct}% da meta)`}
-              >
-                {/* Dupla Barra Lado a Lado */}
-                <div className="w-full flex justify-center items-end gap-0.5 h-full">
-                  {/* Barra de Visitas (Roxo) com Rótulo Número Centralizado ACIMA */}
-                  <div className="flex-1 flex flex-col justify-end items-center h-full">
-                    {item.visitsCount > 0 && (
-                      <span className="text-[8px] sm:text-[9px] font-mono font-black text-purple-400 mb-0.5 z-20">
-                        {item.visitsCount}
-                      </span>
-                    )}
-                    <div
-                      className="bg-gradient-to-t from-[#7c3aed] via-[#8b5cf6] to-[#a855f7] rounded-t-md transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_12px_rgba(139,92,246,0.6)] w-full"
-                      style={{ height: item.visitsCount > 0 ? `${vPct}%` : '0%' }}
-                    />
+            {/* Layout Flex: Gráfico (Esquerda) + Ranking de Reps (Direita) */}
+            <div className="flex flex-col xl:flex-row gap-4 flex-1">
+              
+              {/* Plot Area Contatos */}
+              <div className="flex-1 flex flex-col justify-end">
+                <div className="h-44 flex items-end justify-between gap-1 pt-6 pb-0 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
+                  {/* Gridlines */}
+                  <div className="absolute inset-x-0 top-2 bottom-0 flex flex-col justify-between pointer-events-none opacity-10">
+                    <div className="border-b border-white w-full" />
+                    <div className="border-b border-white w-full" />
+                    <div className="border-b border-white w-full" />
                   </div>
 
-                  {/* Barra de Contatos (Verde) com Rótulo Número Centralizado ACIMA */}
-                  <div className="flex-1 flex flex-col justify-end items-center h-full">
-                    {item.contactsCount > 0 && (
-                      <span className="text-[8px] sm:text-[9px] font-mono font-black text-emerald-400 mb-0.5 z-20">
-                        {item.contactsCount}
+                  {/* Linha da Meta 100% */}
+                  {activityChartData.contactsTarget > 0 && (
+                    <div className="absolute inset-x-0 top-4 border-b-2 border-dashed border-emerald-500/80 z-20 pointer-events-none" />
+                  )}
+
+                  {activityChartData.slots.map((item, idx) => {
+                    const cPct = item.contactsCount > 0 ? Math.max(4, Math.min(100, Math.round((item.contactsCount / Math.max(1, activityChartData.contactsTarget)) * 100))) : 0
+
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          if (item.items.filter(i => !i.type.includes('Visita')).length > 0) {
+                            setActivityDrillDown({
+                              isOpen: true,
+                              title: `CONTATOS REGISTRADOS — ${item.label}`,
+                              dateLabel: item.dateStr,
+                              items: item.items.filter(i => !i.type.includes('Visita'))
+                            })
+                          }
+                        }}
+                        className="flex-1 flex flex-col items-center justify-end h-full cursor-pointer group z-10 min-w-0"
+                        title={`${item.label}: ${item.contactsCount} Contatos (${cPct}% da meta)`}
+                      >
+                        <div className="w-full flex flex-col justify-end items-center h-full">
+                          {item.contactsCount > 0 && (
+                            <span className="text-[9px] font-mono font-black text-emerald-400 mb-0.5 z-20">
+                              {item.contactsCount}
+                            </span>
+                          )}
+                          <div
+                            className="bg-gradient-to-t from-[#059669] via-[#10b981] to-[#34d399] rounded-t-md transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_12px_rgba(16,185,129,0.6)] w-full"
+                            style={{ height: item.contactsCount > 0 ? `${cPct}%` : '0%' }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Eixo X Contatos (COLADO DIRETAMENTE NA LINHA DO EIXO) */}
+                <div className="flex justify-between gap-1 pt-1 pb-0 px-1 select-none">
+                  {activityChartData.slots.map((item, idx) => (
+                    <div key={idx} className="flex-1 text-center truncate">
+                      <span className="font-mono font-bold text-slate-400 group-hover:text-white transition-colors text-[9px] sm:text-[10px] inline-block leading-tight">
+                        {item.label}
                       </span>
-                    )}
-                    <div
-                      className="bg-gradient-to-t from-[#059669] via-[#10b981] to-[#34d399] rounded-t-md transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_12px_rgba(16,185,129,0.6)] w-full"
-                      style={{ height: item.contactsCount > 0 ? `${cPct}%` : '0%' }}
-                    />
-                  </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            )
-          })}
-        </div>
 
-        {/* RÓTULOS DOS MESES / DIAS POSICIONADOS EXCLUSIVAMENTE ABAIXO DO EIXO X (IDÊNTICOS AO DASHBOARD) */}
-        <div className="flex justify-between gap-1 pt-2.5 pb-1 px-1 select-none">
-          {activityChartData.slots.map((item, idx) => (
-            <div key={idx} className="flex-1 text-center truncate">
-              <span className="font-mono font-bold text-slate-400 group-hover:text-white transition-colors text-[9px] sm:text-[10px] inline-block">
-                {item.label}
-              </span>
+              {/* Ranking Lateral de Reps (Contatos) */}
+              <div className="w-full xl:w-52 shrink-0 border-t xl:border-t-0 xl:border-l border-[var(--line)] pt-3 xl:pt-0 xl:pl-4 flex flex-col gap-2">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 block border-b border-[var(--line)] pb-1">
+                  Contatos por Vendedor
+                </span>
+                <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                  {repsPerformance.map(rep => (
+                    <div key={rep.id} className="flex flex-col gap-1 text-xs font-mono">
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="font-bold text-white truncate max-w-[120px]">{rep.name}</span>
+                        <span className="text-emerald-400 font-bold">{rep.contacts} <span className="text-[9px] text-[var(--gray2)]">/ {rep.contactsGoal}</span></span>
+                      </div>
+                      <div className="w-full h-1.5 bg-[#090d16] rounded-full overflow-hidden border border-[var(--line)]">
+                        <div
+                          className="bg-emerald-500 h-full rounded-full transition-all duration-500 shadow-[0_0_8px_#10b981]"
+                          style={{ width: `${Math.min(100, rep.contactsPct)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
-          ))}
+
+          </div>
+
         </div>
 
-        <div className="flex items-center justify-center pt-1 text-[10px] font-mono text-slate-400/60">
-          <span>Clique sobre qualquer barra para ver o relatório de atividades do dia</span>
-        </div>
       </div>
 
       {/* Modal Drill-Down de Atividades por Dia */}
