@@ -1951,6 +1951,15 @@ export default function DiarioDeBordoPage() {
       <PipelineCalendarModal
         isOpen={calendarOpen}
         onClose={() => setCalendarOpen(false)}
+        onCompleteAndRegisterActivity={(clientName) => {
+          setCalendarOpen(false)
+          const matched = contacts.find(c => (c.company || c.name || '').trim().toLowerCase() === clientName.trim().toLowerCase())
+          if (matched) {
+            setSelectedContactForActivity(matched)
+          } else {
+            setSelectedContactForActivity({ id: clientName, name: clientName, company: clientName } as any)
+          }
+        }}
       />
 
     </div>

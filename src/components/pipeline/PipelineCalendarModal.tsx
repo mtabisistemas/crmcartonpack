@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Appointment } from '@/types'
 import { getAppointments, updateAppointment, deleteAppointment, saveAppointment } from '@/services/appointment-service'
 import { getPipelineDeals } from '@/services/pipeline-service'
+import { RegisterActivityModal } from '@/components/RegisterActivityModal'
 import { 
   X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Plus, Edit2, Trash2, Check, AlertTriangle, Building2, ChevronDown, Search
 } from 'lucide-react'
@@ -23,6 +24,10 @@ export function PipelineCalendarModal({ isOpen, onClose, onCompleteAndRegisterAc
   const [activeApt, setActiveApt] = useState<Appointment | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+
+  // Automatic activity registration modal state fallback
+  const [showInternalActivityModal, setShowInternalActivityModal] = useState(false)
+  const [activityClientTarget, setActivityClientTarget] = useState('')
 
   // Day Popover for "Mais X" in Month View
   const [dayPopover, setDayPopover] = useState<{
@@ -323,6 +328,9 @@ export function PipelineCalendarModal({ isOpen, onClose, onCompleteAndRegisterAc
 
     if (onCompleteAndRegisterActivity) {
       onCompleteAndRegisterActivity(clientTarget)
+    } else {
+      setActivityClientTarget(clientTarget)
+      setShowInternalActivityModal(true)
     }
   }
 
@@ -1246,6 +1254,24 @@ export function PipelineCalendarModal({ isOpen, onClose, onCompleteAndRegisterAc
         )}
 
       </div>
+
+      {/* Modal de Registro de Atividade (Abertura Automática ao Concluir Compromisso) */}
+      {showInternalActivityModal && (
+        <RegisterActivityModal
+          isOpen={showInternalActivityModal}
+          onClose={() => {
+            setShowInternalActivityModal(false)
+            setActivityClientTarget('')
+          }}
+          contactsList={companiesList.map(c => ({ id: c.id, name: c.name, company: c.name }))}
+          preselectedContactId={activityClientTarget}
+          onSuccess={() => {
+            setShowInternalActivityModal(false)
+            setActivityClientTarget('')
+            loadApts()
+          }}
+        />
+      )}
     </div>
   )
 }
