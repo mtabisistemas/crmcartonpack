@@ -364,14 +364,15 @@ export default function DashboardPage() {
   const isAdminOrManager = userRoleLower.includes('admin') || userRoleLower.includes('gestor')
   const effectiveRepFilter = repFilter
 
-  // Available Representatives list for Filter (Includes Contacts, Deals and registered Users/Gestores)
+  // Available Representatives list for Filter (Restrito aos Usuários cadastrados e ativos no sistema)
   const availableReps = useMemo(() => {
-    const fromContacts = contacts.map(c => c.representative).filter(Boolean) as string[]
-    const fromDeals = deals.map(d => d.assigned_to).filter(Boolean) as string[]
-    const fromUsers = systemUsers.map((u: any) => u.name).filter(Boolean) as string[]
-    const merged = Array.from(new Set([...fromContacts, ...fromDeals, ...fromUsers]))
-    return getUniqueCanonicalRepresentatives(merged)
-  }, [contacts, deals, systemUsers])
+    const activeUsers = systemUsers.filter((u: any) => u.status !== 'inativo')
+    const userNames = activeUsers.map((u: any) => u.name).filter(Boolean) as string[]
+    if (userNames.length > 0) {
+      return getUniqueCanonicalRepresentatives(userNames)
+    }
+    return []
+  }, [systemUsers])
 
   // Consolidated Orders & Deals dataset filtered by Year, Month, Rep & Curve
   const filteredData = useMemo(() => {

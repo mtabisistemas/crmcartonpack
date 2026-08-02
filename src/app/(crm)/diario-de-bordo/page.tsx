@@ -305,14 +305,15 @@ export default function DiarioDeBordoPage() {
   const userRoleLower = (currentUser?.role || '').toLowerCase()
   const isAdminOrManager = userRoleLower.includes('admin') || userRoleLower.includes('gestor')
 
-  // Available Representatives list for Filter (Identical to Dashboard - Includes Contacts, Deals and Users/Gestores)
+  // Available Representatives list for Filter (Restrito aos Usuários cadastrados e ativos no sistema)
   const availableReps = useMemo(() => {
-    const fromContacts = contacts.map(c => c.representative).filter(Boolean) as string[]
-    const fromDeals = deals.map(d => d.assigned_to).filter(Boolean) as string[]
-    const fromUsers = usersList.map(u => u.name).filter(Boolean) as string[]
-    const merged = Array.from(new Set([...fromContacts, ...fromDeals, ...fromUsers]))
-    return getUniqueCanonicalRepresentatives(merged)
-  }, [contacts, deals, usersList])
+    const activeUsers = usersList.filter(u => u.status !== 'inativo')
+    const userNames = activeUsers.map(u => u.name).filter(Boolean) as string[]
+    if (userNames.length > 0) {
+      return getUniqueCanonicalRepresentatives(userNames)
+    }
+    return []
+  }, [usersList])
 
   // Filtered contacts based on selected user filter (ou restrito ao próprio vendedor/representante)
   const filteredContacts = useMemo(() => {

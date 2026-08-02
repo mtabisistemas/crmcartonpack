@@ -3100,21 +3100,13 @@ export default function ContactsPage() {
         }
       }
 
-      // Gather representative names dynamically from contacts list
-      const namesFromContacts = Array.from(new Set(contacts.map(c => cleanRepresentativeName(c.representative)).filter(Boolean))).sort()
-      setRepresentativesList(namesFromContacts)
+      if (registeredNames.length > 0) {
+        setRepresentativesList(getUniqueCanonicalRepresentatives(registeredNames))
+      }
     }
 
     fetchRegisteredUsers()
   }, [])
-
-  // Sincroniza dinamicamente o filtro de representantes com a carteira de contatos carregada (funde maiúsculas/minúsculas)
-  useEffect(() => {
-    if (contacts && contacts.length > 0) {
-      const reps = getUniqueCanonicalRepresentatives(contacts.map(c => c.representative))
-      setRepresentativesList(reps)
-    }
-  }, [contacts])
 
   const isRep = currentUser?.role === 'representante' || currentUser?.role === 'vendedor'
 
