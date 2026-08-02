@@ -413,17 +413,17 @@ export default function DiarioDeBordoPage() {
         const goalItem = gObj as UserGoal
         salesGoalSum = Number(goalItem.salesGoal || 0)
         
-        userHasVisitsGoal = goalItem.hasVisitsGoal !== false && Number(goalItem.visitsGoal || 0) > 0
-        visitsGoalSum = userHasVisitsGoal ? Number(goalItem.visitsGoal || 0) : 0
+        userHasVisitsGoal = goalItem.hasVisitsGoal !== false && (goalItem.visitsGoal === undefined || Number(goalItem.visitsGoal) > 0)
+        visitsGoalSum = userHasVisitsGoal ? Number(goalItem.visitsGoal !== undefined ? goalItem.visitsGoal : 20) : 0
 
-        userHasContactsGoal = goalItem.hasContactsGoal !== false && Number(goalItem.contactsGoal || 0) > 0
-        contactsGoalSum = userHasContactsGoal ? Number(goalItem.contactsGoal || 0) : 0
+        userHasContactsGoal = goalItem.hasContactsGoal !== false && (goalItem.contactsGoal === undefined || Number(goalItem.contactsGoal) > 0)
+        contactsGoalSum = userHasContactsGoal ? Number(goalItem.contactsGoal !== undefined ? goalItem.contactsGoal : 400) : 0
       } else {
         salesGoalSum = 30000
-        visitsGoalSum = 0
-        contactsGoalSum = 0
-        userHasVisitsGoal = false
-        userHasContactsGoal = false
+        visitsGoalSum = 20
+        contactsGoalSum = 400
+        userHasVisitsGoal = true
+        userHasContactsGoal = true
       }
     }
 
