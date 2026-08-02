@@ -374,8 +374,14 @@ export default function DiarioDeBordoPage() {
       userHasVisitsGoal = true
       userHasContactsGoal = true
     } else {
-      const selUser = availableReps.find(r => r === activeFilter || isSameRepresentative(r, activeFilter))
-      const targetName = selUser || activeFilter
+      const targetUser = usersList.find(u => 
+        u.id === activeFilter || 
+        u.name === activeFilter || 
+        isSameRepresentative(u.name, activeFilter) || 
+        isSameRepresentative(u.id, activeFilter)
+      )
+      const targetUserId = targetUser?.id || ''
+      const targetUserName = targetUser?.name || availableReps.find(r => r === activeFilter || isSameRepresentative(r, activeFilter)) || activeFilter
 
       // Robust goal lookup for individual user matching keys, names, IDs, or representatives
       let gObj: UserGoal | null = null
@@ -386,13 +392,18 @@ export default function DiarioDeBordoPage() {
           const g = goalsMap[key]
           const keyUser = key.replace(prefix, '')
           const gName = g?.userName || keyUser
-          const gId = g?.userId || ''
+          const gId = g?.userId || keyUser
 
-          if (
-            isSameRepresentative(gName, targetName) ||
-            isSameRepresentative(keyUser, targetName) ||
-            (gId && isSameRepresentative(gId, targetName))
-          ) {
+          const matchesId = Boolean(targetUserId && (gId === targetUserId || keyUser === targetUserId))
+          const matchesName = Boolean(
+            isSameRepresentative(gName, targetUserName) ||
+            isSameRepresentative(keyUser, targetUserName) ||
+            (gId && isSameRepresentative(gId, targetUserName)) ||
+            (gName && targetUserName && gName.toLowerCase().trim().includes(targetUserName.toLowerCase().trim().substring(0, 7))) ||
+            (keyUser && targetUserName && keyUser.toLowerCase().trim().includes(targetUserName.toLowerCase().trim().substring(0, 7)))
+          )
+
+          if (matchesId || matchesName) {
             gObj = g
           }
         }
@@ -401,17 +412,18 @@ export default function DiarioDeBordoPage() {
       if (gObj) {
         const goalItem = gObj as UserGoal
         salesGoalSum = Number(goalItem.salesGoal || 0)
-        userHasVisitsGoal = goalItem.hasVisitsGoal !== false && Number(goalItem.visitsGoal) > 0
-        visitsGoalSum = userHasVisitsGoal ? Number(goalItem.visitsGoal !== undefined ? goalItem.visitsGoal : 20) : 0
+        
+        userHasVisitsGoal = goalItem.hasVisitsGoal !== false && Number(goalItem.visitsGoal || 0) > 0
+        visitsGoalSum = userHasVisitsGoal ? Number(goalItem.visitsGoal || 0) : 0
 
-        userHasContactsGoal = goalItem.hasContactsGoal !== false && Number(goalItem.contactsGoal) > 0
-        contactsGoalSum = userHasContactsGoal ? Number(goalItem.contactsGoal !== undefined ? goalItem.contactsGoal : 400) : 0
+        userHasContactsGoal = goalItem.hasContactsGoal !== false && Number(goalItem.contactsGoal || 0) > 0
+        contactsGoalSum = userHasContactsGoal ? Number(goalItem.contactsGoal || 0) : 0
       } else {
         salesGoalSum = 30000
-        visitsGoalSum = 20
-        contactsGoalSum = 400
-        userHasVisitsGoal = true
-        userHasContactsGoal = true
+        visitsGoalSum = 0
+        contactsGoalSum = 0
+        userHasVisitsGoal = false
+        userHasContactsGoal = false
       }
     }
 
