@@ -226,9 +226,31 @@ export default function DashboardPage() {
           const resC = await fetch('/api/contacts', { cache: 'no-store' })
           if (resC.ok) {
             const jsonC = await resC.json()
-            loadedContacts = Array.isArray(jsonC) ? jsonC : (jsonC.data || [])
+            const fetched = jsonC.contacts || jsonC.data || (Array.isArray(jsonC) ? jsonC : [])
+            if (Array.isArray(fetched)) loadedContacts = fetched
           }
         } catch (e) {}
+
+        if (loadedContacts.length === 0 || !loadedContacts.some(c => c.orders && c.orders.length > 0)) {
+          try {
+            const impRes = await fetch('/imported_contacts.json')
+            if (impRes.ok) {
+              const impData = await impRes.json()
+              if (Array.isArray(impData) && impData.length > 0) {
+                const mapById = new Map<string, any>()
+                loadedContacts.forEach(c => mapById.set(c.id, c))
+                impData.forEach(c => {
+                  const existing = mapById.get(c.id) || {}
+                  const mergedOrders = (c.orders && Array.isArray(c.orders) && c.orders.length > 0)
+                    ? c.orders
+                    : (existing.orders || [])
+                  mapById.set(c.id, { ...existing, ...c, orders: mergedOrders })
+                })
+                loadedContacts = Array.from(mapById.values())
+              }
+            }
+          } catch (e) {}
+        }
 
         if (typeof window !== 'undefined') {
           const rawC = localStorage.getItem('crm_contacts')
@@ -240,7 +262,10 @@ export default function DashboardPage() {
                 loadedContacts.forEach(c => mapById.set(c.id, c))
                 localC.forEach(c => {
                   const existing = mapById.get(c.id) || {}
-                  mapById.set(c.id, { ...existing, ...c })
+                  const mergedOrders = (existing.orders && Array.isArray(existing.orders) && existing.orders.length > 0)
+                    ? existing.orders
+                    : (c.orders && Array.isArray(c.orders) ? c.orders : [])
+                  mapById.set(c.id, { ...c, ...existing, orders: mergedOrders })
                 })
                 loadedContacts = Array.from(mapById.values())
               }

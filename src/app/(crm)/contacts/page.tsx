@@ -2996,9 +2996,22 @@ export default function ContactsPage() {
 
   // Load contacts list on mount
   useEffect(() => {
+    // 0. Render INSTANTLY from local cache if available (0.05s response)
+    if (typeof window !== 'undefined') {
+      const cachedRaw = localStorage.getItem('crm_contacts')
+      if (cachedRaw) {
+        try {
+          const parsed = JSON.parse(cachedRaw)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setContacts(computeDynamicABCCurves(parsed))
+          }
+        } catch (e) {}
+      }
+    }
+
     const loadContacts = async () => {
       if (typeof window !== 'undefined') {
-        const CURRENT_CACHE_VERSION = 'v17_prospeccao_939_fix_2026_07_30'
+        const CURRENT_CACHE_VERSION = 'v18_instant_load_2026_08_02'
         const savedVersion = localStorage.getItem('crm_contacts_cache_version')
         if (savedVersion !== CURRENT_CACHE_VERSION) {
           localStorage.removeItem('crm_contacts')
