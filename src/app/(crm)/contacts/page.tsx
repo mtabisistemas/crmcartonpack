@@ -1099,17 +1099,29 @@ function ContactDrawer({
                   <div className="card p-3 border-[var(--line)] bg-[var(--card)] flex flex-col gap-2.5">
                     <h4 className="text-[10px] uppercase font-bold tracking-wider text-[var(--lime)] border-b border-[var(--line)] pb-1 font-mono">Dados Cadastrais & Endereço</h4>
                     
-                    {/* Razão Social */}
-                    <div className="flex flex-col gap-0.5">
-                      <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Razão Social / Empresa *</label>
-                      <input 
-                        type="text" 
-                        required
-                        className="bg-transparent border-b border-dashed border-[var(--line)] focus:border-[var(--lime)] font-display text-xs text-[var(--white)] font-bold w-full pb-0.5 focus:outline-none uppercase"
-                        placeholder="Nome da Empresa"
-                        value={company}
-                        onChange={(e) => setCompany(e.target.value.toUpperCase())}
-                      />
+                    {/* Razão Social + CÓD. CLIENTE */}
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                      <div className="sm:col-span-8 flex flex-col gap-0.5">
+                        <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Razão Social / Empresa *</label>
+                        <input 
+                          type="text" 
+                          required
+                          className="bg-transparent border-b border-dashed border-[var(--line)] focus:border-[var(--lime)] font-display text-xs text-[var(--white)] font-bold w-full pb-0.5 focus:outline-none uppercase"
+                          placeholder="Nome da Empresa"
+                          value={company}
+                          onChange={(e) => setCompany(e.target.value.toUpperCase())}
+                        />
+                      </div>
+                      <div className="sm:col-span-4 flex flex-col gap-0.5">
+                        <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">CÓD. CLIENTE</label>
+                        <input 
+                          type="text" 
+                          className="input text-xs py-1 px-2.5 font-mono font-bold text-[var(--lime)] bg-[var(--lime)]/10 border-[var(--lime)]/30 w-full" 
+                          placeholder="Ex: 11250"
+                          value={codCliente}
+                          onChange={(e) => setCodCliente(e.target.value)}
+                        />
+                      </div>
                     </div>
 
                     {/* Nome Fantasia + Responsável */}
@@ -1137,21 +1149,8 @@ function ContactDrawer({
                       </div>
                     </div>
 
-                    {/* CÓD. CLIENTE + CNPJ + Telefone + Email */}
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center justify-between h-5">
-                          <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">CÓD. CLIENTE</label>
-                        </div>
-                        <input 
-                          type="text" 
-                          className="input text-xs py-1 px-2.5 font-mono font-bold text-[var(--lime)] bg-[var(--lime)]/10 border-[var(--lime)]/30" 
-                          placeholder="Ex: 11250"
-                          value={codCliente}
-                          onChange={(e) => setCodCliente(e.target.value)}
-                        />
-                      </div>
-
+                    {/* CNPJ + Telefone + Email */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center justify-between h-5">
                           <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNPJ</label>

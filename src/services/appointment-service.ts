@@ -18,83 +18,6 @@ export function getAppointmentsByDeal(dealId: string): Appointment[] {
   return all.filter(a => a.deal_id === dealId)
 }
 
-// Sync appointment to contact activities list in crm_contacts & Supabase
-export function syncAppointmentToContactActivity(apt: Appointment) {
-  if (typeof window === 'undefined') return
-  try {
-    const compName = (apt.company_name || apt.contact_name || apt.deal_title || '').trim().toLowerCase()
-    if (!compName) return
-
-    const rawContacts = localStorage.getItem('crm_contacts')
-    if (!rawContacts) return
-    const contacts = JSON.parse(rawContacts)
-    if (!Array.isArray(contacts)) return
-
-    const now = new Date()
-    const dateParts = apt.date ? apt.date.split('-').reverse().join('/') : `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`
-    const timeStr = apt.time || `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-    const timestampStr = `${dateParts} ${timeStr}`
-
-    const statusLabel = apt.status === 'concluido' ? 'CONCLUÍDO' : apt.status === 'cancelado' ? 'CANCELADO' : 'AGENDADO'
-    const typeLabel = (apt.type || 'visita').toUpperCase()
-    const canonicalId = `apt_act_${apt.id}`
-
-    const newActivity = {
-      id: canonicalId,
-      type: apt.type === 'visita' ? 'reuniao' : apt.type === 'ligacao' ? 'ligacao' : apt.type === 'email' ? 'email' : 'reuniao',
-      content: `Compromisso da Agenda (${typeLabel}) [${statusLabel}]: ${apt.title}${apt.notes ? ` — ${apt.notes}` : ''}`,
-      timestamp: timestampStr,
-      user_name: 'Agenda Comercial',
-      author: 'Agenda Comercial'
-    }
-
-    let updatedAny = false
-    const updatedContacts = contacts.map((c: any) => {
-      const cComp = (c.company || c.name || '').trim().toLowerCase()
-      const cName = (c.name || '').trim().toLowerCase()
-      if (cComp === compName || cName === compName || (cComp && compName.includes(cComp)) || (cComp && cComp.includes(compName))) {
-        updatedAny = true
-        const existingActs = Array.isArray(c.activities) ? c.activities : []
-        // Remove any activity matching apt.id (whether starting with apt_act_ or act_apt_ or matching title)
-        const filteredActs = existingActs.filter((a: any) => {
-          if (!a) return false
-          if (a.id === canonicalId || (a.id && a.id.includes(apt.id))) return false
-          if (a.content && a.content.includes(apt.title) && a.content.includes('Compromisso da Agenda')) return false
-          return true
-        })
-        return {
-          ...c,
-          activities: [newActivity, ...filteredActs]
-        }
-      }
-      return c
-    })
-
-    if (updatedAny) {
-      localStorage.setItem('crm_contacts', JSON.stringify(updatedContacts))
-      window.dispatchEvent(new Event('storage-contacts-changed'))
-      
-      const matchedContact = updatedContacts.find((c: any) => {
-        const cComp = (c.company || c.name || '').trim().toLowerCase()
-        return cComp === compName || (cComp && compName.includes(cComp))
-      })
-      if (matchedContact) {
-        fetch('/api/contacts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: matchedContact.id,
-            company: matchedContact.company,
-            activities: matchedContact.activities
-          })
-        }).catch(() => {})
-      }
-    }
-  } catch (e) {
-    console.error('Error syncing appointment to contact activity:', e)
-  }
-}
-
 export function saveAppointment(appointmentData: Omit<Appointment, 'id' | 'created_at'>): Appointment {
   const all = getAppointments()
   const now = new Date().toISOString()
@@ -110,8 +33,6 @@ export function saveAppointment(appointmentData: Omit<Appointment, 'id' | 'creat
     localStorage.setItem(APPOINTMENTS_STORAGE_KEY, JSON.stringify(updated))
     window.dispatchEvent(new Event('storage-appointments-changed'))
   }
-
-  syncAppointmentToContactActivity(newAppointment)
   return newAppointment
 }
 
@@ -124,17 +45,11 @@ export function updateAppointment(updatedApt: Appointment): Appointment {
     localStorage.setItem(APPOINTMENTS_STORAGE_KEY, JSON.stringify(next))
     window.dispatchEvent(new Event('storage-appointments-changed'))
   }
-
-  syncAppointmentToContactActivity(updatedApt)
   return updatedApt
 }
 
 export function deleteAppointment(appointmentId: string) {
   const all = getAppointments()
-  const target = all.find(a => a.id === appointmentId)
-  if (target) {
-    syncAppointmentToContactActivity({ ...target, status: 'cancelado' })
-  }
   const next = all.filter(a => a.id !== appointmentId)
   
   if (typeof window !== 'undefined') {
