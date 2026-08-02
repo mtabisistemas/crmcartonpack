@@ -37,9 +37,10 @@ export function syncAppointmentToContactActivity(apt: Appointment) {
 
     const statusLabel = apt.status === 'concluido' ? 'CONCLUÍDO' : apt.status === 'cancelado' ? 'CANCELADO' : 'AGENDADO'
     const typeLabel = (apt.type || 'visita').toUpperCase()
+    const canonicalId = `apt_act_${apt.id}`
 
     const newActivity = {
-      id: `act_apt_${apt.id}_${apt.status}`,
+      id: canonicalId,
       type: apt.type === 'visita' ? 'reuniao' : apt.type === 'ligacao' ? 'ligacao' : apt.type === 'email' ? 'email' : 'reuniao',
       content: `Compromisso da Agenda (${typeLabel}) [${statusLabel}]: ${apt.title}${apt.notes ? ` — ${apt.notes}` : ''}`,
       timestamp: timestampStr,
@@ -54,7 +55,13 @@ export function syncAppointmentToContactActivity(apt: Appointment) {
       if (cComp === compName || cName === compName || (cComp && compName.includes(cComp)) || (cComp && cComp.includes(compName))) {
         updatedAny = true
         const existingActs = Array.isArray(c.activities) ? c.activities : []
-        const filteredActs = existingActs.filter((a: any) => a.id !== newActivity.id)
+        // Remove any activity matching apt.id (whether starting with apt_act_ or act_apt_ or matching title)
+        const filteredActs = existingActs.filter((a: any) => {
+          if (!a) return false
+          if (a.id === canonicalId || (a.id && a.id.includes(apt.id))) return false
+          if (a.content && a.content.includes(apt.title) && a.content.includes('Compromisso da Agenda')) return false
+          return true
+        })
         return {
           ...c,
           activities: [newActivity, ...filteredActs]

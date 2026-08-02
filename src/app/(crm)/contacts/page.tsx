@@ -645,7 +645,7 @@ function ContactDrawer({
                   const timestampStr = `${dateParts} ${a.time || ''}`.trim() || a.created_at || '01/01/2026'
                   
                   aptActs.push({
-                    id: `apt_act_${a.id}_${a.status}`,
+                    id: `apt_act_${a.id}`,
                     type: typeIcon,
                     content: `Compromisso da Agenda (${(a.type || 'visita').toUpperCase()}) [${statusLabel}]: ${a.title || 'Visita/Reunião'}${a.notes ? ` — ${a.notes}` : ''}`,
                     timestamp: timestampStr,
@@ -658,9 +658,41 @@ function ContactDrawer({
           }
 
           const mergedMap = new Map<string, Activity>()
-          contactActs.forEach(a => mergedMap.set(a.id, a))
-          dealActs.forEach(a => mergedMap.set(a.id, a))
-          aptActs.forEach(a => mergedMap.set(a.id, a))
+          
+          const isDuplicate = (newAct: Activity) => {
+            if (!newAct) return true
+            const newContent = (newAct.content || '').trim()
+            for (const existing of mergedMap.values()) {
+              if (existing.id && newAct.id && existing.id === newAct.id) return true
+              if (existing.content === newContent) return true
+              
+              // Normalize appointment contents to compare regardless of status tag
+              if (existing.content && newContent && existing.content.includes('Compromisso da Agenda') && newContent.includes('Compromisso da Agenda')) {
+                const existingTitle = existing.content.split(']:')[1] || existing.content
+                const newTitle = newContent.split(']:')[1] || newContent
+                if (existingTitle.trim() === newTitle.trim()) return true
+              }
+            }
+            return false
+          }
+
+          contactActs.forEach(a => {
+            if (!isDuplicate(a)) {
+              mergedMap.set(a.id || a.content, a)
+            }
+          })
+
+          dealActs.forEach(a => {
+            if (!isDuplicate(a)) {
+              mergedMap.set(a.id || a.content, a)
+            }
+          })
+
+          aptActs.forEach(a => {
+            if (!isDuplicate(a)) {
+              mergedMap.set(a.id || a.content, a)
+            }
+          })
 
           const merged = Array.from(mergedMap.values()).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
           setActivities(merged)
