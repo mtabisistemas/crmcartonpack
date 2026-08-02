@@ -497,15 +497,22 @@ export default function DashboardPage() {
     const totalFaturadoR$ = historicalFaturadoR$ + pipelineWonR$
     const totalPedidosQtd = filteredData.orders.length + pipelineWonDeals.length
 
-    // 2. Em Negociação (Pipeline etapas 'leads'..'aprovacao')
-    const openDeals = filteredData.deals.filter(d => d.stage !== 'pedido' && d.stage !== 'fechamento' && d.stage !== 'pos_venda' && d.stage !== 'perdido')
-    const openR$ = openDeals.reduce((sum, d) => sum + (d.estimated_value || 0), 0)
-    const openQtd = openDeals.length
+    // 2. Leads / Prospecção (Pipeline etapas 'leads' e 'prospect')
+    const leadsDeals = filteredData.deals.filter(d => d.stage === 'leads' || d.stage === 'prospect')
+    const leadsR$ = leadsDeals.reduce((sum, d) => sum + (d.estimated_value || 0), 0)
+    const leadsQtd = leadsDeals.length
 
-    // 3. Aprovados / Oportunidades Quentes ('aprovacao' ou 'briefing')
-    const approvedDeals = filteredData.deals.filter(d => d.stage === 'aprovacao' || d.stage === 'briefing')
-    const approvedR$ = approvedDeals.reduce((sum, d) => sum + (d.estimated_value || 0), 0)
-    const approvedQtd = approvedDeals.length
+    // 3. Orçamento / Negociação (Pipeline etapas 'orcamento', 'negociacao' e demais etapas em andamento)
+    const negDeals = filteredData.deals.filter(d => 
+      d.stage !== 'leads' && 
+      d.stage !== 'prospect' && 
+      d.stage !== 'pedido' && 
+      d.stage !== 'fechamento' && 
+      d.stage !== 'pos_venda' && 
+      d.stage !== 'perdido'
+    )
+    const negR$ = negDeals.reduce((sum, d) => sum + (d.estimated_value || 0), 0)
+    const negQtd = negDeals.length
 
     // 4. Perdidos
     const lostDeals = filteredData.deals.filter(d => d.stage === 'perdido')
@@ -593,10 +600,19 @@ export default function DashboardPage() {
     return {
       totalFaturadoR$,
       totalPedidosQtd,
-      openR$,
-      openQtd,
-      approvedR$,
-      approvedQtd,
+      leadsR$,
+      leadsQtd,
+      leadsDealsList: leadsDeals,
+      negR$,
+      negQtd,
+      negDealsList: negDeals,
+      openR$: leadsR$,
+      openQtd: leadsQtd,
+      openDealsList: leadsDeals,
+      approvedR$: negR$,
+      approvedQtd: negQtd,
+      approvedDealsList: negDeals,
+      wonDealsList: pipelineWonDeals,
       lostR$,
       lostQtd,
       lossRatePct,
@@ -614,8 +630,6 @@ export default function DashboardPage() {
       curveC_R$, curveC_Count,
       curveD_R$, curveD_Count,
       historicalOrders: filteredData.orders,
-      openDealsList: openDeals,
-      approvedDealsList: approvedDeals,
       lostDealsList: lostDeals
     }
   }, [filteredData])
@@ -1073,11 +1087,11 @@ export default function DashboardPage() {
       })
     })
 
-    // 2. Negócios em andamento / aprovação no Funil no período
+    // 2. Negócios em andamento no Funil no período
     filteredData.deals.forEach(d => {
-      const isApproval = d.stage === 'potencial' || d.stage === 'visita'
-      const color = isApproval ? '#06b6d4' : '#f59e0b'
-      const typeLabel = isApproval ? 'APROVAÇÃO / BRIEFING' : 'EM NEGOCIAÇÃO'
+      const isLeadProspect = d.stage === 'leads' || d.stage === 'prospect'
+      const color = isLeadProspect ? '#38bdf8' : '#f59e0b'
+      const typeLabel = isLeadProspect ? 'LEADS / PROSPECÇÃO' : 'ORÇAMENTO / NEGOCIAÇÃO'
       
       items.push({
         id: `deal-${d.id}`,
@@ -1089,7 +1103,7 @@ export default function DashboardPage() {
         value: d.estimated_value || 0,
         color,
         typeLabel,
-        stageOrStatus: `Etapa: ${d.stage.toUpperCase()}`,
+        stageOrStatus: `Etapa: ${d.stage === 'leads' ? 'Leads / Banco' : d.stage === 'prospect' ? 'Prospect' : d.stage === 'orcamento' ? 'Orçamento' : d.stage === 'negociacao' ? 'Negociação' : d.stage.toUpperCase()}`,
         date: d.created_at
       })
     })
@@ -1455,10 +1469,10 @@ export default function DashboardPage() {
          ======================================================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 shrink-0">
         
-        {/* CARD 1: EM NEGOCIAÇÃO (PIPELINE ABERTO) */}
+        {/* CARD 1: LEADS / PROSPECÇÃO */}
         <div 
           onClick={() => {
-            const items: DrillDownItem[] = kpis.openDealsList.map(d => ({
+            const items: DrillDownItem[] = kpis.leadsDealsList.map(d => ({
               id: d.id,
               title: d.title,
               company: d.contact?.company || d.contact?.name || 'Cliente',
@@ -1469,37 +1483,37 @@ export default function DashboardPage() {
               curve: d.contact?.curve || 'D',
               date: d.created_at
             }))
-            openDrillDown('EM NEGOCIAÇÃO / PIPELINE', 'Oportunidades ativas em andamento nas etapas do funil', items, '#f59e0b')
+            openDrillDown('LEADS / PROSPECÇÃO', 'Oportunidades em fase inicial de prospecção e qualificações (Leads e Prospect)', items, '#38bdf8')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(245,158,11,0.25)] hover:border-amber-500/50 transition-all duration-200 group select-none min-h-[110px]"
+          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(56,189,248,0.25)] hover:border-sky-500/50 transition-all duration-200 group select-none min-h-[110px]"
         >
           {/* FAIXA LATERAL ESQUERDA NEON */}
-          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#f59e0b] rounded-l-2xl z-20 shadow-[0_0_10px_#f59e0b]" />
+          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#38bdf8] rounded-l-2xl z-20 shadow-[0_0_10px_#38bdf8]" />
 
           {/* MARCA D'ÁGUA 3D INTEIRA NO CANTO SUPERIOR DIREITO */}
-          <Briefcase size={40} className="absolute right-3 top-3 text-[#f59e0b] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+          <Briefcase size={40} className="absolute right-3 top-3 text-[#38bdf8] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
           <div className="flex items-start justify-between gap-2 z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[120px]">
-              EM NEGOCIAÇÃO
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[130px]">
+              LEADS / PROSPECÇÃO
             </span>
           </div>
 
           <div className="my-2.5 z-10">
-            <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-amber-400 transition-colors">
-              {formatCompactCurrency(kpis.openR$)}
+            <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-sky-400 transition-colors">
+              {formatCompactCurrency(kpis.leadsR$)}
             </div>
           </div>
 
           <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] z-10">
-            <strong className="text-[var(--white)] font-bold">{kpis.openQtd}</strong> negócios no funil
+            <strong className="text-[var(--white)] font-bold">{kpis.leadsQtd}</strong> negócios no funil
           </div>
         </div>
 
-        {/* CARD 2: OPORTUNIDADES APROVADAS */}
+        {/* CARD 2: ORÇAMENTO / NEGOCIAÇÃO */}
         <div 
           onClick={() => {
-            const items: DrillDownItem[] = kpis.approvedDealsList.map(d => ({
+            const items: DrillDownItem[] = kpis.negDealsList.map(d => ({
               id: d.id,
               title: d.title,
               company: d.contact?.company || d.contact?.name || 'Cliente',
@@ -1510,30 +1524,30 @@ export default function DashboardPage() {
               curve: d.contact?.curve || 'C',
               date: d.created_at
             }))
-            openDrillDown('OPORTUNIDADES APROVADAS', 'Negócios em fase de briefing, orçamento e aprovação final', items, '#06b6d4')
+            openDrillDown('ORÇAMENTO / NEGOCIAÇÃO', 'Oportunidades ativas em fase de orçamento e negociação comercial', items, '#f59e0b')
           }}
-          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(6,182,212,0.25)] hover:border-cyan-500/50 transition-all duration-200 group select-none min-h-[110px]"
+          className="card bg-[var(--card)] border border-[var(--line)] pl-5 pr-4 py-4.5 rounded-2xl flex flex-col justify-between relative overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(245,158,11,0.25)] hover:border-amber-500/50 transition-all duration-200 group select-none min-h-[110px]"
         >
           {/* FAIXA LATERAL ESQUERDA NEON */}
-          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#06b6d4] rounded-l-2xl z-20 shadow-[0_0_10px_#06b6d4]" />
+          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#f59e0b] rounded-l-2xl z-20 shadow-[0_0_10px_#f59e0b]" />
 
           {/* MARCA D'ÁGUA 3D INTEIRA NO CANTO SUPERIOR DIREITO */}
-          <CheckCircle2 size={40} className="absolute right-3 top-3 text-[#06b6d4] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
+          <CheckCircle2 size={40} className="absolute right-3 top-3 text-[#f59e0b] opacity-25 pointer-events-none group-hover:scale-110 group-hover:opacity-40 transition-all duration-300 z-0" />
 
           <div className="flex items-start justify-between gap-2 z-10">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[120px]">
-              APROVAÇÃO / BRIEFING
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--gray2)] leading-tight max-w-[140px]">
+              ORÇAMENTO / NEGOCIAÇÃO
             </span>
           </div>
 
           <div className="my-2.5 z-10">
-            <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-cyan-400 transition-colors">
-              {formatCompactCurrency(kpis.approvedR$)}
+            <div className="text-xl sm:text-2xl font-mono font-black text-[var(--white)] tracking-tight group-hover:text-amber-400 transition-colors">
+              {formatCompactCurrency(kpis.negR$)}
             </div>
           </div>
 
           <div className="pt-2 border-t border-[var(--line)]/50 text-[11px] font-mono text-[var(--gray2)] z-10">
-            <strong className="text-[var(--white)] font-bold">{kpis.approvedQtd}</strong> propostas aprovadas
+            <strong className="text-[var(--white)] font-bold">{kpis.negQtd}</strong> propostas em negociação
           </div>
         </div>
 
@@ -2027,8 +2041,8 @@ export default function DashboardPage() {
           <div className="flex items-center justify-center pt-1.5 text-[10px] font-mono text-[var(--gray2)]">
             <div className="flex items-center justify-center gap-4 w-full text-[9px] sm:text-[10px]">
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#10b981] shadow-sm" /> Fechado</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm" /> Negociação</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-sm" /> Aprovação</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b] shadow-sm" /> Orçamento / Negociação</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#38bdf8] shadow-sm" /> Leads / Prospecção</span>
             </div>
           </div>
         </div>

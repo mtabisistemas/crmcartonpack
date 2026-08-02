@@ -5,6 +5,8 @@ export type UserRole = 'admin' | 'gestor' | 'vendedor' | 'representante' | 'fina
 export type DealStage =
   | 'leads'
   | 'prospect'
+  | 'orcamento'
+  | 'negociacao'
   | 'dinamica'
   | 'potencial'
   | 'visita'
@@ -212,6 +214,8 @@ export const ACTIVE_STAGES: DealStage[] = [
 export const STAGE_CONFIG: Record<DealStage, { label: string; color: string; icon: any; showValue: boolean }> = {
   leads:      { label: 'Leads / Banco',  color: '#555555', icon: Target, showValue: false },
   prospect:   { label: 'Prospect',        color: '#3b82f6', icon: Radio, showValue: false },
+  orcamento:  { label: 'Orçamento',      color: '#f97316', icon: FileText, showValue: true  },
+  negociacao: { label: 'Negociação',     color: '#f0c419', icon: Briefcase, showValue: true },
   briefing:   { label: 'Orçamento',      color: '#f97316', icon: FileText, showValue: true  },
   potencial:  { label: 'Negociação',     color: '#f0c419', icon: Briefcase, showValue: true },
   pedido:     { label: 'Pedido Fechado',  color: '#10b981', icon: CheckCircle, showValue: true  },
