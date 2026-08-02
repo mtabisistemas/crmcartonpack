@@ -1132,7 +1132,7 @@ export default function DiarioDeBordoPage() {
       {/* ========================================================
           2.5. GRÁFICO DE ACOMPANHAMENTO DIÁRIO DE ATIVIDADES (VISITAS X CONTATOS)
          ======================================================== */}
-      <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-4 relative overflow-hidden select-none">
+      <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-4 relative overflow-hidden select-none shrink-0 min-h-[360px]">
         
         {/* Cabeçalho do Gráfico */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
