@@ -663,7 +663,7 @@ export default function DiarioDeBordoPage() {
         const dayStr = String(day).padStart(2, '0')
         const monthStr = String(currentMonth + 1).padStart(2, '0')
         const fullDateStr = `${dayStr}/${monthStr}/${currentYear}`
-        const label = `${dayStr}/${monthStr}`
+        const label = String(day)
 
         const dayApts = filteredApts.filter(a => {
           if (!a.date) return false
@@ -718,7 +718,7 @@ export default function DiarioDeBordoPage() {
         })
       }
     } else if (activityChartViewMode === 'semanal') {
-      const weekLabels = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5']
+      const weekLabels = ['SEM 1', 'SEM 2', 'SEM 3', 'SEM 4', 'SEM 5']
       const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
 
       weekLabels.forEach((wLabel, wIdx) => {
@@ -780,6 +780,7 @@ export default function DiarioDeBordoPage() {
       })
     } else {
       // Mensal
+      const yearShort = selectedYear.substring(2)
       MONTH_NAMES.forEach((mName, mIdx) => {
         const monthApts = filteredApts.filter(a => {
           if (!a.date) return false
@@ -826,7 +827,7 @@ export default function DiarioDeBordoPage() {
         })
 
         slots.push({
-          label: mName.substring(0, 3).toUpperCase(),
+          label: `${mName.substring(0, 3).toUpperCase()}/${yearShort}`,
           dateStr: `${mName} de ${currentYear}`,
           visitsCount: visits,
           contactsCount: contacts,
@@ -1303,45 +1304,25 @@ export default function DiarioDeBordoPage() {
             <div className="border-b border-white w-full" />
           </div>
 
-          {/* LINHA PONTILHADA DA META DE VISITAS (ROXO) */}
-          {pacingMetrics.hasVisitsGoal && activityChartData.visitsTarget > 0 && (() => {
-            const vPct = Math.min(90, Math.max(8, Math.round((activityChartData.visitsTarget / activityChartData.maxActivityVal) * 100)))
-            const isHigh = vPct > 65
-            return (
-              <div
-                className="absolute inset-x-0 border-b-2 border-dashed border-purple-500/80 z-20 pointer-events-none transition-all duration-300 flex items-center justify-end pr-3"
-                style={{ bottom: `${vPct}%` }}
-              >
-                <span className={`bg-purple-950/90 text-purple-300 text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-purple-500/40 shadow-sm ${
-                  isHigh ? 'mt-4' : '-mt-5'
-                }`}>
+          {/* LINHA PONTILHADA DA META (100% - TOPO DO GRÁFICO) */}
+          <div className="absolute inset-x-0 top-7 border-b-2 border-dashed border-slate-600/80 z-20 pointer-events-none flex items-center justify-end pr-3">
+            <div className="flex items-center gap-2 -mt-4">
+              {pacingMetrics.hasVisitsGoal && activityChartData.visitsTarget > 0 && (
+                <span className="bg-purple-950/90 text-purple-300 text-[8px] sm:text-[9px] font-mono font-bold px-2 py-0.5 rounded-md border border-purple-500/40 shadow-sm">
                   Meta Visitas: {activityChartData.visitsTarget}
                 </span>
-              </div>
-            )
-          })()}
-
-          {/* LINHA PONTILHADA DA META DE CONTATOS (VERDE) */}
-          {pacingMetrics.hasContactsGoal && activityChartData.contactsTarget > 0 && (() => {
-            const cPct = Math.min(90, Math.max(8, Math.round((activityChartData.contactsTarget / activityChartData.maxActivityVal) * 100)))
-            const isHigh = cPct > 65
-            return (
-              <div
-                className="absolute inset-x-0 border-b-2 border-dashed border-emerald-500/80 z-20 pointer-events-none transition-all duration-300 flex items-center justify-end pr-3"
-                style={{ bottom: `${cPct}%` }}
-              >
-                <span className={`bg-emerald-950/90 text-emerald-300 text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-emerald-500/40 shadow-sm ${
-                  isHigh ? 'mt-4' : '-mt-5'
-                }`}>
+              )}
+              {pacingMetrics.hasContactsGoal && activityChartData.contactsTarget > 0 && (
+                <span className="bg-emerald-950/90 text-emerald-300 text-[8px] sm:text-[9px] font-mono font-bold px-2 py-0.5 rounded-md border border-emerald-500/40 shadow-sm">
                   Meta Contatos: {activityChartData.contactsTarget}
                 </span>
-              </div>
-            )
-          })()}
+              )}
+            </div>
+          </div>
 
           {activityChartData.slots.map((item, idx) => {
-            const vPct = item.visitsCount > 0 ? Math.max(8, Math.round((item.visitsCount / activityChartData.maxActivityVal) * 100)) : 0
-            const cPct = item.contactsCount > 0 ? Math.max(8, Math.round((item.contactsCount / activityChartData.maxActivityVal) * 100)) : 0
+            const vPct = item.visitsCount > 0 ? Math.max(4, Math.min(100, Math.round((item.visitsCount / Math.max(1, activityChartData.visitsTarget)) * 100))) : 0
+            const cPct = item.contactsCount > 0 ? Math.max(4, Math.min(100, Math.round((item.contactsCount / Math.max(1, activityChartData.contactsTarget)) * 100))) : 0
 
             return (
               <div
@@ -1359,7 +1340,7 @@ export default function DiarioDeBordoPage() {
                 className={`flex-1 flex flex-col items-center justify-end h-full cursor-pointer group z-10 ${
                   activityChartViewMode === 'diario' ? 'min-w-0' : 'min-w-[24px]'
                 }`}
-                title={`${item.label}: ${item.visitsCount} Visitas | ${item.contactsCount} Contatos (Clique para ver detalhes)`}
+                title={`${item.label}: ${item.visitsCount} Visitas (${vPct}% da meta) | ${item.contactsCount} Contatos (${cPct}% da meta)`}
               >
                 {/* Dupla Barra Lado a Lado */}
                 <div className="w-full flex justify-center items-end gap-0.5 h-full">
@@ -1398,9 +1379,7 @@ export default function DiarioDeBordoPage() {
         <div className="flex justify-between gap-1 pt-2.5 pb-1 px-1 select-none">
           {activityChartData.slots.map((item, idx) => (
             <div key={idx} className="flex-1 text-center truncate">
-              <span className={`font-mono font-bold text-slate-400 group-hover:text-white transition-colors uppercase truncate inline-block ${
-                activityChartViewMode === 'diario' ? 'text-[8px] -rotate-45 origin-top-left' : 'text-[10px]'
-              }`}>
+              <span className="font-mono font-bold text-slate-400 group-hover:text-white transition-colors text-[9px] sm:text-[10px] inline-block">
                 {item.label}
               </span>
             </div>
