@@ -835,15 +835,11 @@ export default function DiarioDeBordoPage() {
       })
     }
 
-    const targetMax = Math.max(
-      currentMonthGoal.hasVisitsGoal ? visitsTarget : 0,
-      currentMonthGoal.hasContactsGoal ? contactsTarget : 0
-    )
-    const maxVal = Math.max(1, targetMax, ...slots.map(s => Math.max(s.visitsCount, s.contactsCount)))
+    const maxActivityVal = Math.max(1, ...slots.map(s => Math.max(s.visitsCount, s.contactsCount)))
 
     return {
       slots,
-      maxVal,
+      maxActivityVal,
       visitsTarget,
       contactsTarget
     }
@@ -1308,32 +1304,44 @@ export default function DiarioDeBordoPage() {
           </div>
 
           {/* LINHA PONTILHADA DA META DE VISITAS (ROXO) */}
-          {pacingMetrics.hasVisitsGoal && activityChartData.visitsTarget > 0 && (
-            <div
-              className="absolute inset-x-0 border-b-2 border-dashed border-purple-500/80 z-20 pointer-events-none transition-all duration-300 flex items-center justify-end pr-3"
-              style={{ bottom: `${Math.min(95, Math.max(5, Math.round((activityChartData.visitsTarget / activityChartData.maxVal) * 100)))}%` }}
-            >
-              <span className="bg-purple-950/90 text-purple-300 text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-purple-500/40 shadow-sm -mt-4">
-                Meta Visitas: {activityChartData.visitsTarget}
-              </span>
-            </div>
-          )}
+          {pacingMetrics.hasVisitsGoal && activityChartData.visitsTarget > 0 && (() => {
+            const vPct = Math.min(90, Math.max(8, Math.round((activityChartData.visitsTarget / activityChartData.maxActivityVal) * 100)))
+            const isHigh = vPct > 65
+            return (
+              <div
+                className="absolute inset-x-0 border-b-2 border-dashed border-purple-500/80 z-20 pointer-events-none transition-all duration-300 flex items-center justify-end pr-3"
+                style={{ bottom: `${vPct}%` }}
+              >
+                <span className={`bg-purple-950/90 text-purple-300 text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-purple-500/40 shadow-sm ${
+                  isHigh ? 'mt-4' : '-mt-5'
+                }`}>
+                  Meta Visitas: {activityChartData.visitsTarget}
+                </span>
+              </div>
+            )
+          })()}
 
           {/* LINHA PONTILHADA DA META DE CONTATOS (VERDE) */}
-          {pacingMetrics.hasContactsGoal && activityChartData.contactsTarget > 0 && (
-            <div
-              className="absolute inset-x-0 border-b-2 border-dashed border-emerald-500/80 z-20 pointer-events-none transition-all duration-300 flex items-center justify-end pr-3"
-              style={{ bottom: `${Math.min(95, Math.max(5, Math.round((activityChartData.contactsTarget / activityChartData.maxVal) * 100)))}%` }}
-            >
-              <span className="bg-emerald-950/90 text-emerald-300 text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-emerald-500/40 shadow-sm -mt-4">
-                Meta Contatos: {activityChartData.contactsTarget}
-              </span>
-            </div>
-          )}
+          {pacingMetrics.hasContactsGoal && activityChartData.contactsTarget > 0 && (() => {
+            const cPct = Math.min(90, Math.max(8, Math.round((activityChartData.contactsTarget / activityChartData.maxActivityVal) * 100)))
+            const isHigh = cPct > 65
+            return (
+              <div
+                className="absolute inset-x-0 border-b-2 border-dashed border-emerald-500/80 z-20 pointer-events-none transition-all duration-300 flex items-center justify-end pr-3"
+                style={{ bottom: `${cPct}%` }}
+              >
+                <span className={`bg-emerald-950/90 text-emerald-300 text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-emerald-500/40 shadow-sm ${
+                  isHigh ? 'mt-4' : '-mt-5'
+                }`}>
+                  Meta Contatos: {activityChartData.contactsTarget}
+                </span>
+              </div>
+            )
+          })()}
 
           {activityChartData.slots.map((item, idx) => {
-            const vPct = Math.round((item.visitsCount / activityChartData.maxVal) * 100)
-            const cPct = Math.round((item.contactsCount / activityChartData.maxVal) * 100)
+            const vPct = item.visitsCount > 0 ? Math.max(8, Math.round((item.visitsCount / activityChartData.maxActivityVal) * 100)) : 0
+            const cPct = item.contactsCount > 0 ? Math.max(8, Math.round((item.contactsCount / activityChartData.maxActivityVal) * 100)) : 0
 
             return (
               <div
@@ -1364,7 +1372,7 @@ export default function DiarioDeBordoPage() {
                     )}
                     <div
                       className="bg-gradient-to-t from-[#7c3aed] via-[#8b5cf6] to-[#a855f7] rounded-t-md transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_12px_rgba(139,92,246,0.6)] w-full"
-                      style={{ height: item.visitsCount > 0 ? `${Math.max(8, vPct)}%` : '0%' }}
+                      style={{ height: item.visitsCount > 0 ? `${vPct}%` : '0%' }}
                     />
                   </div>
 
@@ -1377,7 +1385,7 @@ export default function DiarioDeBordoPage() {
                     )}
                     <div
                       className="bg-gradient-to-t from-[#059669] via-[#10b981] to-[#34d399] rounded-t-md transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_12px_rgba(16,185,129,0.6)] w-full"
-                      style={{ height: item.contactsCount > 0 ? `${Math.max(8, cPct)}%` : '0%' }}
+                      style={{ height: item.contactsCount > 0 ? `${cPct}%` : '0%' }}
                     />
                   </div>
                 </div>
@@ -1386,14 +1394,14 @@ export default function DiarioDeBordoPage() {
           })}
         </div>
 
-        {/* Eixo X com Rótulos sem Rotação Cortada (100% Visíveis) */}
-        <div className="flex justify-between gap-1 pt-2 pb-1 px-1 select-none min-h-[28px]">
+        {/* RÓTULOS DOS MESES / DIAS POSICIONADOS EXCLUSIVAMENTE ABAIXO DO EIXO X (IDÊNTICOS AO DASHBOARD) */}
+        <div className="flex justify-between gap-1 pt-2.5 pb-1 px-1 select-none">
           {activityChartData.slots.map((item, idx) => (
             <div key={idx} className="flex-1 text-center truncate">
               <span className={`font-mono font-bold text-slate-400 group-hover:text-white transition-colors uppercase truncate inline-block ${
-                activityChartViewMode === 'diario' ? 'text-[8px] sm:text-[9px]' : 'text-[9px] sm:text-[10px]'
+                activityChartViewMode === 'diario' ? 'text-[8px] -rotate-45 origin-top-left' : 'text-[10px]'
               }`}>
-                {activityChartViewMode === 'diario' ? item.label.split('/')[0] : item.label}
+                {item.label}
               </span>
             </div>
           ))}
