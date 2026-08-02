@@ -399,6 +399,7 @@ function ContactDrawer({
   const [status, setStatus] = useState<'ativo' | 'inativo' | 'prospeccao'>('ativo')
   const [bairro, setBairro] = useState('')
   const [cep, setCep] = useState('')
+  const [codCliente, setCodCliente] = useState('')
   const [sideActivities, setSideActivities] = useState<{id: string; text: string}[]>([])
   const [showSideActivities, setShowSideActivities] = useState(false)
   
@@ -482,6 +483,7 @@ function ContactDrawer({
       setCompany(contact.company)
       setTradeName(contact.tradeName ?? '')
       setCnpj(contact.cnpj)
+      setCodCliente((contact as any)?.cod_cliente ?? (contact as any)?.client_code ?? '')
       setCurve(contact.curve)
       setRepresentative(contact.representative)
       setPhone(contact.phone)
@@ -712,6 +714,8 @@ function ContactDrawer({
 
     await onUpdateContact({
       ...contact,
+      cod_cliente: codCliente,
+      client_code: codCliente,
       name,
       company,
       tradeName,
@@ -1070,8 +1074,21 @@ function ContactDrawer({
                       </div>
                     </div>
 
-                    {/* CNPJ + Telefone + Email */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {/* CÓD. CLIENTE + CNPJ + Telefone + Email */}
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center justify-between h-5">
+                          <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">CÓD. CLIENTE</label>
+                        </div>
+                        <input 
+                          type="text" 
+                          className="input text-xs py-1 px-2.5 font-mono font-bold text-[var(--lime)] bg-[var(--lime)]/10 border-[var(--lime)]/30" 
+                          placeholder="Ex: 11250"
+                          value={codCliente}
+                          onChange={(e) => setCodCliente(e.target.value)}
+                        />
+                      </div>
+
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center justify-between h-5">
                           <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">CNPJ</label>
