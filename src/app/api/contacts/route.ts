@@ -47,6 +47,8 @@ export async function GET() {
       return {
         ...item,
         name: cleanName,
+        cod_cliente: notesObj.cod_cliente || notesObj.client_code || item.cod_cliente || item.client_code || '',
+        client_code: notesObj.client_code || notesObj.cod_cliente || item.cod_cliente || item.client_code || '',
         projectedPurchaseValue: notesObj.projectedPurchaseValue ?? item.projected_purchase_value ?? 0,
         purchaseFrequencyDays: notesObj.purchaseFrequencyDays ?? item.purchase_frequency_days ?? 30,
         lastPurchaseDate: notesObj.lastPurchaseDate || item.last_purchase_date || '',
@@ -149,6 +151,8 @@ export async function POST(req: Request) {
 
     const mergedNotesObj = {
       ...existingNotesObj,
+      cod_cliente: contact.cod_cliente || contact.client_code || existingNotesObj.cod_cliente || existingNotesObj.client_code || '',
+      client_code: contact.cod_cliente || contact.client_code || existingNotesObj.cod_cliente || existingNotesObj.client_code || '',
       projectedPurchaseValue: contact.projectedPurchaseValue ?? existingNotesObj.projectedPurchaseValue ?? 0,
       purchaseFrequencyDays: contact.purchaseFrequencyDays ?? existingNotesObj.purchaseFrequencyDays ?? 30,
       lastPurchaseDate: contact.lastPurchaseDate || existingNotesObj.lastPurchaseDate || '',

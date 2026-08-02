@@ -57760,7 +57760,9 @@
         "payment_terms": "30/60/90 Dias"
       }
     ],
-    "lastPurchaseDate": "2021-01-12"
+    "lastPurchaseDate": "2021-01-12",
+    "cod_cliente": "320",
+    "client_code": "320"
   },
   {
     "id": "b7882487-e1cc-4ae2-813b-564280056780",
@@ -76812,8 +76814,8 @@
       }
     ],
     "lastPurchaseDate": "2025-05-16",
-    "cod_cliente": "8616",
-    "client_code": "8616"
+    "cod_cliente": "11103",
+    "client_code": "11103"
   },
   {
     "id": "7a6fd348-3d45-492a-8b94-920f91ab7ba1",
@@ -81926,8 +81928,8 @@
       }
     ],
     "lastPurchaseDate": "2025-03-18",
-    "cod_cliente": "8616",
-    "client_code": "8616"
+    "cod_cliente": "11103",
+    "client_code": "11103"
   },
   {
     "id": "50ce97e8-ee4e-42e5-bce6-d8b42d5517c3",
@@ -83143,8 +83145,8 @@
       }
     ],
     "lastPurchaseDate": "2026-02-11",
-    "cod_cliente": "6982",
-    "client_code": "6982"
+    "cod_cliente": "12248",
+    "client_code": "12248"
   },
   {
     "id": "0cf06572-6b70-4a1c-945e-867556f4305a",
@@ -103503,7 +103505,9 @@
         "payment_terms": "30/60/90 Dias"
       }
     ],
-    "lastPurchaseDate": "2024-04-11"
+    "lastPurchaseDate": "2024-04-11",
+    "cod_cliente": "5912",
+    "client_code": "5912"
   },
   {
     "id": "95459f1e-7393-4f3a-946f-346334d13280",
