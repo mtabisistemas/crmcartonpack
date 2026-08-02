@@ -944,8 +944,18 @@ export default function DiarioDeBordoPage() {
       })
     })
 
-    return list.sort((a, b) => b.visits - a.visits)
+    return list
   }, [availableReps, usersList, goalsMap, appointments, filteredContacts, selectedYear, selectedMonth])
+
+  // Ranking ordenado de visitas (decrescente)
+  const visitsSortedReps = useMemo(() => {
+    return [...repsPerformance].sort((a, b) => b.visits - a.visits)
+  }, [repsPerformance])
+
+  // Ranking ordenado de contatos (decrescente)
+  const contactsSortedReps = useMemo(() => {
+    return [...repsPerformance].sort((a, b) => b.contacts - a.contacts)
+  }, [repsPerformance])
 
   // Stagnant Deals (>7 days)
   const dealAlerts = useMemo(() => {
@@ -1386,8 +1396,8 @@ export default function DiarioDeBordoPage() {
           </div>
         </div>
 
-        {/* GRID DE 2 CARDS DEDICADOS (VISITAS E CONTATOS) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 shrink-0">
+        {/* CARDS DEDICADOS EMPILHADOS UM ABAIXO DO OUTRO */}
+        <div className="flex flex-col gap-5 shrink-0">
           
           {/* CARD 1: VISITAS PRESENCIAIS & REUNIÕES (ROXO) */}
           <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-4 relative overflow-hidden select-none shrink-0 min-h-[360px]">
@@ -1480,16 +1490,16 @@ export default function DiarioDeBordoPage() {
                 </div>
               </div>
 
-              {/* Ranking Lateral de Reps (Visitas) */}
-              <div className="w-full xl:w-52 shrink-0 border-t xl:border-t-0 xl:border-l border-[var(--line)] pt-3 xl:pt-0 xl:pl-4 flex flex-col gap-2">
+              {/* Ranking Lateral de Reps (Visitas Ordenadas Decrescente) */}
+              <div className="w-full xl:w-56 shrink-0 border-t xl:border-t-0 xl:border-l border-[var(--line)] pt-3 xl:pt-0 xl:pl-4 flex flex-col gap-2">
                 <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-purple-400 block border-b border-[var(--line)] pb-1">
-                  Visitas por Vendedor
+                  Visitas por Vendedor (Ranking)
                 </span>
                 <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-                  {repsPerformance.map(rep => (
+                  {visitsSortedReps.map(rep => (
                     <div key={rep.id} className="flex flex-col gap-1 text-xs font-mono">
                       <div className="flex justify-between items-center text-[11px]">
-                        <span className="font-bold text-white truncate max-w-[120px]">{rep.name}</span>
+                        <span className="font-bold text-white truncate max-w-[130px]">{rep.name}</span>
                         <span className="text-purple-400 font-bold">{rep.visits} <span className="text-[9px] text-[var(--gray2)]">/ {rep.visitsGoal}</span></span>
                       </div>
                       <div className="w-full h-1.5 bg-[#090d16] rounded-full overflow-hidden border border-[var(--line)]">
@@ -1598,16 +1608,16 @@ export default function DiarioDeBordoPage() {
                 </div>
               </div>
 
-              {/* Ranking Lateral de Reps (Contatos) */}
-              <div className="w-full xl:w-52 shrink-0 border-t xl:border-t-0 xl:border-l border-[var(--line)] pt-3 xl:pt-0 xl:pl-4 flex flex-col gap-2">
+              {/* Ranking Lateral de Reps (Contatos Ordenados Decrescente) */}
+              <div className="w-full xl:w-56 shrink-0 border-t xl:border-t-0 xl:border-l border-[var(--line)] pt-3 xl:pt-0 xl:pl-4 flex flex-col gap-2">
                 <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 block border-b border-[var(--line)] pb-1">
-                  Contatos por Vendedor
+                  Contatos por Vendedor (Ranking)
                 </span>
                 <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-                  {repsPerformance.map(rep => (
+                  {contactsSortedReps.map(rep => (
                     <div key={rep.id} className="flex flex-col gap-1 text-xs font-mono">
                       <div className="flex justify-between items-center text-[11px]">
-                        <span className="font-bold text-white truncate max-w-[120px]">{rep.name}</span>
+                        <span className="font-bold text-white truncate max-w-[130px]">{rep.name}</span>
                         <span className="text-emerald-400 font-bold">{rep.contacts} <span className="text-[9px] text-[var(--gray2)]">/ {rep.contactsGoal}</span></span>
                       </div>
                       <div className="w-full h-1.5 bg-[#090d16] rounded-full overflow-hidden border border-[var(--line)]">
