@@ -324,9 +324,41 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
           }
         } catch (e) {}
 
+        // Load agenda appointments for this deal/company
+        let aptActs: Activity[] = []
+        try {
+          const rawApts = typeof window !== 'undefined' ? localStorage.getItem('cp_crm_appointments') : null
+          if (rawApts) {
+            const apts = JSON.parse(rawApts)
+            if (Array.isArray(apts)) {
+              apts.forEach((a: any) => {
+                const aComp = (a.company_name || a.contact_name || a.deal_title || '').trim().toLowerCase()
+                const matchesDealId = a.deal_id === deal.id
+                const matchesComp = searchCompany && aComp && (aComp === searchCompany || searchCompany.includes(aComp) || aComp.includes(searchCompany))
+                if (matchesDealId || matchesComp) {
+                  const typeIcon: Activity['type'] = a.type === 'visita' ? 'reuniao' : a.type === 'ligacao' ? 'ligacao' : a.type === 'email' ? 'email' : 'reuniao'
+                  const statusLabel = a.status === 'concluido' ? 'CONCLUÍDO' : a.status === 'cancelado' ? 'CANCELADO' : 'AGENDADO'
+                  const dateParts = a.date ? a.date.split('-').reverse().join('/') : ''
+                  const timestampStr = `${dateParts} ${a.time || ''}`.trim() || a.created_at || '01/01/2026'
+
+                  aptActs.push({
+                    id: `apt_act_${a.id}_${a.status}`,
+                    type: typeIcon,
+                    content: `Compromisso da Agenda (${(a.type || 'visita').toUpperCase()}) [${statusLabel}]: ${a.title || 'Visita/Reunião'}${a.notes ? ` — ${a.notes}` : ''}`,
+                    timestamp: timestampStr,
+                    user_name: 'Agenda Comercial',
+                    author: 'Agenda Comercial'
+                  } as any)
+                }
+              })
+            }
+          }
+        } catch (e) {}
+
         const mergedMap = new Map<string, Activity>()
         dealActs.forEach(a => mergedMap.set(a.id, a))
         contactActs.forEach(a => mergedMap.set(a.id, a))
+        aptActs.forEach(a => mergedMap.set(a.id, a))
 
         const merged = Array.from(mergedMap.values()).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
         setActivities(merged)
@@ -337,6 +369,7 @@ export function DealDrawer({ deal, onClose, onUpdateDeal, onDeleteDeal, onOpenCa
       if (typeof window !== 'undefined') {
         window.addEventListener('storage-contacts-changed', loadAllActivities)
         window.addEventListener('storage-deals-changed', loadAllActivities)
+        window.addEventListener('storage-appointments-changed', loadAllActivities)
       }
 
       // Load deal appointments

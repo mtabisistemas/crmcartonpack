@@ -628,9 +628,39 @@ function ContactDrawer({
             })
           }
 
+          // ── AGENDA APPOINTMENTS CONVERTED TO TIMELINE ACTIVITIES ──
+          let aptActs: Activity[] = []
+          const rawApts = localStorage.getItem('cp_crm_appointments')
+          if (rawApts) {
+            const apts = JSON.parse(rawApts)
+            if (Array.isArray(apts)) {
+              apts.forEach((a: any) => {
+                const aComp = (a.company_name || a.contact_name || a.deal_title || '').trim().toLowerCase()
+                const targetComp = (contact.company || contact.name || '').trim().toLowerCase()
+                
+                if (aComp && targetComp && (aComp === targetComp || targetComp.includes(aComp) || aComp.includes(targetComp))) {
+                  const typeIcon: Activity['type'] = a.type === 'visita' ? 'reuniao' : a.type === 'ligacao' ? 'ligacao' : a.type === 'email' ? 'email' : 'reuniao'
+                  const statusLabel = a.status === 'concluido' ? 'CONCLUÍDO' : a.status === 'cancelado' ? 'CANCELADO' : 'AGENDADO'
+                  const dateParts = a.date ? a.date.split('-').reverse().join('/') : ''
+                  const timestampStr = `${dateParts} ${a.time || ''}`.trim() || a.created_at || '01/01/2026'
+                  
+                  aptActs.push({
+                    id: `apt_act_${a.id}_${a.status}`,
+                    type: typeIcon,
+                    content: `Compromisso da Agenda (${(a.type || 'visita').toUpperCase()}) [${statusLabel}]: ${a.title || 'Visita/Reunião'}${a.notes ? ` — ${a.notes}` : ''}`,
+                    timestamp: timestampStr,
+                    user_name: 'Agenda Comercial',
+                    author: 'Agenda Comercial'
+                  } as any)
+                }
+              })
+            }
+          }
+
           const mergedMap = new Map<string, Activity>()
           contactActs.forEach(a => mergedMap.set(a.id, a))
           dealActs.forEach(a => mergedMap.set(a.id, a))
+          aptActs.forEach(a => mergedMap.set(a.id, a))
 
           const merged = Array.from(mergedMap.values()).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
           setActivities(merged)
@@ -644,6 +674,7 @@ function ContactDrawer({
       if (typeof window !== 'undefined') {
         window.addEventListener('storage-contacts-changed', loadContactActivities)
         window.addEventListener('storage-deals-changed', loadContactActivities)
+        window.addEventListener('storage-appointments-changed', loadContactActivities)
       }
     } else {
       setIsOpen(false)
