@@ -43,6 +43,18 @@ function formatCurrency(val: number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
 }
 
+function getBusinessDaysInMonth(year: number, month: number): number {
+  const totalDays = new Date(year, month + 1, 0).getDate()
+  let count = 0
+  for (let d = 1; d <= totalDays; d++) {
+    const dayOfWeek = new Date(year, month, d).getDay()
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      count++
+    }
+  }
+  return count || 21
+}
+
 // Calculate business days in current month and remaining business days
 function getBusinessDaysStats() {
   const now = new Date()
@@ -103,6 +115,10 @@ const MONTH_NAMES = [
 ]
 
 export default function DiarioDeBordoPage() {
+  const now = new Date()
+  const [selectedYear, setSelectedYear] = useState<string>(String(now.getFullYear()))
+  const [selectedMonth, setSelectedMonth] = useState<string>(String(now.getMonth() + 1).padStart(2, '0'))
+
   const [currentUser, setCurrentUser] = useState<any | null>(null)
   const [userFilter, setUserFilter] = useState<string>('all')
   const [usersList, setUsersList] = useState<any[]>([])
@@ -345,14 +361,52 @@ export default function DiarioDeBordoPage() {
     })
   }, [appointments, todayStr, userFilter, usersList, isAdminOrManager, currentUser?.name])
 
-  // Business Days Stats
-  const bizStats = useMemo(() => getBusinessDaysStats(), [])
+  // Business Days Stats para o Mês e Ano selecionados
+  const bizStats = useMemo(() => {
+    const y = parseInt(selectedYear, 10) || new Date().getFullYear()
+    const m = parseInt(selectedMonth, 10) - 1
+    const totalBusinessDays = getBusinessDaysInMonth(y, m)
+    
+    const now = new Date()
+    const isCurrentMonth = y === now.getFullYear() && m === now.getMonth()
+    
+    let elapsedBusinessDays = totalBusinessDays
+    let remainingBusinessDays = 0
+    let todayDate = new Date(y, m + 1, 0).getDate()
+    
+    if (isCurrentMonth) {
+      todayDate = now.getDate()
+      let elapsed = 0
+      const date = new Date(y, m, 1)
+      while (date.getDate() <= todayDate && date.getMonth() === m) {
+        const dayOfWeek = date.getDay()
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          elapsed++
+        }
+        date.setDate(date.getDate() + 1)
+      }
+      elapsedBusinessDays = Math.min(totalBusinessDays, Math.max(1, elapsed))
+      remainingBusinessDays = Math.max(0, totalBusinessDays - elapsedBusinessDays)
+    } else if (y > now.getFullYear() || (y === now.getFullYear() && m > now.getMonth())) {
+      elapsedBusinessDays = 0
+      remainingBusinessDays = totalBusinessDays
+      todayDate = 1
+    }
+
+    return {
+      totalDays: new Date(y, m + 1, 0).getDate(),
+      todayDate,
+      totalBusinessDays,
+      elapsedBusinessDays,
+      remainingBusinessDays,
+      monthName: MONTH_NAMES[m] || 'Mês'
+    }
+  }, [selectedYear, selectedMonth])
 
   // Calculate Meta & Sales Goal for selected Month/Year
   const currentMonthGoal = useMemo(() => {
-    const now = new Date()
-    const yearStr = String(now.getFullYear())
-    const monthStr = String(now.getMonth() + 1).padStart(2, '0')
+    const yearStr = selectedYear
+    const monthStr = selectedMonth
 
     const activeFilter = ((!isAdminOrManager && currentUser?.name) ? currentUser.name : userFilter).toLowerCase().trim()
 
@@ -456,25 +510,24 @@ export default function DiarioDeBordoPage() {
       hasVisitsGoal: userHasVisitsGoal,
       hasContactsGoal: userHasContactsGoal
     }
-  }, [goalsMap, userFilter, availableReps, isAdminOrManager, currentUser?.name])
+  }, [goalsMap, userFilter, availableReps, isAdminOrManager, currentUser?.name, selectedYear, selectedMonth])
 
   // 1. Pacing & Goal Calculations (Unified with Dashboard)
   const pacingMetrics = useMemo(() => {
-    const now = new Date()
-    const currentMonthStr = String(now.getMonth() + 1).padStart(2, '0')
-    const currentYearStr = String(now.getFullYear())
+    const currentMonthStr = selectedMonth
+    const currentYearStr = selectedYear
+    const selYearNum = parseInt(selectedYear, 10)
+    const selMonthNum = parseInt(selectedMonth, 10) - 1
 
     let totalSalesAchieved = 0
 
-    // 1. Accumulate orders in current month from filteredContacts
+    // 1. Accumulate orders in selected month from filteredContacts
     filteredContacts.forEach(c => {
       if (c.orders && Array.isArray(c.orders)) {
         c.orders.forEach((o: any) => {
           if (o.date) {
-            const dt = new Date(o.date)
-            const mStr = String(dt.getMonth() + 1).padStart(2, '0')
-            const yStr = String(dt.getFullYear())
-            if (mStr === currentMonthStr && yStr === currentYearStr) {
+            const dt = parseFlexibleDate(o.date)
+            if (dt && dt.getMonth() === selMonthNum && dt.getFullYear() === selYearNum) {
               totalSalesAchieved += (Number(o.value) || 0)
             }
           }
@@ -482,15 +535,13 @@ export default function DiarioDeBordoPage() {
       }
     })
 
-    // 2. Accumulate won deals in current month from filteredDeals
+    // 2. Accumulate won deals in selected month from filteredDeals
     filteredDeals.forEach(d => {
       if (d.stage === 'fechamento' || d.stage === 'pedido') {
         const closeDate = d.closed_at || d.updated_at || d.stage_entered_at
         if (closeDate) {
-          const dt = new Date(closeDate)
-          const mStr = String(dt.getMonth() + 1).padStart(2, '0')
-          const yStr = String(dt.getFullYear())
-          if (mStr === currentMonthStr && yStr === currentYearStr) {
+          const dt = parseFlexibleDate(closeDate)
+          if (dt && dt.getMonth() === selMonthNum && dt.getFullYear() === selYearNum) {
             totalSalesAchieved += (d.final_value || d.estimated_value || 0)
           }
         }
@@ -517,15 +568,17 @@ export default function DiarioDeBordoPage() {
     // Visits calculation (Presenciais / Visitas)
     const currentMonthVisits = userAppointments.filter(a => {
       if (a.type !== 'visita' && a.type !== 'reuniao') return false
-      const dt = new Date(a.date)
-      return (dt.getMonth() + 1) === (now.getMonth() + 1) && dt.getFullYear() === now.getFullYear()
+      const dt = parseFlexibleDate(a.date)
+      if (!dt) return false
+      return dt.getMonth() === selMonthNum && dt.getFullYear() === selYearNum
     }).length
 
     // Contacts calculation (Ligações, WhatsApp, E-mails, Follow-ups)
     const currentMonthContacts = userAppointments.filter(a => {
       if (a.type === 'visita' || a.type === 'reuniao') return false
-      const dt = new Date(a.date)
-      return (dt.getMonth() + 1) === (now.getMonth() + 1) && dt.getFullYear() === now.getFullYear()
+      const dt = parseFlexibleDate(a.date)
+      if (!dt) return false
+      return dt.getMonth() === selMonthNum && dt.getFullYear() === selYearNum
     }).length
 
     return {
@@ -543,13 +596,26 @@ export default function DiarioDeBordoPage() {
       contactsTarget: currentMonthGoal.contactsGoal,
       hasContactsGoal: currentMonthGoal.hasContactsGoal
     }
-  }, [filteredContacts, filteredDeals, currentMonthGoal, bizStats, appointments, userFilter])
+  }, [filteredContacts, filteredDeals, currentMonthGoal, bizStats, appointments, userFilter, selectedYear, selectedMonth])
 
   // 1.5. Gráfico Diário de Atividades (Visitas x Contatos)
   const activityChartData = useMemo(() => {
-    const now = new Date()
-    const currentYear = now.getFullYear()
-    const currentMonth = now.getMonth()
+    const currentYear = parseInt(selectedYear, 10) || new Date().getFullYear()
+    const currentMonth = parseInt(selectedMonth, 10) - 1
+
+    let visitsTarget = 0
+    let contactsTarget = 0
+
+    if (activityChartViewMode === 'diario') {
+      visitsTarget = Math.max(1, Math.round(currentMonthGoal.visitsGoal / Math.max(1, bizStats.totalBusinessDays)))
+      contactsTarget = Math.max(1, Math.round(currentMonthGoal.contactsGoal / Math.max(1, bizStats.totalBusinessDays)))
+    } else if (activityChartViewMode === 'semanal') {
+      visitsTarget = Math.max(1, Math.round(currentMonthGoal.visitsGoal / 4.4))
+      contactsTarget = Math.max(1, Math.round(currentMonthGoal.contactsGoal / 4.4))
+    } else {
+      visitsTarget = currentMonthGoal.visitsGoal
+      contactsTarget = currentMonthGoal.contactsGoal
+    }
 
     // 1. Filtrar compromissos do usuário selecionado
     const filteredApts = appointments.filter(a => {
@@ -652,7 +718,7 @@ export default function DiarioDeBordoPage() {
         })
       }
     } else if (activityChartViewMode === 'semanal') {
-      const weekLabels = ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4', 'Semana 5']
+      const weekLabels = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5']
       const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
 
       weekLabels.forEach((wLabel, wIdx) => {
@@ -769,13 +835,19 @@ export default function DiarioDeBordoPage() {
       })
     }
 
-    const maxVal = Math.max(1, ...slots.map(s => Math.max(s.visitsCount, s.contactsCount)))
+    const targetMax = Math.max(
+      currentMonthGoal.hasVisitsGoal ? visitsTarget : 0,
+      currentMonthGoal.hasContactsGoal ? contactsTarget : 0
+    )
+    const maxVal = Math.max(1, targetMax, ...slots.map(s => Math.max(s.visitsCount, s.contactsCount)))
 
     return {
       slots,
-      maxVal
+      maxVal,
+      visitsTarget,
+      contactsTarget
     }
-  }, [appointments, filteredContacts, userFilter, usersList, activityChartViewMode])
+  }, [appointments, filteredContacts, userFilter, usersList, activityChartViewMode, selectedYear, selectedMonth, currentMonthGoal, bizStats])
 
   // Stagnant Deals (>7 days)
   const dealAlerts = useMemo(() => {
@@ -868,27 +940,63 @@ export default function DiarioDeBordoPage() {
           </h1>
         </div>
 
-        {/* Right Actions & Filter Selector (APENAS PARA GESTOR E ADMIN) */}
-        {isAdminOrManager && (
-          <div className="flex items-center gap-2 bg-[var(--charcoal)] border border-[var(--line)] px-3 py-1.5 rounded-xl ml-auto shrink-0 max-w-[200px]">
-            <Filter size={14} className="text-[var(--lime)] shrink-0" />
+        {/* Right Actions & Filter Selectors */}
+        <div className="flex flex-wrap items-center gap-2.5 ml-auto shrink-0 z-10">
+          {/* Seletor de Ano */}
+          <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl">
+            <CalendarIcon size={14} className="text-[var(--lime)] shrink-0" />
             <select
-              value={userFilter}
-              onChange={(e) => setUserFilter(e.target.value)}
-              className="w-full bg-transparent text-xs font-bold text-[var(--white)] cursor-pointer outline-none truncate"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="bg-transparent text-xs font-bold text-[var(--white)] cursor-pointer outline-none"
             >
-              <option value="all" className="bg-[var(--card)] text-[var(--white)]">Toda a Equipe</option>
-              {availableReps
-                .filter(rep => {
-                  const normR = rep.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
-                  return !normR.includes('mauricio') && !normR.includes('maciel')
-                })
-                .map(rep => (
-                  <option key={rep} value={rep} className="bg-[var(--card)] text-[var(--white)]">{rep}</option>
-                ))}
+              <option value="2024" className="bg-[var(--card)] text-[var(--white)]">2024</option>
+              <option value="2025" className="bg-[var(--card)] text-[var(--white)]">2025</option>
+              <option value="2026" className="bg-[var(--card)] text-[var(--white)]">2026</option>
+              <option value="2027" className="bg-[var(--card)] text-[var(--white)]">2027</option>
             </select>
           </div>
-        )}
+
+          {/* Seletor de Mês */}
+          <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="bg-transparent text-xs font-bold text-[var(--white)] cursor-pointer outline-none"
+            >
+              {MONTH_NAMES.map((mName, idx) => {
+                const mVal = String(idx + 1).padStart(2, '0')
+                return (
+                  <option key={mVal} value={mVal} className="bg-[var(--card)] text-[var(--white)]">
+                    {mName}
+                  </option>
+                )
+              })}
+            </select>
+          </div>
+
+          {/* Seletor de Representante (APENAS PARA GESTOR E ADMIN) */}
+          {isAdminOrManager && (
+            <div className="flex items-center gap-2 bg-[var(--charcoal)] border border-[var(--line)] px-3 py-1.5 rounded-xl max-w-[200px]">
+              <Filter size={14} className="text-[var(--lime)] shrink-0" />
+              <select
+                value={userFilter}
+                onChange={(e) => setUserFilter(e.target.value)}
+                className="w-full bg-transparent text-xs font-bold text-[var(--white)] cursor-pointer outline-none truncate"
+              >
+                <option value="all" className="bg-[var(--card)] text-[var(--white)]">Toda a Equipe</option>
+                {availableReps
+                  .filter(rep => {
+                    const normR = rep.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+                    return !normR.includes('mauricio') && !normR.includes('maciel')
+                  })
+                  .map(rep => (
+                    <option key={rep} value={rep} className="bg-[var(--card)] text-[var(--white)]">{rep}</option>
+                  ))}
+              </select>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ========================================================
@@ -1190,7 +1298,7 @@ export default function DiarioDeBordoPage() {
         </div>
 
         {/* Container do Gráfico com Barras Duplas (Visitas e Contatos lado a lado) */}
-        <div className="h-56 flex items-end justify-between gap-1 pt-6 pb-0 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
+        <div className="h-60 flex items-end justify-between gap-1 pt-8 pb-1 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
           {/* Gridlines Horizontais de Fundo */}
           <div className="absolute inset-x-0 top-3 bottom-0 flex flex-col justify-between pointer-events-none opacity-10">
             <div className="border-b border-white w-full" />
@@ -1199,10 +1307,33 @@ export default function DiarioDeBordoPage() {
             <div className="border-b border-white w-full" />
           </div>
 
+          {/* LINHA PONTILHADA DA META DE VISITAS (ROXO) */}
+          {pacingMetrics.hasVisitsGoal && activityChartData.visitsTarget > 0 && (
+            <div
+              className="absolute inset-x-0 border-b-2 border-dashed border-purple-500/80 z-20 pointer-events-none transition-all duration-300 flex items-center justify-end pr-3"
+              style={{ bottom: `${Math.min(95, Math.max(5, Math.round((activityChartData.visitsTarget / activityChartData.maxVal) * 100)))}%` }}
+            >
+              <span className="bg-purple-950/90 text-purple-300 text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-purple-500/40 shadow-sm -mt-4">
+                Meta Visitas: {activityChartData.visitsTarget}
+              </span>
+            </div>
+          )}
+
+          {/* LINHA PONTILHADA DA META DE CONTATOS (VERDE) */}
+          {pacingMetrics.hasContactsGoal && activityChartData.contactsTarget > 0 && (
+            <div
+              className="absolute inset-x-0 border-b-2 border-dashed border-emerald-500/80 z-20 pointer-events-none transition-all duration-300 flex items-center justify-end pr-3"
+              style={{ bottom: `${Math.min(95, Math.max(5, Math.round((activityChartData.contactsTarget / activityChartData.maxVal) * 100)))}%` }}
+            >
+              <span className="bg-emerald-950/90 text-emerald-300 text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-emerald-500/40 shadow-sm -mt-4">
+                Meta Contatos: {activityChartData.contactsTarget}
+              </span>
+            </div>
+          )}
+
           {activityChartData.slots.map((item, idx) => {
             const vPct = Math.round((item.visitsCount / activityChartData.maxVal) * 100)
             const cPct = Math.round((item.contactsCount / activityChartData.maxVal) * 100)
-            const hasActivity = item.visitsCount > 0 || item.contactsCount > 0
 
             return (
               <div
@@ -1222,27 +1353,28 @@ export default function DiarioDeBordoPage() {
                 }`}
                 title={`${item.label}: ${item.visitsCount} Visitas | ${item.contactsCount} Contatos (Clique para ver detalhes)`}
               >
-                {/* Indicadores de contagem no hover */}
-                {hasActivity && (
-                  <div className="flex items-center gap-0.5 mb-1 font-mono text-[8px] sm:text-[9px] font-bold z-20">
-                    {item.visitsCount > 0 && <span className="text-purple-400">{item.visitsCount}v</span>}
-                    {item.visitsCount > 0 && item.contactsCount > 0 && <span className="text-slate-600">/</span>}
-                    {item.contactsCount > 0 && <span className="text-emerald-400">{item.contactsCount}c</span>}
-                  </div>
-                )}
-
                 {/* Dupla Barra Lado a Lado */}
                 <div className="w-full flex justify-center items-end gap-0.5 h-full">
-                  {/* Barra de Visitas (Roxo) */}
-                  <div className="flex-1 flex justify-center items-end h-full">
+                  {/* Barra de Visitas (Roxo) com Rótulo Número Centralizado ACIMA */}
+                  <div className="flex-1 flex flex-col justify-end items-center h-full">
+                    {item.visitsCount > 0 && (
+                      <span className="text-[8px] sm:text-[9px] font-mono font-black text-purple-400 mb-0.5 z-20">
+                        {item.visitsCount}
+                      </span>
+                    )}
                     <div
                       className="bg-gradient-to-t from-[#7c3aed] via-[#8b5cf6] to-[#a855f7] rounded-t-md transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_12px_rgba(139,92,246,0.6)] w-full"
                       style={{ height: item.visitsCount > 0 ? `${Math.max(8, vPct)}%` : '0%' }}
                     />
                   </div>
 
-                  {/* Barra de Contatos (Verde) */}
-                  <div className="flex-1 flex justify-center items-end h-full">
+                  {/* Barra de Contatos (Verde) com Rótulo Número Centralizado ACIMA */}
+                  <div className="flex-1 flex flex-col justify-end items-center h-full">
+                    {item.contactsCount > 0 && (
+                      <span className="text-[8px] sm:text-[9px] font-mono font-black text-emerald-400 mb-0.5 z-20">
+                        {item.contactsCount}
+                      </span>
+                    )}
                     <div
                       className="bg-gradient-to-t from-[#059669] via-[#10b981] to-[#34d399] rounded-t-md transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_12px_rgba(16,185,129,0.6)] w-full"
                       style={{ height: item.contactsCount > 0 ? `${Math.max(8, cPct)}%` : '0%' }}
@@ -1254,14 +1386,14 @@ export default function DiarioDeBordoPage() {
           })}
         </div>
 
-        {/* Eixo X com os Rótulos */}
-        <div className="flex justify-between gap-1 pt-2 pb-0 px-1 select-none">
+        {/* Eixo X com Rótulos sem Rotação Cortada (100% Visíveis) */}
+        <div className="flex justify-between gap-1 pt-2 pb-1 px-1 select-none min-h-[28px]">
           {activityChartData.slots.map((item, idx) => (
             <div key={idx} className="flex-1 text-center truncate">
               <span className={`font-mono font-bold text-slate-400 group-hover:text-white transition-colors uppercase truncate inline-block ${
-                activityChartViewMode === 'diario' ? 'text-[7px] sm:text-[8px] -rotate-45 origin-top-left' : 'text-[9px]'
+                activityChartViewMode === 'diario' ? 'text-[8px] sm:text-[9px]' : 'text-[9px] sm:text-[10px]'
               }`}>
-                {item.label}
+                {activityChartViewMode === 'diario' ? item.label.split('/')[0] : item.label}
               </span>
             </div>
           ))}
