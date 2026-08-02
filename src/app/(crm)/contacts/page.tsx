@@ -3064,11 +3064,27 @@ export default function ContactsPage() {
 
               const cleanName = (item.name && item.name.toLowerCase().trim() !== item.company?.toLowerCase().trim()) ? item.name : ''
 
+              let resolvedCodCliente = notesObj.cod_cliente || notesObj.client_code || item.cod_cliente || item.client_code || ''
+              if (!resolvedCodCliente && rawImportedContacts.length > 0) {
+                const itemCnpj = (item.cnpj || '').replace(/\D/g, '')
+                const itemComp = (item.company || '').trim().toLowerCase()
+                const matchImp = rawImportedContacts.find((ic: any) => {
+                  const icCnpj = (ic.cnpj || '').replace(/\D/g, '')
+                  const icComp = (ic.company || ic.name || '').trim().toLowerCase()
+                  return (itemCnpj && icCnpj && itemCnpj === icCnpj) || (itemComp && icComp && itemComp === icComp)
+                })
+                if (matchImp && (matchImp.cod_cliente || matchImp.client_code)) {
+                  resolvedCodCliente = matchImp.cod_cliente || matchImp.client_code
+                }
+              }
+
               return {
                 id: item.id,
                 name: cleanName,
                 company: item.company || '',
                 cnpj: item.cnpj || '',
+                cod_cliente: resolvedCodCliente,
+                client_code: resolvedCodCliente,
                 curve: item.curve || 'C',
                 representative: item.representative || item.assigned_to || '',
                 phone: item.phone || '',
