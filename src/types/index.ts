@@ -71,6 +71,8 @@ export interface Contact {
   assigned_profile?: Profile
   status?: string
   cnpj?: string
+  cod_cliente?: string
+  client_code?: string
   street?: string
   complement?: string
   neighborhood?: string

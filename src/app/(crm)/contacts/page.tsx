@@ -70,6 +70,8 @@ export interface MockContact {
   name: string
   company: string
   cnpj: string
+  cod_cliente?: string
+  client_code?: string
   curve: 'A' | 'B' | 'C' | 'D'
   representative: string
   lastPurchaseDays: number
@@ -896,7 +898,14 @@ function ContactDrawer({
         <div className="p-4 px-6 border-b border-[var(--line)] flex justify-between items-center bg-[var(--card)]">
           <div>
             <h2 className="font-display text-base text-[var(--white)] font-bold">{company}</h2>
-            <span className="text-xs text-[var(--gray)] font-mono">{cnpj}</span>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-xs text-[var(--gray)] font-mono">{cnpj}</span>
+              {((contact as any)?.cod_cliente || (contact as any)?.client_code) && (
+                <span className="text-[10px] font-mono font-bold text-[var(--lime)] bg-[var(--lime)]/10 px-2 py-0.5 rounded border border-[var(--lime)]/30">
+                  CÓD: {(contact as any)?.cod_cliente || (contact as any)?.client_code}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -4200,7 +4209,14 @@ export default function ContactsPage() {
                             <div className="text-xs font-bold text-[var(--white)] flex items-center gap-2">
                               <span className="truncate" title={contact.company || contact.name}>{contact.company || contact.name}</span>
                             </div>
-                            <div className="text-[10px] text-[var(--gray)] font-mono leading-tight">{contact.cnpj || 'CNPJ não informado'}</div>
+                            <div className="text-[10px] text-[var(--gray)] font-mono leading-tight flex items-center gap-2">
+                              <span>{contact.cnpj || 'CNPJ não informado'}</span>
+                              {((contact as any)?.cod_cliente || (contact as any)?.client_code) && (
+                                <span className="text-[9px] font-mono font-bold text-[var(--lime)] bg-[var(--lime)]/10 px-1.5 py-0.2 rounded border border-[var(--lime)]/20">
+                                  CÓD: {(contact as any)?.cod_cliente || (contact as any)?.client_code}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>
