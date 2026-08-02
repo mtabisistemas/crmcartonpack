@@ -25,7 +25,8 @@ import {
   Trophy,
   AlertCircle,
   CheckCircle,
-  Phone
+  Phone,
+  BarChart3
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -96,6 +97,11 @@ function parseFlexibleDate(dateStr?: string | number | null): Date | null {
   return isNaN(d.getTime()) ? null : d
 }
 
+const MONTH_NAMES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+]
+
 export default function DiarioDeBordoPage() {
   const [currentUser, setCurrentUser] = useState<any | null>(null)
   const [userFilter, setUserFilter] = useState<string>('all')
@@ -115,6 +121,22 @@ export default function DiarioDeBordoPage() {
   // Popover state for Alertas do Dia cards
   const [activeAlertPopover, setActiveAlertPopover] = useState<'recompra15' | 'recompraAtrasada' | 'riscoInativacao' | null>(null)
   const [alertSearchTerm, setAlertSearchTerm] = useState('')
+
+  // Modo de visualização do gráfico de atividades (Diário / Semanal / Mensal)
+  const [activityChartViewMode, setActivityChartViewMode] = useState<'diario' | 'semanal' | 'mensal'>('diario')
+
+  // Modal Drill-down do Gráfico de Atividades por Dia
+  const [activityDrillDown, setActivityDrillDown] = useState<{
+    isOpen: boolean
+    title: string
+    dateLabel: string
+    items: Array<{ id: string; type: string; clientName: string; time: string; description: string; user: string }>
+  }>({
+    isOpen: false,
+    title: '',
+    dateLabel: '',
+    items: []
+  })
 
   // Fetch all data synchronously & from local storage
   const fetchData = async () => {
@@ -523,6 +545,238 @@ export default function DiarioDeBordoPage() {
     }
   }, [filteredContacts, filteredDeals, currentMonthGoal, bizStats, appointments, userFilter])
 
+  // 1.5. Gráfico Diário de Atividades (Visitas x Contatos)
+  const activityChartData = useMemo(() => {
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth()
+
+    // 1. Filtrar compromissos do usuário selecionado
+    const filteredApts = appointments.filter(a => {
+      if (userFilter === 'all') return true
+      const targetUser = usersList.find(u => u.id === userFilter || u.name === userFilter || isSameRepresentative(u.name, userFilter))
+      const targetName = targetUser?.name || userFilter
+      const aUser = a.assigned_to || (a as any).assignedTo || a.user_name || ''
+      return isSameRepresentative(aUser, targetName) || (a.user_id && a.user_id === targetUser?.id)
+    })
+
+    // 2. Coletar também atividades registradas na ficha dos contatos
+    const contactActivities: Array<{ date: Date; isVisit: boolean; clientName: string; description: string; user: string }> = []
+    filteredContacts.forEach(c => {
+      const cActs = (c as any).activities
+      if (cActs && Array.isArray(cActs)) {
+        cActs.forEach((act: any) => {
+          if (act.timestamp) {
+            const dt = parseFlexibleDate(act.timestamp)
+            if (dt) {
+              const isVisit = act.type === 'visita' || act.type === 'reuniao'
+              contactActivities.push({
+                date: dt,
+                isVisit,
+                clientName: c.company || c.name || 'Cliente',
+                description: act.content || 'Atividade registrada',
+                user: c.representative || ''
+              })
+            }
+          }
+        })
+      }
+    })
+
+    let slots: Array<{
+      label: string
+      dateStr: string
+      visitsCount: number
+      contactsCount: number
+      items: Array<{ id: string; type: string; clientName: string; time: string; description: string; user: string }>
+    }> = []
+
+    if (activityChartViewMode === 'diario') {
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dayStr = String(day).padStart(2, '0')
+        const monthStr = String(currentMonth + 1).padStart(2, '0')
+        const fullDateStr = `${dayStr}/${monthStr}/${currentYear}`
+        const label = `${dayStr}/${monthStr}`
+
+        const dayApts = filteredApts.filter(a => {
+          if (!a.date) return false
+          const dt = parseFlexibleDate(a.date)
+          if (!dt) return false
+          return dt.getFullYear() === currentYear && dt.getMonth() === currentMonth && dt.getDate() === day
+        })
+
+        const dayActs = contactActivities.filter(act => {
+          return act.date.getFullYear() === currentYear && act.date.getMonth() === currentMonth && act.date.getDate() === day
+        })
+
+        let visits = 0
+        let contacts = 0
+        const itemsList: any[] = []
+
+        dayApts.forEach(a => {
+          const isVisit = a.type === 'visita' || a.type === 'reuniao'
+          if (isVisit) visits++
+          else contacts++
+
+          itemsList.push({
+            id: a.id || String(Math.random()),
+            type: isVisit ? 'Visita Presencial / Reunião' : 'Contato (Ligação / WhatsApp / Email)',
+            clientName: (a as any).contact_company || (a as any).contact_name || a.title || 'Cliente sem nome',
+            time: a.time || '—',
+            description: (a as any).description || a.title || 'Atividade registrada',
+            user: a.user_name || a.assigned_to || ''
+          })
+        })
+
+        dayActs.forEach(act => {
+          if (act.isVisit) visits++
+          else contacts++
+
+          itemsList.push({
+            id: String(Math.random()),
+            type: act.isVisit ? 'Visita Presencial' : 'Histórico de Contato',
+            clientName: act.clientName,
+            time: `${String(act.date.getHours()).padStart(2, '0')}:${String(act.date.getMinutes()).padStart(2, '0')}`,
+            description: act.description,
+            user: act.user
+          })
+        })
+
+        slots.push({
+          label,
+          dateStr: fullDateStr,
+          visitsCount: visits,
+          contactsCount: contacts,
+          items: itemsList
+        })
+      }
+    } else if (activityChartViewMode === 'semanal') {
+      const weekLabels = ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4', 'Semana 5']
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
+
+      weekLabels.forEach((wLabel, wIdx) => {
+        const startDay = wIdx * 7 + 1
+        if (startDay > daysInMonth) return
+        const endDay = Math.min(daysInMonth, (wIdx + 1) * 7)
+
+        const weekApts = filteredApts.filter(a => {
+          if (!a.date) return false
+          const dt = parseFlexibleDate(a.date)
+          if (!dt) return false
+          return dt.getFullYear() === currentYear && dt.getMonth() === currentMonth && dt.getDate() >= startDay && dt.getDate() <= endDay
+        })
+
+        const weekActs = contactActivities.filter(act => {
+          return act.date.getFullYear() === currentYear && act.date.getMonth() === currentMonth && act.date.getDate() >= startDay && act.date.getDate() <= endDay
+        })
+
+        let visits = 0
+        let contacts = 0
+        const itemsList: any[] = []
+
+        weekApts.forEach(a => {
+          const isVisit = a.type === 'visita' || a.type === 'reuniao'
+          if (isVisit) visits++
+          else contacts++
+
+          itemsList.push({
+            id: a.id || String(Math.random()),
+            type: isVisit ? 'Visita Presencial / Reunião' : 'Contato (Ligação / WhatsApp / Email)',
+            clientName: (a as any).contact_company || (a as any).contact_name || a.title || 'Cliente sem nome',
+            time: a.time || '—',
+            description: (a as any).description || a.title || 'Atividade registrada',
+            user: a.user_name || a.assigned_to || ''
+          })
+        })
+
+        weekActs.forEach(act => {
+          if (act.isVisit) visits++
+          else contacts++
+
+          itemsList.push({
+            id: String(Math.random()),
+            type: act.isVisit ? 'Visita Presencial' : 'Histórico de Contato',
+            clientName: act.clientName,
+            time: '—',
+            description: act.description,
+            user: act.user
+          })
+        })
+
+        slots.push({
+          label: wLabel,
+          dateStr: `${wLabel} (${startDay} a ${endDay} de ${MONTH_NAMES[currentMonth]})`,
+          visitsCount: visits,
+          contactsCount: contacts,
+          items: itemsList
+        })
+      })
+    } else {
+      // Mensal
+      MONTH_NAMES.forEach((mName, mIdx) => {
+        const monthApts = filteredApts.filter(a => {
+          if (!a.date) return false
+          const dt = parseFlexibleDate(a.date)
+          if (!dt) return false
+          return dt.getFullYear() === currentYear && dt.getMonth() === mIdx
+        })
+
+        const monthActs = contactActivities.filter(act => {
+          return act.date.getFullYear() === currentYear && act.date.getMonth() === mIdx
+        })
+
+        let visits = 0
+        let contacts = 0
+        const itemsList: any[] = []
+
+        monthApts.forEach(a => {
+          const isVisit = a.type === 'visita' || a.type === 'reuniao'
+          if (isVisit) visits++
+          else contacts++
+
+          itemsList.push({
+            id: a.id || String(Math.random()),
+            type: isVisit ? 'Visita Presencial / Reunião' : 'Contato (Ligação / WhatsApp / Email)',
+            clientName: (a as any).contact_company || (a as any).contact_name || a.title || 'Cliente sem nome',
+            time: a.time || '—',
+            description: (a as any).description || a.title || 'Atividade registrada',
+            user: a.user_name || a.assigned_to || ''
+          })
+        })
+
+        monthActs.forEach(act => {
+          if (act.isVisit) visits++
+          else contacts++
+
+          itemsList.push({
+            id: String(Math.random()),
+            type: act.isVisit ? 'Visita Presencial' : 'Histórico de Contato',
+            clientName: act.clientName,
+            time: '—',
+            description: act.description,
+            user: act.user
+          })
+        })
+
+        slots.push({
+          label: mName.substring(0, 3).toUpperCase(),
+          dateStr: `${mName} de ${currentYear}`,
+          visitsCount: visits,
+          contactsCount: contacts,
+          items: itemsList
+        })
+      })
+    }
+
+    const maxVal = Math.max(1, ...slots.map(s => Math.max(s.visitsCount, s.contactsCount)))
+
+    return {
+      slots,
+      maxVal
+    }
+  }, [appointments, filteredContacts, userFilter, usersList, activityChartViewMode])
+
   // Stagnant Deals (>7 days)
   const dealAlerts = useMemo(() => {
     const now = new Date()
@@ -872,6 +1126,197 @@ export default function DiarioDeBordoPage() {
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* ========================================================
+          2.5. GRÁFICO DE ACOMPANHAMENTO DIÁRIO DE ATIVIDADES (VISITAS X CONTATOS)
+         ======================================================== */}
+      <div className="card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-4 relative overflow-hidden select-none">
+        
+        {/* Cabeçalho do Gráfico */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500/25 to-purple-900/10 border border-purple-500/40 text-purple-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+              <BarChart3 size={18} />
+            </div>
+            <div>
+              <h3 className="font-display text-sm sm:text-base font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2">
+                <span>Acompanhamento Diário de Atividades</span>
+              </h3>
+              <p className="text-xs font-mono text-[var(--gray2)] font-semibold mt-0.5 flex flex-wrap items-center gap-4">
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#8b5cf6] inline-block shadow-[0_0_8px_#8b5cf6]" /> Visitas Presenciais</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#10b981] inline-block shadow-[0_0_8px_#10b981]" /> Contatos & Interações</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Toggle de Modo do Gráfico */}
+          <div className="flex items-center gap-1 bg-[var(--charcoal)] p-1 rounded-xl border border-[var(--line)] self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setActivityChartViewMode('diario')}
+              className={`text-xs font-mono font-bold px-3 py-1 rounded-lg transition-all ${
+                activityChartViewMode === 'diario'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'text-[var(--gray2)] hover:text-[var(--white)]'
+              }`}
+            >
+              Diário
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivityChartViewMode('semanal')}
+              className={`text-xs font-mono font-bold px-3 py-1 rounded-lg transition-all ${
+                activityChartViewMode === 'semanal'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'text-[var(--gray2)] hover:text-[var(--white)]'
+              }`}
+            >
+              Semanal
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivityChartViewMode('mensal')}
+              className={`text-xs font-mono font-bold px-3 py-1 rounded-lg transition-all ${
+                activityChartViewMode === 'mensal'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'text-[var(--gray2)] hover:text-[var(--white)]'
+              }`}
+            >
+              Mensal
+            </button>
+          </div>
+        </div>
+
+        {/* Container do Gráfico com Barras Duplas (Visitas e Contatos lado a lado) */}
+        <div className="h-56 flex items-end justify-between gap-1 pt-6 pb-0 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
+          {/* Gridlines Horizontais de Fundo */}
+          <div className="absolute inset-x-0 top-3 bottom-0 flex flex-col justify-between pointer-events-none opacity-10">
+            <div className="border-b border-white w-full" />
+            <div className="border-b border-white w-full" />
+            <div className="border-b border-white w-full" />
+            <div className="border-b border-white w-full" />
+          </div>
+
+          {activityChartData.slots.map((item, idx) => {
+            const vPct = Math.round((item.visitsCount / activityChartData.maxVal) * 100)
+            const cPct = Math.round((item.contactsCount / activityChartData.maxVal) * 100)
+            const hasActivity = item.visitsCount > 0 || item.contactsCount > 0
+
+            return (
+              <div
+                key={idx}
+                onClick={() => {
+                  if (item.items.length > 0) {
+                    setActivityDrillDown({
+                      isOpen: true,
+                      title: `ATIVIDADES REGISTRADAS — ${item.label}`,
+                      dateLabel: item.dateStr,
+                      items: item.items
+                    })
+                  }
+                }}
+                className={`flex-1 flex flex-col items-center justify-end h-full cursor-pointer group z-10 ${
+                  activityChartViewMode === 'diario' ? 'min-w-0' : 'min-w-[24px]'
+                }`}
+                title={`${item.label}: ${item.visitsCount} Visitas | ${item.contactsCount} Contatos (Clique para ver detalhes)`}
+              >
+                {/* Indicadores de contagem no hover */}
+                {hasActivity && (
+                  <div className="flex items-center gap-0.5 mb-1 font-mono text-[8px] sm:text-[9px] font-bold z-20">
+                    {item.visitsCount > 0 && <span className="text-purple-400">{item.visitsCount}v</span>}
+                    {item.visitsCount > 0 && item.contactsCount > 0 && <span className="text-slate-600">/</span>}
+                    {item.contactsCount > 0 && <span className="text-emerald-400">{item.contactsCount}c</span>}
+                  </div>
+                )}
+
+                {/* Dupla Barra Lado a Lado */}
+                <div className="w-full flex justify-center items-end gap-0.5 h-full">
+                  {/* Barra de Visitas (Roxo) */}
+                  <div className="flex-1 flex justify-center items-end h-full">
+                    <div
+                      className="bg-gradient-to-t from-[#7c3aed] via-[#8b5cf6] to-[#a855f7] rounded-t-md transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_12px_rgba(139,92,246,0.6)] w-full"
+                      style={{ height: item.visitsCount > 0 ? `${Math.max(8, vPct)}%` : '0%' }}
+                    />
+                  </div>
+
+                  {/* Barra de Contatos (Verde) */}
+                  <div className="flex-1 flex justify-center items-end h-full">
+                    <div
+                      className="bg-gradient-to-t from-[#059669] via-[#10b981] to-[#34d399] rounded-t-md transition-all duration-300 group-hover:brightness-125 group-hover:shadow-[0_0_12px_rgba(16,185,129,0.6)] w-full"
+                      style={{ height: item.contactsCount > 0 ? `${Math.max(8, cPct)}%` : '0%' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Eixo X com os Rótulos */}
+        <div className="flex justify-between gap-1 pt-2 pb-0 px-1 select-none">
+          {activityChartData.slots.map((item, idx) => (
+            <div key={idx} className="flex-1 text-center truncate">
+              <span className={`font-mono font-bold text-slate-400 group-hover:text-white transition-colors uppercase truncate inline-block ${
+                activityChartViewMode === 'diario' ? 'text-[7px] sm:text-[8px] -rotate-45 origin-top-left' : 'text-[9px]'
+              }`}>
+                {item.label}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-center pt-1 text-[10px] font-mono text-slate-400/60">
+          <span>Clique sobre qualquer barra para ver o relatório de atividades do dia</span>
+        </div>
+      </div>
+
+      {/* Modal Drill-Down de Atividades por Dia */}
+      {activityDrillDown.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn select-none">
+          <div className="card w-full max-w-3xl max-h-[80vh] bg-[var(--card)] border border-purple-500/30 rounded-2xl shadow-2xl flex flex-col overflow-hidden relative">
+            <div className="p-4 sm:p-5 border-b border-[var(--line)] flex items-center justify-between bg-gradient-to-r from-purple-950/40 via-[var(--card)] to-[var(--card)]">
+              <div>
+                <h3 className="font-display text-sm sm:text-base font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2">
+                  <BarChart3 size={18} className="text-purple-400" />
+                  <span>{activityDrillDown.title}</span>
+                </h3>
+                <p className="text-xs font-mono text-[var(--gray2)] mt-0.5">{activityDrillDown.dateLabel}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActivityDrillDown(prev => ({ ...prev, isOpen: false }))}
+                className="w-8 h-8 rounded-full bg-[var(--charcoal)] text-[var(--gray2)] hover:text-white flex items-center justify-center transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2">
+              {activityDrillDown.items.map((item, idx) => (
+                <div key={idx} className="p-3 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${
+                      item.type.includes('Visita')
+                        ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
+                        : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                    }`}>
+                      {item.type}
+                    </span>
+                    <div>
+                      <strong className="text-xs font-mono text-white block">{item.clientName}</strong>
+                      <span className="text-[11px] font-mono text-[var(--gray2)]">{item.description}</span>
+                    </div>
+                  </div>
+                  <div className="text-right font-mono text-xs text-slate-400">
+                    <div>{item.time}</div>
+                    {item.user && <div className="text-[10px] text-slate-500">{item.user}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
