@@ -79,7 +79,7 @@ export interface MockContact {
   phone2?: string
   city: string
   state: string
-  status: 'ativo' | 'inativo' | 'prospeccao'
+  status: 'ativo' | 'inativo' | 'prospeccao' | 'reativacao'
   email?: string
   // Expanded fields
   tradeName?: string
@@ -396,7 +396,7 @@ function ContactDrawer({
   const [email, setEmail] = useState('')
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
-  const [status, setStatus] = useState<'ativo' | 'inativo' | 'prospeccao'>('ativo')
+  const [status, setStatus] = useState<'ativo' | 'inativo' | 'prospeccao' | 'reativacao'>('ativo')
   const [bairro, setBairro] = useState('')
   const [cep, setCep] = useState('')
   const [codCliente, setCodCliente] = useState('')
@@ -513,7 +513,8 @@ function ContactDrawer({
       setEmail(contact.email ?? '')
       setCity(contact.city)
       setState(contact.state)
-      setStatus(contact.status)
+      const currentInfo = getContactActivityAndRepurchaseInfo(contact)
+      setStatus(currentInfo.computedStatus || contact.status || 'prospeccao')
       
       // Load planning and history fields
       const pVal = (contact as any).projectedPurchaseValue ?? (contact as any).projected_purchase_value ?? 0
@@ -1091,20 +1092,23 @@ function ContactDrawer({
                 <div className="flex flex-col gap-1">
                   <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Status Carteira</label>
                   <select 
-                    className="input text-xs py-1 px-2 font-bold bg-[var(--charcoal)]"
+                    className="input text-xs py-1 px-2 font-bold bg-[var(--charcoal)] uppercase"
                     style={{ 
                       color: status === 'ativo' 
-                        ? 'var(--green)' 
-                        : status === 'inativo' 
-                          ? 'var(--red)' 
-                          : 'var(--yellow)' 
+                        ? 'var(--lime)' 
+                        : status === 'prospeccao' 
+                          ? 'var(--yellow)' 
+                          : status === 'reativacao'
+                            ? '#f97316'
+                            : 'var(--red)' 
                     }}
                     value={status} 
                     onChange={(e) => setStatus(e.target.value as any)}
                   >
                     <option value="ativo">Ativo</option>
-                    <option value="inativo">Inativo</option>
                     <option value="prospeccao">Em Prospecção</option>
+                    <option value="reativacao">Reativação</option>
+                    <option value="inativo">Inativo</option>
                   </select>
                 </div>
               </div>
@@ -4325,11 +4329,6 @@ export default function ContactsPage() {
                             </div>
                             <div className="text-[10px] text-[var(--gray)] font-mono leading-tight flex items-center gap-2">
                               <span>{contact.cnpj || 'CNPJ não informado'}</span>
-                              {((contact as any)?.cod_cliente || (contact as any)?.client_code) && (
-                                <span className="text-[9px] font-mono font-bold text-[var(--lime)] bg-[var(--lime)]/10 px-1.5 py-0.2 rounded border border-[var(--lime)]/20">
-                                  CÓD: {(contact as any)?.cod_cliente || (contact as any)?.client_code}
-                                </span>
-                              )}
                             </div>
                           </div>
                         </div>
