@@ -3026,7 +3026,7 @@ export default function ContactsPage() {
 
     const loadContacts = async () => {
       if (typeof window !== 'undefined') {
-        const CURRENT_CACHE_VERSION = 'v20_cod_cliente_fix_2026_08_03'
+        const CURRENT_CACHE_VERSION = 'v21_pedidos_clientes_source_2026_08_03'
         const savedVersion = localStorage.getItem('crm_contacts_cache_version')
         if (savedVersion !== CURRENT_CACHE_VERSION) {
           localStorage.removeItem('crm_contacts')
