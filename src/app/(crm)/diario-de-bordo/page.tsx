@@ -36,7 +36,7 @@ import { getPipelineDeals } from '@/services/pipeline-service'
 import { DealDrawer } from '@/components/pipeline/DealDrawer'
 import { PipelineCalendarModal } from '@/components/pipeline/PipelineCalendarModal'
 import { RegisterActivityModal } from '@/components/RegisterActivityModal'
-import { getUniqueCanonicalRepresentatives, isSameRepresentative } from '@/lib/utils'
+import { getUniqueCanonicalRepresentatives, isSameRepresentative, formatCanonicalRepName } from '@/lib/utils'
 
 // Helper format currency
 function formatCurrency(val: number): string {
@@ -1501,23 +1501,20 @@ export default function DiarioDeBordoPage() {
 
                   {/* Ranking Lateral de Reps (Visitas Ordenadas Decrescente) — apenas Gestor/Admin */}
                   {isAdminOrManager && (
-                    <div className="w-full xl:w-56 shrink-0 border-t xl:border-t-0 xl:border-l border-[var(--line)] pt-3 xl:pt-0 xl:pl-4 flex flex-col gap-2">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-purple-400 block border-b border-[var(--line)] pb-1">
+                    <div className="w-full xl:w-64 shrink-0 border-t xl:border-t-0 xl:border-l border-[var(--line)] pt-3 xl:pt-0 xl:pl-4 flex flex-col gap-2">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-purple-400 block border-b border-[var(--line)] pb-1 shrink-0">
                         Visitas por Vendedor (Ranking)
                       </span>
-                      <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-                        {visitsSortedReps.map(rep => (
-                          <div key={rep.id} className="flex flex-col gap-1 text-xs font-mono">
-                            <div className="flex justify-between items-center text-[11px]">
-                              <span className="font-bold text-white truncate max-w-[130px]">{rep.name}</span>
-                              <span className="text-purple-400 font-bold">{rep.visits} <span className="text-[9px] text-[var(--gray2)]">/ {rep.visitsGoal}</span></span>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 content-start flex-1">
+                        {visitsSortedReps.map((rep, idx) => (
+                          <div key={rep.id} className="flex items-center justify-between gap-1 text-[11px] font-mono">
+                            <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden" title={rep.name}>
+                              <span className="text-purple-400 font-bold shrink-0">{idx + 1}.</span>
+                              <span className="text-white font-semibold truncate">{formatCanonicalRepName(rep.name)}</span>
                             </div>
-                            <div className="w-full h-1.5 bg-[#090d16] rounded-full overflow-hidden border border-[var(--line)]">
-                              <div
-                                className="bg-purple-500 h-full rounded-full transition-all duration-500 shadow-[0_0_8px_#8b5cf6]"
-                                style={{ width: `${Math.min(100, rep.visitsPct)}%` }}
-                              />
-                            </div>
+                            <span className="text-purple-400 font-bold shrink-0 whitespace-nowrap">
+                              {rep.visits}<span className="text-[9px] text-[var(--gray2)] font-normal">/{rep.visitsGoal}</span>
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -1623,23 +1620,20 @@ export default function DiarioDeBordoPage() {
 
                   {/* Ranking Lateral de Reps (Contatos Ordenados Decrescente) — apenas Gestor/Admin */}
                   {isAdminOrManager && (
-                    <div className="w-full xl:w-56 shrink-0 border-t xl:border-t-0 xl:border-l border-[var(--line)] pt-3 xl:pt-0 xl:pl-4 flex flex-col gap-2">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 block border-b border-[var(--line)] pb-1">
+                    <div className="w-full xl:w-64 shrink-0 border-t xl:border-t-0 xl:border-l border-[var(--line)] pt-3 xl:pt-0 xl:pl-4 flex flex-col gap-2">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 block border-b border-[var(--line)] pb-1 shrink-0">
                         Contatos por Vendedor (Ranking)
                       </span>
-                      <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-                        {contactsSortedReps.map(rep => (
-                          <div key={rep.id} className="flex flex-col gap-1 text-xs font-mono">
-                            <div className="flex justify-between items-center text-[11px]">
-                              <span className="font-bold text-white truncate max-w-[130px]">{rep.name}</span>
-                              <span className="text-emerald-400 font-bold">{rep.contacts} <span className="text-[9px] text-[var(--gray2)]">/ {rep.contactsGoal}</span></span>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 content-start flex-1">
+                        {contactsSortedReps.map((rep, idx) => (
+                          <div key={rep.id} className="flex items-center justify-between gap-1 text-[11px] font-mono">
+                            <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden" title={rep.name}>
+                              <span className="text-emerald-400 font-bold shrink-0">{idx + 1}.</span>
+                              <span className="text-white font-semibold truncate">{formatCanonicalRepName(rep.name)}</span>
                             </div>
-                            <div className="w-full h-1.5 bg-[#090d16] rounded-full overflow-hidden border border-[var(--line)]">
-                              <div
-                                className="bg-emerald-500 h-full rounded-full transition-all duration-500 shadow-[0_0_8px_#10b981]"
-                                style={{ width: `${Math.min(100, rep.contactsPct)}%` }}
-                              />
-                            </div>
+                            <span className="text-emerald-400 font-bold shrink-0 whitespace-nowrap">
+                              {rep.contacts}<span className="text-[9px] text-[var(--gray2)] font-normal">/{rep.contactsGoal}</span>
+                            </span>
                           </div>
                         ))}
                       </div>
