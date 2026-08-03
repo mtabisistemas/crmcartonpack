@@ -1409,34 +1409,33 @@ export default function DiarioDeBordoPage() {
             
             {/* CARD 1: VISITAS PRESENCIAIS & REUNIÕES (ROXO) */}
             {pacingMetrics.hasVisitsGoal && (
-              <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-4 relative overflow-hidden select-none shrink-0 min-h-[360px]">
-                
-                {/* Header do Card 1 */}
-                <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-400 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(168,85,247,0.3)]">
-                      <Users size={16} />
+              <div className="flex flex-col xl:flex-row gap-4 items-stretch">
+
+                <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-4 relative overflow-hidden select-none shrink-0 min-h-[360px]">
+
+                  {/* Header do Card 1 */}
+                  <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-400 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(168,85,247,0.3)]">
+                        <Users size={16} />
+                      </div>
+                      <div>
+                        <h4 className="font-display text-sm font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2">
+                          <span>Visitas Presenciais & Reuniões</span>
+                        </h4>
+                        <p className="text-[11px] font-mono text-purple-300 font-semibold mt-0.5">
+                          Total no Mês: {pacingMetrics.currentMonthVisits} / {pacingMetrics.visitsTarget}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-display text-sm font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2">
-                        <span>Visitas Presenciais & Reuniões</span>
-                      </h4>
-                      <p className="text-[11px] font-mono text-purple-300 font-semibold mt-0.5">
-                        Total no Mês: {pacingMetrics.currentMonthVisits} / {pacingMetrics.visitsTarget}
-                      </p>
-                    </div>
+
+                    {pacingMetrics.hasVisitsGoal && activityChartData.visitsTarget > 0 && (
+                      <span className="bg-purple-950/90 text-purple-300 text-[10px] font-mono font-bold px-2 py-1 rounded-lg border border-purple-500/40 shadow-sm shrink-0">
+                        Meta Visitas: {activityChartData.visitsTarget}
+                      </span>
+                    )}
                   </div>
 
-                  {pacingMetrics.hasVisitsGoal && activityChartData.visitsTarget > 0 && (
-                    <span className="bg-purple-950/90 text-purple-300 text-[10px] font-mono font-bold px-2 py-1 rounded-lg border border-purple-500/40 shadow-sm shrink-0">
-                      Meta Visitas: {activityChartData.visitsTarget}
-                    </span>
-                  )}
-                </div>
-
-                {/* Layout Flex: Gráfico (Esquerda) + Ranking de Reps (Direita) */}
-                <div className="flex flex-col xl:flex-row gap-4 flex-1">
-                  
                   {/* Plot Area Visitas */}
                   <div className="flex-1 flex flex-col justify-end">
                     <div className="h-44 flex items-end justify-between gap-1 pt-6 pb-0 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
@@ -1499,63 +1498,67 @@ export default function DiarioDeBordoPage() {
                     </div>
                   </div>
 
-                  {/* Ranking Lateral de Reps (Visitas Ordenadas Decrescente) — apenas Gestor/Admin */}
-                  {isAdminOrManager && (
-                    <div className="w-full xl:w-64 shrink-0 border-t xl:border-t-0 xl:border-l border-[var(--line)] pt-3 xl:pt-0 xl:pl-4 flex flex-col gap-2">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-purple-400 block border-b border-[var(--line)] pb-1 shrink-0">
-                        Visitas por Vendedor (Ranking)
-                      </span>
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 content-start flex-1">
-                        {visitsSortedReps.map((rep, idx) => (
-                          <div key={rep.id} className="flex items-center justify-between gap-1 text-[11px] font-mono">
-                            <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden" title={rep.name}>
-                              <span className="text-purple-400 font-bold shrink-0">{idx + 1}.</span>
-                              <span className="text-white font-semibold truncate">{formatCanonicalRepName(rep.name)}</span>
+                </div>
+
+                {/* Card separado: Ranking de Reps (Visitas Ordenadas Decrescente) — apenas Gestor/Admin */}
+                {isAdminOrManager && (
+                  <div className="w-full xl:w-80 shrink-0 card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl shadow-xl flex flex-col gap-2.5">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-purple-400 block border-b border-[var(--line)] pb-2 shrink-0">
+                      Visitas por Vendedor (Ranking)
+                    </span>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-2 content-start flex-1">
+                      {visitsSortedReps.map((rep, idx) => {
+                        const top3 = idx < 3
+                        const name = formatCanonicalRepName(rep.name)
+                        const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+                        return (
+                          <div key={rep.id} className="flex items-center gap-1.5 min-w-0" title={name}>
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold shrink-0 ${top3 ? 'bg-purple-500/25 text-purple-300' : 'bg-[var(--charcoal)] text-[var(--gray2)]'}`}>
+                              {initials}
                             </div>
-                            <span className="text-purple-400 font-bold shrink-0 whitespace-nowrap">
-                              {rep.visits}<span className="text-[9px] text-[var(--gray2)] font-normal">/{rep.visitsGoal}</span>
+                            <span className="flex-1 min-w-0 truncate text-[11px] text-[var(--white)] font-semibold">{name}</span>
+                            <span className="shrink-0 text-[10px] font-mono font-bold text-purple-300 bg-purple-500/10 px-1.5 py-0.5 rounded-full">
+                              {rep.visits}<span className="text-[var(--gray2)] font-normal">/{rep.visitsGoal}</span>
                             </span>
                           </div>
-                        ))}
-                      </div>
+                        )
+                      })}
                     </div>
-                  )}
-
-                </div>
+                  </div>
+                )}
 
               </div>
             )}
 
             {/* CARD 2: CONTATOS & INTERAÇÕES (VERDE) */}
             {pacingMetrics.hasContactsGoal && (
-              <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-4 relative overflow-hidden select-none shrink-0 min-h-[360px]">
-                
-                {/* Header do Card 2 */}
-                <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(16,185,129,0.3)]">
-                      <Phone size={16} />
+              <div className="flex flex-col xl:flex-row gap-4 items-stretch">
+
+                <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-4 relative overflow-hidden select-none shrink-0 min-h-[360px]">
+
+                  {/* Header do Card 2 */}
+                  <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                        <Phone size={16} />
+                      </div>
+                      <div>
+                        <h4 className="font-display text-sm font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2">
+                          <span>Contatos & Interações</span>
+                        </h4>
+                        <p className="text-[11px] font-mono text-emerald-300 font-semibold mt-0.5">
+                          Total no Mês: {pacingMetrics.currentMonthContacts} / {pacingMetrics.contactsTarget}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-display text-sm font-bold text-[var(--white)] uppercase tracking-wider flex items-center gap-2">
-                        <span>Contatos & Interações</span>
-                      </h4>
-                      <p className="text-[11px] font-mono text-emerald-300 font-semibold mt-0.5">
-                        Total no Mês: {pacingMetrics.currentMonthContacts} / {pacingMetrics.contactsTarget}
-                      </p>
-                    </div>
+
+                    {pacingMetrics.hasContactsGoal && activityChartData.contactsTarget > 0 && (
+                      <span className="bg-emerald-950/90 text-emerald-300 text-[10px] font-mono font-bold px-2 py-1 rounded-lg border border-emerald-500/40 shadow-sm shrink-0">
+                        Meta Contatos: {activityChartData.contactsTarget}
+                      </span>
+                    )}
                   </div>
 
-                  {pacingMetrics.hasContactsGoal && activityChartData.contactsTarget > 0 && (
-                    <span className="bg-emerald-950/90 text-emerald-300 text-[10px] font-mono font-bold px-2 py-1 rounded-lg border border-emerald-500/40 shadow-sm shrink-0">
-                      Meta Contatos: {activityChartData.contactsTarget}
-                    </span>
-                  )}
-                </div>
-
-                {/* Layout Flex: Gráfico (Esquerda) + Ranking de Reps (Direita) */}
-                <div className="flex flex-col xl:flex-row gap-4 flex-1">
-                  
                   {/* Plot Area Contatos */}
                   <div className="flex-1 flex flex-col justify-end">
                     <div className="h-44 flex items-end justify-between gap-1 pt-6 pb-0 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
@@ -1618,29 +1621,34 @@ export default function DiarioDeBordoPage() {
                     </div>
                   </div>
 
-                  {/* Ranking Lateral de Reps (Contatos Ordenados Decrescente) — apenas Gestor/Admin */}
-                  {isAdminOrManager && (
-                    <div className="w-full xl:w-64 shrink-0 border-t xl:border-t-0 xl:border-l border-[var(--line)] pt-3 xl:pt-0 xl:pl-4 flex flex-col gap-2">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 block border-b border-[var(--line)] pb-1 shrink-0">
-                        Contatos por Vendedor (Ranking)
-                      </span>
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 content-start flex-1">
-                        {contactsSortedReps.map((rep, idx) => (
-                          <div key={rep.id} className="flex items-center justify-between gap-1 text-[11px] font-mono">
-                            <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden" title={rep.name}>
-                              <span className="text-emerald-400 font-bold shrink-0">{idx + 1}.</span>
-                              <span className="text-white font-semibold truncate">{formatCanonicalRepName(rep.name)}</span>
+                </div>
+
+                {/* Card separado: Ranking de Reps (Contatos Ordenados Decrescente) — apenas Gestor/Admin */}
+                {isAdminOrManager && (
+                  <div className="w-full xl:w-80 shrink-0 card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl shadow-xl flex flex-col gap-2.5">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 block border-b border-[var(--line)] pb-2 shrink-0">
+                      Contatos por Vendedor (Ranking)
+                    </span>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-2 content-start flex-1">
+                      {contactsSortedReps.map((rep, idx) => {
+                        const top3 = idx < 3
+                        const name = formatCanonicalRepName(rep.name)
+                        const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+                        return (
+                          <div key={rep.id} className="flex items-center gap-1.5 min-w-0" title={name}>
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold shrink-0 ${top3 ? 'bg-emerald-500/25 text-emerald-300' : 'bg-[var(--charcoal)] text-[var(--gray2)]'}`}>
+                              {initials}
                             </div>
-                            <span className="text-emerald-400 font-bold shrink-0 whitespace-nowrap">
-                              {rep.contacts}<span className="text-[9px] text-[var(--gray2)] font-normal">/{rep.contactsGoal}</span>
+                            <span className="flex-1 min-w-0 truncate text-[11px] text-[var(--white)] font-semibold">{name}</span>
+                            <span className="shrink-0 text-[10px] font-mono font-bold text-emerald-300 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">
+                              {rep.contacts}<span className="text-[var(--gray2)] font-normal">/{rep.contactsGoal}</span>
                             </span>
                           </div>
-                        ))}
-                      </div>
+                        )
+                      })}
                     </div>
-                  )}
-
-                </div>
+                  </div>
+                )}
 
               </div>
             )}
