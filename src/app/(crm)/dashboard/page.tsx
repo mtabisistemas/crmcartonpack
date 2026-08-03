@@ -2571,11 +2571,20 @@ export default function DashboardPage() {
                 Geolocalização dos Negócios (Visão Expandida em Tela Cheia)
               </h3>
             </div>
-            <div className="flex flex-wrap items-center gap-3 lg:gap-4">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs font-mono">
-                <span className="flex items-center gap-1.5 text-[var(--gray)]"><span className="w-2.5 h-2.5 rounded-full bg-[#10b981]" /> Pedido Fechado</span>
-                <span className="flex items-center gap-1.5 text-[var(--gray)]"><span className="w-2.5 h-2.5 rounded-full bg-orange-500" /> Em Negociação</span>
-                <span className="flex items-center gap-1.5 text-[var(--gray)]"><span className="w-2.5 h-2.5 rounded-full bg-cyan-400" /> Aprovação</span>
+            <div className="flex flex-nowrap items-center justify-between gap-3 lg:gap-4 w-full lg:w-auto min-w-0">
+              <div className="flex flex-nowrap items-center gap-x-2 lg:gap-x-4 text-[10px] lg:text-xs font-mono shrink-0">
+                <span className="flex items-center gap-1 lg:gap-1.5 text-[var(--gray)] shrink-0">
+                  <span className="w-2 h-2 lg:w-2.5 lg:h-2.5 rounded-full bg-[#10b981] shrink-0" />
+                  <span className="lg:hidden">Fechado</span><span className="hidden lg:inline">Pedido Fechado</span>
+                </span>
+                <span className="flex items-center gap-1 lg:gap-1.5 text-[var(--gray)] shrink-0">
+                  <span className="w-2 h-2 lg:w-2.5 lg:h-2.5 rounded-full bg-orange-500 shrink-0" />
+                  <span className="lg:hidden">Negociação</span><span className="hidden lg:inline">Em Negociação</span>
+                </span>
+                <span className="flex items-center gap-1 lg:gap-1.5 text-[var(--gray)] shrink-0">
+                  <span className="w-2 h-2 lg:w-2.5 lg:h-2.5 rounded-full bg-cyan-400 shrink-0" />
+                  <span>Aprovação</span>
+                </span>
               </div>
               <button
                 onClick={() => {
@@ -2586,9 +2595,10 @@ export default function DashboardPage() {
                 }}
                 aria-label="Fechar mapa"
                 title="Fechar mapa"
-                className="btn btn-secondary p-2 lg:py-1.5 lg:px-4 rounded-xl text-xs font-mono font-bold text-[var(--white)] flex items-center gap-2 cursor-pointer hover:border-red-500"
+                className="w-8 h-8 lg:w-auto lg:h-auto lg:py-1.5 lg:px-4 rounded-lg lg:rounded-xl border border-[var(--line)] text-[var(--gray)] flex items-center justify-center gap-2 cursor-pointer hover:border-red-500 hover:text-red-400 transition-all bg-transparent shrink-0 text-xs font-mono font-bold"
               >
-                <X size={16} />
+                <X size={14} className="lg:hidden" />
+                <X size={16} className="hidden lg:block" />
                 <span className="hidden lg:inline">Fechar Mapa</span>
               </button>
             </div>
