@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import {
   TrendingUp,
   Package,
@@ -2561,20 +2562,20 @@ export default function DashboardPage() {
       {/* ========================================================
           10. MODAL DE MAPA EXPANDIDO EM TELA CHEIA (FULLSCREEN REAL)
          ======================================================== */}
-      {isMapExpanded && (
+      {isMapExpanded && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-md p-4 sm:p-6 flex flex-col gap-4 select-none animate-fade-in">
           <div className="flex flex-wrap items-center justify-between gap-3 bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl shrink-0 shadow-lg">
             <div className="hidden lg:flex items-center gap-2">
               <MapPin size={20} className="text-[#10b981]" />
-              <h3 className="font-display text-base font-bold text-white uppercase tracking-wider">
+              <h3 className="font-display text-base font-bold text-[var(--white)] uppercase tracking-wider">
                 Geolocalização dos Negócios (Visão Expandida em Tela Cheia)
               </h3>
             </div>
             <div className="flex flex-wrap items-center gap-3 lg:gap-4">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs font-mono">
-                <span className="flex items-center gap-1.5 text-slate-300"><span className="w-2.5 h-2.5 rounded-full bg-[#10b981]" /> Pedido Fechado</span>
-                <span className="flex items-center gap-1.5 text-slate-300"><span className="w-2.5 h-2.5 rounded-full bg-orange-500" /> Em Negociação</span>
-                <span className="flex items-center gap-1.5 text-slate-300"><span className="w-2.5 h-2.5 rounded-full bg-cyan-400" /> Aprovação</span>
+                <span className="flex items-center gap-1.5 text-[var(--gray)]"><span className="w-2.5 h-2.5 rounded-full bg-[#10b981]" /> Pedido Fechado</span>
+                <span className="flex items-center gap-1.5 text-[var(--gray)]"><span className="w-2.5 h-2.5 rounded-full bg-orange-500" /> Em Negociação</span>
+                <span className="flex items-center gap-1.5 text-[var(--gray)]"><span className="w-2.5 h-2.5 rounded-full bg-cyan-400" /> Aprovação</span>
               </div>
               <button
                 onClick={() => {
@@ -2583,10 +2584,12 @@ export default function DashboardPage() {
                     if (contactsMapInstanceRef.current) contactsMapInstanceRef.current.invalidateSize()
                   }, 150)
                 }}
-                className="btn btn-secondary py-1.5 px-4 rounded-xl text-xs font-mono font-bold text-white flex items-center gap-2 cursor-pointer hover:border-red-500"
+                aria-label="Fechar mapa"
+                title="Fechar mapa"
+                className="btn btn-secondary p-2 lg:py-1.5 lg:px-4 rounded-xl text-xs font-mono font-bold text-[var(--white)] flex items-center gap-2 cursor-pointer hover:border-red-500"
               >
                 <X size={16} />
-                <span>Fechar Mapa</span>
+                <span className="hidden lg:inline">Fechar Mapa</span>
               </button>
             </div>
           </div>
@@ -2598,7 +2601,8 @@ export default function DashboardPage() {
               className="w-full h-full min-h-full"
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
