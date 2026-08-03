@@ -18,12 +18,31 @@ export function parseFlexibleDate(dateStr?: string | null): Date | null {
   const s = String(dateStr).trim()
   if (!s) return null
 
+  // Format DD/MM/YYYY
   if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
     const parts = s.split(/[\sT]+/)
     const dmy = parts[0].split('/')
     const day = parseInt(dmy[0], 10)
     const month = parseInt(dmy[1], 10) - 1
     const year = parseInt(dmy[2], 10)
+    let hours = 12, minutes = 0, seconds = 0
+    if (parts[1]) {
+      const hms = parts[1].split(':')
+      hours = parseInt(hms[0], 10) || 0
+      minutes = parseInt(hms[1], 10) || 0
+      seconds = parseInt(hms[2], 10) || 0
+    }
+    const dt = new Date(year, month, day, hours, minutes, seconds)
+    return isNaN(dt.getTime()) ? null : dt
+  }
+
+  // Format YYYY-MM-DD (parse explicitly in local time to avoid UTC-3 shift to previous month)
+  if (/^\d{4}-\d{1,2}-\d{1,2}/.test(s)) {
+    const parts = s.split(/[\sT]+/)
+    const ymd = parts[0].split('-')
+    const year = parseInt(ymd[0], 10)
+    const month = parseInt(ymd[1], 10) - 1
+    const day = parseInt(ymd[2], 10)
     let hours = 12, minutes = 0, seconds = 0
     if (parts[1]) {
       const hms = parts[1].split(':')
