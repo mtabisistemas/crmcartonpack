@@ -134,7 +134,7 @@ export function MobileNavBar() {
     <>
       <nav
         aria-label="Navegação principal"
-        className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#161718]/95 backdrop-blur-xl border-t border-[var(--line)] flex items-stretch px-1 py-1.5 z-40 shadow-[0_-8px_30px_rgba(0,0,0,0.6)]"
+        className="mobile-navbar lg:hidden fixed bottom-0 left-0 right-0 bg-[#161718]/95 backdrop-blur-xl border-t border-[var(--line)] flex items-stretch px-1 py-1.5 z-40 shadow-[0_-8px_30px_rgba(0,0,0,0.6)]"
       >
         <div className="flex-1 flex items-stretch justify-around">
           {leftItems.map(renderItem)}

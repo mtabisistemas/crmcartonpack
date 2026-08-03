@@ -53,7 +53,7 @@ export function MobileTopBar() {
   const title = PAGE_TITLES[pathname] ?? 'CRM CartonPack'
 
   return (
-    <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-[#161718]/95 backdrop-blur-xl border-b border-[var(--line)] px-4 h-14 flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
+    <header className="mobile-topbar lg:hidden fixed top-0 left-0 right-0 z-40 bg-[#161718]/95 backdrop-blur-xl border-b border-[var(--line)] px-4 h-14 flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
       {/* Page Title */}
       <h1 className="font-display text-base text-[var(--white)] font-bold tracking-tight truncate">
         {title}

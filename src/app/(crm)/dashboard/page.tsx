@@ -2563,15 +2563,15 @@ export default function DashboardPage() {
          ======================================================== */}
       {isMapExpanded && (
         <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-md p-4 sm:p-6 flex flex-col gap-4 select-none animate-fade-in">
-          <div className="flex items-center justify-between bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl shrink-0 shadow-lg">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl shrink-0 shadow-lg">
+            <div className="hidden lg:flex items-center gap-2">
               <MapPin size={20} className="text-[#10b981]" />
               <h3 className="font-display text-base font-bold text-white uppercase tracking-wider">
                 Geolocalização dos Negócios (Visão Expandida em Tela Cheia)
               </h3>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-4 text-xs font-mono">
+            <div className="flex flex-wrap items-center gap-3 lg:gap-4">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs font-mono">
                 <span className="flex items-center gap-1.5 text-slate-300"><span className="w-2.5 h-2.5 rounded-full bg-[#10b981]" /> Pedido Fechado</span>
                 <span className="flex items-center gap-1.5 text-slate-300"><span className="w-2.5 h-2.5 rounded-full bg-orange-500" /> Em Negociação</span>
                 <span className="flex items-center gap-1.5 text-slate-300"><span className="w-2.5 h-2.5 rounded-full bg-cyan-400" /> Aprovação</span>

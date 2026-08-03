@@ -224,6 +224,38 @@ input:-webkit-autofill:active {
   background-color: rgba(18, 18, 18, 0.4) !important;
 }
 
+/* ── Mobile Top Bar / Bottom Nav 100% Idêntica ao Modo Escuro em Qualquer Tema ── */
+[data-theme="light"] .mobile-topbar,
+[data-theme="light"] .mobile-navbar {
+  color: #fafafa !important;
+}
+
+[data-theme="light"] .mobile-topbar .text-\[var\(--white\)\] {
+  color: #fafafa !important;
+}
+
+[data-theme="light"] .mobile-topbar .text-\[var\(--gray2\)\],
+[data-theme="light"] .mobile-navbar .text-\[var\(--gray2\)\] {
+  color: #9a9a9a !important;
+}
+
+[data-theme="light"] .mobile-topbar .hover\:text-\[var\(--white\)\]:hover {
+  color: #fafafa !important;
+}
+
+[data-theme="light"] .mobile-topbar .hover\:bg-\[var\(--charcoal\)\]:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="light"] .mobile-topbar .border-\[var\(--line\)\],
+[data-theme="light"] .mobile-navbar .border-\[var\(--line\)\] {
+  border-color: #2a2a2a !important;
+}
+
+[data-theme="light"] .mobile-navbar .text-\[var\(--lime\)\] {
+  color: #b4d932 !important;
+}
+
 
 /* ══════════════ RESET ══════════════ */
 *, *::before, *::after {
