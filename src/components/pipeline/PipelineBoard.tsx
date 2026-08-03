@@ -30,9 +30,10 @@ const customCollisionDetection: CollisionDetection = (args) => {
 }
 import { Deal, DealStage, STAGE_CONFIG, ACTIVE_STAGES, normalizeDealStage, FOLLOW_UP_LOST_REASONS } from '@/types'
 import { formatCurrency, daysSince, isSameRepresentative, getUniqueCanonicalRepresentatives } from '@/lib/utils'
-import { Plus, Clock, Trophy, XCircle, Search, Filter, Building2, Calendar } from 'lucide-react'
+import { Plus, Clock, Trophy, XCircle, Search, Filter, Building2, Calendar, BarChart3 } from 'lucide-react'
 import { DealDrawer } from './DealDrawer'
 import { PipelineCalendarModal } from './PipelineCalendarModal'
+import { PipelineMonthReview } from './PipelineMonthReview'
 import { RegisterActivityModal } from '@/components/RegisterActivityModal'
 import { getPipelineDeals, savePipelineDeals, DEFAULT_PIPELINE_DEALS } from '@/services/pipeline-service'
 import { supabase } from '@/services/supabase-client'
@@ -938,6 +939,7 @@ export function PipelineBoard() {
   const [celebrationDeal, setCelebrationDeal] = useState<Deal | null>(null)
   const [showNewDealModal, setShowNewDealModal] = useState(false)
   const [showCalendarModal, setShowCalendarModal] = useState(false)
+  const [showMonthReview, setShowMonthReview] = useState(false)
   const [showActivityModal, setShowActivityModal] = useState(false)
   const [activityPreselectedClient, setActivityPreselectedClient] = useState('')
   const [contactsList, setContactsList] = useState<any[]>([])
@@ -1375,6 +1377,19 @@ export function PipelineBoard() {
         </h1>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Revisão do Mês — somente admin/gestor */}
+          {!isRep && (
+            <button
+              type="button"
+              className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer text-white font-bold shadow-md"
+              onClick={() => setShowMonthReview(true)}
+              title="Revisar fechamento de mês anterior"
+            >
+              <BarChart3 size={13} className="text-[var(--lime)]" />
+              <span>Revisão do Mês</span>
+            </button>
+          )}
+
           <button 
             type="button"
             className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer text-white font-bold shadow-md"
@@ -1637,6 +1652,15 @@ export function PipelineBoard() {
             setShowActivityModal(false)
             setActivityPreselectedClient('')
           }}
+        />
+      )}
+
+      {/* Modal de Revisão de Fechamento do Mês — somente admin/gestor */}
+      {showMonthReview && !isRep && (
+        <PipelineMonthReview
+          deals={deals}
+          representativesList={representativesList}
+          onClose={() => setShowMonthReview(false)}
         />
       )}
     </div>
