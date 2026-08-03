@@ -1992,7 +1992,6 @@ function ContactDrawer({
                             <tr className="bg-[var(--charcoal)] border-b border-[var(--line)] text-[10px] font-mono text-[var(--gray2)] uppercase">
                               <th className="py-2.5 px-3">Nº do Pedido</th>
                               <th className="py-2.5 px-3">Data</th>
-                              <th className="py-2.5 px-3">Oportunidade / Negócio</th>
                               <th className="py-2.5 px-3">Condição de Pagamento</th>
                               <th className="py-2.5 px-3">Vendedor (Época da Venda)</th>
                               <th className="py-2.5 px-3 text-right">Valor Fechado</th>
@@ -2003,16 +2002,14 @@ function ContactDrawer({
                               const ordVal = Number(ord.value) > 0 
                                 ? Number(ord.value) 
                                 : (curve === 'A' ? 24500 : curve === 'B' ? 12800 : 4650)
+                              const realOrderNum = ord.number || ord.order_number || (ord.deal_title ? ord.deal_title.replace(/[^0-9]/g, '') : '') || ord.id
                               return (
                                 <tr key={ord.id || idx} className="hover:bg-[var(--lime)]/5 transition-colors">
                                   <td className="py-3 px-3 font-bold text-[var(--lime)] font-mono">
-                                    {ord.order_number || '265094'}
+                                    {realOrderNum}
                                   </td>
                                   <td className="py-3 px-3 text-[var(--white)]">
                                     {ord.date ? ord.date.split('-').reverse().join('/') : '-'}
-                                  </td>
-                                  <td className="py-3 px-3 font-sans font-bold text-[var(--white)] uppercase">
-                                    {ord.deal_title || 'Base Sistema'}
                                   </td>
                                   <td className="py-3 px-3 text-[var(--white)] font-mono text-[11px]">
                                     {ord.payment_terms || ord.condicao_pagamento || (curve === 'A' ? '30/60/90 Dias' : curve === 'B' ? '28/56 Dias' : '30 Dias')}
@@ -3029,7 +3026,7 @@ export default function ContactsPage() {
 
     const loadContacts = async () => {
       if (typeof window !== 'undefined') {
-        const CURRENT_CACHE_VERSION = 'v18_instant_load_2026_08_02'
+        const CURRENT_CACHE_VERSION = 'v19_strict_cnpj_dedup_2026_08_03'
         const savedVersion = localStorage.getItem('crm_contacts_cache_version')
         if (savedVersion !== CURRENT_CACHE_VERSION) {
           localStorage.removeItem('crm_contacts')
