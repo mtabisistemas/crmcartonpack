@@ -480,32 +480,8 @@ export default function DashboardPage() {
         })
       }
 
-      const lastDate = c.lastPurchaseDate || (c as any).last_purchase_date
-      if (lastDate) {
-        const dt = parseFlexibleDate(lastDate)
-        let matchesPeriod = true
-        if (dt) {
-          if (yearFilter !== 'all' && String(dt.getFullYear()) !== yearFilter) matchesPeriod = false
-          if (monthFilter !== 'all' && String(dt.getMonth() + 1).padStart(2, '0') !== monthFilter) matchesPeriod = false
-        }
-        if (matchesPeriod) {
-          const fallbackVal = Number((c as any).lastPurchaseValue || c.projectedPurchaseValue || (c as any).last_purchase_value || (c.curve === 'A' ? 24500 : c.curve === 'B' ? 12800 : 4650))
-          const hasMatchingOrd = extracted.some(o => o.date === lastDate)
-          if (!hasMatchingOrd) {
-            extracted.push({
-              id: `ord-last-${c.id}`,
-              order_number: 'PED-HISTORICO',
-              company: c.company || c.name,
-              cnpj: c.cnpj,
-              representative: c.representative || 'Sem representante',
-              value: fallbackVal,
-              date: lastDate,
-              curve: c.curve || 'C',
-              contact: c
-            })
-          }
-        }
-      }
+      // NOTE: Only real orders from the orders[] array are used.
+      // No estimated/fallback values are injected here.
 
       matchedOrders.push(...extracted)
     })
