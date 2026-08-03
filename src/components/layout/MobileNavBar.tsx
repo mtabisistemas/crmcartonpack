@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Users,
   UserCog,
-  Target,
   Compass,
   CheckCircle,
   Calendar,
@@ -55,7 +54,7 @@ export function MobileNavBar() {
 
   const repItems: NavItem[] = [
     { type: 'link', href: '/diario-de-bordo', label: 'Diário de Bordo', icon: Compass },
-    { type: 'link', href: '/dashboard?tab=painel', label: 'Painel do Rep', icon: Target },
+    { type: 'link', href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { type: 'link', href: '/contacts', label: 'Clientes', icon: Users },
     { type: 'action', action: 'agenda', label: 'Agenda', icon: Calendar },
   ]
@@ -83,11 +82,6 @@ export function MobileNavBar() {
   const splitAt = Math.ceil(items.length / 2)
   const leftItems = items.slice(0, splitAt)
   const rightItems = items.slice(splitAt)
-
-  // Representatives have their own header built into dashboard/page.tsx
-  if (currentUser?.role === 'representante' && pathname === '/dashboard') {
-    return null
-  }
 
   function isActive(href: string) {
     if (href.includes('?tab=')) {

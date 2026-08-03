@@ -83,7 +83,7 @@ export function Sidebar() {
 
   const repNavItems = [
     { href: '/diario-de-bordo', label: 'Diário de Bordo', icon: Compass },
-    { href: '/dashboard?tab=painel', label: 'Painel do Rep', icon: Target },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Clientes', icon: Users },
   ]

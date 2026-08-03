@@ -301,6 +301,13 @@ export default function DiarioDeBordoPage() {
     return 'Boa noite'
   }, [])
 
+  function abbreviateDisplayName(name?: string) {
+    if (!name) return 'Vendedor'
+    const parts = name.trim().split(/\s+/).filter(Boolean)
+    if (parts.length <= 2) return name
+    return `${parts[0]} ${parts[parts.length - 1]}`
+  }
+
   // Admin / Gestor check
   const userRoleLower = (currentUser?.role || '').toLowerCase()
   const isAdminOrManager = userRoleLower.includes('admin') || userRoleLower.includes('gestor')
@@ -1044,7 +1051,7 @@ export default function DiarioDeBordoPage() {
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-display font-black text-[var(--white)] tracking-tight flex items-center gap-2 mt-0.5">
-            <span>{greetingTime}, <strong className="text-[var(--lime)] font-black">{currentUser?.name || 'Vendedor'}</strong>!</span>
+            <span>{greetingTime}, <strong className="text-[var(--lime)] font-black">{abbreviateDisplayName(currentUser?.name)}</strong>!</span>
           </h1>
         </div>
 

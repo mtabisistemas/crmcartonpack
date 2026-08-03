@@ -26,25 +26,13 @@ export function MobileTopBar() {
   const pathname = usePathname()
   const router = useRouter()
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
-  const [currentUser, setCurrentUser] = useState<any | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const activeTheme = (document.documentElement.getAttribute('data-theme') || 'dark') as 'dark' | 'light'
       setTheme(activeTheme)
-      const session = localStorage.getItem('crm_current_user')
-      if (session) {
-        try {
-          setCurrentUser(JSON.parse(session))
-        } catch (e) {
-          console.error(e)
-        }
-      }
     }
   }, [])
-
-  // Representatives have their own header built into dashboard/page.tsx
-  if (currentUser?.role === 'representante' || currentUser?.role === 'vendedor') return null
 
   function toggleTheme() {
     const newTheme = theme === 'dark' ? 'light' : 'dark'

@@ -15,17 +15,9 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
-  const [currentUser, setCurrentUser] = useState<any | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const session = localStorage.getItem('crm_current_user')
-      if (session) {
-        try {
-          setCurrentUser(JSON.parse(session))
-        } catch (e) {}
-      }
-
       // Purge cached test data in browser localStorage (preserving user accounts)
       const dataReset = localStorage.getItem('cp_crm_data_reset_v2')
       if (!dataReset) {
@@ -42,8 +34,6 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
       }
     }
   }, [])
-
-  const isRep = currentUser?.role === 'representante' || currentUser?.role === 'vendedor'
 
   useEffect(() => {
     function checkAuth() {
@@ -123,9 +113,8 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
       <ToastContainer />
       <ActivityTracker />
       <Sidebar />
-      {/* Mobile Top Header Bar (admin/manager only — reps have their own header) */}
       <MobileTopBar />
-      <main className={`main-content lg:pt-0 ${isRep ? 'pt-2' : 'pt-14'}`}>
+      <main className="main-content lg:pt-0 pt-14">
         {children}
       </main>
       <MobileNavBar />

@@ -387,7 +387,10 @@ export default function DashboardPage() {
   // User Role Checking
   const userRoleLower = (currentUser?.role || '').toLowerCase()
   const isAdminOrManager = userRoleLower.includes('admin') || userRoleLower.includes('gestor')
-  const effectiveRepFilter = repFilter
+  // Representatives and vendedores only ever see their own data — the rep filter
+  // dropdown is admin/gestor-only (see isAdminOrManager below), so lock the
+  // effective filter to their own name regardless of the (unused) repFilter state.
+  const effectiveRepFilter = isAdminOrManager ? repFilter : (currentUser?.name || 'all')
 
   // Available Representatives list for Filter (Restrito aos Usuários cadastrados e ativos no sistema)
   const availableReps = useMemo(() => {
@@ -399,13 +402,16 @@ export default function DashboardPage() {
     return []
   }, [systemUsers])
 
-  // Consolidated Orders & Deals dataset filtered by Year, Month, Rep & Curve
-  const filteredData = useMemo(() => {
+  // Consolidated Orders & Deals dataset filtered by Year, Month, Rep & Curve.
+  // Takes the rep filter as a parameter so we can reuse it unrestricted (repFilterValue='all')
+  // for the team ranking, which reps/vendedores should see in full even though the rest
+  // of their dashboard is scoped to their own data only.
+  const buildFilteredData = (repFilterValue: string) => {
     const norm = (s?: string) => (s || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
 
     // 1. Filter Contacts by Rep & Curve
     const validContacts = contacts.filter(c => {
-      if (effectiveRepFilter !== 'all' && !isSameRepresentative(c.representative, effectiveRepFilter)) return false
+      if (repFilterValue !== 'all' && !isSameRepresentative(c.representative, repFilterValue)) return false
       if (curveFilter !== 'all' && (c.curve || 'D') !== curveFilter) return false
       return true
     })
@@ -414,7 +420,7 @@ export default function DashboardPage() {
 
     // 2. Filter Deals
     const matchedDeals = deals.filter(d => {
-      if (effectiveRepFilter !== 'all' && !isSameRepresentative(d.assigned_to, effectiveRepFilter)) return false
+      if (repFilterValue !== 'all' && !isSameRepresentative(d.assigned_to, repFilterValue)) return false
       if (curveFilter !== 'all' && d.contact?.curve && d.contact.curve !== curveFilter) return false
 
       if (yearFilter !== 'all' || monthFilter !== 'all') {
@@ -509,7 +515,19 @@ export default function DashboardPage() {
       deals: matchedDeals,
       orders: matchedOrders
     }
-  }, [contacts, deals, yearFilter, monthFilter, effectiveRepFilter, curveFilter])
+  }
+
+  const filteredData = useMemo(
+    () => buildFilteredData(effectiveRepFilter),
+    [contacts, deals, yearFilter, monthFilter, effectiveRepFilter, curveFilter]
+  )
+
+  // Unrestricted by rep (year/month/curve still apply) — feeds the team ranking so
+  // reps/vendedores can see how the whole team stacks up, not just themselves.
+  const filteredDataForRanking = useMemo(
+    () => buildFilteredData('all'),
+    [contacts, deals, yearFilter, monthFilter, curveFilter]
+  )
 
   // ── METRIC CALCULATIONS ──
   const kpis = useMemo(() => {
@@ -923,7 +941,7 @@ export default function DashboardPage() {
     }> = {}
 
     // Process Orders
-    filteredData.orders.forEach(ord => {
+    filteredDataForRanking.orders.forEach(ord => {
       const rep = formatCanonicalRepName(ord.representative)
       if (!repMap[rep]) repMap[rep] = { name: rep, totalR$: 0, pedidosCount: 0, wonDeals: [], orders: [] }
       repMap[rep].totalR$ += ord.value
@@ -932,7 +950,7 @@ export default function DashboardPage() {
     })
 
     // Process Won Deals
-    filteredData.deals.forEach(d => {
+    filteredDataForRanking.deals.forEach(d => {
       if (d.stage === 'pedido' || d.stage === 'fechamento') {
         const rep = formatCanonicalRepName(d.assigned_to)
         if (!repMap[rep]) repMap[rep] = { name: rep, totalR$: 0, pedidosCount: 0, wonDeals: [], orders: [] }
@@ -944,14 +962,14 @@ export default function DashboardPage() {
     })
 
     const sorted = Object.values(repMap).sort((a, b) => b.totalR$ - a.totalR$)
-    
+
     const top1 = sorted[0] || null
     const top2 = sorted[1] || null
     const top3 = sorted[2] || null
     const remaining = sorted.slice(3)
 
     return { top1, top2, top3, remaining, all: sorted }
-  }, [filteredData])
+  }, [filteredDataForRanking])
 
   // ── MOTIVOS DE PERDA DATA ──
   const lostReasonsData = useMemo(() => {

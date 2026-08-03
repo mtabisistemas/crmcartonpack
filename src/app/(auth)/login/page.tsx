@@ -289,7 +289,7 @@ function translateAuthError(msg: string): string {
         localStorage.setItem('crm_current_user', JSON.stringify(sessionData))
       }
 
-      router.push('/dashboard')
+      router.push('/diario-de-bordo')
       router.refresh()
     } catch (err: any) {
       setPasswordError('Erro inesperado. Tente novamente.')
