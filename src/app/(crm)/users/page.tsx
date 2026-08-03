@@ -2,6 +2,7 @@
 
 import { dbService } from '@/services/supabase-client'
 import { useState, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { isMasterUser } from '@/lib/utils'
 import {
@@ -524,7 +525,7 @@ export default function UsersPage() {
 
       {/* Header — Clean without subtitle matching Contacts page */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
+        <h1 className="hidden lg:block font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
           Gestão de Equipe e Usuários
         </h1>
 
@@ -642,8 +643,86 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Table Card — Compact layout matching Contacts page */}
-      <div className="card overflow-hidden flex flex-col flex-1">
+      {/* Mobile Card List (below lg) — desktop table is unaffected below */}
+      <div className="lg:hidden flex flex-col gap-2">
+        {filteredUsers.map(user => {
+          const roleInfo = getRoleDetails(user.role, user)
+          return (
+            <div
+              key={user.id}
+              onClick={() => setSelectedUserForFicha(user)}
+              className="card p-3 border border-[var(--line)] bg-[var(--card)] rounded-xl flex flex-col gap-2 cursor-pointer active:bg-[var(--charcoal)] transition-colors"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--white)] font-bold text-xs shrink-0"
+                  style={{
+                    background: user.role === 'admin' ? 'rgba(168,85,247,0.15)' : 'var(--line)',
+                    border: `1px solid ${user.role === 'admin' ? 'rgba(168,85,247,0.3)' : 'transparent'}`
+                  }}
+                >
+                  {getInitials(user.name)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold text-[var(--white)] truncate">{user.name}</div>
+                  <div className="text-[10px] text-[var(--gray)] font-mono leading-tight truncate">{user.email || user.username}</div>
+                </div>
+                <span
+                  className="font-mono text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider inline-block shrink-0"
+                  style={{ background: roleInfo.bg, color: roleInfo.color, border: `1px solid ${roleInfo.border}` }}
+                >
+                  {roleInfo.label}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-[var(--line)]">
+                {(isAdmin || isGestor) ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleToggleStatus(user) }}
+                    title={`Clique para deixar o usuário ${user.status === 'ativo' ? 'inativo' : 'ativo'}`}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold border transition-all cursor-pointer ${
+                      user.status === 'ativo'
+                        ? 'bg-[rgba(34,197,94,0.15)] text-[var(--green)] border-[rgba(34,197,94,0.25)] hover:bg-[rgba(34,197,94,0.25)]'
+                        : 'bg-[rgba(239,68,68,0.15)] text-[var(--red)] border-[rgba(239,68,68,0.25)] hover:bg-[rgba(239,68,68,0.25)]'
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${user.status === 'ativo' ? 'bg-[var(--green)]' : 'bg-[var(--red)]'}`}></span>
+                    <span>{user.status === 'ativo' ? 'ATIVO' : 'INATIVO'}</span>
+                  </button>
+                ) : (
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold border ${
+                    user.status === 'ativo'
+                      ? 'bg-[rgba(34,197,94,0.15)] text-[var(--green)] border-[rgba(34,197,94,0.25)]'
+                      : 'bg-[rgba(239,68,68,0.15)] text-[var(--red)] border-[rgba(239,68,68,0.25)]'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${user.status === 'ativo' ? 'bg-[var(--green)]' : 'bg-[var(--red)]'}`}></span>
+                    <span>{user.status === 'ativo' ? 'ATIVO' : 'INATIVO'}</span>
+                  </span>
+                )}
+                <span className="text-[10px] font-mono text-[var(--gray)]">{user.phone || '-'}</span>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-[var(--gray2)]">
+                <span>Últ. acesso: <span className={user.lastSeenAt ? "text-[var(--white)] font-bold" : ""}>{formatLastSeen(user.lastSeenAt)}</span></span>
+                {isAdmin && (
+                  <div className="flex items-center gap-1 min-w-0">
+                    <MapPin size={12} className="text-[var(--lime)] shrink-0" />
+                    <span className="truncate max-w-[120px]" title={user.lastLocation || 'Não capturada'}>
+                      {user.lastLocation || 'Não capturada'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+        {filteredUsers.length === 0 && (
+          <div className="text-center py-12 text-xs text-[var(--gray2)] font-mono">Nenhum usuário encontrado.</div>
+        )}
+      </div>
+
+      {/* Table Card — Compact layout matching Contacts page — desktop only */}
+      <div className="hidden lg:flex card overflow-hidden flex-col flex-1">
         <div className="overflow-x-auto flex-1 overflow-y-auto custom-scrollbar">
           <table className="w-full text-left border-collapse text-xs">
             <thead className="sticky top-0 z-10 bg-[var(--charcoal)] shadow-sm">
@@ -1107,7 +1186,7 @@ Obs: No primeiro acesso você deverá alterar a senha temporária para ativar su
       })()}
 
       {/* Ficha do Usuário (Drawer) */}
-      {selectedUserForFicha && (
+      {selectedUserForFicha && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 overflow-hidden">
           <div className="absolute inset-0 bg-black/75 backdrop-blur-sm transition-opacity" onClick={() => setSelectedUserForFicha(null)} />
           
@@ -1234,7 +1313,8 @@ Obs: No primeiro acesso você deverá alterar a senha temporária para ativar su
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

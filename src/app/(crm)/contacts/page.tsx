@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { 
   Search, 
   Filter, 
@@ -970,7 +971,9 @@ function ContactDrawer({
     }
   }
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <>
       {/* Backdrop */}
       {isOpen && (
@@ -983,17 +986,22 @@ function ContactDrawer({
       {/* Drawer Body */}
       <div className={`drawer-sheet ${isOpen ? 'translate-x-0' : 'translate-x-full'}`} style={{ width: '960px', maxWidth: '95vw' }}>
         {/* Header */}
-        <div className="p-4 px-6 border-b border-[var(--line)] flex justify-between items-center bg-[var(--card)]">
-          <div>
-            <h2 className="font-display text-base text-[var(--white)] font-bold">{company}</h2>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-xs text-[var(--gray)] font-mono">{cnpj}</span>
-              {((contact as any)?.cod_cliente || (contact as any)?.client_code) && (
-                <span className="text-[10px] font-mono font-bold text-[var(--lime)] bg-[var(--lime)]/10 px-2 py-0.5 rounded border border-[var(--lime)]/30">
-                  CÓD: {(contact as any)?.cod_cliente || (contact as any)?.client_code}
-                </span>
-              )}
+        <div className="p-4 px-4 sm:px-6 border-b border-[var(--line)] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-[var(--card)]">
+          <div className="flex items-start justify-between gap-2 sm:block">
+            <div className="min-w-0">
+              <h2 className="font-display text-base text-[var(--white)] font-bold truncate">{company}</h2>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-xs text-[var(--gray)] font-mono">{cnpj}</span>
+                {((contact as any)?.cod_cliente || (contact as any)?.client_code) && (
+                  <span className="text-[10px] font-mono font-bold text-[var(--lime)] bg-[var(--lime)]/10 px-2 py-0.5 rounded border border-[var(--lime)]/30">
+                    CÓD: {(contact as any)?.cod_cliente || (contact as any)?.client_code}
+                  </span>
+                )}
+              </div>
             </div>
+            <button onClick={onClose} className="sm:hidden shrink-0 text-gray-400 hover:text-[var(--white)] p-1.5 rounded-lg hover:bg-[var(--line)] transition-colors">
+              <X size={18} />
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
@@ -1002,24 +1010,26 @@ function ContactDrawer({
               onClick={() => {
                 if (onOpenRegisterActivity) onOpenRegisterActivity(contact.id)
               }}
-              className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 font-bold hover:border-[var(--lime)] hover:text-[var(--lime)] transition-all cursor-pointer shadow-sm"
+              className="flex-1 sm:flex-initial btn btn-secondary text-xs py-1.5 px-2 sm:px-3 flex items-center justify-center gap-1.5 font-bold hover:border-[var(--lime)] hover:text-[var(--lime)] transition-all cursor-pointer shadow-sm whitespace-nowrap"
               title="Registrar nova reunião, ligação, WhatsApp, e-mail ou anotação"
             >
-              <CheckCircle size={14} className="text-[var(--lime)]" />
-              <span>Registrar Atividade</span>
+              <CheckCircle size={14} className="text-[var(--lime)] shrink-0" />
+              <span className="hidden sm:inline">Registrar Atividade</span>
+              <span className="sm:hidden">Registrar</span>
             </button>
 
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => handleSaveGeneral()}
               disabled={isSaving}
-              className={"btn btn-primary text-xs py-1.5 px-4 flex items-center gap-2 font-bold shadow-lg transition-all " + (isSaved ? '!bg-emerald-500 !text-black' : '')}
+              className={"flex-1 sm:flex-initial btn btn-primary text-xs py-1.5 px-2 sm:px-4 flex items-center justify-center gap-1.5 sm:gap-2 font-bold shadow-lg transition-all whitespace-nowrap " + (isSaved ? '!bg-emerald-500 !text-black' : '')}
             >
-              <Save size={13} />
-              <span>{isSaving ? 'Salvando...' : isSaved ? 'Edição Salva! ✓' : 'Salvar Alterações'}</span>
+              <Save size={13} className="shrink-0" />
+              <span className="hidden sm:inline">{isSaving ? 'Salvando...' : isSaved ? 'Edição Salva! ✓' : 'Salvar Alterações'}</span>
+              <span className="sm:hidden">{isSaving ? 'Salvando...' : isSaved ? 'Salvo ✓' : 'Salvar'}</span>
             </button>
 
-            <button onClick={onClose} className="text-gray-400 hover:text-[var(--white)] p-1.5 rounded-lg hover:bg-[var(--line)] transition-colors">
+            <button onClick={onClose} className="hidden sm:flex shrink-0 text-gray-400 hover:text-[var(--white)] p-1.5 rounded-lg hover:bg-[var(--line)] transition-colors">
               <X size={18} />
             </button>
           </div>
@@ -1027,29 +1037,37 @@ function ContactDrawer({
 
         {/* Tabs */}
         <div className="drawer-tabs">
-          <button 
-            className={`drawer-tab-btn ${activeTab === 'geral' ? 'active' : ''}`}
+          <button
+            className={`drawer-tab-btn flex flex-col sm:block items-center justify-center gap-1 ${activeTab === 'geral' ? 'active' : ''}`}
             onClick={() => setActiveTab('geral')}
           >
-            Ficha Geral
+            <User size={14} className="sm:hidden" />
+            <span className="hidden sm:inline">Ficha Geral</span>
+            <span className="sm:hidden">Geral</span>
           </button>
-          <button 
-            className={`drawer-tab-btn ${activeTab === 'planejamento' ? 'active' : ''}`}
+          <button
+            className={`drawer-tab-btn flex flex-col sm:block items-center justify-center gap-1 ${activeTab === 'planejamento' ? 'active' : ''}`}
             onClick={() => setActiveTab('planejamento')}
           >
-            Projeção & Planejamento
+            <TrendingUp size={14} className="sm:hidden" />
+            <span className="hidden sm:inline">Projeção & Planejamento</span>
+            <span className="sm:hidden">Projeção</span>
           </button>
-          <button 
-            className={`drawer-tab-btn ${activeTab === 'historico' ? 'active' : ''}`}
+          <button
+            className={`drawer-tab-btn flex flex-col sm:block items-center justify-center gap-1 ${activeTab === 'historico' ? 'active' : ''}`}
             onClick={() => setActiveTab('historico')}
           >
-            Histórico de Atividades
+            <Clock size={14} className="sm:hidden" />
+            <span className="hidden sm:inline">Histórico de Atividades</span>
+            <span className="sm:hidden">Atividades</span>
           </button>
-          <button 
-            className={`drawer-tab-btn ${activeTab === 'pedidos' ? 'active' : ''}`}
+          <button
+            className={`drawer-tab-btn flex flex-col sm:block items-center justify-center gap-1 ${activeTab === 'pedidos' ? 'active' : ''}`}
             onClick={() => setActiveTab('pedidos')}
           >
-            Histórico de Pedidos
+            <Package size={14} className="sm:hidden" />
+            <span className="hidden sm:inline">Histórico de Pedidos</span>
+            <span className="sm:hidden">Pedidos</span>
           </button>
         </div>
 
@@ -1061,19 +1079,20 @@ function ContactDrawer({
             <div className="flex flex-col gap-4 animate-fade-in pb-12">
               
               {/* Seção Destaques no Topo: Curva, Representante e Status */}
-              <div className="grid grid-cols-3 gap-3 p-3 bg-[var(--card2)] border border-[var(--line)] rounded-xl">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-[var(--card2)] border border-[var(--line)] rounded-xl">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Curva ABC</label>
-                  <select 
-                    className="input text-xs py-1 px-2 font-bold text-[var(--lime)] font-mono bg-[var(--charcoal)]"
-                    value={curve} 
-                    onChange={(e) => setCurve(e.target.value as any)}
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+                    Curva ABC <span className="normal-case font-normal text-[var(--gray2)]/70">(automático)</span>
+                  </label>
+                  <div
+                    className="input text-xs py-1 px-2 font-bold font-mono bg-[var(--charcoal)] select-none cursor-default"
+                    style={{
+                      color: curve === 'A' ? 'var(--lime)' : curve === 'B' ? 'var(--yellow)' : curve === 'C' ? '#38bdf8' : '#a78bfa'
+                    }}
+                    title="Curva calculada automaticamente com base no histórico de compras"
                   >
-                    <option value="A">Curva A</option>
-                    <option value="B">Curva B</option>
-                    <option value="C">Curva C</option>
-                    <option value="D">Curva D</option>
-                  </select>
+                    Curva {curve}
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -1090,26 +1109,24 @@ function ContactDrawer({
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Status Carteira</label>
-                  <select 
-                    className="input text-xs py-1 px-2 font-bold bg-[var(--charcoal)] uppercase"
-                    style={{ 
-                      color: status === 'ativo' 
-                        ? 'var(--lime)' 
-                        : status === 'prospeccao' 
-                          ? 'var(--yellow)' 
+                  <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">
+                    Status Carteira <span className="normal-case font-normal text-[var(--gray2)]/70">(automático)</span>
+                  </label>
+                  <div
+                    className="input text-xs py-1 px-2 font-bold bg-[var(--charcoal)] uppercase select-none cursor-default"
+                    style={{
+                      color: status === 'ativo'
+                        ? 'var(--lime)'
+                        : status === 'prospeccao'
+                          ? 'var(--yellow)'
                           : status === 'reativacao'
                             ? '#f97316'
-                            : 'var(--red)' 
+                            : 'var(--red)'
                     }}
-                    value={status} 
-                    onChange={(e) => setStatus(e.target.value as any)}
+                    title="Status calculado automaticamente com base na última compra"
                   >
-                    <option value="ativo">Ativo</option>
-                    <option value="prospeccao">Em Prospecção</option>
-                    <option value="reativacao">Reativação</option>
-                    <option value="inativo">Inativo</option>
-                  </select>
+                    {status === 'ativo' ? 'Ativo' : status === 'prospeccao' ? 'Em Prospecção' : status === 'reativacao' ? 'Reativação' : 'Inativo'}
+                  </div>
                 </div>
               </div>
               
@@ -2023,7 +2040,8 @@ function ContactDrawer({
 
         </div>
       </div>
-    </>
+    </>,
+    document.body
   )
 }
 
@@ -3788,11 +3806,11 @@ export default function ContactsPage() {
     <div className="page-content animate-fade-in w-full h-full flex flex-col gap-2.5">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
+        <h1 className="hidden lg:block font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
           Carteira de Clientes
         </h1>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="hidden lg:flex flex-wrap items-center gap-2.5">
           <button
             onClick={() => {
               setSelectedContactForActivity('')
@@ -4205,8 +4223,117 @@ export default function ContactsPage() {
           })}
         </div>
       ) : (
-        /* ── ADMIN / GESTOR TABLE VIEW (RESTAURAÇÃO EXATA DO ESTILO ORIGINAL AF003FA) ── */
-        <div className="card overflow-hidden border border-[var(--line)] rounded-2xl flex flex-col">
+        /* ── ADMIN / GESTOR VIEW ── */
+        <>
+          {/* Mobile Card List (below lg) — desktop table is unaffected below */}
+          <div className="lg:hidden flex flex-col gap-2">
+            {paginatedContacts.map(contact => {
+              const repInfo = getContactActivityAndRepurchaseInfo(contact)
+              const effectiveStatus = repInfo.computedStatus
+              return (
+                <div
+                  key={contact.id}
+                  onClick={() => setSelectedContact(contact)}
+                  className="card p-3 border border-[var(--line)] bg-[var(--card)] rounded-xl flex flex-col gap-2 cursor-pointer active:bg-[var(--charcoal)] transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-bold text-[var(--white)] truncate">{contact.company || contact.name}</div>
+                      <div className="text-[10px] text-[var(--gray)] font-mono mt-0.5">{contact.cnpj || 'CNPJ não informado'}</div>
+                    </div>
+                    <span
+                      className="font-mono text-[10px] font-black px-2 py-0.5 rounded whitespace-nowrap inline-block shrink-0"
+                      style={{
+                        background: contact.curve === 'A' ? 'rgba(180,217,50,0.12)' : contact.curve === 'B' ? 'rgba(240,196,25,0.1)' : 'rgba(255,255,25,0.05)',
+                        color: contact.curve === 'A' ? 'var(--lime)' : contact.curve === 'B' ? 'var(--yellow)' : 'var(--gray)',
+                        border: `1px solid ${contact.curve === 'A' ? 'rgba(180,217,50,0.25)' : contact.curve === 'B' ? 'rgba(240,196,25,0.2)' : 'var(--line)'}`
+                      }}
+                    >
+                      Curva {contact.curve || 'D'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-[var(--white)] font-mono truncate">
+                      {(contact.city || '').toUpperCase() || '-'}{contact.state ? ` · ${contact.state.toUpperCase()}` : ''}
+                    </span>
+                    {(() => {
+                      if (effectiveStatus === 'prospeccao') return (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-amber-400/10 border border-amber-400/25 text-amber-300 shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-pulse" />
+                          Prospecção
+                        </span>
+                      )
+                      if (effectiveStatus === 'reativacao') return (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-orange-500/10 border border-orange-500/25 text-orange-400 shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" />
+                          Reativação
+                        </span>
+                      )
+                      return (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-[var(--lime)]/10 border border-[var(--lime)]/25 text-[var(--lime)] shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--lime)] inline-block" />
+                          Ativo
+                        </span>
+                      )
+                    })()}
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-[var(--line)]">
+                    <div className="flex items-center gap-1.5 min-w-0 text-xs font-semibold text-[var(--white)]">
+                      <User size={11} className="text-[var(--gray)] shrink-0" />
+                      <span className="truncate" title={formatCanonicalRepName(contact.representative)}>
+                        {formatCanonicalRepName(contact.representative) || <span className="text-[var(--gray2)] font-normal italic">Sem representante</span>}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] font-mono font-bold text-[var(--white)]">
+                        {repInfo.daysSinceLastPurchase !== null ? `${repInfo.daysSinceLastPurchase}d` : '-'}
+                      </span>
+                      <button
+                        onClick={(e) => openMap(e, contact)}
+                        title="Ver no Google Maps"
+                        className={`inline-flex items-center justify-center transition-colors ${
+                          (contact.address || contact.city)
+                            ? 'text-[var(--lime)] hover:opacity-70 cursor-pointer'
+                            : 'text-[var(--gray2)] opacity-30 pointer-events-none'
+                        }`}
+                      >
+                        <MapPin size={15} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            {filteredContacts.length === 0 && (
+              <div className="text-center py-12 text-xs text-[var(--gray2)] font-mono">Nenhum cliente encontrado com os filtros aplicados.</div>
+            )}
+            {filteredContacts.length > 0 && (
+              <div className="card p-3 flex items-center justify-between gap-2 mt-1">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  className="btn btn-secondary text-[11px] px-2.5 py-1 rounded-md disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed font-mono font-bold"
+                >
+                  &larr; Anterior
+                </button>
+                <span className="text-xs font-mono font-bold text-[var(--lime)] px-2">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  className="btn btn-secondary text-[11px] px-2.5 py-1 rounded-md disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed font-mono font-bold"
+                >
+                  Próxima &rarr;
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* ── ADMIN / GESTOR TABLE VIEW (RESTAURAÇÃO EXATA DO ESTILO ORIGINAL AF003FA) — desktop only ── */}
+        <div className="hidden lg:flex card overflow-hidden border border-[var(--line)] rounded-2xl flex-col">
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse text-xs">
               <thead className="sticky top-0 z-10 bg-[var(--charcoal)] shadow-sm">
@@ -4464,6 +4591,7 @@ export default function ContactsPage() {
             </div>
           )}
         </div>
+        </>
       )}
 
       {/* Contact Details Drawer */}

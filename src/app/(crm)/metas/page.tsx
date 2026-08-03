@@ -483,9 +483,22 @@ export default function MetasPage() {
         </div>
       )}
 
+      {/* Metas is desktop-only — mobile shows a simple notice instead */}
+      <div className="lg:hidden flex-1 min-h-0 flex flex-col items-center justify-center text-center gap-3 px-6">
+        <div className="w-12 h-12 rounded-2xl bg-[var(--card)] border border-[var(--line)] flex items-center justify-center text-[var(--gray)]">
+          <Target size={22} />
+        </div>
+        <div className="text-sm font-bold text-[var(--white)]">Metas disponíveis no computador</div>
+        <div className="text-xs text-[var(--gray2)] font-mono max-w-xs">
+          Acesse pelo computador para consultar e ajustar as metas comerciais da equipe.
+        </div>
+      </div>
+
+      <div className="hidden lg:flex lg:flex-col gap-2.5 flex-1 min-h-0">
+
       {/* Header — Clean without subtitle matching Contacts Page */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
+        <h1 className="hidden lg:block font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
           Metas & Parâmetros Comerciais
         </h1>
 
@@ -719,7 +732,158 @@ export default function MetasPage() {
                 Nenhum usuário comercial encontrado com os filtros aplicados.
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              {/* Mobile Card List (below lg) — desktop table is unaffected below */}
+              <div className="lg:hidden flex flex-col gap-3">
+                {filteredTeamUsers.map(u => {
+                  const key = `${selectedYear}_${selectedMonth}_${u.id || u.name}`
+                  const g = goalsMap[key] || { salesGoal: 30000, visitsGoal: 20, contactsGoal: 400, newClientsGoal: 2 }
+
+                  const rawVisits = (g.visitsGoal !== undefined && g.visitsGoal !== null) ? g.visitsGoal : 20
+                  const rawContacts = (g.contactsGoal !== undefined && g.contactsGoal !== null) ? g.contactsGoal : 400
+
+                  const visitsDisp = viewMode === 'mensal' ? rawVisits : viewMode === 'semanal' ? Math.round(rawVisits / 4.4) : Math.round(rawVisits / businessDays)
+                  const contactsDisp = viewMode === 'mensal' ? rawContacts : viewMode === 'semanal' ? Math.round(rawContacts / 4.4) : Math.round(rawContacts / businessDays)
+                  const clientsDisp = viewMode === 'mensal' ? g.newClientsGoal : viewMode === 'semanal' ? Math.round(g.newClientsGoal / 4.4) : Math.round(g.newClientsGoal / businessDays)
+
+                  const isVisitsActive = g.hasVisitsGoal !== false && rawVisits > 0
+                  const isContactsActive = g.hasContactsGoal !== false && rawContacts > 0
+
+                  return (
+                    <div key={u.id || u.name} className="card p-3 border border-[var(--line)] bg-[var(--card)] rounded-xl flex flex-col gap-3">
+                      <div className="flex items-center gap-2 pb-2 border-b border-[var(--line)]">
+                        <div className="w-7 h-7 rounded-full bg-[var(--charcoal)] text-[var(--white)] font-mono font-bold flex items-center justify-center text-xs shrink-0 border border-[var(--line)]">
+                          {u.name ? u.name.slice(0, 2).toUpperCase() : 'US'}
+                        </div>
+                        <span className="text-sm font-bold text-[var(--white)] flex-1 min-w-0 truncate">{u.name}</span>
+                        {(() => {
+                          const isThaiane = (u.email || '').toLowerCase().includes('thaiane') || (u.name || '').toLowerCase().includes('thaiane')
+                          const rLower = (u.role || '').toLowerCase()
+                          const label = isThaiane || rLower.includes('gestor') ? 'GESTOR COMERCIAL' : rLower.includes('admin') ? 'ADMINISTRADOR' : rLower.includes('vend') ? 'VENDEDOR' : 'REPRESENTANTE'
+                          const isRep = !isThaiane && !rLower.includes('admin') && !rLower.includes('gestor') && !rLower.includes('vend')
+                          return (
+                            <span className={`text-[9px] font-mono px-2 py-0.5 rounded font-bold uppercase bg-[var(--charcoal)] border border-[var(--line)] shrink-0 ${isRep ? 'text-[var(--lime)]' : 'text-[var(--white)]'}`}>
+                              {label}
+                            </span>
+                          )
+                        })()}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[9px] font-mono text-[var(--gray2)] uppercase">Meta Vendas (R$)</label>
+                          <div className="flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2.5 py-1.5 focus-within:border-[var(--lime)]">
+                            <span className="text-[10px] text-[var(--gray2)] font-bold shrink-0">R$</span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={formatNumberBr(viewMode === 'mensal' ? (g.salesGoal || 0) : (viewMode === 'semanal' ? Math.round(g.salesGoal / 4.4) : Math.round(g.salesGoal / businessDays)))}
+                              onChange={e => {
+                                let val = parseNumberBr(e.target.value)
+                                if (viewMode === 'semanal') val = Math.round(val * 4.4)
+                                if (viewMode === 'diaria') val = Math.round(val * businessDays)
+                                handleUpdateGoalField(key, 'salesGoal', val.toString())
+                              }}
+                              className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] text-right w-full min-w-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[9px] font-mono text-[var(--gray2)] uppercase">Meta Novos Clientes</label>
+                          <div className="flex items-center gap-1 bg-[var(--charcoal)] border border-[var(--line)] rounded-xl px-2.5 py-1.5 focus-within:border-[var(--lime)]">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={formatNumberBr(viewMode === 'mensal' ? (g.newClientsGoal || 0) : clientsDisp)}
+                              onChange={e => {
+                                let val = parseNumberBr(e.target.value)
+                                if (viewMode === 'semanal') val = Math.round(val * 4.4)
+                                if (viewMode === 'diaria') val = Math.round(val * businessDays)
+                                handleUpdateGoalField(key, 'newClientsGoal', val.toString())
+                              }}
+                              className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] text-right w-full min-w-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                            <span className="text-[10px] text-[var(--gray2)] shrink-0">clientes</span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[9px] font-mono text-[var(--gray2)] uppercase">Meta Visitas</label>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleGoal(key, 'visitsGoal', !isVisitsActive)}
+                              className="bg-transparent border-none p-0 outline-none cursor-pointer flex items-center justify-center shrink-0"
+                              title={isVisitsActive ? 'Desabilitar Meta de Visitas (zerar)' : 'Habilitar Meta de Visitas'}
+                            >
+                              {isVisitsActive ? (
+                                <ToggleRight size={20} className="text-[var(--lime)] transition-colors" />
+                              ) : (
+                                <ToggleLeft size={20} className="text-neutral-600 hover:text-neutral-400 transition-colors" />
+                              )}
+                            </button>
+                            <div className={`flex-1 min-w-0 flex items-center gap-1 bg-[var(--charcoal)] border rounded-xl px-2.5 py-1.5 transition-all ${
+                              isVisitsActive ? 'border-[var(--line)] focus-within:border-[var(--lime)]' : 'border-neutral-800 opacity-40 select-none'
+                            }`}>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                disabled={!isVisitsActive}
+                                value={isVisitsActive ? formatNumberBr(viewMode === 'mensal' ? rawVisits : visitsDisp) : '0'}
+                                onChange={e => {
+                                  let val = parseNumberBr(e.target.value)
+                                  if (viewMode === 'semanal') val = Math.round(val * 4.4)
+                                  if (viewMode === 'diaria') val = Math.round(val * businessDays)
+                                  handleUpdateGoalField(key, 'visitsGoal', val.toString())
+                                }}
+                                className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] text-right w-full min-w-0 disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[9px] font-mono text-[var(--gray2)] uppercase">Meta Contatos</label>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleGoal(key, 'contactsGoal', !isContactsActive)}
+                              className="bg-transparent border-none p-0 outline-none cursor-pointer flex items-center justify-center shrink-0"
+                              title={isContactsActive ? 'Desabilitar Meta de Contatos (zerar)' : 'Habilitar Meta de Contatos'}
+                            >
+                              {isContactsActive ? (
+                                <ToggleRight size={20} className="text-[var(--lime)] transition-colors" />
+                              ) : (
+                                <ToggleLeft size={20} className="text-neutral-600 hover:text-neutral-400 transition-colors" />
+                              )}
+                            </button>
+                            <div className={`flex-1 min-w-0 flex items-center gap-1 bg-[var(--charcoal)] border rounded-xl px-2.5 py-1.5 transition-all ${
+                              isContactsActive ? 'border-[var(--line)] focus-within:border-[var(--lime)]' : 'border-neutral-800 opacity-40 select-none'
+                            }`}>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                disabled={!isContactsActive}
+                                value={isContactsActive ? formatNumberBr(viewMode === 'mensal' ? rawContacts : contactsDisp) : '0'}
+                                onChange={e => {
+                                  let val = parseNumberBr(e.target.value)
+                                  if (viewMode === 'semanal') val = Math.round(val * 4.4)
+                                  if (viewMode === 'diaria') val = Math.round(val * businessDays)
+                                  handleUpdateGoalField(key, 'contactsGoal', val.toString())
+                                }}
+                                className="bg-transparent border-none outline-none text-xs font-bold text-[var(--white)] text-right w-full min-w-0 disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-[var(--line)] text-[10px] font-mono text-[var(--gray2)] uppercase">
@@ -919,6 +1083,7 @@ export default function MetasPage() {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </div>
         </div>
@@ -1203,6 +1368,7 @@ export default function MetasPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

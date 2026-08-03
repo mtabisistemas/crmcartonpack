@@ -1400,7 +1400,7 @@ export default function DashboardPage() {
           1. BARRA SUPERIOR DE CABEÇALHO & FILTROS (ESTILO CONTATOS)
          ======================================================== */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden shrink-0">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-xl sm:text-2xl font-display font-black text-[var(--white)] tracking-tight">
             Performance Comercial
           </h1>
@@ -1469,22 +1469,6 @@ export default function DashboardPage() {
               </select>
             </div>
           )}
-
-          {/* Curva ABC Filter */}
-          <div className="flex items-center gap-1.5 bg-[var(--charcoal)] border border-[var(--line)] px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
-            <span className="text-[var(--gray2)] text-[10px] uppercase font-bold">Curva:</span>
-            <select
-              value={curveFilter}
-              onChange={(e) => setCurveFilter(e.target.value)}
-              className="bg-transparent text-[var(--white)] font-bold outline-none cursor-pointer"
-            >
-              <option value="all" className="bg-[var(--card)]">Todas as Curvas</option>
-              <option value="A" className="bg-[var(--card)]">Curva A</option>
-              <option value="B" className="bg-[var(--card)]">Curva B</option>
-              <option value="C" className="bg-[var(--card)]">Curva C</option>
-              <option value="D" className="bg-[var(--card)]">Curva D</option>
-            </select>
-          </div>
 
         </div>
       </div>

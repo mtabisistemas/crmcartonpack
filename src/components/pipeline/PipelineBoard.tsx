@@ -1370,7 +1370,7 @@ export function PipelineBoard() {
     <div className="page-content animate-fade-in w-full h-full flex flex-col gap-2.5 overflow-hidden">
       {/* ── HEADER ROW: TÍTULO DA PÁGINA + BOTÕES DE AÇÃO ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <h1 className="font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
+        <h1 className="hidden lg:block font-display text-xl md:text-2xl text-[var(--white)] font-bold tracking-tight">
           Pipeline de Vendas
         </h1>
 
@@ -1488,7 +1488,19 @@ export function PipelineBoard() {
         </div>
       </div>
 
-      {/* Board — rendered client-side only to avoid @dnd-kit aria-describedby hydration mismatch */}
+      {/* Pipeline is desktop-only — mobile shows a simple notice instead of the board */}
+      <div className="lg:hidden flex-1 min-h-0 flex flex-col items-center justify-center text-center gap-3 px-6">
+        <div className="w-12 h-12 rounded-2xl bg-[var(--card)] border border-[var(--line)] flex items-center justify-center text-[var(--gray)]">
+          <Building2 size={22} />
+        </div>
+        <div className="text-sm font-bold text-[var(--white)]">Pipeline disponível no computador</div>
+        <div className="text-xs text-[var(--gray2)] font-mono max-w-xs">
+          Acesse pelo computador para visualizar e movimentar os negócios do funil de vendas.
+        </div>
+      </div>
+
+      {/* Board — rendered client-side only to avoid @dnd-kit aria-describedby hydration mismatch — desktop only */}
+      <div className="hidden lg:flex lg:flex-col flex-1 min-h-0">
       {mounted ? (
         <DndContext
           sensors={sensors}
@@ -1547,6 +1559,7 @@ export function PipelineBoard() {
           </div>
         </div>
       )}
+      </div>
 
       {/* Deal Detail Drawer */}
       <DealDrawer

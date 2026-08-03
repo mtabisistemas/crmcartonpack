@@ -1143,6 +1143,20 @@ textarea.input { resize: vertical; min-height: 80px; }
   padding: 28px;
 }
 
+@media (max-width: 1023px) {
+  .page-content {
+    padding: 14px;
+  }
+
+  /* Flex-column pages (page-content, and any nested flex-col wrapper) squeeze
+     their tall children (tables, boards) toward 0 height instead of letting
+     the column scroll, because flex-shrink defaults to 1. Pin direct children
+     to their content size so overflow-y: auto on the column does the scrolling. */
+  .page-content > * {
+    flex-shrink: 0;
+  }
+}
+
 /* ══════════════ ANIMATIONS ══════════════ */
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(12px); }

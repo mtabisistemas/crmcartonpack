@@ -1045,7 +1045,6 @@ export default function DiarioDeBordoPage() {
 
           <h1 className="text-2xl sm:text-3xl font-display font-black text-[var(--white)] tracking-tight flex items-center gap-2 mt-0.5">
             <span>{greetingTime}, <strong className="text-[var(--lime)] font-black">{currentUser?.name || 'Vendedor'}</strong>!</span>
-            <span className="text-xl">☀️</span>
           </h1>
         </div>
 
@@ -1350,8 +1349,8 @@ export default function DiarioDeBordoPage() {
           2.5. GRÁFICOS SEPARADOS DE ATIVIDADES (VISITAS X CONTATOS) E DESEMPENHO POR REPRESENTANTE
          ======================================================== */}
       {(pacingMetrics.hasVisitsGoal || pacingMetrics.hasContactsGoal) && (
-        <div className="flex flex-col gap-5 shrink-0">
-          
+        <div className="hidden lg:flex lg:flex-col gap-5 shrink-0">
+
           {/* BARRA DE BOTÕES DE GRANULARIDADE (DIÁRIO, SEMANAL, MENSAL) */}
           <div className="flex items-center justify-between gap-3 bg-[var(--card)] border border-[var(--line)] px-4 py-3 rounded-2xl shadow-lg">
             <div className="flex items-center gap-2.5">
