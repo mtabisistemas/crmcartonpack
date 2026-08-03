@@ -5,18 +5,22 @@ import { Download, Smartphone, X, Share } from 'lucide-react'
 
 export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
-  const [isInstalled, setIsInstalled] = useState<boolean>(true) // default to true until checked
+  // Default to "not installed" so the CTA fails open — worst case a user who
+  // already has the app sees it briefly, instead of a user who needs it never
+  // seeing it because of a stale flag or a slow check.
+  const [isInstalled, setIsInstalled] = useState<boolean>(false)
   const [isIOS, setIsIOS] = useState<boolean>(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    // 1. Check if already running in standalone mode (installed)
-    const isStandalone = 
+    // 1. Check if already running in standalone mode (installed).
+    // This is re-evaluated on every load — a stale localStorage flag is never
+    // allowed to override what the browser reports right now.
+    const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone === true ||
-      document.referrer.includes('android-app://') ||
-      localStorage.getItem('cp_crm_app_installed') === 'true'
+      document.referrer.includes('android-app://')
 
     if (isStandalone) {
       setIsInstalled(true)
@@ -74,12 +78,12 @@ export function usePWAInstall() {
   }
 }
 
-export function InstallPWAButton({ 
+export function InstallPWAButton({
   variant = 'sidebar',
-  className = '' 
-}: { 
-  variant?: 'sidebar' | 'header' | 'mobile_header'
-  className?: string 
+  className = ''
+}: {
+  variant?: 'sidebar' | 'header' | 'mobile_header' | 'floating'
+  className?: string
 }) {
   const { isInstalled, isIOS, promptInstall, deferredPrompt } = usePWAInstall()
   const [showIOSModal, setShowIOSModal] = useState(false)
@@ -132,6 +136,17 @@ export function InstallPWAButton({
         >
           <Download size={15} />
           <span className="hidden sm:inline">Baixar App</span>
+        </button>
+      )}
+
+      {variant === 'floating' && (
+        <button
+          onClick={handleClick}
+          title="Baixar Aplicativo (PWA)"
+          className={`lg:hidden fixed bottom-20 right-4 z-40 flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-full bg-[var(--lime)] text-[#060606] font-bold text-xs shadow-[0_4px_20px_rgba(180,217,50,0.45)] cursor-pointer active:scale-95 transition-transform animate-fade-up ${className}`}
+        >
+          <Download size={16} strokeWidth={2.3} />
+          <span>Baixar App</span>
         </button>
       )}
 
