@@ -1411,7 +1411,7 @@ export default function DiarioDeBordoPage() {
             {pacingMetrics.hasVisitsGoal && (
               <div className="flex flex-col xl:flex-row gap-4 items-stretch">
 
-                <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-4 relative overflow-hidden select-none shrink-0 min-h-[360px]">
+                <div className="w-full xl:w-auto xl:flex-1 min-w-0 card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-3 relative overflow-hidden select-none min-h-[200px]">
 
                   {/* Header do Card 1 */}
                   <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
@@ -1438,7 +1438,7 @@ export default function DiarioDeBordoPage() {
 
                   {/* Plot Area Visitas */}
                   <div className="flex-1 flex flex-col justify-end">
-                    <div className="h-44 flex items-end justify-between gap-1 pt-6 pb-0 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
+                    <div className="h-28 flex items-end justify-between gap-1 pt-6 pb-0 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
                       {/* Gridlines */}
                       <div className="absolute inset-x-0 top-2 bottom-0 flex flex-col justify-between pointer-events-none opacity-10">
                         <div className="border-b border-white w-full" />
@@ -1502,18 +1502,18 @@ export default function DiarioDeBordoPage() {
 
                 {/* Card separado: Ranking de Reps (Visitas Ordenadas Decrescente) — apenas Gestor/Admin */}
                 {isAdminOrManager && (
-                  <div className="w-full xl:w-80 shrink-0 card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl shadow-xl flex flex-col gap-2.5">
+                  <div className="w-full xl:w-80 shrink-0 card bg-[var(--card)] border border-[var(--line)] p-3.5 rounded-2xl shadow-xl flex flex-col gap-2">
                     <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-purple-400 block border-b border-[var(--line)] pb-2 shrink-0">
                       Visitas por Vendedor (Ranking)
                     </span>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-2 content-start flex-1">
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 content-between flex-1">
                       {visitsSortedReps.map((rep, idx) => {
                         const top3 = idx < 3
                         const name = formatCanonicalRepName(rep.name)
                         const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
                         return (
                           <div key={rep.id} className="flex items-center gap-1.5 min-w-0" title={name}>
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold shrink-0 ${top3 ? 'bg-purple-500/25 text-purple-300' : 'bg-[var(--charcoal)] text-[var(--gray2)]'}`}>
+                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shrink-0 ${top3 ? 'bg-purple-500/25 text-purple-300' : 'bg-[var(--charcoal)] text-[var(--gray2)]'}`}>
                               {initials}
                             </div>
                             <span className="flex-1 min-w-0 truncate text-[11px] text-[var(--white)] font-semibold">{name}</span>
@@ -1534,7 +1534,7 @@ export default function DiarioDeBordoPage() {
             {pacingMetrics.hasContactsGoal && (
               <div className="flex flex-col xl:flex-row gap-4 items-stretch">
 
-                <div className="w-full card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-4 relative overflow-hidden select-none shrink-0 min-h-[360px]">
+                <div className="w-full xl:w-auto xl:flex-1 min-w-0 card bg-[var(--card)] border border-[var(--line)] p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-3 relative overflow-hidden select-none min-h-[200px]">
 
                   {/* Header do Card 2 */}
                   <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
@@ -1561,7 +1561,7 @@ export default function DiarioDeBordoPage() {
 
                   {/* Plot Area Contatos */}
                   <div className="flex-1 flex flex-col justify-end">
-                    <div className="h-44 flex items-end justify-between gap-1 pt-6 pb-0 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
+                    <div className="h-28 flex items-end justify-between gap-1 pt-6 pb-0 px-1 border-b border-[var(--line)] relative overflow-hidden select-none">
                       {/* Gridlines */}
                       <div className="absolute inset-x-0 top-2 bottom-0 flex flex-col justify-between pointer-events-none opacity-10">
                         <div className="border-b border-white w-full" />
@@ -1625,18 +1625,18 @@ export default function DiarioDeBordoPage() {
 
                 {/* Card separado: Ranking de Reps (Contatos Ordenados Decrescente) — apenas Gestor/Admin */}
                 {isAdminOrManager && (
-                  <div className="w-full xl:w-80 shrink-0 card bg-[var(--card)] border border-[var(--line)] p-4 rounded-2xl shadow-xl flex flex-col gap-2.5">
+                  <div className="w-full xl:w-80 shrink-0 card bg-[var(--card)] border border-[var(--line)] p-3.5 rounded-2xl shadow-xl flex flex-col gap-2">
                     <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 block border-b border-[var(--line)] pb-2 shrink-0">
                       Contatos por Vendedor (Ranking)
                     </span>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-2 content-start flex-1">
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 content-between flex-1">
                       {contactsSortedReps.map((rep, idx) => {
                         const top3 = idx < 3
                         const name = formatCanonicalRepName(rep.name)
                         const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
                         return (
                           <div key={rep.id} className="flex items-center gap-1.5 min-w-0" title={name}>
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold shrink-0 ${top3 ? 'bg-emerald-500/25 text-emerald-300' : 'bg-[var(--charcoal)] text-[var(--gray2)]'}`}>
+                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shrink-0 ${top3 ? 'bg-emerald-500/25 text-emerald-300' : 'bg-[var(--charcoal)] text-[var(--gray2)]'}`}>
                               {initials}
                             </div>
                             <span className="flex-1 min-w-0 truncate text-[11px] text-[var(--white)] font-semibold">{name}</span>
