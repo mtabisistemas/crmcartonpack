@@ -78,7 +78,13 @@ export async function GET(req: Request) {
         username: p.username || p.email?.split('@')[0] || '',
         lastSeenAt: p.last_seen_at || null,
         // Omitted entirely for non-admins so it never reaches the browser.
-        ...(canSeeLocation ? { lastLocation: p.last_location || null } : {})
+        ...(canSeeLocation
+          ? {
+              lastLocation: p.last_location || null,
+              lastLocationAt: p.last_location_at || null,
+              lastLocationStatus: p.last_location_status || null
+            }
+          : {})
       }
     })
 
@@ -122,19 +128,37 @@ export async function PATCH(req: Request) {
       )
     }
 
-    const updates: any = {
-      last_seen_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
+    const now = new Date().toISOString()
 
+    // Columns that are guaranteed to exist. Recording the access must never
+    // depend on the optional context columns below.
+    const core: any = {
+      last_seen_at: now,
+      updated_at: now
+    }
     if (body.location && typeof body.location === 'string') {
-      updates.last_location = body.location
+      core.last_location = body.location
     }
 
-    const { error } = await supabaseAdmin
+    const context: any = {}
+    if (body.locationStatus && typeof body.locationStatus === 'string') {
+      context.last_location_status = body.locationStatus
+    }
+    if (body.location && typeof body.location === 'string') {
+      context.last_location_at = now
+    }
+
+    let { error } = await supabaseAdmin
       .from('profiles')
-      .update(updates)
+      .update({ ...core, ...context })
       .eq('id', targetId)
+
+    // Migration 003 may not have been applied yet. A missing optional column
+    // must not take the heartbeat down with it, so retry with the core fields.
+    if (error && /last_location_at|last_location_status/.test(error.message || '')) {
+      const retry = await supabaseAdmin.from('profiles').update(core).eq('id', targetId)
+      error = retry.error
+    }
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 })

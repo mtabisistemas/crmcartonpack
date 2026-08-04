@@ -6,14 +6,23 @@ const HEARTBEAT_INTERVAL_MS = 60000
 
 type Identity = { userId: string; email?: string; username?: string }
 
-async function sendHeartbeat(identity: Identity, location?: string) {
+// Why a location is or isn't available, so the users screen can tell
+// "the person denied permission" apart from "never collected yet".
+export type LocationStatus = 'ok' | 'denied' | 'unavailable' | 'timeout' | 'unsupported'
+
+type LocationResult = { location?: string; status: LocationStatus }
+
+async function sendHeartbeat(
+  identity: Identity,
+  extra?: { location?: string; locationStatus?: LocationStatus }
+) {
   try {
     const res = await fetch('/api/users', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       // email/username let the API resolve sessions whose id isn't a profile
       // UUID (the master admin), instead of silently matching nothing.
-      body: JSON.stringify(location ? { ...identity, location } : identity)
+      body: JSON.stringify({ ...identity, ...(extra || {}) })
     })
     const json = await res.json().catch(() => null)
     if (!res.ok || (json && json.success === false)) {
@@ -26,9 +35,9 @@ async function sendHeartbeat(identity: Identity, location?: string) {
   }
 }
 
-function resolveLocation(): Promise<string | undefined> {
+function resolveLocation(): Promise<LocationResult> {
   return new Promise((resolve) => {
-    if (!('geolocation' in navigator)) return resolve(undefined)
+    if (!('geolocation' in navigator)) return resolve({ status: 'unsupported' })
 
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
@@ -38,17 +47,24 @@ function resolveLocation(): Promise<string | undefined> {
           )
           const data = await res.json()
           const a = data?.address
-          if (!a) return resolve(undefined)
+          if (!a) return resolve({ status: 'unavailable' })
           const road = a.road || a.suburb || ''
           const city = a.city || a.town || a.village || a.municipality || ''
           const state = a.state || ''
           const label = [road, city, state].filter(Boolean).join(', ')
-          resolve(label || undefined)
+          resolve(label ? { location: label, status: 'ok' } : { status: 'unavailable' })
         } catch {
-          resolve(undefined)
+          // Coordinates were obtained but reverse geocoding failed.
+          resolve({ status: 'unavailable' })
         }
       },
-      () => resolve(undefined),
+      (err) => {
+        const status: LocationStatus =
+          err.code === err.PERMISSION_DENIED ? 'denied'
+          : err.code === err.TIMEOUT ? 'timeout'
+          : 'unavailable'
+        resolve({ status })
+      },
       { timeout: 8000, maximumAge: 60000 }
     )
   })
@@ -82,10 +98,13 @@ export default function ActivityTracker() {
       // stayed empty for users who simply ignored the prompt.
       await sendHeartbeat(identity)
 
-      const location = await resolveLocation()
-      if (location && !cancelled) {
-        await sendHeartbeat(identity, location)
-      }
+      const { location, status } = await resolveLocation()
+      if (cancelled) return
+
+      // Always report the outcome — a failure is the very thing the admin
+      // needs to see, and reporting it is what makes "Não capturada"
+      // explainable instead of ambiguous.
+      await sendHeartbeat(identity, { location, locationStatus: status })
     }
 
     updateActivity()

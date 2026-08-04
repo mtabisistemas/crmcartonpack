@@ -42,6 +42,23 @@ interface TeamUser {
   isEmailConfirmed?: boolean
   lastSeenAt?: string
   lastLocation?: string
+  lastLocationAt?: string
+  lastLocationStatus?: 'ok' | 'denied' | 'unavailable' | 'timeout' | 'unsupported' | string
+}
+
+// "Não capturada" alone doesn't say whether the person refused the browser
+// prompt or the position simply hasn't been collected yet — which is exactly
+// what an admin needs to know before chasing someone about it.
+const LOCATION_STATUS_LABEL: Record<string, string> = {
+  denied: 'Permissão de localização negada pelo usuário',
+  unavailable: 'Localização indisponível no aparelho',
+  timeout: 'Tempo esgotado ao obter a localização',
+  unsupported: 'Aparelho/navegador sem suporte a localização'
+}
+
+function describeMissingLocation(status?: string) {
+  if (status && LOCATION_STATUS_LABEL[status]) return LOCATION_STATUS_LABEL[status]
+  return 'Não capturada'
 }
 
 function formatPhoneBr(v: string) {
@@ -1261,13 +1278,26 @@ Obs: No primeiro acesso você deverá alterar a senha temporária para ativar su
                   </div>
 
                   {isAdmin && (
-                    <div className="flex items-center gap-3">
-                      <MapPin size={14} className="text-[var(--lime)] shrink-0" />
-                      <div>
+                    <div className="flex items-start gap-3">
+                      <MapPin size={14} className="text-[var(--lime)] shrink-0 mt-0.5" />
+                      <div className="min-w-0">
                         <div className="text-[9px] text-[var(--gray2)] uppercase font-mono">Última Localização (Endereço)</div>
-                        <div className="text-xs font-semibold text-zinc-200 font-mono mt-0.5">
-                          {selectedUserForFicha.lastLocation || 'Não capturada'}
-                        </div>
+                        {selectedUserForFicha.lastLocation ? (
+                          <>
+                            <div className="text-xs font-semibold text-zinc-200 font-mono mt-0.5">
+                              {selectedUserForFicha.lastLocation}
+                            </div>
+                            {selectedUserForFicha.lastLocationAt && (
+                              <div className="text-[10px] text-[var(--gray2)] font-mono mt-0.5">
+                                Capturada em {formatLastSeen(selectedUserForFicha.lastLocationAt)}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-xs font-semibold text-[var(--gray2)] font-mono mt-0.5">
+                            {describeMissingLocation(selectedUserForFicha.lastLocationStatus)}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
