@@ -54,14 +54,30 @@ export async function PATCH(req: Request) {
 
     let targetId: string | null = isUUID(rawId) ? rawId : null
 
+    // Not every session carries a real profile UUID — the master admin logs in
+    // with a hardcoded id — so fall back to the identifiers we do have.
     if (!targetId && body.email) {
       const { data: byEmail } = await supabaseAdmin.from('profiles').select('id').eq('email', body.email).limit(1)
       if (byEmail && byEmail.length > 0) targetId = byEmail[0].id
     }
 
+    if (!targetId && body.username) {
+      // Reps have no real mailbox; their profile email is derived from username.
+      const { data: byRepEmail } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('email', `${body.username}@${REP_EMAIL_DOMAIN}`)
+        .limit(1)
+      if (byRepEmail && byRepEmail.length > 0) targetId = byRepEmail[0].id
+    }
+
     if (!targetId) {
-      // Graceful success for heartbeat when ID is missing/mock
-      return NextResponse.json({ success: true, note: 'Heartbeat registrado' })
+      // Previously this returned success, so a heartbeat that matched no
+      // profile looked identical to one that was actually recorded.
+      return NextResponse.json(
+        { success: false, error: 'Perfil não localizado para registrar o acesso' },
+        { status: 404 }
+      )
     }
 
     const updates: any = {

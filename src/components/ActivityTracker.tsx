@@ -4,12 +4,16 @@ import { useEffect } from 'react'
 
 const HEARTBEAT_INTERVAL_MS = 60000
 
-async function sendHeartbeat(userId: string, location?: string) {
+type Identity = { userId: string; email?: string; username?: string }
+
+async function sendHeartbeat(identity: Identity, location?: string) {
   try {
     const res = await fetch('/api/users', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(location ? { userId, location } : { userId })
+      // email/username let the API resolve sessions whose id isn't a profile
+      // UUID (the master admin), instead of silently matching nothing.
+      body: JSON.stringify(location ? { ...identity, location } : identity)
     })
     const json = await res.json().catch(() => null)
     if (!res.ok || (json && json.success === false)) {
@@ -66,15 +70,21 @@ export default function ActivityTracker() {
       }
       if (!user?.id) return
 
+      const identity: Identity = {
+        userId: user.id,
+        email: user.email || undefined,
+        username: user.username || undefined
+      }
+
       // Record the access first, unconditionally. Geolocation used to gate
       // this entire call — if the permission prompt sat unanswered neither
       // callback fired, so no heartbeat was ever sent and "Último Acesso"
       // stayed empty for users who simply ignored the prompt.
-      await sendHeartbeat(user.id)
+      await sendHeartbeat(identity)
 
       const location = await resolveLocation()
       if (location && !cancelled) {
-        await sendHeartbeat(user.id, location)
+        await sendHeartbeat(identity, location)
       }
     }
 
