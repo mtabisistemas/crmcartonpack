@@ -53,6 +53,25 @@ function formatPhoneBr(v: string) {
   return `(${clean.slice(0, 2)}) ${clean.slice(2, 7)}-${clean.slice(7, 11)}`
 }
 
+// Identifies the caller to /api/users so it can decide whether to include
+// location at all — the API re-checks the role against the database rather
+// than trusting anything sent from here.
+function requesterQuery() {
+  if (typeof window === 'undefined') return ''
+  try {
+    const session = JSON.parse(localStorage.getItem('crm_current_user') || 'null')
+    if (!session) return ''
+    const params = new URLSearchParams()
+    if (session.id) params.set('requesterId', session.id)
+    if (session.email) params.set('requesterEmail', session.email)
+    if (session.username) params.set('requesterUsername', session.username)
+    const qs = params.toString()
+    return qs ? `?${qs}` : ''
+  } catch {
+    return ''
+  }
+}
+
 function formatLastSeen(dateStr?: string) {
   if (!dateStr) return 'Sem acesso registrado'
   try {
@@ -133,7 +152,7 @@ export default function UsersPage() {
   useEffect(() => {
     async function syncUsers() {
       try {
-        const res = await fetch('/api/users', { cache: 'no-store' })
+        const res = await fetch(`/api/users${requesterQuery()}`, { cache: 'no-store' })
         const json = await res.json()
         if (json.success && Array.isArray(json.users) && json.users.length > 0) {
           const userMap = new Map<string, TeamUser>()
@@ -377,7 +396,7 @@ export default function UsersPage() {
               u.id === optimisticUser.id ? { ...u, id: json.user.id } : u
             ))
           }
-          return fetch('/api/users', { cache: 'no-store' })
+          return fetch(`/api/users${requesterQuery()}`, { cache: 'no-store' })
         })
         .then(r => r?.json())
         .then(json => {
@@ -702,16 +721,9 @@ export default function UsersPage() {
                 <span className="text-[10px] font-mono text-[var(--gray)]">{user.phone || '-'}</span>
               </div>
 
+              {/* Localização fica restrita à ficha do usuário (admin), fora da listagem */}
               <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-[var(--gray2)]">
                 <span>Últ. acesso: <span className={user.lastSeenAt ? "text-[var(--white)] font-bold" : ""}>{formatLastSeen(user.lastSeenAt)}</span></span>
-                {isAdmin && (
-                  <div className="flex items-center gap-1 min-w-0">
-                    <MapPin size={12} className="text-[var(--lime)] shrink-0" />
-                    <span className="truncate max-w-[120px]" title={user.lastLocation || 'Não capturada'}>
-                      {user.lastLocation || 'Não capturada'}
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
           )
@@ -733,7 +745,6 @@ export default function UsersPage() {
                 <th className="py-2.5 px-3">Telefone</th>
                 <th className="py-2.5 px-3">Cadastrado em</th>
                 <th className="py-2.5 px-3">Último Acesso</th>
-                {isAdmin && <th className="py-2.5 px-3">Última Localização</th>}
                 <th className="py-2.5 px-3 pr-4 text-right">Ações</th>
               </tr>
             </thead>
@@ -827,17 +838,7 @@ export default function UsersPage() {
                       </span>
                     </td>
 
-                    {/* Última Localização (Admin ONLY) */}
-                    {isAdmin && (
-                      <td className="py-2 px-3 text-xs font-mono text-[var(--gray2)]">
-                        <div className="flex items-center gap-1.5">
-                          <MapPin size={13} className="text-[var(--lime)] shrink-0" />
-                          <span className="truncate max-w-[180px]" title={user.lastLocation || 'Não capturada'}>
-                            {user.lastLocation || 'Não capturada'}
-                          </span>
-                        </div>
-                      </td>
-                    )}
+                    {/* Localização não é exposta na listagem — apenas na ficha, e só para admin */}
 
                     {/* Actions */}
                     <td className="py-2 px-3 pr-4 text-right" onClick={(e) => e.stopPropagation()}>

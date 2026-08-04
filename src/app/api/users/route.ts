@@ -14,8 +14,49 @@ const isUUID = (str: string) =>
   typeof str === 'string' &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
 
-export async function GET() {
+// Sessions don't always carry a profile UUID (the master admin uses a
+// hardcoded id), so fall back to the other identifiers we store.
+async function resolveProfile(identity: { id?: string | null; email?: string | null; username?: string | null }) {
+  if (identity.id && isUUID(identity.id)) {
+    const { data } = await supabaseAdmin.from('profiles').select('id, role').eq('id', identity.id).limit(1)
+    if (data && data.length > 0) return data[0]
+  }
+
+  if (identity.email) {
+    const { data } = await supabaseAdmin.from('profiles').select('id, role').eq('email', identity.email).limit(1)
+    if (data && data.length > 0) return data[0]
+  }
+
+  if (identity.username) {
+    const { data } = await supabaseAdmin
+      .from('profiles')
+      .select('id, role')
+      .eq('email', `${identity.username}@${REP_EMAIL_DOMAIN}`)
+      .limit(1)
+    if (data && data.length > 0) return data[0]
+  }
+
+  return null
+}
+
+const isAdminRole = (role?: string | null) => {
+  const r = (role || '').toLowerCase()
+  return r === 'admin' || r === 'administrador'
+}
+
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url)
+
+    // Whoever is asking has to be verified against the database — the caller's
+    // own claim about its role can't be trusted, and location is admin-only.
+    const requester = await resolveProfile({
+      id: searchParams.get('requesterId'),
+      email: searchParams.get('requesterEmail'),
+      username: searchParams.get('requesterUsername')
+    })
+    const canSeeLocation = isAdminRole(requester?.role)
+
     const { data: profiles, error: pErr } = await supabaseAdmin
       .from('profiles')
       .select('*')
@@ -36,7 +77,8 @@ export async function GET() {
         createdAt: p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '',
         username: p.username || p.email?.split('@')[0] || '',
         lastSeenAt: p.last_seen_at || null,
-        lastLocation: p.last_location || null
+        // Omitted entirely for non-admins so it never reaches the browser.
+        ...(canSeeLocation ? { lastLocation: p.last_location || null } : {})
       }
     })
 
