@@ -14,8 +14,49 @@ const isUUID = (str: string) =>
   typeof str === 'string' &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
 
-export async function GET() {
+// Sessions don't always carry a profile UUID (the master admin uses a
+// hardcoded id), so fall back to the other identifiers we store.
+async function resolveProfile(identity: { id?: string | null; email?: string | null; username?: string | null }) {
+  if (identity.id && isUUID(identity.id)) {
+    const { data } = await supabaseAdmin.from('profiles').select('id, role').eq('id', identity.id).limit(1)
+    if (data && data.length > 0) return data[0]
+  }
+
+  if (identity.email) {
+    const { data } = await supabaseAdmin.from('profiles').select('id, role').eq('email', identity.email).limit(1)
+    if (data && data.length > 0) return data[0]
+  }
+
+  if (identity.username) {
+    const { data } = await supabaseAdmin
+      .from('profiles')
+      .select('id, role')
+      .eq('email', `${identity.username}@${REP_EMAIL_DOMAIN}`)
+      .limit(1)
+    if (data && data.length > 0) return data[0]
+  }
+
+  return null
+}
+
+const isAdminRole = (role?: string | null) => {
+  const r = (role || '').toLowerCase()
+  return r === 'admin' || r === 'administrador'
+}
+
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url)
+
+    // Whoever is asking has to be verified against the database — the caller's
+    // own claim about its role can't be trusted, and location is admin-only.
+    const requester = await resolveProfile({
+      id: searchParams.get('requesterId'),
+      email: searchParams.get('requesterEmail'),
+      username: searchParams.get('requesterUsername')
+    })
+    const canSeeLocation = isAdminRole(requester?.role)
+
     const { data: profiles, error: pErr } = await supabaseAdmin
       .from('profiles')
       .select('*')
@@ -36,7 +77,14 @@ export async function GET() {
         createdAt: p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '',
         username: p.username || p.email?.split('@')[0] || '',
         lastSeenAt: p.last_seen_at || null,
-        lastLocation: p.last_location || null
+        // Omitted entirely for non-admins so it never reaches the browser.
+        ...(canSeeLocation
+          ? {
+              lastLocation: p.last_location || null,
+              lastLocationAt: p.last_location_at || null,
+              lastLocationStatus: p.last_location_status || null
+            }
+          : {})
       }
     })
 
@@ -54,29 +102,63 @@ export async function PATCH(req: Request) {
 
     let targetId: string | null = isUUID(rawId) ? rawId : null
 
+    // Not every session carries a real profile UUID — the master admin logs in
+    // with a hardcoded id — so fall back to the identifiers we do have.
     if (!targetId && body.email) {
       const { data: byEmail } = await supabaseAdmin.from('profiles').select('id').eq('email', body.email).limit(1)
       if (byEmail && byEmail.length > 0) targetId = byEmail[0].id
     }
 
+    if (!targetId && body.username) {
+      // Reps have no real mailbox; their profile email is derived from username.
+      const { data: byRepEmail } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('email', `${body.username}@${REP_EMAIL_DOMAIN}`)
+        .limit(1)
+      if (byRepEmail && byRepEmail.length > 0) targetId = byRepEmail[0].id
+    }
+
     if (!targetId) {
-      // Graceful success for heartbeat when ID is missing/mock
-      return NextResponse.json({ success: true, note: 'Heartbeat registrado' })
+      // Previously this returned success, so a heartbeat that matched no
+      // profile looked identical to one that was actually recorded.
+      return NextResponse.json(
+        { success: false, error: 'Perfil não localizado para registrar o acesso' },
+        { status: 404 }
+      )
     }
 
-    const updates: any = {
-      last_seen_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
+    const now = new Date().toISOString()
 
+    // Columns that are guaranteed to exist. Recording the access must never
+    // depend on the optional context columns below.
+    const core: any = {
+      last_seen_at: now,
+      updated_at: now
+    }
     if (body.location && typeof body.location === 'string') {
-      updates.last_location = body.location
+      core.last_location = body.location
     }
 
-    const { error } = await supabaseAdmin
+    const context: any = {}
+    if (body.locationStatus && typeof body.locationStatus === 'string') {
+      context.last_location_status = body.locationStatus
+    }
+    if (body.location && typeof body.location === 'string') {
+      context.last_location_at = now
+    }
+
+    let { error } = await supabaseAdmin
       .from('profiles')
-      .update(updates)
+      .update({ ...core, ...context })
       .eq('id', targetId)
+
+    // Migration 003 may not have been applied yet. A missing optional column
+    // must not take the heartbeat down with it, so retry with the core fields.
+    if (error && /last_location_at|last_location_status/.test(error.message || '')) {
+      const retry = await supabaseAdmin.from('profiles').update(core).eq('id', targetId)
+      error = retry.error
+    }
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 })

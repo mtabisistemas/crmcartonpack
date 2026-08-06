@@ -2,7 +2,7 @@
   "name": "Carton Pack CRM",
   "short_name": "CartonPack",
   "description": "Sistema de Gestão Comercial — Carton Pack",
-  "start_url": "/dashboard",
+  "start_url": "/diario-de-bordo",
   "display": "standalone",
   "background_color": "#060606",
   "theme_color": "#161718",
