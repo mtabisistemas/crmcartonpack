@@ -1003,11 +1003,15 @@ export function PipelineBoard() {
         }
       }
 
-      setRepresentativesList(getUniqueCanonicalRepresentatives(repsFromUsers))
+      const contactReps = contactsList.map((c: any) => (c.representative || '').trim()).filter(Boolean)
+      const dealReps = deals.map((d: any) => (d.assigned_to || d.representative || '').trim()).filter(Boolean)
+      const allReps = [...repsFromUsers, ...contactReps, ...dealReps]
+
+      setRepresentativesList(getUniqueCanonicalRepresentatives(allReps))
     }
 
     fetchUsers()
-  }, [deals])
+  }, [deals, contactsList])
 
   // Filter deals based on search query, year, month, representative, and curve
   const filteredDeals = deals.filter(d => {

@@ -312,15 +312,17 @@ export default function DiarioDeBordoPage() {
   const userRoleLower = (currentUser?.role || '').toLowerCase()
   const isAdminOrManager = userRoleLower.includes('admin') || userRoleLower.includes('gestor')
 
-  // Available Representatives list for Filter (Restrito aos Usuários cadastrados e ativos no sistema)
+  // Available Representatives list for Filter
   const availableReps = useMemo(() => {
     const activeUsers = usersList.filter(u => u.status !== 'inativo')
     const userNames = activeUsers.map(u => u.name).filter(Boolean) as string[]
-    if (userNames.length > 0) {
-      return getUniqueCanonicalRepresentatives(userNames)
+    const contactReps = contacts.map((c: any) => (c.representative || '').trim()).filter(Boolean) as string[]
+    const allReps = [...userNames, ...contactReps]
+    if (allReps.length > 0) {
+      return getUniqueCanonicalRepresentatives(allReps)
     }
     return []
-  }, [usersList])
+  }, [usersList, contacts])
 
   // Filtered contacts based on selected user filter (ou restrito ao próprio vendedor/representante)
   const filteredContacts = useMemo(() => {

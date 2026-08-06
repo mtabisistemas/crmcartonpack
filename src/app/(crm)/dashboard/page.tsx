@@ -393,15 +393,17 @@ export default function DashboardPage() {
   // effective filter to their own name regardless of the (unused) repFilter state.
   const effectiveRepFilter = isAdminOrManager ? repFilter : (currentUser?.name || 'all')
 
-  // Available Representatives list for Filter (Restrito aos Usuários cadastrados e ativos no sistema)
+  // Available Representatives list for Filter
   const availableReps = useMemo(() => {
     const activeUsers = systemUsers.filter((u: any) => u.status !== 'inativo')
     const userNames = activeUsers.map((u: any) => u.name).filter(Boolean) as string[]
-    if (userNames.length > 0) {
-      return getUniqueCanonicalRepresentatives(userNames)
+    const contactReps = contacts.map((c: any) => (c.representative || '').trim()).filter(Boolean) as string[]
+    const allReps = [...userNames, ...contactReps]
+    if (allReps.length > 0) {
+      return getUniqueCanonicalRepresentatives(allReps)
     }
     return []
-  }, [systemUsers])
+  }, [systemUsers, contacts])
 
   // Consolidated Orders & Deals dataset filtered by Year, Month, Rep & Curve.
   // Takes the rep filter as a parameter so we can reuse it unrestricted (repFilterValue='all')

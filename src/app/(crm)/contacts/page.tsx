@@ -3255,13 +3255,16 @@ export default function ContactsPage() {
         }
       }
 
-      if (registeredNames.length > 0) {
-        setRepresentativesList(getUniqueCanonicalRepresentatives(registeredNames))
+      const contactReps = contacts.map(c => (c.representative || '').trim()).filter(Boolean)
+      const allReps = [...registeredNames, ...contactReps]
+
+      if (allReps.length > 0) {
+        setRepresentativesList(getUniqueCanonicalRepresentatives(allReps))
       }
     }
 
     fetchRegisteredUsers()
-  }, [])
+  }, [contacts])
 
   const isRep = currentUser?.role === 'representante' || currentUser?.role === 'vendedor'
 
