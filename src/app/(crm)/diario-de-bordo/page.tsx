@@ -304,8 +304,8 @@ export default function DiarioDeBordoPage() {
   function abbreviateDisplayName(name?: string) {
     if (!name) return 'Vendedor'
     const parts = name.trim().split(/\s+/).filter(Boolean)
-    if (parts.length <= 2) return name
-    return `${parts[0]} ${parts[parts.length - 1]}`
+    if (parts.length === 0) return 'Vendedor'
+    return parts[0]
   }
 
   // Admin / Gestor check
