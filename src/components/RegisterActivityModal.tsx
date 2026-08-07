@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Mic, MicOff, Camera, CheckCircle2, Phone, MessageSquare, Mail, Video, MapPin, Target, FileText, Package, Briefcase, Trophy, RefreshCw, Handshake, AlertCircle, Building2, Image as ImageIcon } from 'lucide-react'
 import { DealStage } from '@/types'
 import { supabase } from '@/services/supabase-client'
@@ -59,6 +60,7 @@ export function RegisterActivityModal({
   const [isRecording, setIsRecording] = useState(false)
   const [recordingTime, setRecordingTime] = useState(0)
   const [isSavedToast, setIsSavedToast] = useState(false)
+  const [showMobilePhotoOptions, setShowMobilePhotoOptions] = useState(false)
 
   const recognitionRef = useRef<any>(null)
   const timerRef = useRef<any>(null)
@@ -97,6 +99,7 @@ export function RegisterActivityModal({
       setIsRecording(false)
       setRecordingTime(0)
       setIsSavedToast(false)
+      setShowMobilePhotoOptions(false)
       if (recognitionRef.current) {
         try { recognitionRef.current.stop() } catch (e) {}
       }
@@ -395,6 +398,7 @@ export function RegisterActivityModal({
     setIsSavedToast(true)
     setTimeout(() => {
       setIsSavedToast(false)
+      setShowMobilePhotoOptions(false)
       if (onSuccess) onSuccess()
       onClose()
     }, 1000)
@@ -556,37 +560,33 @@ export function RegisterActivityModal({
                   <span className="text-[9px] text-[var(--gray)] font-normal font-sans">Fachada, cartão ou imagem</span>
                 </label>
                 
-                <div className="grid grid-cols-2 gap-2">
-                  {/* Botão 1: Tirar Foto (Abrir Câmera no Mobile) */}
-                  <label className="flex items-center justify-center gap-1.5 p-2.5 border border-dashed border-[var(--lime)]/40 hover:border-[var(--lime)] bg-[var(--lime)]/10 rounded-xl cursor-pointer transition-all active:scale-95 text-center">
-                    <Camera size={15} className="text-[var(--lime)] shrink-0" />
-                    <span className="text-[11px] font-mono font-bold text-[var(--lime)] truncate">
-                      Tirar Foto
-                    </span>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      capture="environment" 
-                      className="hidden" 
-                      onChange={handlePhotoUpload} 
-                    />
-                  </label>
+                {/* ── DESKTOP BUTTON: Single "Enviar Foto" button directly opening file picker ── */}
+                <label className="hidden lg:flex items-center justify-center gap-2 p-2.5 border border-dashed border-[var(--line)] hover:border-[var(--lime)]/50 rounded-xl cursor-pointer bg-black/30 transition-all text-center">
+                  <Camera size={15} className="text-[var(--lime)] shrink-0" />
+                  <span className="text-xs font-mono font-bold text-[var(--white)]">
+                    {photoUrl ? '✓ Foto Selecionada (Alterar)' : 'Enviar Foto'}
+                  </span>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={handlePhotoUpload} 
+                  />
+                </label>
 
-                  {/* Botão 2: Buscar da Galeria */}
-                  <label className="flex items-center justify-center gap-1.5 p-2.5 border border-dashed border-[var(--line)] hover:border-[var(--lime)]/50 bg-black/30 rounded-xl cursor-pointer transition-all active:scale-95 text-center">
-                    <ImageIcon size={15} className="text-[var(--gray2)] shrink-0" />
-                    <span className="text-[11px] font-mono font-bold text-[var(--white)] truncate">
-                      Buscar Galeria
-                    </span>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      className="hidden" 
-                      onChange={handlePhotoUpload} 
-                    />
-                  </label>
-                </div>
+                {/* ── MOBILE BUTTON: Single button opening Bottom Sheet selection modal ── */}
+                <button
+                  type="button"
+                  onClick={() => setShowMobilePhotoOptions(true)}
+                  className="lg:hidden flex items-center justify-center gap-2 p-2.5 border border-dashed border-[var(--lime)]/40 hover:border-[var(--lime)] bg-[var(--lime)]/10 rounded-xl cursor-pointer transition-all active:scale-95 text-center w-full"
+                >
+                  <Camera size={15} className="text-[var(--lime)] shrink-0" />
+                  <span className="text-xs font-mono font-bold text-[var(--lime)]">
+                    {photoUrl ? '✓ Foto Selecionada (Alterar)' : 'Anexar Foto'}
+                  </span>
+                </button>
 
+                {/* Thumbnail preview if photo selected */}
                 {photoUrl && (
                   <div className="mt-1 rounded-xl overflow-hidden border border-[var(--lime)]/50 h-24 relative bg-black flex items-center justify-center group">
                     <img src={photoUrl} alt="Anexo" className="w-full h-full object-cover" />
@@ -676,6 +676,87 @@ export function RegisterActivityModal({
           </div>
         </form>
       </div>
+
+      {/* Mobile Bottom Sheet Choice Modal for Photo (Camera vs Gallery) */}
+      {showMobilePhotoOptions && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[9999999] flex flex-col justify-end animate-fade-in">
+          <div className="bg-[var(--charcoal)] border-t border-[var(--line)] rounded-t-3xl p-5 shadow-2xl flex flex-col gap-4 animate-slide-in-bottom">
+            <div className="flex justify-between items-center border-b border-[var(--line)] pb-3">
+              <div>
+                <h4 className="font-display text-sm text-[var(--white)] font-bold">
+                  Selecione a Origem da Foto
+                </h4>
+                <p className="text-[10px] text-[var(--gray2)] font-mono mt-0.5">
+                  Escolha se deseja tirar uma foto com a câmera ou buscar na galeria
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMobilePhotoOptions(false)}
+                className="text-gray-400 hover:text-white p-1 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              {/* Opção 1: Tirar Foto com a Câmera */}
+              <label className="flex items-center justify-between p-4 rounded-2xl bg-[var(--lime)]/10 border border-[var(--lime)]/40 hover:bg-[var(--lime)]/20 cursor-pointer transition-all active:scale-98">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--lime)]/20 text-[var(--lime)] flex items-center justify-center shrink-0">
+                    <Camera size={20} />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-[var(--lime)]">Tirar Foto (Câmera)</div>
+                    <div className="text-[10px] text-[var(--gray2)] font-mono">Abrir a câmera do smartphone agora</div>
+                  </div>
+                </div>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  capture="environment" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    handlePhotoUpload(e)
+                    setShowMobilePhotoOptions(false)
+                  }} 
+                />
+              </label>
+
+              {/* Opção 2: Buscar da Galeria de Fotos */}
+              <label className="flex items-center justify-between p-4 rounded-2xl bg-[var(--card)] border border-[var(--line)] hover:border-[var(--lime)]/40 cursor-pointer transition-all active:scale-98">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-black/40 text-[var(--white)] flex items-center justify-center shrink-0">
+                    <ImageIcon size={20} />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-[var(--white)]">Buscar na Galeria</div>
+                    <div className="text-[10px] text-[var(--gray2)] font-mono">Selecionar foto existente do seu aparelho</div>
+                  </div>
+                </div>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    handlePhotoUpload(e)
+                    setShowMobilePhotoOptions(false)
+                  }} 
+                />
+              </label>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowMobilePhotoOptions(false)}
+              className="btn btn-secondary py-3 text-xs font-bold uppercase tracking-wider w-full rounded-xl cursor-pointer mt-1"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }
