@@ -21,10 +21,13 @@ import {
   BookOpen,
   HelpCircle,
   Calendar,
+  Plus,
+  CheckCircle2,
 } from 'lucide-react'
 
 import { CartonPackLogo } from '../CartonPackLogo'
 import { InstallPWAButton } from '../InstallPWA'
+import { RegisterActivityModal } from '../RegisterActivityModal'
 
 const navItems = [
   { href: '/diario-de-bordo', label: 'Diário de Bordo', icon: Compass },
@@ -43,6 +46,24 @@ export function Sidebar() {
   const router = useRouter()
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
   const [currentUser, setCurrentUser] = useState<any | null>(null)
+  const [showActivityModal, setShowActivityModal] = useState(false)
+  const [contactsList, setContactsList] = useState<any[]>([])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const loadContacts = () => {
+        const raw = localStorage.getItem('crm_contacts')
+        if (raw) {
+          try {
+            setContactsList(JSON.parse(raw))
+          } catch (e) {}
+        }
+      }
+      loadContacts()
+      window.addEventListener('storage-contacts-changed', loadContacts)
+      return () => window.removeEventListener('storage-contacts-changed', loadContacts)
+    }
+  }, [])
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -133,6 +154,18 @@ export function Sidebar() {
         </span>
       </div>
 
+      {/* Botão Global de Destaque "+ REGISTRAR ATIVIDADE" (Sempre Visível no Desktop) */}
+      <div className="px-4 py-3 border-b border-[var(--line)] shrink-0">
+        <button
+          type="button"
+          onClick={() => setShowActivityModal(true)}
+          className="w-full py-2.5 px-3 rounded-xl bg-[var(--lime)] hover:brightness-110 text-black text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-[rgba(180,217,50,0.15)] transition-all cursor-pointer active:scale-95"
+        >
+          <Plus size={15} strokeWidth={3} />
+          <span>Registrar Atividade</span>
+        </button>
+      </div>
+
       {/* Nav */}
       <nav className="flex-1 py-3 overflow-y-auto">
         <div className="sidebar-section">
@@ -198,6 +231,11 @@ export function Sidebar() {
           <span>Sair</span>
         </button>
       </div>
+      <RegisterActivityModal
+        isOpen={showActivityModal}
+        onClose={() => setShowActivityModal(false)}
+        contactsList={contactsList}
+      />
     </aside>
   )
 }

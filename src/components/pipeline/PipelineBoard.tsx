@@ -30,7 +30,7 @@ const customCollisionDetection: CollisionDetection = (args) => {
 }
 import { Deal, DealStage, STAGE_CONFIG, ACTIVE_STAGES, normalizeDealStage, FOLLOW_UP_LOST_REASONS } from '@/types'
 import { formatCurrency, daysSince, isSameRepresentative, getUniqueCanonicalRepresentatives } from '@/lib/utils'
-import { Plus, Clock, Trophy, XCircle, Search, Filter, Building2, Calendar, BarChart3 } from 'lucide-react'
+import { Plus, Clock, Trophy, XCircle, Search, Filter, Building2, Calendar, BarChart3, CheckCircle2 } from 'lucide-react'
 import { DealDrawer } from './DealDrawer'
 import { PipelineCalendarModal } from './PipelineCalendarModal'
 import { PipelineMonthReview } from './PipelineMonthReview'
@@ -1401,6 +1401,15 @@ export function PipelineBoard() {
           >
             <Calendar size={13} className="text-[var(--lime)]" />
             <span>Agenda</span>
+          </button>
+
+          <button 
+            type="button"
+            className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer text-white font-bold shadow-md"
+            onClick={() => setShowActivityModal(true)}
+          >
+            <CheckCircle2 size={13} className="text-[var(--lime)]" />
+            <span>Registrar Atividade</span>
           </button>
 
           <button 
