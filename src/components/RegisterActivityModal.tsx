@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { X, Mic, MicOff, Camera, CheckCircle2, Phone, MessageSquare, Mail, Video, MapPin, Target, FileText, Package, Briefcase, Trophy, RefreshCw, Handshake, AlertCircle, Building2 } from 'lucide-react'
+import { X, Mic, MicOff, Camera, CheckCircle2, Phone, MessageSquare, Mail, Video, MapPin, Target, FileText, Package, Briefcase, Trophy, RefreshCw, Handshake, AlertCircle, Building2, Image as ImageIcon } from 'lucide-react'
 import { DealStage } from '@/types'
 import { supabase } from '@/services/supabase-client'
 
@@ -550,23 +550,54 @@ export function RegisterActivityModal({
               </div>
 
               {/* 4. Foto / Anexo (Opcional) */}
-              <div className="flex flex-col gap-1.5 border border-[var(--line)] rounded-xl p-3 bg-black/20 mt-auto">
+              <div className="flex flex-col gap-2 border border-[var(--line)] rounded-xl p-3 bg-black/20 mt-auto">
                 <label className="text-[10px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider flex items-center justify-between">
                   <span>Foto ou Anexo (Opcional)</span>
                   <span className="text-[9px] text-[var(--gray)] font-normal font-sans">Fachada, cartão ou imagem</span>
                 </label>
                 
-                <label className="flex items-center justify-center gap-2 p-2.5 border border-dashed border-[var(--line)] hover:border-[var(--lime)]/50 rounded-xl cursor-pointer bg-black/30 transition-colors">
-                  <Camera size={15} className="text-[var(--lime)]" />
-                  <span className="text-xs font-mono text-[var(--white)]">
-                    {photoUrl ? '✓ Imagem Selecionada (Alterar)' : 'Tirar Foto ou Carregar Arquivo'}
-                  </span>
-                  <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Botão 1: Tirar Foto (Abrir Câmera no Mobile) */}
+                  <label className="flex items-center justify-center gap-1.5 p-2.5 border border-dashed border-[var(--lime)]/40 hover:border-[var(--lime)] bg-[var(--lime)]/10 rounded-xl cursor-pointer transition-all active:scale-95 text-center">
+                    <Camera size={15} className="text-[var(--lime)] shrink-0" />
+                    <span className="text-[11px] font-mono font-bold text-[var(--lime)] truncate">
+                      Tirar Foto
+                    </span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      capture="environment" 
+                      className="hidden" 
+                      onChange={handlePhotoUpload} 
+                    />
+                  </label>
+
+                  {/* Botão 2: Buscar da Galeria */}
+                  <label className="flex items-center justify-center gap-1.5 p-2.5 border border-dashed border-[var(--line)] hover:border-[var(--lime)]/50 bg-black/30 rounded-xl cursor-pointer transition-all active:scale-95 text-center">
+                    <ImageIcon size={15} className="text-[var(--gray2)] shrink-0" />
+                    <span className="text-[11px] font-mono font-bold text-[var(--white)] truncate">
+                      Buscar Galeria
+                    </span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={handlePhotoUpload} 
+                    />
+                  </label>
+                </div>
 
                 {photoUrl && (
-                  <div className="mt-1 rounded-xl overflow-hidden border border-[var(--line)] h-20 relative bg-black">
+                  <div className="mt-1 rounded-xl overflow-hidden border border-[var(--lime)]/50 h-24 relative bg-black flex items-center justify-center group">
                     <img src={photoUrl} alt="Anexo" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setPhotoUrl('')}
+                      className="absolute top-1.5 right-1.5 p-1 bg-black/80 text-red-400 hover:text-white rounded-lg border border-red-500/30 text-[10px] font-mono font-bold cursor-pointer"
+                      title="Remover Imagem"
+                    >
+                      <X size={12} />
+                    </button>
                   </div>
                 )}
               </div>
