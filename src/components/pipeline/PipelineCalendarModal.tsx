@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { Appointment } from '@/types'
 import { getAppointments, updateAppointment, deleteAppointment, saveAppointment } from '@/services/appointment-service'
 import { getPipelineDeals } from '@/services/pipeline-service'
+import { isSameRepresentative } from '@/lib/utils'
 import { RegisterActivityModal } from '@/components/RegisterActivityModal'
 import { 
   X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Plus, Edit2, Trash2, Check, AlertTriangle, Building2, ChevronDown, Search
@@ -19,6 +20,65 @@ export function PipelineCalendarModal({ isOpen, onClose, onCompleteAndRegisterAc
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month')
   const [currentDate, setCurrentDate] = useState<Date>(new Date())
   const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [currentUser, setCurrentUser] = useState<any | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const session = localStorage.getItem('crm_current_user')
+      if (session) {
+        try {
+          setCurrentUser(JSON.parse(session))
+        } catch (e) {}
+      }
+    }
+  }, [])
+
+  const roleLower = (currentUser?.role || '').toLowerCase()
+  const isRep = roleLower.includes('representante') || roleLower.includes('vendedor')
+
+  const filteredAppointments = useMemo(() => {
+    if (!isRep || !currentUser?.name) {
+      return appointments
+    }
+
+    const currentUserName = currentUser.name
+
+    // Build set of company names belonging to this representative from crm_contacts
+    let repCompanyKeys = new Set<string>()
+    if (typeof window !== 'undefined') {
+      try {
+        const rawC = localStorage.getItem('crm_contacts')
+        if (rawC) {
+          const parsed = JSON.parse(rawC)
+          if (Array.isArray(parsed)) {
+            parsed.forEach(c => {
+              if (isRep && currentUser?.name && !isSameRepresentative(c.representative, currentUser.name)) {
+                return
+              }
+              if (isSameRepresentative(c.representative, currentUserName)) {
+                const comp = (c.company || c.name || '').trim().toLowerCase()
+                if (comp) repCompanyKeys.add(comp)
+              }
+            })
+          }
+        }
+      } catch (e) {}
+    }
+
+    return appointments.filter(apt => {
+      const assigned = apt.assigned_to || (apt as any).assignedTo || (apt as any).user_name || (apt as any).user || (apt as any).representative || ''
+      if (assigned && isSameRepresentative(assigned, currentUserName)) {
+        return true
+      }
+
+      const compName = (apt.company_name || (apt as any).contact_company || (apt as any).contact_name || apt.title || '').trim().toLowerCase()
+      if (compName && repCompanyKeys.has(compName)) {
+        return true
+      }
+
+      return false
+    })
+  }, [appointments, currentUser, isRep])
   
   // Selected appointment for detail / edit modal
   const [activeApt, setActiveApt] = useState<Appointment | null>(null)
@@ -66,6 +126,9 @@ export function PipelineCalendarModal({ isOpen, onClose, onCompleteAndRegisterAc
           const parsed = JSON.parse(rawC)
           if (Array.isArray(parsed)) {
             parsed.forEach(c => {
+              if (isRep && currentUser?.name && !isSameRepresentative(c.representative, currentUser.name)) {
+                return
+              }
               const compName = (c.company || c.name || c.razao_social || '').trim()
               if (compName) {
                 const key = compName.toLowerCase()
@@ -279,7 +342,9 @@ export function PipelineCalendarModal({ isOpen, onClose, onCompleteAndRegisterAc
       deal_id: '',
       company_name: formCompany || undefined,
       notes: formNotes || undefined,
-      status: 'agendado'
+      status: 'agendado',
+      assigned_to: currentUser?.name || undefined,
+      user_name: currentUser?.name || undefined
     })
     loadApts()
     setIsCreating(false)
@@ -349,7 +414,7 @@ export function PipelineCalendarModal({ isOpen, onClose, onCompleteAndRegisterAc
       dayName: weekDays[(firstDayIndex - 1 - i) % 7],
       isCurrentMonth: false,
       isToday: dateKey === todayStr,
-      apts: appointments.filter(a => a.date === dateKey)
+      apts: filteredAppointments.filter(a => a.date === dateKey)
     })
   }
 
@@ -363,7 +428,7 @@ export function PipelineCalendarModal({ isOpen, onClose, onCompleteAndRegisterAc
       dayName,
       isCurrentMonth: true,
       isToday: dateKey === todayStr,
-      apts: appointments.filter(a => a.date === dateKey)
+      apts: filteredAppointments.filter(a => a.date === dateKey)
     })
   }
 
@@ -381,7 +446,7 @@ export function PipelineCalendarModal({ isOpen, onClose, onCompleteAndRegisterAc
       dayName,
       isCurrentMonth: false,
       isToday: dateKey === todayStr,
-      apts: appointments.filter(a => a.date === dateKey)
+      apts: filteredAppointments.filter(a => a.date === dateKey)
     })
   }
 
@@ -647,7 +712,7 @@ export function PipelineCalendarModal({ isOpen, onClose, onCompleteAndRegisterAc
                   <div className="grid grid-cols-7 gap-1 relative border-l border-[var(--line)]/40">
                     {weekDaysList.map((dayDate, dayIdx) => {
                       const dateKey = dayDate.toISOString().split('T')[0]
-                      const dayApts = appointments.filter(a => a.date === dateKey)
+                      const dayApts = filteredAppointments.filter(a => a.date === dateKey)
 
                       return (
                         <div key={dayIdx} className="relative border-r border-[var(--line)]/30 h-[1344px]">
