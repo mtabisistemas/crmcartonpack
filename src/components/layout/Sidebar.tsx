@@ -20,6 +20,7 @@ import {
   Compass,
   BookOpen,
   HelpCircle,
+  Calendar,
 } from 'lucide-react'
 
 import { CartonPackLogo } from '../CartonPackLogo'
@@ -30,6 +31,7 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
   { href: '/contacts', label: 'Contatos', icon: Users },
+  { href: '/agenda', label: 'Agenda', icon: Calendar },
   { href: '/users', label: 'Usuários', icon: UserCog },
   { href: '/guia', label: 'Manual do Sistema', icon: BookOpen },
 ]
@@ -89,6 +91,7 @@ export function Sidebar() {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Clientes', icon: Users },
+    { href: '/agenda', label: 'Agenda', icon: Calendar },
     { href: '/guia', label: 'Manual do Sistema', icon: BookOpen },
   ]
 
@@ -97,6 +100,7 @@ export function Sidebar() {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Clientes', icon: Users },
+    { href: '/agenda', label: 'Agenda', icon: Calendar },
     { href: '/guia', label: 'Manual do Sistema', icon: BookOpen },
   ]
 
@@ -105,6 +109,7 @@ export function Sidebar() {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Contatos', icon: Users },
+    { href: '/agenda', label: 'Agenda', icon: Calendar },
     { href: '/users', label: 'Usuários', icon: UserCog },
     { href: '/metas', label: 'Metas & Parâmetros', icon: Target },
     { href: '/guia', label: 'Manual do Sistema', icon: BookOpen },
