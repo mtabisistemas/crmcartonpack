@@ -909,8 +909,8 @@ export default function UsersPage() {
       </div>
 
       {/* Modal Cadastrar / Editar Usuário */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+      {showModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[999999] flex items-center justify-center p-4">
           <div className="bg-[var(--charcoal)] border border-[var(--line)] rounded-2xl p-6 w-full max-w-lg shadow-2xl flex flex-col gap-5 animate-fade-up">
             
             <div className="flex justify-between items-start border-b border-[var(--line)] pb-3">
@@ -938,43 +938,57 @@ export default function UsersPage() {
                       type="text"
                       required
                       className="input w-full !pl-9 uppercase"
-                      placeholder="Ex: ROBERTO CARLOS"
+                      placeholder="NOME DO MEMBRO DA EQUIPE"
                       value={name}
                       onChange={(e) => {
-                        const upper = e.target.value.toUpperCase()
-                        setName(upper)
-                        if (!editingUser) {
-                          setUsername(deriveUsername(upper))
+                        const val = e.target.value
+                        setName(val)
+                        if (!username || username === deriveUsername(name)) {
+                          setUsername(deriveUsername(val))
                         }
                       }}
                     />
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-bold text-[var(--lime)] uppercase font-mono tracking-wider">Função do Usuário *</label>
-                  <select 
-                    className="input w-full font-bold"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as any)}
-                  >
-                    <option value="vendedor">Vendedor</option>
-                    <option value="representante">Representante</option>
-                    <option value="gestor">Gestor Comercial</option>
-                    {isAdmin && <option value="admin">Administrador</option>}
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Cargo / Função *</label>
+                    <select 
+                      className="input w-full cursor-pointer text-xs" 
+                      value={role} 
+                      onChange={(e) => setRole(e.target.value as TeamUser['role'])}
+                    >
+                      <option value="vendedor" className="bg-[var(--charcoal)] text-white">Vendedor / Comercial</option>
+                      <option value="representante" className="bg-[var(--charcoal)] text-white">Representante Comercial</option>
+                      <option value="gestor" className="bg-[var(--charcoal)] text-white">Gestor Comercial</option>
+                      {isAdmin && <option value="admin" className="bg-[var(--charcoal)] text-white">Administrador Master</option>}
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">Status da Conta *</label>
+                    <select 
+                      className="input w-full cursor-pointer text-xs" 
+                      value={status} 
+                      onChange={(e) => setStatus(e.target.value as TeamUser['status'])}
+                    >
+                      <option value="ativo" className="bg-[var(--charcoal)] text-white">Ativo (Acesso Liberado)</option>
+                      <option value="inativo" className="bg-[var(--charcoal)] text-white">Inativo (Acesso Suspenso)</option>
+                    </select>
+                  </div>
                 </div>
 
                 {role !== 'representante' && (
-                  <div className="flex flex-col gap-1.5 animate-fade-in">
-                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">E-mail Comercial *</label>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[9px] font-bold text-[var(--gray2)] uppercase font-mono tracking-wider">E-mail Corporativo (@cartonpack.com.br) *</label>
                     <div className="relative flex items-center">
                       <Mail size={13} className="absolute left-3 text-[var(--gray2)] pointer-events-none" />
                       <input
                         type="email"
                         required
-                        className="input w-full !pl-9 font-mono text-xs"
-                        placeholder="ex: joao.silva@cartonpack.com.br"
+                        className="input w-full !pl-9 lowercase font-mono text-xs"
+                        placeholder="usuario@cartonpack.com.br"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                       />
@@ -1054,12 +1068,13 @@ export default function UsersPage() {
 
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Copiar Credenciais */}
-      {showCopyModal && createdUserCredentials && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+      {showCopyModal && createdUserCredentials && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[999999] flex items-center justify-center p-4">
           <div className="bg-[var(--charcoal)] border border-[var(--lime)] rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 animate-fade-up">
             <div className="flex justify-between items-start border-b border-[var(--line)] pb-3">
               <div>
@@ -1094,12 +1109,13 @@ Obs: No primeiro acesso você deverá alterar a senha temporária para ativar su
               Copiar Mensagem de Acesso
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Redefinir Senha Temporária */}
-      {showResetPasswordModal && resetUser && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+      {showResetPasswordModal && resetUser && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[999999] flex items-center justify-center p-4">
           <div className="bg-[var(--charcoal)] border border-[var(--lime)]/50 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 animate-fade-up">
             <div className="flex justify-between items-start border-b border-[var(--line)] pb-3">
               <div>
@@ -1154,11 +1170,12 @@ Obs: No primeiro acesso você deverá alterar a senha temporária para ativar su
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal de Confirmação de Exclusão de Usuário */}
-      {userToDelete && (() => {
+      {userToDelete && typeof document !== 'undefined' && createPortal((() => {
         const userObj = users.find(u => u.id === userToDelete)
         return (
           <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[999999] flex items-center justify-center p-4">
@@ -1201,7 +1218,7 @@ Obs: No primeiro acesso você deverá alterar a senha temporária para ativar su
             </div>
           </div>
         )
-      })()}
+      })(), document.body)}
 
       {/* Ficha do Usuário (Drawer) */}
       {selectedUserForFicha && typeof document !== 'undefined' && createPortal(

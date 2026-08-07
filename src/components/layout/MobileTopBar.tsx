@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Sun, Moon, LogOut } from 'lucide-react'
+import { Sun, Moon, LogOut, HelpCircle } from 'lucide-react'
 import { CartonPackLogo } from '../CartonPackLogo'
 import { InstallPWAButton } from '../InstallPWA'
 
@@ -14,6 +15,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/contacts': 'Carteira de Clientes',
   '/users': 'Usuários',
   '/metas': 'Metas & Parâmetros',
+  '/guia': 'Manual do Sistema',
   '/briefings': 'Orçamentos',
   '/ai-chat': 'IA Assistente',
   '/reports': 'Relatórios',
@@ -62,6 +64,13 @@ export function MobileTopBar() {
 
       {/* Actions */}
       <div className="flex items-center gap-2 shrink-0">
+        <Link
+          href="/guia"
+          title="Manual do Sistema"
+          className="p-2 rounded-xl text-[var(--lime)] hover:bg-[var(--charcoal)] transition-all bg-transparent border border-[var(--line)] cursor-pointer shrink-0"
+        >
+          <HelpCircle size={16} />
+        </Link>
         <button
           onClick={toggleTheme}
           aria-label={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}

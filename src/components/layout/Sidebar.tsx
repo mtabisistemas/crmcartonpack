@@ -18,6 +18,8 @@ import {
   User,
   Target,
   Compass,
+  BookOpen,
+  HelpCircle,
 } from 'lucide-react'
 
 import { CartonPackLogo } from '../CartonPackLogo'
@@ -29,6 +31,7 @@ const navItems = [
   { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
   { href: '/contacts', label: 'Contatos', icon: Users },
   { href: '/users', label: 'Usuários', icon: UserCog },
+  { href: '/guia', label: 'Manual do Sistema', icon: BookOpen },
 ]
 
 export function Sidebar() {
@@ -86,6 +89,7 @@ export function Sidebar() {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Clientes', icon: Users },
+    { href: '/guia', label: 'Manual do Sistema', icon: BookOpen },
   ]
 
   const vendedorNavItems = [
@@ -93,6 +97,7 @@ export function Sidebar() {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
     { href: '/contacts', label: 'Clientes', icon: Users },
+    { href: '/guia', label: 'Manual do Sistema', icon: BookOpen },
   ]
 
   const adminNavItems = [
@@ -102,6 +107,7 @@ export function Sidebar() {
     { href: '/contacts', label: 'Contatos', icon: Users },
     { href: '/users', label: 'Usuários', icon: UserCog },
     { href: '/metas', label: 'Metas & Parâmetros', icon: Target },
+    { href: '/guia', label: 'Manual do Sistema', icon: BookOpen },
   ]
 
   const items = currentUser?.role === 'representante'
