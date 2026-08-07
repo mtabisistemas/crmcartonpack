@@ -146,6 +146,7 @@ export function RegisterActivityModal({
   }, [isRecording])
 
   if (!isOpen) return null
+  if (typeof document === 'undefined') return null
 
   // Helper to deduplicate repeating word/phrase cascades from speech engines (e.g. Chrome Android)
   const cleanTranscribedText = (text: string): string => {
@@ -425,8 +426,8 @@ export function RegisterActivityModal({
     setShowClientDropdown(false)
   }
 
-  return (
-    <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[999999] flex flex-col justify-start lg:justify-center lg:items-center p-0 lg:p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[9999999] flex flex-col justify-start lg:justify-center lg:items-center p-0 lg:p-4">
       <div className="bg-[var(--charcoal)] border-0 lg:border border-[var(--line)] rounded-none lg:rounded-3xl flex flex-col animate-fade-in max-w-lg lg:max-w-4xl mx-auto w-full h-full lg:h-auto lg:max-h-[92vh] shadow-2xl overflow-hidden">
         
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
@@ -757,6 +758,7 @@ export function RegisterActivityModal({
         </div>,
         document.body
       )}
-    </div>
+    </div>,
+    document.body
   )
 }
