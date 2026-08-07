@@ -58,7 +58,7 @@ export default function GuiaPage() {
   }
 
   return (
-    <div className="page-content animate-fade-in w-full h-full flex flex-col gap-4 overflow-y-auto pb-10">
+    <div className="page-content animate-fade-in w-full flex flex-col gap-4">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 border-b border-[var(--line)] pb-4">
@@ -80,7 +80,7 @@ export default function GuiaPage() {
           <button
             type="button"
             onClick={handlePrint}
-            className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer text-white font-bold shadow-md print:hidden"
+            className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer font-bold shadow-md print:hidden"
           >
             <Printer size={13} className="text-[var(--lime)]" />
             <span>Imprimir Manual</span>
@@ -89,7 +89,7 @@ export default function GuiaPage() {
       </div>
 
       {/* Role Selection Tabs */}
-      <div className="flex items-center gap-2 border-b border-[var(--line)] pb-3 overflow-x-auto print:hidden">
+      <div className="flex items-center gap-2 border-b border-[var(--line)] pb-3 overflow-x-auto print:hidden shrink-0">
         <span className="text-[10px] font-mono text-[var(--gray2)] uppercase tracking-wider mr-2 font-bold shrink-0">
           Seções do Manual:
         </span>
@@ -100,7 +100,7 @@ export default function GuiaPage() {
           className={`px-3.5 py-1.5 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'vendedor'
               ? 'bg-[var(--lime)] text-black shadow-lg scale-105'
-              : 'bg-[var(--card)] text-[var(--gray2)] border border-[var(--line)] hover:text-white'
+              : 'bg-[var(--card)] text-[var(--gray2)] border border-[var(--line)] hover:text-[var(--white)]'
           }`}
         >
           <UserCheck size={13} />
@@ -114,7 +114,7 @@ export default function GuiaPage() {
             className={`px-3.5 py-1.5 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'gestor'
                 ? 'bg-[var(--lime)] text-black shadow-lg scale-105'
-                : 'bg-[var(--card)] text-[var(--gray2)] border border-[var(--line)] hover:text-white'
+                : 'bg-[var(--card)] text-[var(--gray2)] border border-[var(--line)] hover:text-[var(--white)]'
             }`}
           >
             <BarChart3 size={13} />
@@ -129,7 +129,7 @@ export default function GuiaPage() {
             className={`px-3.5 py-1.5 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'admin'
                 ? 'bg-[var(--lime)] text-black shadow-lg scale-105'
-                : 'bg-[var(--card)] text-[var(--gray2)] border border-[var(--line)] hover:text-white'
+                : 'bg-[var(--card)] text-[var(--gray2)] border border-[var(--line)] hover:text-[var(--white)]'
             }`}
           >
             <Shield size={13} />
@@ -140,14 +140,14 @@ export default function GuiaPage() {
 
       {/* ── SECTION 1: VENDEDOR & REPRESENTANTE ── */}
       {(activeTab === 'vendedor' || activeTab === 'gestor' || activeTab === 'admin') && (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5 pb-8">
           
           <div className="card p-5 border-l-4 border-l-[var(--lime)] bg-[var(--card)] flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 rounded-md bg-[var(--lime)]/10 border border-[var(--lime)]/30 text-[var(--lime)] font-mono text-[10px] font-bold uppercase">
                 Perfil Operacional
               </span>
-              <h2 className="font-display text-lg text-white font-bold">
+              <h2 className="font-display text-lg text-[var(--white)] font-bold">
                 1. Operação Diária de Vendas (Vendedores & Representantes)
               </h2>
             </div>
@@ -159,28 +159,28 @@ export default function GuiaPage() {
           {/* 1.1 Carteira de Clientes */}
           <div className="card p-5 space-y-4">
             <div className="flex items-center gap-2.5 border-b border-[var(--line)] pb-3">
-              <div className="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400 flex items-center justify-center shrink-0 font-bold">
+              <div className="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400 flex items-center justify-center shrink-0 font-bold font-mono">
                 1
               </div>
-              <h3 className="font-display text-base font-bold text-white">Carteira de Clientes (Contatos)</h3>
+              <h3 className="font-display text-base font-bold text-[var(--white)]">Carteira de Clientes (Contatos)</h3>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-zinc-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-[var(--white)]">
               <div className="bg-[var(--charcoal)] border border-[var(--line)] p-4 rounded-xl space-y-2">
                 <h4 className="font-bold text-[var(--lime)] font-mono uppercase text-[11px]">🔍 Busca e Filtros Inteligentes</h4>
                 <ul className="list-disc list-inside space-y-1.5 text-[var(--gray2)]">
-                  <li>Use a barra superior para buscar por <strong>Razão Social</strong>, <strong>CNPJ</strong> ou <strong>Cidade</strong>.</li>
-                  <li>Clique nos cards de métricas no topo para filtrar por <strong>Status</strong> (Ativos ≤90d, Reativação &gt;90d, Prospecção) ou <strong>Curva ABC</strong>.</li>
-                  <li>Selecione o representante <strong>DIRETO</strong> no filtro para visualizar clientes atendidos diretamente pela fábrica.</li>
+                  <li>Use a barra superior para buscar por <strong className="text-[var(--white)]">Razão Social</strong>, <strong className="text-[var(--white)]">CNPJ</strong> ou <strong className="text-[var(--white)]">Cidade</strong>.</li>
+                  <li>Clique nos cards de métricas no topo para filtrar por <strong className="text-[var(--white)]">Status</strong> (Ativos ≤90d, Reativação &gt;90d, Prospecção) ou <strong className="text-[var(--white)]">Curva ABC</strong>.</li>
+                  <li>Selecione o representante <strong className="text-[var(--white)]">DIRETO</strong> no filtro para visualizar clientes atendidos diretamente pela fábrica.</li>
                 </ul>
               </div>
 
               <div className="bg-[var(--charcoal)] border border-[var(--line)] p-4 rounded-xl space-y-2">
                 <h4 className="font-bold text-[var(--lime)] font-mono uppercase text-[11px]">📋 Ficha Completa do Cliente</h4>
                 <ul className="list-disc list-inside space-y-1.5 text-[var(--gray2)]">
-                  <li>Clique em qualquer cliente para abrir a <strong>Ficha Lateral (Drawer)</strong>.</li>
+                  <li>Clique em qualquer cliente para abrir a <strong className="text-[var(--white)]">Ficha Lateral (Drawer)</strong>.</li>
                   <li>Consulte os dados de CNPJ, Inscrição Estadual e Endereço.</li>
-                  <li>Acesse o <strong>Histórico de Vendas Realizadas</strong> vinculado pelo código do cliente.</li>
+                  <li>Acesse o <strong className="text-[var(--white)]">Histórico de Vendas Realizadas</strong> vinculado pelo código do cliente.</li>
                   <li>Veja a previsão automática de recompra e dias desde a última compra.</li>
                 </ul>
               </div>
@@ -190,10 +190,10 @@ export default function GuiaPage() {
           {/* 1.2 Pipeline de Vendas */}
           <div className="card p-5 space-y-4">
             <div className="flex items-center gap-2.5 border-b border-[var(--line)] pb-3">
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0 font-bold">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0 font-bold font-mono">
                 2
               </div>
-              <h3 className="font-display text-base font-bold text-white">Pipeline de Vendas (Funil Kanban)</h3>
+              <h3 className="font-display text-base font-bold text-[var(--white)]">Pipeline de Vendas (Funil Kanban)</h3>
             </div>
 
             <p className="text-xs text-[var(--gray2)] leading-relaxed">
@@ -201,7 +201,7 @@ export default function GuiaPage() {
             </p>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-[11px] font-mono text-center">
-              <div className="p-2.5 rounded-xl border border-zinc-700 bg-zinc-800/40 text-zinc-300 font-bold">1. Leads / Banco</div>
+              <div className="p-2.5 rounded-xl border border-[var(--line)] bg-[var(--charcoal)] text-[var(--white)] font-bold">1. Leads / Banco</div>
               <div className="p-2.5 rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-400 font-bold">2. Prospect</div>
               <div className="p-2.5 rounded-xl border border-orange-500/30 bg-orange-500/10 text-orange-400 font-bold">3. Orçamento</div>
               <div className="p-2.5 rounded-xl border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 font-bold">4. Negociação</div>
@@ -209,11 +209,11 @@ export default function GuiaPage() {
               <div className="p-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-400 font-bold">6. Perdido</div>
             </div>
 
-            <div className="bg-[var(--charcoal)] border border-[var(--line)] p-4 rounded-xl text-xs text-zinc-300 space-y-2">
+            <div className="bg-[var(--charcoal)] border border-[var(--line)] p-4 rounded-xl text-xs space-y-2">
               <strong className="text-[var(--lime)] font-mono uppercase text-[11px]">⚠️ Regras Obrigatórias de Movimentação:</strong>
               <ul className="list-disc list-inside space-y-1 text-[var(--gray2)]">
-                <li><strong>Ao mover para Pedido Fechado</strong>: É necessário informar o número do pedido comercial.</li>
-                <li><strong>Ao mover para Perdidos</strong>: É obrigatório selecionar o motivo da perda (ex: Preço, Prazo, Concorrência).</li>
+                <li><strong className="text-[var(--white)]">Ao mover para Pedido Fechado</strong>: É necessário informar o número do pedido comercial.</li>
+                <li><strong className="text-[var(--white)]">Ao mover para Perdidos</strong>: É obrigatório selecionar o motivo da perda (ex: Preço, Prazo, Concorrência).</li>
               </ul>
             </div>
           </div>
@@ -221,17 +221,17 @@ export default function GuiaPage() {
           {/* 1.3 Diário de Bordo */}
           <div className="card p-5 space-y-4">
             <div className="flex items-center gap-2.5 border-b border-[var(--line)] pb-3">
-              <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0 font-bold">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0 font-bold font-mono">
                 3
               </div>
-              <h3 className="font-display text-base font-bold text-white">Diário de Bordo (Agenda & Atividades)</h3>
+              <h3 className="font-display text-base font-bold text-[var(--white)]">Diário de Bordo (Agenda & Atividades)</h3>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-zinc-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-[var(--white)]">
               <div className="bg-[var(--charcoal)] border border-[var(--line)] p-4 rounded-xl space-y-2">
                 <h4 className="font-bold text-[var(--lime)] font-mono uppercase text-[11px]">📝 Registrar Atendimento Concluído</h4>
                 <p className="text-[var(--gray2)] leading-relaxed">
-                  Clique em <strong>Registrar Atividade</strong> para cadastrar Visitas, Ligações, Reuniões, E-mails ou Envios de Orçamentos realizados. O histórico fica salvo na ficha do cliente.
+                  Clique em <strong className="text-[var(--white)]">Registrar Atividade</strong> para cadastrar Visitas, Ligações, Reuniões, E-mails ou Envios de Orçamentos realizados. O histórico fica salvo na ficha do cliente.
                 </p>
               </div>
 
@@ -249,14 +249,14 @@ export default function GuiaPage() {
 
       {/* ── SECTION 2: GESTÃO COMERCIAL (Gestores e Admins) ── */}
       {(activeTab === 'gestor' || activeTab === 'admin') && (
-        <div className="flex flex-col gap-5 mt-4">
+        <div className="flex flex-col gap-5 pb-8">
           
           <div className="card p-5 border-l-4 border-l-sky-400 bg-[var(--card)] flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 rounded-md bg-sky-500/10 border border-sky-500/30 text-sky-400 font-mono text-[10px] font-bold uppercase">
                 Perfil de Gestão
               </span>
-              <h2 className="font-display text-lg text-white font-bold">
+              <h2 className="font-display text-lg text-[var(--white)] font-bold">
                 2. Ferramentas de Gestão Comercial (Gestores)
               </h2>
             </div>
@@ -267,10 +267,10 @@ export default function GuiaPage() {
 
           <div className="card p-5 space-y-4">
             <div className="flex items-center gap-2.5 border-b border-[var(--line)] pb-3">
-              <div className="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400 flex items-center justify-center shrink-0 font-bold">
+              <div className="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400 flex items-center justify-center shrink-0 font-bold font-mono">
                 4
               </div>
-              <h3 className="font-display text-base font-bold text-white">Acompanhamento de Metas & Ranking Comercial</h3>
+              <h3 className="font-display text-base font-bold text-[var(--white)]">Acompanhamento de Metas & Ranking Comercial</h3>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
@@ -291,7 +291,7 @@ export default function GuiaPage() {
               <div className="bg-[var(--charcoal)] border border-[var(--line)] p-4 rounded-xl space-y-2">
                 <strong className="text-[var(--lime)] font-mono uppercase text-[11px]">📊 Revisão do Mês no Pipeline</strong>
                 <p className="text-[var(--gray2)] leading-relaxed">
-                  Clique em <strong>Revisão do Mês</strong> no topo do Pipeline para ver o Kanban congelado de qualquer mês anterior e a taxa de conversão.
+                  Clique em <strong className="text-[var(--white)]">Revisão do Mês</strong> no topo do Pipeline para ver o Kanban congelado de qualquer mês anterior e a taxa de conversão.
                 </p>
               </div>
             </div>
@@ -302,14 +302,14 @@ export default function GuiaPage() {
 
       {/* ── SECTION 3: ADMINISTRADOR MASTER (Admins) ── */}
       {activeTab === 'admin' && (
-        <div className="flex flex-col gap-5 mt-4">
+        <div className="flex flex-col gap-5 pb-8">
           
           <div className="card p-5 border-l-4 border-l-purple-500 bg-[var(--card)] flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/30 text-purple-300 font-mono text-[10px] font-bold uppercase">
                 Perfil Administrador
               </span>
-              <h2 className="font-display text-lg text-white font-bold">
+              <h2 className="font-display text-lg text-[var(--white)] font-bold">
                 3. Gerenciamento e Administração do CRM (Admin)
               </h2>
             </div>
@@ -320,17 +320,17 @@ export default function GuiaPage() {
 
           <div className="card p-5 space-y-4">
             <div className="flex items-center gap-2.5 border-b border-[var(--line)] pb-3">
-              <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300 flex items-center justify-center shrink-0 font-bold">
+              <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300 flex items-center justify-center shrink-0 font-bold font-mono">
                 5
               </div>
-              <h3 className="font-display text-base font-bold text-white">Gestão de Usuários & Senhas</h3>
+              <h3 className="font-display text-base font-bold text-[var(--white)]">Gestão de Usuários & Senhas</h3>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-zinc-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-[var(--white)]">
               <div className="bg-[var(--charcoal)] border border-[var(--line)] p-4 rounded-xl space-y-2">
                 <h4 className="font-bold text-purple-300 font-mono uppercase text-[11px]">👤 Cadastrar e Editar Usuários</h4>
                 <p className="text-[var(--gray2)] leading-relaxed">
-                  Acesse a página <strong>Usuários</strong> para cadastrar membros da equipe, definir cargo (*Vendedor, Representante, Gestor, Admin*) e editar dados a qualquer momento em formulário destacado na tela.
+                  Acesse a página <strong className="text-[var(--white)]">Usuários</strong> para cadastrar membros da equipe, definir cargo (*Vendedor, Representante, Gestor, Admin*) e editar dados a qualquer momento em formulário destacado na tela.
                 </p>
               </div>
 
