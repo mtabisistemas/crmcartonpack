@@ -4133,99 +4133,10 @@ export default function ContactsPage() {
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></span> Prospecção</span>
           </div>
         </div>
-      ) : isRep ? (
-        /* ── REPRESENTATIVE CARD GRID VIEW ── */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {paginatedContacts.map(contact => {
-            const repInfo = getContactActivityAndRepurchaseInfo(contact)
-            const effectiveStatus = repInfo.computedStatus
-            const isInactive = effectiveStatus === 'reativacao'
-            return (
-              <div
-                key={contact.id}
-                onClick={() => setSelectedContact(contact)}
-                className={`card p-3 border flex flex-col justify-between gap-2.5 cursor-pointer transition-all hover:border-[var(--lime)]/30 ${
-                  isInactive ? 'border-red-500/30 bg-red-500/5' : 'border-[var(--line)] bg-[var(--card)]'
-                }`}
-              >
-                <div className="flex justify-between items-start gap-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <h4 className="text-xs font-bold text-[var(--white)] truncate">{contact.company || contact.name}</h4>
-                    </div>
-                    {contact.company && contact.name && (
-                      <span className="text-[9px] font-mono text-[var(--gray)] block mt-0.5 truncate">Contato: {contact.name}</span>
-                    )}
-                    <span className="text-[9px] text-[var(--gray)] font-mono block">{(contact.city || '').toUpperCase()}{contact.state ? ` · ${contact.state.toUpperCase()}` : ''}</span>
-                  </div>
-                  {(() => {
-                    if (effectiveStatus === 'prospeccao') return (
-                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-400/15 text-amber-300 border border-amber-400/30 shrink-0">
-                        Prospecção
-                      </span>
-                    )
-                    if (effectiveStatus === 'reativacao') return (
-                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-400 border border-orange-500/30 shrink-0">
-                        Reativação
-                      </span>
-                    )
-                    return (
-                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--lime)]/15 text-[var(--lime)] border border-[var(--lime)]/30 shrink-0">
-                        Ativo
-                      </span>
-                    )
-                  })()}
-                </div>
-
-                <div className="text-[10px] font-mono text-[var(--gray2)] flex flex-col gap-0.5 border-t border-[var(--line)] pt-2 mt-1">
-                  <div className="flex justify-between">
-                    <span>Curva ABC:</span>
-                    <span className="font-bold text-[var(--lime)]">Curva {contact.curve || 'D'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Última Compra:</span>
-                    <span className="font-bold text-white">{repInfo.daysSinceLastPurchase !== null ? `${repInfo.daysSinceLastPurchase}d` : '-'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Representante:</span>
-                    <span className="font-bold text-white truncate max-w-[120px]">{formatCanonicalRepName(contact.representative)}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-1 border-t border-[var(--line)] pt-2">
-                  {contact.phone && (
-                    <a
-                      href={whatsappLink(contact.phone)}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="p-1 rounded bg-[var(--lime)]/10 text-[var(--lime)] hover:bg-[var(--lime)]/20 transition-colors"
-                      title="WhatsApp"
-                    >
-                      <WhatsappIcon size={12} />
-                    </a>
-                  )}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setSelectedContactForActivity(contact.id)
-                      setShowActivityModal(true)
-                    }}
-                    className="p-1 rounded bg-[var(--charcoal)] border border-[var(--line)] text-[var(--gray)] hover:text-white transition-colors"
-                    title="Registrar Atividade"
-                  >
-                    <Plus size={12} />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
       ) : (
-        /* ── ADMIN / GESTOR VIEW ── */
+        /* ── UNIFIED CONTACTS LIST (CARDS ON MOBILE, TABLE ON DESKTOP) ── */
         <>
-          {/* Mobile Card List (below lg) — desktop table is unaffected below */}
+          {/* Mobile Card List (below lg) */}
           <div className="lg:hidden flex flex-col gap-2">
             {paginatedContacts.map(contact => {
               const repInfo = getContactActivityAndRepurchaseInfo(contact)
